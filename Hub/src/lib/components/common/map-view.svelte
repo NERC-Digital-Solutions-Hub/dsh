@@ -3,6 +3,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
 	import type MapView from '@arcgis/core/views/MapView';
+	import DropDownPanel from '$lib/components/common/drop-down-panel.svelte';
 
 	type Props = {
 		portalId?: string | null; // ArcGIS Online portal item ID
@@ -20,6 +21,7 @@
 
 	let mapContainer: string | HTMLDivElement | null = null;
 	let mapView: MapView | null = $state<MapView | null>(null);
+	let panel = $state<HTMLElement | null>(null);
 
 	export function getMapView() {
 		return mapView;
@@ -72,6 +74,11 @@
 			// Wait for the map to load
 			await mapView.when();
 			mapView.ui.move('zoom', 'top-right');
+
+			if (panel) {
+				mapView.ui.add(panel as HTMLElement, 'top-left');
+			}
+
 			console.log('Map loaded successfully');
 		} catch (error) {
 			console.error('Error loading map:', error);
@@ -116,10 +123,15 @@
 
 <div class="map-view" bind:this={mapContainer}></div>
 
+<!-- <div bind:this={panel}>
+	<DropDownPanel />
+</div> -->
+
 <style>
 	.map-view {
 		flex: 1 1 auto;
 		min-height: 0;
 		width: 100%;
+		z-index: 1;
 	}
 </style>
