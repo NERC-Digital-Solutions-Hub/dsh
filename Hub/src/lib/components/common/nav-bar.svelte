@@ -25,7 +25,7 @@
 			<NavigationMenu.Item>
 				<NavigationMenu.Link>
 					{#snippet child()}
-						<a href="/catalogue" class={navigationMenuTriggerStyle()}>Catalogue</a>
+						<a href={`${base}/catalogue`} class={navigationMenuTriggerStyle()}>Catalogue</a>
 					{/snippet}
 				</NavigationMenu.Link>
 			</NavigationMenu.Item>
@@ -35,7 +35,7 @@
 					<ul class="grid w-[300px] gap-4 p-2">
 						<li>
 							<NavigationMenu.Link href="#">
-								<a href="/services/uprn">
+								<a href={`${base}/services/uprn`}>
 									<div class="font-medium">UPRN</div>
 									<div class="text-muted-foreground">
 										Explore Unique Property Reference Numbers (UPRNs) on an interactive map.
