@@ -32,14 +32,18 @@
 			<NavigationMenu.Item>
 				<NavigationMenu.Trigger>Services</NavigationMenu.Trigger>
 				<NavigationMenu.Content>
-					<NavigationMenu.Link>
-						<a href="/services/uprn">
-							<div class="mt-4 mb-2 text-lg font-medium">UPRN</div>
-							<p class="text-sm leading-tight text-muted-foreground">
-								Explore Unique Property Reference Numbers (UPRNs) on an interactive map.
-							</p>
-						</a>
-					</NavigationMenu.Link>
+					<ul class="grid w-[300px] gap-4 p-2">
+						<li>
+							<NavigationMenu.Link href="#">
+								<a href="/services/uprn">
+									<div class="font-medium">UPRN</div>
+									<div class="text-muted-foreground">
+										Explore Unique Property Reference Numbers (UPRNs) on an interactive map.
+									</div>
+								</a>
+							</NavigationMenu.Link>
+						</li>
+					</ul>
 				</NavigationMenu.Content>
 			</NavigationMenu.Item>
 		</NavigationMenu.List>
