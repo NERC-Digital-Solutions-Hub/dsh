@@ -18,7 +18,7 @@
 			<NavigationMenu.Item>
 				<NavigationMenu.Link>
 					{#snippet child()}
-						<a href="/" class={navigationMenuTriggerStyle()}>Home</a>
+						<a href="{base}/" class={navigationMenuTriggerStyle()}>Home</a>
 					{/snippet}
 				</NavigationMenu.Link>
 			</NavigationMenu.Item>

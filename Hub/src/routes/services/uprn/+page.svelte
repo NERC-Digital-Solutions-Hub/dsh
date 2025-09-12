@@ -2,11 +2,12 @@
 	import SvelteMapView from '$lib/components/common/map-view.svelte';
 	import { getAppConfigAsync, type AppConfig } from '$lib/utils/app-config-provider.js';
 	import { onMount } from 'svelte';
+	import { base } from '$app/paths';
 
 	let portalItemId = '';
 
 	onMount(async () => {
-		const appConfig: AppConfig = await getAppConfigAsync();
+		let appConfig = await fetch(`${base}/app-config.json`).then((res) => res.json()); // TODO: use a store.
 		portalItemId = appConfig.portalItemId;
 	});
 </script>
