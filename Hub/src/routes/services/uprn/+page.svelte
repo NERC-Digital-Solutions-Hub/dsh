@@ -11,7 +11,18 @@
 	});
 </script>
 
-<h1>UPRN</h1>
-<p>This is the UPRN page.</p>
+<div class="map-section">
+	{#if portalItemId}
+		<SvelteMapView portalId={portalItemId} />
+	{:else}
+		<p>Loading map...</p>
+	{/if}
+</div>
 
-<SvelteMapView portalId={portalItemId} />
+<style>
+	.map-section {
+		flex: 1 1 auto;
+		min-height: 0;
+		display: flex;
+	}
+</style>

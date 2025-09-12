@@ -1,12 +1,19 @@
 <script lang="ts">
 	import '../app.css';
-	import favicon from '$lib/assets/favicon.svg';
+	import NavBar from '$lib/components/common/nav-bar.svelte';
 
 	let { children } = $props();
 </script>
 
-<svelte:head>
-	<link rel="icon" href={favicon} />
-</svelte:head>
+<main class="main-content">
+	<NavBar />
+	{@render children?.()}
+</main>
 
-{@render children?.()}
+<style>
+	.main-content {
+		height: 100dvh;
+		display: flex;
+		flex-direction: column;
+	}
+</style>
