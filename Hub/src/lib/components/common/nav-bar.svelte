@@ -6,7 +6,12 @@
 
 <nav>
 	<a href="/" class="brand">
-		<img src={`${base}/dsh-logo.png`} alt="Your brand" class="logo" decoding="async" />
+		<img
+			src={`${base}/dsh-logo.png`}
+			alt="NERC Digital Solutions Hub"
+			class="logo"
+			decoding="async"
+		/>
 	</a>
 	<NavigationMenu.Root viewport={false} class="menu-item-container">
 		<NavigationMenu.List>
