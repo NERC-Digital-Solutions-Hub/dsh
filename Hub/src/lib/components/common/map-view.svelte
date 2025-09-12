@@ -71,6 +71,7 @@
 
 			// Wait for the map to load
 			await mapView.when();
+			mapView.ui.move('zoom', 'top-right');
 			console.log('Map loaded successfully');
 		} catch (error) {
 			console.error('Error loading map:', error);
