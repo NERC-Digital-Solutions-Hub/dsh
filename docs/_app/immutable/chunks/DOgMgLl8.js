@@ -1,0 +1,1 @@
+import{t as r}from"./CM-N4H9k.js";import{fromGeometry as m,fromGeometryToGXGeometry as n}from"./CuBBWuXO.js";const c=new r;function a(t,o){const e=m(t);return c.execute(e.getGeometry(),n(o),e.getSpatialReference(),null)}export{a as execute};

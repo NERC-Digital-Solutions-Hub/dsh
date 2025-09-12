@@ -1,0 +1,1 @@
+import{r as t,m as o,a}from"./-Rap9rN9.js";import{p}from"./BXLNfHpv.js";const r={write:{allowNull:!0}},i={type:p,json:{origins:{"web-map":r,"portal-item":r}}},u=s=>{let e=class extends s{constructor(){super(...arguments),this.featureEffect=null}};return t([o(i)],e.prototype,"featureEffect",void 0),e=t([a("esri.layers.mixins.FeatureEffectLayer")],e),e};export{u as c,i as p};
