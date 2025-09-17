@@ -1,1 +1,9 @@
-{ "portalItemId": "98fd6151097b4299b099918b2a93c5ec" }
+{ 
+    "_portalUrl": "https://nercdsh.dev.azure.manchester.ac.uk/portal",
+    "portalItemId": "98fd6151097b4299b099918b2a93c5ec",
+    "url": "https://nercdsh.dev.azure.manchester.ac.uk/server/rest/services/Test/CJ_UK_LSOA_2011_Flood_Data_Esri_4_18/MapServer",
+    "proxy": {
+        "urlPrefix": "https://nercdsh.dev.azure.manchester.ac.uk",
+        "proxyUrl": "/proxy/Java/proxy.jsp"
+    }
+}

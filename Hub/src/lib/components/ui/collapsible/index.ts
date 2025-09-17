@@ -1,6 +1,10 @@
-import Root from "./collapsible.svelte";
-import Trigger from "./collapsible-trigger.svelte";
-import Content from "./collapsible-content.svelte";
+/*
+	Installed from @ieedan/shadcn-svelte-extras
+*/
+
+import Root from './collapsible.svelte';
+import Trigger from './collapsible-trigger.svelte';
+import Content from './collapsible-content.svelte';
 
 export {
 	Root,
@@ -9,5 +13,5 @@ export {
 	//
 	Root as Collapsible,
 	Content as CollapsibleContent,
-	Trigger as CollapsibleTrigger,
+	Trigger as CollapsibleTrigger
 };

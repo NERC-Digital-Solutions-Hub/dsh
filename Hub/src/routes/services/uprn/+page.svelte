@@ -4,17 +4,23 @@
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
 
-	let portalItemId = '';
+	let portalUrl = '';
+	let url = '';
+	let portalId = '';
+	let proxy: any = null;
 
 	onMount(async () => {
 		let appConfig = await fetch(`${base}/app-config.json`).then((res) => res.json()); // TODO: use a store.
-		portalItemId = appConfig.portalItemId;
+		portalUrl = appConfig.portalUrl;
+		url = appConfig.url;
+		portalId = appConfig.portalItemId;
+		proxy = appConfig.proxy;
 	});
 </script>
 
 <div class="map-section">
-	{#if portalItemId}
-		<SvelteMapView portalId={portalItemId} />
+	{#if portalId}
+		<SvelteMapView {portalUrl} {portalId} {proxy} />
 	{:else}
 		<p>Loading map...</p>
 	{/if}

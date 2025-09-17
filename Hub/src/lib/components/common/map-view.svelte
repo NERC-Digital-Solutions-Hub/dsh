@@ -4,21 +4,37 @@
 	import { browser } from '$app/environment';
 	import type MapView from '@arcgis/core/views/MapView';
 	import DropDownPanel from '$lib/components/common/drop-down-panel.svelte';
+	import * as TreeView from '$lib/components/ui/tree-view/index.js';
+	import ArgGISTreeView from '$lib/components/common/arcgis-tree-view.svelte';
+	import { addProxyRule } from '@arcgis/core/core/urlUtils.js';
+	import ArcgisTreeView from '$lib/components/common/arcgis-tree-view.svelte';
 
 	type Props = {
+		portalUrl?: string | null; // ArcGIS Online portal URL
 		portalId?: string | null; // ArcGIS Online portal item ID
+		url?: string | null; // Direct URL to a map service
+		proxy?: Proxy | null; // Proxy configuration
 		fallbackBasemap?: string; // Fallback basemap if no portal ID
 		zoom?: number; // Initial zoom level
 		center?: [number, number]; // Initial center coordinates [longitude, latitude]
 	};
 
+	type Proxy = {
+		urlPrefix: string;
+		proxyUrl: string;
+	};
+
 	const {
+		portalUrl = null,
 		portalId = null,
+		url = null,
+		proxy = null,
 		fallbackBasemap = 'streets-vector',
 		zoom = undefined,
 		center = undefined
 	}: Props = $props();
 
+	let webMap: __esri.WebMap | null = $state<__esri.WebMap | null>(null);
 	let mapContainer: string | HTMLDivElement | null = null;
 	let mapView: MapView | null = $state<MapView | null>(null);
 	let panel = $state<HTMLElement | null>(null);
@@ -32,15 +48,36 @@
 			return; // Ensure this runs only in the browser
 		}
 
+		if (portalUrl) {
+			const esriConfig = await import('@arcgis/core/config.js');
+			esriConfig.default.portalUrl = portalUrl as string;
+			console.log(esriConfig);
+
+			if (proxy) {
+				const urlUtils = await import('@arcgis/core/core/urlUtils.js');
+				console.log(urlUtils);
+				urlUtils.addProxyRule({
+					urlPrefix: proxy?.urlPrefix as string,
+					proxyUrl: proxy?.proxyUrl as string
+				});
+			}
+		}
+
 		try {
 			// Import required modules
-			const [{ default: MapView }, { default: Map }, { default: WebMap }, { default: PortalItem }] =
-				await Promise.all([
-					import('@arcgis/core/views/MapView'),
-					import('@arcgis/core/Map'),
-					import('@arcgis/core/WebMap'),
-					import('@arcgis/core/portal/PortalItem')
-				]);
+			const [
+				{ default: MapView },
+				{ default: Map },
+				{ default: WebMap },
+				{ default: PortalItem },
+				{ default: Layer }
+			] = await Promise.all([
+				import('@arcgis/core/views/MapView'),
+				import('@arcgis/core/Map'),
+				import('@arcgis/core/WebMap'),
+				import('@arcgis/core/portal/PortalItem'),
+				import('@arcgis/core/layers/Layer')
+			]);
 
 			await import('@arcgis/core/assets/esri/themes/light/main.css');
 
@@ -54,9 +91,19 @@
 				});
 
 				// Create a WebMap from the portal item
-				map = new WebMap({
+				webMap = new WebMap({
 					portalItem: portalItem
 				});
+				map = webMap;
+			} else if (url) {
+				const layer = await Layer.fromArcGISServerUrl({ url });
+
+				map = new Map({
+					basemap: fallbackBasemap,
+					layers: [layer]
+				});
+
+				console.log('Map service loaded from URL:', url);
 			} else {
 				// Fallback to a basic map with specified basemap
 				map = new Map({
@@ -123,9 +170,11 @@
 
 <div class="map-view" bind:this={mapContainer}></div>
 
-<!-- <div bind:this={panel}>
-	<DropDownPanel />
-</div> -->
+<div bind:this={panel}>
+	<DropDownPanel header="Treeview" className="w-100">
+		<ArcgisTreeView {webMap} />
+	</DropDownPanel>
+</div>
 
 <style>
 	.map-view {
