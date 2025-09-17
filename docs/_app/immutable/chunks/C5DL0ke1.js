@@ -1,1 +1,0 @@
-import{r as i,a as t,b as h,i as o}from"./-Rap9rN9.js";import{a as l}from"./DJt6mz6N.js";const c=r=>{let e=class extends r{initialize(){this.addHandles(l((()=>this.layer),"refresh",(s=>{this.doRefresh(s.dataChanged).catch((a=>{h(a)||o.getLogger(this).error(a)}))})),"RefreshableLayerView")}};return e=i([t("esri.views.layers.RefreshableLayerView")],e),e};export{c as i};

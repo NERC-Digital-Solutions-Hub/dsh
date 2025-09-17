@@ -1,0 +1,1 @@
+import{I as n}from"./IsMQoFqb.js";import{f as p,u,s as d}from"./DDx-Un6v.js";import{p as c}from"./DUMTWcRe.js";async function y(o,r,e){const t=p(o),i={...r.toJSON(),f:"json"},s=u({...t.query,...i}),a=d(s,{...e,method:"post"}),m=`${t.path}/unitIdentifiers/resize`,{data:f}=await n(m,a);return c.fromJSON(f)}export{y as resize};

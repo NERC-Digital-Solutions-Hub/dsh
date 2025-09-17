@@ -1,1 +1,0 @@
-import{H as p}from"./-Rap9rN9.js";import{f as n,u as s,s as u}from"./-1lFHQHv.js";import{p as $}from"./CMfMF9b5.js";async function y(r,o,a){const t=n(r),c={...o.toJSON(),f:"json"},e=s({...t.query,...c}),i=u(e,{...a,method:"post"}),f=`${t.path}/circuits/create`,{data:m}=await p(f,i);return $.fromJSON(m)}export{y as createCircuit};
