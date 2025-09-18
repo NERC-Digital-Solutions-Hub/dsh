@@ -1,0 +1,190 @@
+<script lang="ts">
+	import * as TreeView from '$lib/components/ui/tree-view/index.js';
+	import Node from './arcgis-tree-view-node.svelte';
+
+	type TreeNode = {
+		id: string;
+		name: string;
+		layer: __esri.Layer | __esri.Sublayer;
+		children?: TreeNode[];
+	};
+
+	type Props = { webMap?: __esri.WebMap | null };
+	const { webMap = null }: Props = $props();
+
+	let layerTree: TreeNode[] = $state<TreeNode[]>([]);
+	let visibilityState: Map<string, boolean> = $state(new Map());
+
+	$effect(() => {
+		if (!webMap) {
+			layerTree = [];
+			return;
+		}
+
+		let cancelled = false;
+
+		const fetchData = async () => {
+			await webMap.when();
+			const tree = await buildTreeFromMap(webMap);
+			layerTree = tree;
+			initializeVisibilityState(tree);
+		};
+
+		fetchData();
+	});
+
+	function initializeVisibilityState(nodes: TreeNode[]) {
+		const newVisibilityState = new Map<string, boolean>();
+
+		function addNodeVisibility(nodeList: TreeNode[]) {
+			for (const node of nodeList) {
+				newVisibilityState.set(node.id, node.layer.visible);
+				if (node.children && node.children.length) {
+					addNodeVisibility(node.children);
+				}
+			}
+		}
+
+		addNodeVisibility(nodes);
+		visibilityState = newVisibilityState;
+	}
+
+	async function buildTreeFromMap(map: __esri.Map): Promise<TreeNode[]> {
+		await Promise.all(map.layers.map((layer) => layer.load?.().catch(() => {})));
+
+		const nodes: TreeNode[] = [];
+		for (const layer of map.layers.toArray()) {
+			nodes.push(await layerToNode(layer));
+		}
+		return nodes;
+	}
+
+	async function layerToNode(layer: __esri.Layer): Promise<TreeNode> {
+		const base: TreeNode = {
+			id: layer.uid,
+			name: layer.title as string,
+			layer: layer,
+			children: []
+		};
+
+		if (layer.type === 'group') {
+			const g = layer as __esri.GroupLayer;
+			await Promise.all(g.layers.map((c) => c.load?.().catch(() => {})));
+			base.children = await Promise.all(g.layers.toArray().map((c) => layerToNode(c)));
+			return base;
+		}
+
+		// MapImageLayer / WMSLayer -> dive into .sublayers (which can be nested)
+		if (layer.type === 'map-image' || layer.type === 'wms') {
+			const hasSublayers =
+				(layer as __esri.MapImageLayer | __esri.WMSLayer).sublayers &&
+				(layer as any).sublayers.length > 0;
+			if (hasSublayers) {
+				base.children = await sublayerCollectionToNodes(
+					(layer as __esri.MapImageLayer | __esri.WMSLayer)
+						.sublayers as __esri.Collection<__esri.Sublayer>
+				);
+			}
+			return base;
+		}
+
+		return base;
+	}
+
+	async function sublayerCollectionToNodes(
+		sublayers: __esri.Collection<__esri.Sublayer>
+	): Promise<TreeNode[]> {
+		await Promise.all(sublayers.map((subLayer) => subLayer.load?.().catch(() => {})));
+
+		const nodes: TreeNode[] = [];
+		for (const subLayer of sublayers.toArray()) {
+			nodes.push(await sublayerToNode(subLayer));
+		}
+		return nodes;
+	}
+
+	async function sublayerToNode(subLayer: __esri.Sublayer): Promise<TreeNode> {
+		const node: TreeNode = {
+			id: subLayer.uid,
+			name: subLayer.title as string,
+			layer: subLayer,
+			children: []
+		};
+
+		if (subLayer.sublayers && subLayer.sublayers.length) {
+			node.children = await sublayerCollectionToNodes(subLayer.sublayers);
+		}
+		return node;
+	}
+
+	function handleNodeVisibleToggle(node: TreeNode, visible: boolean) {
+		if (!node || !node.layer || !('visible' in node.layer)) {
+			return;
+		}
+
+		node.layer.visible = visible;
+		visibilityState.set(node.id, visible);
+
+		const parentLayer = node.layer.parent as __esri.GroupLayer;
+		if (parentLayer && parentLayer.type === 'group') {
+			function tryActivateParentLayer(layer: __esri.Layer) {
+				if (layer.type !== 'group') {
+					return;
+				}
+
+				const groupLayer = layer as __esri.GroupLayer;
+				if (!groupLayer.visible && groupLayer.layers.some((layer) => layer.visible)) {
+					groupLayer.visible = true;
+					visibilityState.set(groupLayer.uid, true);
+				}
+
+				const groupParentLayer = groupLayer.parent as __esri.GroupLayer;
+				if (groupParentLayer && groupParentLayer.type === 'group') {
+					tryActivateParentLayer(groupParentLayer);
+				}
+			}
+
+			let anyChildVisible = false;
+			for (const child of parentLayer.layers) {
+				if (child.visible) {
+					anyChildVisible = true;
+					break;
+				}
+			}
+
+			if (anyChildVisible && visible) {
+				parentLayer.visible = anyChildVisible;
+				visibilityState.set(parentLayer.uid, anyChildVisible);
+				tryActivateParentLayer(parentLayer);
+			}
+
+			const currentParentVisibility = visibilityState.get(parentLayer.uid) ?? parentLayer.visible;
+			if (currentParentVisibility !== anyChildVisible && !anyChildVisible) {
+				parentLayer.visible = anyChildVisible;
+				visibilityState.set(parentLayer.uid, anyChildVisible);
+			}
+		}
+
+		visibilityState = new Map(visibilityState); // Force reactivity update by creating a new Map
+	}
+
+	function getNodeVisibility(nodeId: string): boolean | undefined {
+		return visibilityState.get(nodeId);
+	}
+</script>
+
+<TreeView.Root>
+	{#each layerTree as node (node.id)}
+		<Node
+			{node}
+			onNodeClick={(n) => console.log('clicked', n)}
+			onNodeVisibilityChange={handleNodeVisibleToggle}
+			{getNodeVisibility}
+			depth={0}
+			useLayerTypeIcon={true}
+		/>
+	{/each}
+</TreeView.Root>
+
+<style>
+</style>

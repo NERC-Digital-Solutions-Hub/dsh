@@ -4,10 +4,7 @@
 	import { browser } from '$app/environment';
 	import type MapView from '@arcgis/core/views/MapView';
 	import DropDownPanel from '$lib/components/common/drop-down-panel.svelte';
-	import * as TreeView from '$lib/components/ui/tree-view/index.js';
-	import ArgGISTreeView from '$lib/components/common/arcgis-tree-view.svelte';
-	import { addProxyRule } from '@arcgis/core/core/urlUtils.js';
-	import ArcgisTreeView from '$lib/components/common/arcgis-tree-view.svelte';
+	import ArcgisTreeView from '$lib/components/common/arcgis-tree-view/arcgis-tree-view.svelte';
 
 	type Props = {
 		portalUrl?: string | null; // ArcGIS Online portal URL
@@ -171,7 +168,7 @@
 <div class="map-view" bind:this={mapContainer}></div>
 
 <div bind:this={panel}>
-	<DropDownPanel header="Treeview" className="w-100">
+	<DropDownPanel header="Treeview" className="w-120">
 		<ArcgisTreeView {webMap} />
 	</DropDownPanel>
 </div>
