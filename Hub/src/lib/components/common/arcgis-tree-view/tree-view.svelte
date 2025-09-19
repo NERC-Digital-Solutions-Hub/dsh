@@ -1,13 +1,7 @@
 <script lang="ts">
 	import * as TreeView from '$lib/components/ui/tree-view/index.js';
-	import Node from './arcgis-tree-view-node.svelte';
-
-	type TreeNode = {
-		id: string;
-		name: string;
-		layer: __esri.Layer | __esri.Sublayer;
-		children?: TreeNode[];
-	};
+	import Node from './node.svelte';
+	import type { TreeNode } from './types.js';
 
 	type Props = { webMap?: __esri.WebMap | null };
 	const { webMap = null }: Props = $props();
@@ -20,8 +14,6 @@
 			layerTree = [];
 			return;
 		}
-
-		let cancelled = false;
 
 		const fetchData = async () => {
 			await webMap.when();
@@ -50,8 +42,6 @@
 	}
 
 	async function buildTreeFromMap(map: __esri.Map): Promise<TreeNode[]> {
-		await Promise.all(map.layers.map((layer) => layer.load?.().catch(() => {})));
-
 		const nodes: TreeNode[] = [];
 		for (const layer of map.layers.toArray()) {
 			nodes.push(await layerToNode(layer));
@@ -69,7 +59,6 @@
 
 		if (layer.type === 'group') {
 			const g = layer as __esri.GroupLayer;
-			await Promise.all(g.layers.map((c) => c.load?.().catch(() => {})));
 			base.children = await Promise.all(g.layers.toArray().map((c) => layerToNode(c)));
 			return base;
 		}
@@ -94,8 +83,6 @@
 	async function sublayerCollectionToNodes(
 		sublayers: __esri.Collection<__esri.Sublayer>
 	): Promise<TreeNode[]> {
-		await Promise.all(sublayers.map((subLayer) => subLayer.load?.().catch(() => {})));
-
 		const nodes: TreeNode[] = [];
 		for (const subLayer of sublayers.toArray()) {
 			nodes.push(await sublayerToNode(subLayer));

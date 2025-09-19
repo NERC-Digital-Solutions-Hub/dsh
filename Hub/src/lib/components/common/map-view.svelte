@@ -3,124 +3,60 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
 	import type MapView from '@arcgis/core/views/MapView';
-	import DropDownPanel from '$lib/components/common/drop-down-panel.svelte';
-	import ArcgisTreeView from '$lib/components/common/arcgis-tree-view/arcgis-tree-view.svelte';
+	import type { Snippet } from 'svelte';
+
+	type UIPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'manual';
 
 	type Props = {
-		portalUrl?: string | null; // ArcGIS Online portal URL
-		portalId?: string | null; // ArcGIS Online portal item ID
-		url?: string | null; // Direct URL to a map service
-		proxy?: Proxy | null; // Proxy configuration
-		fallbackBasemap?: string; // Fallback basemap if no portal ID
-		zoom?: number; // Initial zoom level
-		center?: [number, number]; // Initial center coordinates [longitude, latitude]
-	};
-
-	type Proxy = {
-		urlPrefix: string;
-		proxyUrl: string;
+		webMap?: __esri.WebMap | null;
+		panelPosition?: UIPosition;
+		menuPosition?: UIPosition;
+		panel?: Snippet;
+		menu?: Snippet;
 	};
 
 	const {
-		portalUrl = null,
-		portalId = null,
-		url = null,
-		proxy = null,
-		fallbackBasemap = 'streets-vector',
-		zoom = undefined,
-		center = undefined
+		webMap = null,
+		panelPosition = 'top-left',
+		menuPosition = 'top-right',
+		panel,
+		menu
 	}: Props = $props();
 
-	let webMap: __esri.WebMap | null = $state<__esri.WebMap | null>(null);
 	let mapContainer: string | HTMLDivElement | null = null;
 	let mapView: MapView | null = $state<MapView | null>(null);
-	let panel = $state<HTMLElement | null>(null);
+	let panelContainer = $state<HTMLElement | null>(null);
+	let menuContainer = $state<HTMLElement | null>(null);
 
-	export function getMapView() {
-		return mapView;
-	}
+	const fallbackBasemap = 'streets-vector';
 
 	onMount(async () => {
 		if (!browser) {
 			return; // Ensure this runs only in the browser
 		}
 
-		if (portalUrl) {
-			const esriConfig = await import('@arcgis/core/config.js');
-			esriConfig.default.portalUrl = portalUrl as string;
-			console.log(esriConfig);
-
-			if (proxy) {
-				const urlUtils = await import('@arcgis/core/core/urlUtils.js');
-				console.log(urlUtils);
-				urlUtils.addProxyRule({
-					urlPrefix: proxy?.urlPrefix as string,
-					proxyUrl: proxy?.proxyUrl as string
-				});
-			}
-		}
-
 		try {
 			// Import required modules
-			const [
-				{ default: MapView },
-				{ default: Map },
-				{ default: WebMap },
-				{ default: PortalItem },
-				{ default: Layer }
-			] = await Promise.all([
-				import('@arcgis/core/views/MapView'),
-				import('@arcgis/core/Map'),
-				import('@arcgis/core/WebMap'),
-				import('@arcgis/core/portal/PortalItem'),
-				import('@arcgis/core/layers/Layer')
-			]);
+			const [{ default: MapView }] = await Promise.all([import('@arcgis/core/views/MapView')]);
 
 			await import('@arcgis/core/assets/esri/themes/light/main.css');
 
-			let map;
-
-			// Use portal ID if provided, otherwise create a basic map
-			if (portalId) {
-				// Create a portal item from the portal ID
-				const portalItem = new PortalItem({
-					id: portalId
-				});
-
-				// Create a WebMap from the portal item
-				webMap = new WebMap({
-					portalItem: portalItem
-				});
-				map = webMap;
-			} else if (url) {
-				const layer = await Layer.fromArcGISServerUrl({ url });
-
-				map = new Map({
-					basemap: fallbackBasemap,
-					layers: [layer]
-				});
-
-				console.log('Map service loaded from URL:', url);
-			} else {
-				// Fallback to a basic map with specified basemap
-				map = new Map({
-					basemap: fallbackBasemap
-				});
-			}
-
 			mapView = new MapView({
-				container: mapContainer,
-				map: map,
-				zoom: zoom,
-				center: center
+				container: mapContainer
 			});
 
 			// Wait for the map to load
 			await mapView.when();
-			mapView.ui.move('zoom', 'top-right');
 
-			if (panel) {
-				mapView.ui.add(panel as HTMLElement, 'top-left');
+			mapView.ui.move('zoom', 'bottom-right');
+
+			// Add UI elements to the map if they exist and positioning is not manual
+			if (panelContainer && panelPosition !== 'manual') {
+				mapView.ui.add(panelContainer as HTMLElement, panelPosition);
+			}
+
+			if (menuContainer && menuPosition !== 'manual') {
+				mapView.ui.add(menuContainer as HTMLElement, menuPosition);
 			}
 
 			console.log('Map loaded successfully');
@@ -140,9 +76,7 @@
 
 				mapView = new MapView({
 					container: mapContainer,
-					map: fallbackMap,
-					zoom: zoom,
-					center: center
+					map: fallbackMap
 				});
 
 				console.log('Fallback map loaded');
@@ -150,6 +84,26 @@
 				console.error('Error loading fallback map:', fallbackError);
 			}
 		}
+	});
+
+	$effect(() => {
+		if (!mapView || !webMap) {
+			return;
+		}
+
+		const load = async () => {
+			if (mapView) {
+				try {
+					await mapView.when();
+					console.log('MapView updated with new webMap');
+				} catch (error) {
+					console.error('Error updating MapView with new webMap:', error);
+				}
+			}
+		};
+
+		mapView.map = webMap;
+		load();
 	});
 
 	// Cleanup function
@@ -167,11 +121,29 @@
 
 <div class="map-view" bind:this={mapContainer}></div>
 
-<div bind:this={panel}>
-	<DropDownPanel header="Treeview" className="w-120">
-		<ArcgisTreeView {webMap} />
-	</DropDownPanel>
-</div>
+{#if panel && panelPosition !== 'manual'}
+	<div bind:this={panelContainer} class="esri-ui-element">
+		{@render panel()}
+	</div>
+{/if}
+
+{#if menu && menuPosition !== 'manual'}
+	<div bind:this={menuContainer} class="esri-ui-element">
+		{@render menu()}
+	</div>
+{/if}
+
+{#if panel && panelPosition === 'manual'}
+	<div class="manual-panel-container">
+		{@render panel()}
+	</div>
+{/if}
+
+{#if menu && menuPosition === 'manual'}
+	<div class="manual-menu-container">
+		{@render menu()}
+	</div>
+{/if}
 
 <style>
 	.map-view {
@@ -179,5 +151,27 @@
 		min-height: 0;
 		width: 100%;
 		z-index: 1;
+	}
+
+	.esri-ui-element {
+		/* Base class for ArcGIS UI elements */
+		position: relative;
+	}
+
+	.manual-panel-container,
+	.manual-menu-container {
+		/* For manual positioning, these containers can be styled as needed */
+		position: absolute;
+		z-index: 10;
+	}
+
+	.manual-panel-container {
+		top: 10px;
+		left: 10px;
+	}
+
+	.manual-menu-container {
+		top: 10px;
+		right: 10px;
 	}
 </style>
