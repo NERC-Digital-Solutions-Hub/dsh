@@ -10,6 +10,7 @@
 
 	let webMap: __esri.WebMap | null = $state<__esri.WebMap | null>(null);
 	let selectionLayers: string[] = $state<string[]>([]);
+	let treeviewOrder: { name: string }[] | null = $state<{ name: string }[] | null>(null);
 
 	onMount(async () => {
 		let appConfig = await fetch(`${base}/app-config.json`).then((res) => res.json()); // TODO: use a store.
@@ -17,6 +18,8 @@
 		const portalId = appConfig.portalItemId;
 		const proxy = appConfig.proxy;
 		selectionLayers = appConfig.selectionLayers;
+		treeviewOrder = appConfig.treeviewOrder || null;
+
 		console.log('Selection Layers:', $state.snapshot(selectionLayers));
 
 		await webmapStore.initializeAsync({
@@ -32,7 +35,7 @@
 
 {#snippet panelContent()}
 	<DropDownPanel header="Treeview" className="w-120">
-		<ArcgisTreeView {webMap} />
+		<ArcgisTreeView {webMap} {treeviewOrder} />
 	</DropDownPanel>
 {/snippet}
 

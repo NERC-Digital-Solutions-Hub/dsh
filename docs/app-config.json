@@ -5,5 +5,35 @@
     "proxy": {
         "urlPrefix": "https://nercdsh.dev.azure.manchester.ac.uk",
         "proxyUrl": "/proxy/Java/proxy.jsp"
-    }
+    },
+    "treeviewOrder": [
+        {
+            "name": "UPRN (05/2024)"
+        },
+        {
+            "name": "ClimateJust"
+        },
+        {
+            "name": "Noise Levels"
+        },
+        {
+            "name": "Modelled Background Pollution"
+        },
+        {
+            "name": "Carbon Storage"
+        },
+        {
+            "name": "Ellenberg Vegetation Indicators"
+        },
+        {
+            "name": "AQREAN Surface Level"
+        },
+        {
+            "name": "AQREAN Surface Level - Bias Corrected"
+        }
+    ],
+    "selectionLayers": [
+        "Administrative Areas",
+        "Tiling Schemes"
+    ]
 }

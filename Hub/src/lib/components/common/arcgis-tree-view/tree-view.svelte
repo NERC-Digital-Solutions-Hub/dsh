@@ -3,8 +3,15 @@
 	import Node from './node.svelte';
 	import type { TreeNode } from './types.js';
 
-	type Props = { webMap?: __esri.WebMap | null };
-	const { webMap = null }: Props = $props();
+	type TreeviewOrder = {
+		name: string;
+	};
+
+	type Props = {
+		webMap?: __esri.WebMap | null;
+		treeviewOrder?: TreeviewOrder[] | null;
+	};
+	const { webMap = null, treeviewOrder = null }: Props = $props();
 
 	let layerTree: TreeNode[] = $state<TreeNode[]>([]);
 	let visibilityState: Map<string, boolean> = $state(new Map());
@@ -46,7 +53,14 @@
 		for (const layer of map.layers.toArray()) {
 			nodes.push(await layerToNode(layer));
 		}
-		return nodes;
+
+		const orderedNodes = treeviewOrder
+			? treeviewOrder
+					.map((order) => nodes.find((n) => n.name === order.name))
+					.filter((n): n is TreeNode => n !== undefined)
+			: nodes;
+
+		return orderedNodes;
 	}
 
 	async function layerToNode(layer: __esri.Layer): Promise<TreeNode> {

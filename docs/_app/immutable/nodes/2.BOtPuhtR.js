@@ -1,0 +1,1 @@
+import"../chunks/DsnmJJEf.js";import"../chunks/Be2tPlqW.js";import{f as a,a as i,n}from"../chunks/BAcBkKCc.js";var p=a("<h1>Digital Solutions Hub</h1> <p>Welcome to the Digital Solutions Hub!</p>",1);function l(o){var t=p();n(2),i(o,t)}export{l as component};

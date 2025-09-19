@@ -1,1 +1,0 @@
-import{I as m}from"./CtNvT6K6.js";import{f as p,u,s as d}from"./BgJlXcGt.js";import{p as c}from"./CBadTvEO.js";async function y(o,r,a){const t=p(o),i={...r.toJSON(),f:"json"},n=u({...t.query,...i}),s=d(n,{...a,method:"post"}),e=`${t.path}/unitIdentifiers/insertGap`,{data:f}=await m(e,s);return c.fromJSON(f)}export{y as insertGap};
