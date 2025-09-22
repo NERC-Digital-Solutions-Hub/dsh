@@ -3,6 +3,8 @@
 	import Node from './node.svelte';
 	import type { TreeNode } from './types.js';
 	import type { TreeviewConfig } from '$lib/utils/app-config-provider.js';
+	import { Toaster } from '$lib/components/ui/sonner';
+	import { toast } from 'svelte-sonner';
 
 	type Props = {
 		webMap?: __esri.WebMap | null;
@@ -11,6 +13,20 @@
 	const { webMap = null, treeviewConfig = null }: Props = $props();
 
 	let layerTree: TreeNode[] = $state<TreeNode[]>([]);
+	const treeNodeLookup = $derived.by(() => {
+		const lookup = new Map<string, TreeNode>();
+		function addToLookup(nodes: TreeNode[]) {
+			for (const node of nodes) {
+				lookup.set(node.id, node);
+				if (node.children && node.children.length) {
+					addToLookup(node.children);
+				}
+			}
+		}
+		addToLookup(layerTree);
+		return lookup;
+	});
+
 	let visibilityState: Map<string, boolean> = $state(new Map());
 
 	$effect(() => {
@@ -34,7 +50,8 @@
 
 		function addNodeVisibility(nodeList: TreeNode[]) {
 			for (const node of nodeList) {
-				newVisibilityState.set(node.id, node.layer.visible);
+				node.layer.visible = false;
+				newVisibilityState.set(node.id, false);
 				if (node.children && node.children.length) {
 					addNodeVisibility(node.children);
 				}
@@ -120,8 +137,27 @@
 			return;
 		}
 
+		for (const [key] of visibilityState) {
+			const state = visibilityState.get(key);
+			if (!state) {
+				continue;
+			}
+
+			visibilityState.set(key, false);
+			const currentNode = treeNodeLookup.get(key);
+			console.log('currentNode', $state.snapshot(currentNode));
+			console.log('key', key);
+			if (!currentNode) {
+				continue;
+			}
+
+			currentNode.layer.visible = false;
+		}
+
 		node.layer.visible = visible;
 		visibilityState.set(node.id, visible);
+		console.log('node.layer.title', node.layer.title);
+		toast.success(`'${node.layer.title}' Selected`);
 
 		const parentLayer = node.layer.parent as __esri.GroupLayer;
 		if (parentLayer && parentLayer.type === 'group') {
@@ -170,6 +206,8 @@
 		return visibilityState.get(nodeId);
 	}
 </script>
+
+<Toaster />
 
 <TreeView.Root>
 	{#each layerTree as node (node.id)}

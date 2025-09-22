@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { Toaster } from '$lib/components/ui/sonner';
 	import { toast } from 'svelte-sonner';
+	import { type TreeviewConfig } from '$lib/utils/app-config-provider.js';
 	import * as Menubar from '$lib/components/ui/menubar/index.js';
 
 	type Props = {
 		webMap?: __esri.WebMap | null;
-		selectionLayers?: string[];
+		treeviewConfig?: TreeviewConfig[] | null;
 		onLayerSelected?: (layer: __esri.Layer) => void;
 	};
 
@@ -18,7 +19,7 @@
 		children: LayerItem[];
 	}
 
-	const { webMap = null, selectionLayers = [], onLayerSelected = () => {} }: Props = $props();
+	const { webMap = null, treeviewConfig = [], onLayerSelected = () => {} }: Props = $props();
 
 	let items = $state<GroupLayerItem[]>([]);
 	let radioSelection = $state<string>('');
@@ -69,7 +70,8 @@
 
 		const groups = webMap.layers.filter(
 			(layer): layer is __esri.GroupLayer =>
-				layer.type === 'group' && selectionLayers.includes(layer.title as string)
+				layer.type === 'group' &&
+				(treeviewConfig?.map((config) => config.name) ?? []).includes(layer.title as string)
 		);
 
 		console.log('Filtered group layers for selection:', groups);

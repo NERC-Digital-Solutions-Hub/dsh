@@ -1,4 +1,4 @@
-export type WebmapStoreParams = {
+export type WebMapStoreParams = {
 	portalUrl?: string | null;
 	itemId: string;
 	proxy?: Proxy | null;
@@ -12,7 +12,7 @@ export type Proxy = {
 /**
  * Store for managing the webmap.
  */
-class WebmapStore {
+export class WebMapStore {
 	public data: __esri.WebMap | null = $state<__esri.WebMap | null>(null);
 	public loading: boolean = $state<boolean>(false);
 	public error: string | null = $state<string | null>(null);
@@ -21,17 +21,24 @@ class WebmapStore {
 	 * Initializes the webmap from a portal URL and item ID.
 	 * @param params - The parameters for initializing the webmap.
 	 */
-	async initializeAsync(params: WebmapStoreParams): Promise<void> {
+	async initializeAsync(params: WebMapStoreParams): Promise<void> {
 		if (this.data) {
 			return;
 		}
 
 		this.loading = true;
 		this.error = null;
-		const { portalUrl, itemId, proxy } = params;
-		await this.configurePortalAsync(portalUrl, proxy);
-		await this.loadwebmapAsync(itemId);
-		this.loading = false;
+
+		try {
+			const { portalUrl, itemId, proxy } = params;
+			await this.configurePortalAsync(portalUrl, proxy);
+			await this.loadwebmapAsync(itemId);
+		} catch (error) {
+			console.error('Error initializing webmap:', error);
+			this.error = (error as Error).message;
+		} finally {
+			this.loading = false;
+		}
 	}
 
 	/**
@@ -105,8 +112,3 @@ class WebmapStore {
 		return this.data;
 	}
 }
-
-/**
- * Global webmap store instance
- */
-export const webmapStore = new WebmapStore();

@@ -4,6 +4,7 @@
 	import { browser } from '$app/environment';
 	import type MapView from '@arcgis/core/views/MapView';
 	import type { Snippet } from 'svelte';
+	import { watch } from '@arcgis/core/core/reactiveUtils';
 
 	type UIPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'manual';
 
@@ -42,8 +43,18 @@
 			await import('@arcgis/core/assets/esri/themes/light/main.css');
 
 			mapView = new MapView({
-				container: mapContainer
+				container: mapContainer,
+				popupEnabled: false
 			});
+
+			// watch(
+			// 	() => mapView?.popup?.viewModel?.active,
+			// 	(active) => {
+			// 		if (active) {
+			// 			mapView?.closePopup();
+			// 		}
+			// 	}
+			// );
 
 			// Wait for the map to load
 			await mapView.when();
@@ -154,13 +165,11 @@
 	}
 
 	.esri-ui-element {
-		/* Base class for ArcGIS UI elements */
 		position: relative;
 	}
 
 	.manual-panel-container,
 	.manual-menu-container {
-		/* For manual positioning, these containers can be styled as needed */
 		position: absolute;
 		z-index: 10;
 	}

@@ -3,50 +3,55 @@
 	import DropDownPanel from '$lib/components/common/drop-down-panel.svelte';
 	import ArcgisTreeView from '$lib/components/common/arcgis-tree-view/tree-view.svelte';
 	import ArcgisSelectionLayerMenu from '$lib/components/common/arcgis-selection-layer-menu/menu.svelte';
-	import { getAppConfigAsync, type AppConfig } from '$lib/utils/app-config-provider.js';
+	import {
+		getAppConfigAsync,
+		type AppConfig,
+		type TreeviewConfig
+	} from '$lib/utils/app-config-provider.js';
 	import { onMount } from 'svelte';
-	import { base } from '$app/paths';
-	import { webmapStore, type Proxy } from '$lib/stores/webmap-store.svelte';
+	import { WebMapStore } from '$lib/stores/web-map-store.svelte';
 
-	let webMap: __esri.WebMap | null = $state<__esri.WebMap | null>(null);
-	let selectionLayers: string[] = $state<string[]>([]);
-	let treeviewOrder: { name: string }[] | null = $state<{ name: string }[] | null>(null);
+	const webMapStore = new WebMapStore();
+	let treeviewSelectionAreasConfig: TreeviewConfig[] | null = $state<TreeviewConfig[] | null>(null);
+	let treeviewDataConfig: TreeviewConfig[] | null = $state<TreeviewConfig[] | null>(null);
 
 	onMount(async () => {
-		let appConfig = await fetch(`${base}/app-config.json`).then((res) => res.json()); // TODO: use a store.
+		const appConfig: AppConfig = await getAppConfigAsync();
 		const portalUrl = appConfig.portalUrl;
 		const portalId = appConfig.portalItemId;
 		const proxy = appConfig.proxy;
-		selectionLayers = appConfig.selectionLayers;
-		treeviewOrder = appConfig.treeviewOrder || null;
+		treeviewSelectionAreasConfig = appConfig.treeviewSelectionAreasConfig;
+		treeviewDataConfig = appConfig.treeviewDataConfig || null;
 
-		console.log('Selection Layers:', $state.snapshot(selectionLayers));
+		console.log('Selection Layers:', $state.snapshot(treeviewSelectionAreasConfig));
 
-		await webmapStore.initializeAsync({
+		await webMapStore.initializeAsync({
 			portalUrl: portalUrl,
 			itemId: portalId || '',
 			proxy: proxy
 		});
 
-		webMap = webmapStore.getWebmap();
-		console.log('WebMap loaded', $state.snapshot(webMap));
+		console.log('WebMap loaded', $state.snapshot(webMapStore.data));
 	});
 </script>
 
 {#snippet panelContent()}
 	<DropDownPanel header="Treeview" className="w-120">
-		<ArcgisTreeView {webMap} {treeviewOrder} />
+		<ArcgisTreeView webMap={webMapStore.data} treeviewConfig={treeviewDataConfig} />
 	</DropDownPanel>
 {/snippet}
 
 {#snippet menuContent()}
-	<ArcgisSelectionLayerMenu {webMap} {selectionLayers} />
+	<ArcgisSelectionLayerMenu
+		webMap={webMapStore.data}
+		treeviewConfig={treeviewSelectionAreasConfig}
+	/>
 {/snippet}
 
 <div class="map-section">
-	{#if webMap}
+	{#if webMapStore.data}
 		<SvelteMapView
-			{webMap}
+			webMap={webMapStore.data}
 			panelPosition="top-left"
 			menuPosition="top-right"
 			panel={panelContent}
