@@ -5,6 +5,7 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import ArcgisTreeView from '$lib/components/common/arcgis-tree-view/tree-view.svelte';
 	import ArcgisSoleSelectionTreeView from '$lib/components/common/sole-selection-tree-view/tree-view.svelte';
+	import SelectedAreasMenu from '$lib/components/common/selected-areas-menu/selected-areas-menu.svelte';
 	import {
 		getAppConfigAsync,
 		type AppConfig,
@@ -12,6 +13,7 @@
 	} from '$lib/utils/app-config-provider.js';
 	import { onMount } from 'svelte';
 	import { WebMapStore } from '$lib/stores/web-map-store.svelte';
+	import { selectedAreasStore } from '$lib/stores/selected-areas-store.svelte';
 
 	const webMapStore = new WebMapStore();
 	let treeviewSelectionAreasConfig: TreeviewConfig[] | null = $state<TreeviewConfig[] | null>(null);
@@ -24,6 +26,7 @@
 		const proxy = appConfig.proxy;
 		treeviewSelectionAreasConfig = appConfig.treeviewSelectionAreasConfig;
 		treeviewDataConfig = appConfig.treeviewDataConfig || null;
+		selectedAreasStore.setLayerNameFields(appConfig.selectionLayersNameFields || []);
 
 		console.log('Selection Layers:', $state.snapshot(treeviewSelectionAreasConfig));
 
@@ -72,6 +75,8 @@
 		</Tabs.Root>
 	</div>
 {/snippet}
+
+<SelectedAreasMenu />
 
 <div class="map-section">
 	{#if webMapStore.data}

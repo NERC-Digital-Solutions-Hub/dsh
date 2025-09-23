@@ -1,4 +1,5 @@
 import { base } from '$app/paths';
+import { type LayerNameField } from '$lib/stores/selected-areas-store.svelte';
 
 export type AppConfig = {
 	portalUrl?: string | null;
@@ -6,6 +7,7 @@ export type AppConfig = {
 	proxy?: Proxy | null;
 	treeviewDataConfig: TreeviewConfig[];
 	treeviewSelectionAreasConfig: TreeviewConfig[];
+	selectionLayersNameFields?: LayerNameField[];
 };
 
 export type Proxy = {

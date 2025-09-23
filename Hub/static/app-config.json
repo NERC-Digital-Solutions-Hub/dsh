@@ -38,5 +38,19 @@
         {
             "name": "Tiling Schemes"
         }
+    ],
+    "selectionLayersNameFields": [
+        {"layerName":"Built Up Areas (Dec 22) GB","field":"BUA22NM"},
+        {"layerName":"Lower layer Super Output Areas (Dec 21) - EW Boundaries Fully Clipped V8","field":"LSOA21NM"},
+        {"layerName":"Middle layer Super Output Areas (Dec 21) - EW Boundaries Fully Clipped V6","field":"MSOA21NM"},
+        {"layerName":"Wards (Dec 23) - UK Boundaries Fully Clipped","field":"WD23NM"},
+        {"layerName":"Counties and Unitary Authorities (Dec 23) - UK Boundaries Fully Clipped","field":"CTYUA23NM"},
+        {"layerName":"Upper Tier Local Authorities (Dec 22) - UK Boundaries Fully Clipped","field":"UTLA22NM"},
+        {"layerName":"Tiles 1 km","field":"TILENAME"},
+        {"layerName":"Tiles 5 km","field":"TILENAME"},
+        {"layerName":"Tiles 10 km","field":"TILENAME"},
+        {"layerName":"Tiles 20 km","field":"TILENAME"},
+        {"layerName":"Tiles 50 km","field":"TILENAME"},
+        {"layerName":"Tiles 100 km","field":"TILENAME"}
     ]
 }
