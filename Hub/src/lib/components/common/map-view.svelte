@@ -54,19 +54,22 @@
 			});
 
 			const view: MapView = mapView as MapView;
-			view.highlights.push({
+			const hoverHighlight: any = {
 				name: 'hover',
 				color: 'green',
 				haloOpacity: 1,
 				fillOpacity: 0
-			});
+			};
 
-			view.highlights.push({
+			const selectedHighlight: any = {
 				name: 'selected',
 				color: 'forestgreen',
 				haloOpacity: 0.9,
 				fillOpacity: 0.3
-			});
+			};
+
+			view.highlights.push(hoverHighlight);
+			view.highlights.push(selectedHighlight);
 
 			view.on('pointer-move', async (event) => {
 				const { results } = await view.hitTest(event);
