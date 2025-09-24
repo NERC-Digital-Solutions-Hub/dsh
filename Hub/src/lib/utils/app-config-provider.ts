@@ -17,6 +17,7 @@ export type Proxy = {
 
 export type TreeviewConfig = {
 	name: string;
+	isDownloadable?: boolean;
 };
 
 let appConfig: AppConfig | null = null;

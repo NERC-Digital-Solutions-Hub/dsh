@@ -1,11 +1,12 @@
 <script lang="ts">
-	import SvelteMapView from '$lib/components/common/map-view.svelte';
+	import UprnMapView from '$lib/components/common/map-view.svelte';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import ArcgisTreeView from '$lib/components/common/arcgis-tree-view/tree-view.svelte';
 	import ArcgisSoleSelectionTreeView from '$lib/components/common/sole-selection-tree-view/tree-view.svelte';
 	import SelectedAreasMenu from '$lib/components/common/selected-areas-menu/selected-areas-menu.svelte';
+	import UprnTabBar from '$lib/components/common/uprn-tab-bar.svelte';
 	import {
 		getAppConfigAsync,
 		type AppConfig,
@@ -14,6 +15,9 @@
 	import { onMount } from 'svelte';
 	import { WebMapStore } from '$lib/stores/web-map-store.svelte';
 	import { selectedAreasStore } from '$lib/stores/selected-areas-store.svelte';
+	import ExportMenu from '$lib/components/common/export-menu/export-menu.svelte';
+	import CardFooter from '$lib/components/ui/card/card-footer.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 
 	const webMapStore = new WebMapStore();
 	let treeviewSelectionAreasConfig: TreeviewConfig[] | null = $state<TreeviewConfig[] | null>(null);
@@ -26,7 +30,7 @@
 		const proxy = appConfig.proxy;
 		treeviewSelectionAreasConfig = appConfig.treeviewSelectionAreasConfig;
 		treeviewDataConfig = appConfig.treeviewDataConfig || null;
-		selectedAreasStore.setLayerNameFields(appConfig.selectionLayersNameFields || []);
+		selectedAreasStore.setNameFields(appConfig.selectionLayersNameFields || []);
 
 		console.log('Selection Layers:', $state.snapshot(treeviewSelectionAreasConfig));
 
@@ -42,12 +46,8 @@
 
 {#snippet panelContent()}
 	<div class="flex w-120 min-w-0 flex-col gap-6">
-		<Tabs.Root value="selection-areas" class="w-full">
-			<Tabs.List>
-				<Tabs.Trigger value="selection-areas">Selection Areas</Tabs.Trigger>
-				<Tabs.Trigger value="data">Layers</Tabs.Trigger>
-			</Tabs.List>
-			<Tabs.Content value="selection-areas" class="w-full">
+		<UprnTabBar value="define-areas">
+			<Tabs.Content value="define-areas" class="w-full">
 				<Card.Root class="w-full overflow-hidden">
 					<Card.Content class="card-content overflow-hidden p-0">
 						<ScrollArea class="h-[300px] w-full">
@@ -61,7 +61,7 @@
 					</Card.Content>
 				</Card.Root>
 			</Tabs.Content>
-			<Tabs.Content value="data" class="w-full">
+			<Tabs.Content value="select-data" class="w-full">
 				<Card.Root class="w-full overflow-hidden">
 					<Card.Content class="card-content overflow-hidden p-0">
 						<ScrollArea class="h-[300px] w-full">
@@ -72,7 +72,22 @@
 					</Card.Content>
 				</Card.Root>
 			</Tabs.Content>
-		</Tabs.Root>
+			<Tabs.Content value="export" class="w-full">
+				<Card.Root class="w-full overflow-hidden">
+					<Card.Content class="card-content overflow-hidden p-0">
+						<ScrollArea class="h-[300px] w-full">
+							<div class="min-w-0 space-y-2 overflow-hidden p-4">
+								<ExportMenu />
+							</div>
+						</ScrollArea>
+					</Card.Content>
+					<CardFooter class="flex items-center justify-between">
+						<p class="text-sm text-muted-foreground">Click "Export" to begin the download.</p>
+						<Button>Export</Button>
+					</CardFooter>
+				</Card.Root>
+			</Tabs.Content>
+		</UprnTabBar>
 	</div>
 {/snippet}
 
@@ -80,7 +95,7 @@
 
 <div class="map-section">
 	{#if webMapStore.data}
-		<SvelteMapView
+		<UprnMapView
 			webMap={webMapStore.data}
 			panelPosition="top-left"
 			menuPosition="top-right"

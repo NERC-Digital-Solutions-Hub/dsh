@@ -3,17 +3,17 @@
 	import { toast } from 'svelte-sonner';
 
 	$effect(() => {
-		if (!selectedAreasStore.lastAddedHandle) {
+		if (!selectedAreasStore.lastAddedArea) {
 			return;
 		}
 
 		const invokeToastAsync = async () => {
-			if (selectedAreasStore.lastAddedHandle === null) {
+			if (selectedAreasStore.lastAddedArea === null) {
 				return;
 			}
 
 			const names = await selectedAreasStore.getAreaNamesById([
-				selectedAreasStore.lastAddedHandle.id
+				selectedAreasStore.lastAddedArea.id
 			]);
 			toast.success(`Area added: ${names?.[0]}`);
 		};
@@ -22,17 +22,17 @@
 	});
 
 	$effect(() => {
-		if (!selectedAreasStore.lastRemovedHandle) {
+		if (!selectedAreasStore.lastRemovedArea) {
 			return;
 		}
 
 		const invokeToastAsync = async () => {
-			if (selectedAreasStore.lastRemovedHandle === null) {
+			if (selectedAreasStore.lastRemovedArea === null) {
 				return;
 			}
 
 			const names = await selectedAreasStore.getAreaNamesById([
-				selectedAreasStore.lastRemovedHandle.id
+				selectedAreasStore.lastRemovedArea.id
 			]);
 			toast.success(`Area removed: ${names?.[0]}`);
 		};

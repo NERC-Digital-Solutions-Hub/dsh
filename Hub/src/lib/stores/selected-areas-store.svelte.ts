@@ -1,14 +1,16 @@
+import { SvelteMap } from 'svelte/reactivity';
+
 export type LayerNameField = {
 	layerName: string;
 	field: string;
 };
 
-export type SelectState = {
+export type LayerHighlightState = {
 	featureLayerView: __esri.FeatureLayerView | null;
-	highlightHandles: HandleInfo[];
+	areaInfos: HighlightAreaInfo[];
 };
 
-export type HandleInfo = {
+export type HighlightAreaInfo = {
 	id: number;
 	handle: __esri.Handle;
 };
@@ -17,124 +19,168 @@ export type HandleInfo = {
  * Store for managing the selected areas.
  */
 class SelectedAreasStore {
-	public data = $state<SelectState>({ featureLayerView: null, highlightHandles: [] });
-	public lastAddedHandle = $state<HandleInfo | null>(null);
-	public lastRemovedHandle = $state<HandleInfo | null>(null);
-	public hoveredHandle = $state<HandleInfo | null>(null);
+	public layerHighlightState = $state<LayerHighlightState>({
+		featureLayerView: null,
+		areaInfos: []
+	});
+	public lastAddedArea = $state<HighlightAreaInfo | null>(null);
+	public lastRemovedArea = $state<HighlightAreaInfo | null>(null);
+	public currentHoveredArea = $state<HighlightAreaInfo | null>(null);
 
-	#layerNameFields: LayerNameField[] = [];
+	#nameFields: LayerNameField[] = [];
+	#cachedNames: SvelteMap<string, Map<number, string>> = new SvelteMap<
+		string,
+		Map<number, string>
+	>();
 
-	setLayerNameFields(layerNameFields: LayerNameField[]): void {
-		this.#layerNameFields = layerNameFields;
+	setNameFields(nameFields: LayerNameField[]): void {
+		this.#nameFields = nameFields;
 	}
 
 	setSelectedLayerView(layerView: __esri.FeatureLayerView): void {
-		if (this.data) {
-			this.resetSelectedAreas();
+		if (this.layerHighlightState?.featureLayerView === layerView) {
+			return;
 		}
 
-		this.data = {
-			featureLayerView: layerView,
-			highlightHandles: []
-		};
-	}
-
-	resetSelectedAreas(): void {
-		if (this.data) {
-			this.data.highlightHandles.forEach((handleInfo) => {
-				handleInfo.handle.remove();
+		if (this.layerHighlightState) {
+			// Clear existing highlights but don't reset the entire state
+			this.layerHighlightState.areaInfos.forEach((areaInfo) => {
+				areaInfo.handle.remove();
 			});
 		}
 
-		this.data = {
+		this.layerHighlightState = {
+			featureLayerView: layerView,
+			areaInfos: []
+		};
+	}
+
+	clearSelectedLayerView(): void {
+		if (this.layerHighlightState.featureLayerView === null) {
+			return;
+		}
+
+		this.resetSelectedAreas();
+		this.layerHighlightState.featureLayerView = null;
+	}
+
+	resetSelectedAreas(): void {
+		if (
+			!this.layerHighlightState.featureLayerView &&
+			this.layerHighlightState.areaInfos.length === 0
+		) {
+			return;
+		}
+
+		if (this.layerHighlightState) {
+			this.layerHighlightState.areaInfos.forEach((areaInfo) => {
+				areaInfo.handle.remove();
+			});
+		}
+
+		this.layerHighlightState = {
 			featureLayerView: null,
-			highlightHandles: []
+			areaInfos: []
 		};
 	}
 
 	addSelectedArea(id: number, handle: __esri.Handle): void {
-		if (!this.data) {
+		if (!this.layerHighlightState) {
 			console.warn('SelectedAreasStore: No feature layer view is set.');
 			return;
 		}
 
-		this.data.highlightHandles.push({ id, handle });
-		this.lastAddedHandle = { id, handle };
+		const areaInfo: HighlightAreaInfo = { id, handle };
+		this.layerHighlightState.areaInfos.push(areaInfo);
+		this.lastAddedArea = areaInfo;
 	}
 
 	removeSelectedArea(id: number): void {
-		if (!this.data) {
+		if (!this.layerHighlightState) {
 			console.warn('SelectedAreasStore: No feature layer view is set.');
 			return;
 		}
 
-		const index = this.data.highlightHandles.findIndex((h) => h.id === id);
-		if (index !== -1) {
-			this.lastRemovedHandle = { id, handle: this.data.highlightHandles[index].handle };
-
-			this.data.highlightHandles[index].handle.remove();
-			this.data.highlightHandles.splice(index, 1);
+		const index = this.layerHighlightState.areaInfos.findIndex((areaInfo) => areaInfo.id === id);
+		if (index === -1) {
+			return;
 		}
+
+		this.lastRemovedArea = { id, handle: this.layerHighlightState.areaInfos[index].handle };
+
+		this.layerHighlightState.areaInfos[index].handle.remove();
+		this.layerHighlightState.areaInfos.splice(index, 1);
 	}
 
-	async getAreaNamesById(ids: number[]): Promise<string[] | null> {
-		if (!this.data || !this.data.featureLayerView) {
+	async getAreaNamesById(ids: number[]): Promise<string[]> {
+		if (!this.layerHighlightState?.featureLayerView) return [];
+
+		const nameField = this.getNameFieldForCurrentLayer();
+		if (!nameField) return [];
+
+		const layer = this.layerHighlightState.featureLayerView.layer as __esri.FeatureLayer;
+
+		let cache = this.#cachedNames.get(layer.uid);
+		if (!cache) {
+			cache = new SvelteMap<number, string>();
+			this.#cachedNames.set(layer.uid, cache);
+		}
+
+		const names: (string | undefined)[] = new Array(ids.length);
+		const idToIndex = new SvelteMap<number, number>();
+		const missingIds: number[] = [];
+
+		ids.forEach((id, idx) => {
+			idToIndex.set(id, idx);
+			const cached = cache.get(id);
+			if (cached !== undefined) {
+				names[idx] = cached;
+			} else {
+				missingIds.push(id);
+			}
+		});
+
+		if (missingIds.length === 0) {
+			return names.map((n) => n ?? '');
+		}
+
+		const objectIdField: string = layer.objectIdField;
+		const result = await layer.queryFeatures({
+			objectIds: missingIds,
+			outFields: [nameField, objectIdField],
+			returnGeometry: false
+		});
+
+		for (const feature of result.features) {
+			const id = feature.attributes[objectIdField] as number;
+			const name = feature.attributes[nameField] as string;
+			const idx = idToIndex.get(id);
+			if (idx !== undefined) {
+				names[idx] = name ?? '';
+				cache!.set(id, name ?? '');
+			}
+		}
+
+		return names.map((n) => n ?? '');
+	}
+
+	getNameFieldForCurrentLayer(): string | null {
+		if (!this.layerHighlightState || !this.layerHighlightState.featureLayerView) {
 			return null;
 		}
-		const nameField: string | undefined = this.#layerNameFields.find(
-			(l) => l.layerName === this.data?.featureLayerView?.layer.title
+
+		const nameField: string | undefined = this.#nameFields.find(
+			(l) => l.layerName === this.layerHighlightState?.featureLayerView?.layer.title
 		)?.field;
 
 		if (!nameField) {
 			console.warn(
-				`SelectedAreasStore: No name field configured for layer ${this.data.featureLayerView.layer.title}.`
+				`SelectedAreasStore: No name field configured for layer ${this.layerHighlightState.featureLayerView.layer.title}.`
 			);
 			return null;
 		}
 
-		const layer = this.data.featureLayerView.layer as __esri.FeatureLayer;
-		const result = await layer.queryFeatures({
-			where: '1=1',
-			objectIds: ids,
-			outFields: [nameField]
-		});
-		if (result.features.length === 0) {
-			return null;
-		}
-
-		return result.features.map((feature) => feature.attributes[nameField] as string);
-	}
-
-	async listSelectedAreaNames(): Promise<string[]> {
-		if (!this.data || !this.data.featureLayerView || this.data.highlightHandles.length === 0) {
-			return [];
-		}
-
-		const nameField: string | undefined = this.#layerNameFields.find(
-			(l) => l.layerName === this.data?.featureLayerView?.layer.title
-		)?.field;
-		if (!nameField) {
-			console.warn(
-				`SelectedAreasStore: No name field configured for layer ${this.data.featureLayerView.layer.title}.`
-			);
-			return [];
-		}
-
-		const layer = this.data.featureLayerView.layer as __esri.FeatureLayer;
-		const selectedNames: string[] = [];
-
-		const objectIds: number[] = this.data.highlightHandles.map((h) => h.id);
-		const result = await layer.queryFeatures({
-			where: `1=1`,
-			objectIds: objectIds,
-			outFields: [nameField]
-		});
-
-		result.features.forEach((feature) => {
-			selectedNames.push(feature.attributes[nameField]);
-		});
-
-		return selectedNames;
+		return nameField;
 	}
 }
 

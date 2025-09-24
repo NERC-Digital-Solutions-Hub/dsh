@@ -3,6 +3,7 @@
 	import Node from './node.svelte';
 	import type { TreeNode } from './types.js';
 	import type { TreeviewConfig } from '$lib/utils/app-config-provider.js';
+	import { selectedDataStore } from '$lib/stores/selected-data-store.svelte';
 
 	type Props = {
 		webMap?: __esri.WebMap | null;
@@ -51,13 +52,22 @@
 			nodes.push(await layerToNode(layer));
 		}
 
-		const orderedNodes = treeviewConfig
-			? treeviewConfig
-					.map((config) => nodes.find((n) => n.name === config.name))
-					.filter((n): n is TreeNode => n !== undefined)
+		const filteredNodes = treeviewConfig
+			? nodes.filter((node) => treeviewConfig.some((config) => config.name === node.name))
 			: nodes;
 
-		return orderedNodes;
+		const reverseNodes = (nodes: TreeNode[]) => {
+			nodes.reverse();
+			for (const node of nodes) {
+				if (node.children && node.children.length) {
+					reverseNodes(node.children);
+				}
+			}
+
+			return nodes;
+		};
+
+		return reverseNodes(filteredNodes);
 	}
 
 	async function layerToNode(layer: __esri.Layer): Promise<TreeNode> {
@@ -169,15 +179,36 @@
 	function getNodeVisibility(nodeId: string): boolean | undefined {
 		return visibilityState.get(nodeId);
 	}
+
+	function onDownloadStateChanged(node: TreeNode, isActive: boolean) {
+		if (isActive) {
+			selectedDataStore.SelectedData.add({
+				layerId: node.id,
+				name: node.layer.title || '',
+				fields: null
+			});
+			console.log('Added Selected Data:', $state.snapshot(selectedDataStore.SelectedData));
+		} else {
+			selectedDataStore.SelectedData.forEach((data) => {
+				if (data.layerId === node.id) {
+					selectedDataStore.SelectedData.delete(data);
+				}
+			});
+			console.log('Removed Selected Data:', $state.snapshot(selectedDataStore.SelectedData));
+		}
+	}
 </script>
 
 <TreeView.Root>
 	{#each layerTree as node (node.id)}
 		<Node
+			{treeviewConfig}
 			{node}
-			onNodeClick={(node) => console.log('clicked', $state.snapshot(node))}
+			isDownloadable={treeviewConfig?.find((cfg) => cfg.name === node.name)?.isDownloadable ?? true}
+			onNodeClick={() => {}}
 			onNodeVisibilityChange={handleNodeVisibleToggle}
 			{getNodeVisibility}
+			{onDownloadStateChanged}
 			depth={0}
 			useLayerTypeIcon={true}
 		/>

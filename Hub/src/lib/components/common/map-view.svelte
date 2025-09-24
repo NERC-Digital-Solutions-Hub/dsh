@@ -4,13 +4,9 @@
 	import { browser } from '$app/environment';
 	import type MapView from '@arcgis/core/views/MapView';
 	import type { Snippet } from 'svelte';
-	import { watch } from '@arcgis/core/core/reactiveUtils';
-	import type { Select } from 'bits-ui';
-	import {
-		selectedAreasStore,
-		type SelectState,
-		type HandleInfo
-	} from '$lib/stores/selected-areas-store.svelte';
+	import { mapInteractionStore } from '$lib/stores/map-interaction-store.svelte';
+	import { selectedAreasStore } from '$lib/stores/selected-areas-store.svelte';
+	import { areaSelectionTreeviewStore } from '$lib/stores/area-selection-tree-view-store.svelte';
 
 	type UIPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'manual';
 
@@ -53,120 +49,8 @@
 				popupEnabled: false
 			});
 
-			const view: MapView = mapView as MapView;
-			const hoverHighlight: any = {
-				name: 'hover',
-				color: 'green',
-				haloOpacity: 1,
-				fillOpacity: 0
-			};
-
-			const selectedHighlight: any = {
-				name: 'selected',
-				color: 'forestgreen',
-				haloOpacity: 0.9,
-				fillOpacity: 0.3
-			};
-
-			view.highlights.push(hoverHighlight);
-			view.highlights.push(selectedHighlight);
-
-			view.on('pointer-move', async (event) => {
-				const { results } = await view.hitTest(event);
-				const result = results[0];
-				if (!result) {
-					return;
-				}
-
-				const graphic = (result as any).graphic as __esri.Graphic;
-				const layer = graphic.layer as __esri.FeatureLayer;
-
-				if (!graphic || !layer || graphic.attributes?.[layer.objectIdField] === undefined) {
-					//console.log('No graphic found at pointer location');
-					selectedAreasStore.hoveredHandle?.handle.remove();
-					selectedAreasStore.hoveredHandle = null;
-					return;
-				}
-
-				const objectIdField = graphic.attributes?.[layer.objectIdField];
-				if (
-					selectedAreasStore.hoveredHandle &&
-					selectedAreasStore.hoveredHandle.id === objectIdField
-				) {
-					// Already highlighted
-					return;
-				}
-
-				//console.log('Graphic found at pointer location:', objectIdField);
-
-				const layerView = await view.whenLayerView(layer);
-				if (selectedAreasStore.data.featureLayerView !== layerView) {
-					selectedAreasStore.setSelectedLayerView(layerView);
-				}
-				selectedAreasStore.hoveredHandle?.handle.remove();
-				selectedAreasStore.hoveredHandle = null;
-
-				const featureLayerView = layerView as __esri.FeatureLayerView;
-				if (!featureLayerView) {
-					console.warn('LayerView is not a FeatureLayerView');
-					return;
-				}
-
-				selectedAreasStore.hoveredHandle = {
-					id: objectIdField,
-					handle: featureLayerView.highlight(graphic, { name: 'hover' })
-				};
-				const names: string[] | null = await selectedAreasStore.getAreaNamesById([objectIdField]);
-
-				if (names && names.length > 0) {
-					//console.log('Hover Area Name:', names[0]);
-				}
-			});
-
-			view.on('click', async (event) => {
-				const { results } = await view.hitTest(event);
-				const result = results[0];
-				if (!result) {
-					return;
-				}
-
-				const graphic = (result as any).graphic as __esri.Graphic;
-				const layer = graphic.layer as __esri.FeatureLayer;
-
-				if (!graphic || !layer || graphic.attributes?.[layer.objectIdField] === undefined) {
-					//console.log('No graphic found at pointer location');
-					return;
-				}
-
-				// console.log(
-				// 	'Graphic found at pointer location:',
-				// 	graphic.attributes?.[layer.objectIdField]
-				// );
-
-				const layerView = await view.whenLayerView(layer);
-				const featureLayerView = layerView as __esri.FeatureLayerView;
-				if (!featureLayerView) {
-					console.warn('Layer is not a FeatureLayerView');
-					return;
-				}
-
-				if (selectedAreasStore.data.featureLayerView !== layerView) {
-					selectedAreasStore.setSelectedLayerView(layerView);
-				}
-
-				const handleInfos: HandleInfo[] = selectedAreasStore.data.highlightHandles || [];
-				const existingHandle: HandleInfo | undefined = handleInfos.find(
-					(info) => info.id === graphic.attributes?.[layer.objectIdField]
-				);
-
-				if (existingHandle) {
-					selectedAreasStore.removeSelectedArea(existingHandle.id);
-					return;
-				}
-
-				let handle = featureLayerView.highlight(graphic, { name: 'selected' });
-				selectedAreasStore.addSelectedArea(graphic.attributes?.[layer.objectIdField], handle);
-			});
+			// Initialize the map interaction store with the new MapView
+			await mapInteractionStore.initializeWithMapView(mapView);
 
 			// Wait for the map to load
 			await mapView.when();
@@ -217,7 +101,12 @@
 		const load = async () => {
 			if (mapView) {
 				try {
+					mapView.map = webMap;
 					await mapView.when();
+
+					// Reinitialize the interaction store with the updated MapView
+					await mapInteractionStore.initializeWithMapView(mapView);
+
 					console.log('MapView updated with new webMap');
 				} catch (error) {
 					console.error('Error updating MapView with new webMap:', error);
@@ -225,22 +114,25 @@
 			}
 		};
 
-		mapView.map = webMap;
 		load();
 	});
 
+	// Effect to log selected area names when areas are selected/deselected
 	$effect(() => {
-		if (!selectedAreasStore.data || selectedAreasStore.data.highlightHandles.length === 0) {
+		if (
+			!selectedAreasStore.layerHighlightState ||
+			selectedAreasStore.layerHighlightState.areaInfos.length === 0
+		) {
 			return;
 		}
 
 		const getSelectedAreaNames = async () => {
-			if (!selectedAreasStore.data) {
+			if (!selectedAreasStore.layerHighlightState) {
 				return;
 			}
 
 			const names: string[] | null = await selectedAreasStore.getAreaNamesById(
-				selectedAreasStore.data.highlightHandles.map((h) => h.id)
+				selectedAreasStore.layerHighlightState.areaInfos.map((h) => h.id)
 			);
 
 			console.log('Selected Area Names:', names);
@@ -249,8 +141,39 @@
 		getSelectedAreaNames();
 	});
 
+	// Effect to handle visible node changes and update layer view
+	$effect(() => {
+		if (!areaSelectionTreeviewStore.visibleNode) {
+			selectedAreasStore.resetSelectedAreas();
+			return;
+		}
+
+		const updateSelectedLayerView = async (layer: __esri.FeatureLayer) => {
+			if (!mapView) {
+				return;
+			}
+
+			const layerView = await mapView.whenLayerView(layer);
+			if (!layerView) {
+				console.warn('Could not get LayerView for the visible node layer');
+				return;
+			}
+
+			selectedAreasStore.setSelectedLayerView(layerView);
+		};
+
+		const featureLayer = areaSelectionTreeviewStore.visibleNode?.layer as __esri.FeatureLayer;
+		if (!featureLayer) {
+			console.warn('Visible node layer is not a FeatureLayer');
+			return;
+		}
+
+		updateSelectedLayerView(featureLayer);
+	});
+
 	// Cleanup function
 	function cleanup() {
+		mapInteractionStore.cleanup();
 		if (mapView) {
 			mapView.destroy();
 		}

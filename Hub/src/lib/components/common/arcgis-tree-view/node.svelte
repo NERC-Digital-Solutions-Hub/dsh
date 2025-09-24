@@ -3,21 +3,30 @@
 	import { Checkbox } from '$lib/components/ui/no-prop-checkbox/index';
 	import Node from './node.svelte';
 	import NodeContent from './node-content.svelte';
+	import DownloadButton from './download-button.svelte';
 	import { getNodeIcon } from './get-node-icon';
 	import type { TreeNode } from './types.js';
+	import type { TreeviewConfig } from '$lib/utils/app-config-provider.js';
+
 	type Props = {
+		treeviewConfig?: TreeviewConfig[] | null;
 		node: TreeNode;
+		isDownloadable?: boolean;
 		onNodeClick?: (node: TreeNode) => void;
 		onNodeVisibilityChange?: (node: TreeNode, visible: boolean) => void;
+		onDownloadStateChanged?: (node: TreeNode, isActive: boolean) => void;
 		getNodeVisibility?: (nodeId: string) => boolean | undefined;
 		depth?: number;
 		useLayerTypeIcon?: boolean; // Use ArcGIS layer type specific icons
 	};
 
 	const {
+		treeviewConfig = null,
 		node,
+		isDownloadable,
 		onNodeClick,
 		onNodeVisibilityChange,
+		onDownloadStateChanged,
 		getNodeVisibility,
 		depth = 0,
 		useLayerTypeIcon = false
@@ -67,9 +76,11 @@
 		<!-- Parent folder with its own border - entire area clickable -->
 		<NodeContent {icon} name={node.name} {depth} onclick={handleFolderClick}>
 			{#snippet children()}
-				{#if hasVisibility}
-					<Checkbox checked={isChecked} onCheckedChange={toggleVisible} />
-				{/if}
+				<div class="flex items-center gap-2">
+					{#if hasVisibility}
+						<Checkbox checked={isChecked} onCheckedChange={toggleVisible} />
+					{/if}
+				</div>
 			{/snippet}
 		</NodeContent>
 
@@ -79,8 +90,11 @@
 				{#each node.children ?? [] as child (child.id)}
 					<Node
 						node={child}
+						isDownloadable={treeviewConfig?.find((cfg) => cfg.name === child.name)
+							?.isDownloadable ?? true}
 						{onNodeClick}
 						{onNodeVisibilityChange}
+						{onDownloadStateChanged}
 						{getNodeVisibility}
 						depth={depth + 1}
 						{useLayerTypeIcon}
@@ -92,9 +106,14 @@
 {:else}
 	<NodeContent {icon} name={node.name} {depth} onclick={handleClick}>
 		{#snippet children()}
-			{#if hasVisibility}
-				<Checkbox checked={isChecked} onCheckedChange={toggleVisible} />
-			{/if}
+			<div class="flex items-center gap-2">
+				{#if isDownloadable}
+					<DownloadButton {node} {onDownloadStateChanged} />
+				{/if}
+				{#if hasVisibility}
+					<Checkbox checked={isChecked} onCheckedChange={toggleVisible} />
+				{/if}
+			</div>
 		{/snippet}
 	</NodeContent>
 {/if}

@@ -1,4 +1,3 @@
-<!-- NodeContent.svelte -->
 <script lang="ts">
 	type Props = {
 		icon: string;
