@@ -1,1 +1,0 @@
-import"../chunks/DsnmJJEf.js";import"../chunks/nye1TwT2.js";import{f as t,a as p,n as e}from"../chunks/CU6wUyX1.js";var r=t("<h1>Catalogue</h1> <p>This is the Catalogue page.</p>",1);function s(a){var o=r();e(2),p(a,o)}export{s as component};
