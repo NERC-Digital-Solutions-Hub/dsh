@@ -1,11 +1,11 @@
 <script lang="ts">
-	import UprnMapView from '$lib/components/common/map-view.svelte';
+	import UprnMapView from '$lib/components/common/uprn-map-view/uprn-map-view.svelte';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
-	import ArcgisTreeView from '$lib/components/common/arcgis-tree-view/tree-view.svelte';
-	import ArcgisSoleSelectionTreeView from '$lib/components/common/sole-selection-tree-view/tree-view.svelte';
-	import SelectedAreasMenu from '$lib/components/common/selected-areas-menu/selected-areas-menu.svelte';
+	import ArcgisTreeView from '$lib/components/common/data-selection-tree-view/tree-view.svelte';
+	import ArcgisSoleSelectionTreeView from '$lib/components/common/area-selection-tree-view/tree-view.svelte';
+	import SelectedAreasMenu from '$lib/components/common/area-selection-menu/area-selection-menu.svelte';
 	import UprnTabBar from '$lib/components/common/uprn-tab-bar.svelte';
 	import {
 		getAppConfigAsync,
@@ -14,14 +14,17 @@
 	} from '$lib/utils/app-config-provider.js';
 	import { onMount } from 'svelte';
 	import { WebMapStore } from '$lib/stores/web-map-store.svelte';
-	import { selectedAreasStore } from '$lib/stores/selected-areas-store.svelte';
+	import { areaSelectionStore, type LayerNameField } from '$lib/stores/area-selection-store.svelte';
 	import ExportMenu from '$lib/components/common/export-menu/export-menu.svelte';
 	import CardFooter from '$lib/components/ui/card/card-footer.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import AreaSelectionHoverCard from '$lib/components/common/area-selection-hover-card/area-selection-hover-card.svelte';
+	import FieldSelectionMenu from '$lib/components/common/field-selection-menu/field-selection-menu.svelte';
 
 	const webMapStore = new WebMapStore();
 	let treeviewSelectionAreasConfig: TreeviewConfig[] | null = $state<TreeviewConfig[] | null>(null);
 	let treeviewDataConfig: TreeviewConfig[] | null = $state<TreeviewConfig[] | null>(null);
+	let interactableLayers: string[] = $state([]);
 
 	onMount(async () => {
 		const appConfig: AppConfig = await getAppConfigAsync();
@@ -30,7 +33,8 @@
 		const proxy = appConfig.proxy;
 		treeviewSelectionAreasConfig = appConfig.treeviewSelectionAreasConfig;
 		treeviewDataConfig = appConfig.treeviewDataConfig || null;
-		selectedAreasStore.setNameFields(appConfig.selectionLayersNameFields || []);
+		interactableLayers = appConfig.selectionLayersNameFields?.map((layer) => layer.layerName) || [];
+		areaSelectionStore.setNameFields(appConfig.selectionLayersNameFields as LayerNameField[]);
 
 		console.log('Selection Layers:', $state.snapshot(treeviewSelectionAreasConfig));
 
@@ -43,6 +47,9 @@
 		console.log('WebMap loaded', $state.snapshot(webMapStore.data));
 	});
 </script>
+
+<AreaSelectionHoverCard />
+<FieldSelectionMenu />
 
 {#snippet panelContent()}
 	<div class="flex w-120 min-w-0 flex-col gap-6">
@@ -97,6 +104,7 @@
 	{#if webMapStore.data}
 		<UprnMapView
 			webMap={webMapStore.data}
+			{interactableLayers}
 			panelPosition="top-left"
 			menuPosition="top-right"
 			panel={panelContent}

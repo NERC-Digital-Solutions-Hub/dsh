@@ -3,7 +3,7 @@
 	import Node from './node.svelte';
 	import type { TreeNode } from './types.js';
 	import type { TreeviewConfig } from '$lib/utils/app-config-provider.js';
-	import { selectedDataStore } from '$lib/stores/selected-data-store.svelte';
+	import { dataSelectionStore, type SelectedData } from '$lib/stores/data-selection-store.svelte';
 
 	type Props = {
 		webMap?: __esri.WebMap | null;
@@ -182,20 +182,31 @@
 
 	function onDownloadStateChanged(node: TreeNode, isActive: boolean) {
 		if (isActive) {
-			selectedDataStore.SelectedData.add({
+			const selectedData: SelectedData = {
 				layerId: node.id,
 				name: node.layer.title || '',
 				fields: null
-			});
-			console.log('Added Selected Data:', $state.snapshot(selectedDataStore.SelectedData));
+			};
+			dataSelectionStore.SelectedData.set(node.id, selectedData);
 		} else {
-			selectedDataStore.SelectedData.forEach((data) => {
-				if (data.layerId === node.id) {
-					selectedDataStore.SelectedData.delete(data);
-				}
-			});
-			console.log('Removed Selected Data:', $state.snapshot(selectedDataStore.SelectedData));
+			dataSelectionStore.SelectedData.delete(node.id);
 		}
+	}
+
+	function getDownloadState(node: TreeNode): boolean {
+		return dataSelectionStore.SelectedData.has(node.id);
+	}
+
+	function handleFilterClicked(node: TreeNode) {
+		if (dataSelectionStore.FieldViewSelection === node.id) {
+			dataSelectionStore.FieldViewSelection = null;
+		} else {
+			dataSelectionStore.FieldViewSelection = node.id;
+		}
+	}
+
+	function hasFiltersApplied(node: TreeNode): boolean {
+		return false;
 	}
 </script>
 
@@ -209,6 +220,9 @@
 			onNodeVisibilityChange={handleNodeVisibleToggle}
 			{getNodeVisibility}
 			{onDownloadStateChanged}
+			{getDownloadState}
+			onFilterClicked={handleFilterClicked}
+			{hasFiltersApplied}
 			depth={0}
 			useLayerTypeIcon={true}
 		/>

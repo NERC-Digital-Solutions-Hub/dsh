@@ -1,9 +1,9 @@
 <script lang="ts">
 	import {
-		selectedAreasStore,
+		areaSelectionStore,
 		type HighlightAreaInfo
-	} from '$lib/stores/selected-areas-store.svelte';
-	import { selectedDataStore } from '$lib/stores/selected-data-store.svelte';
+	} from '$lib/stores/area-selection-store.svelte';
+	import { dataSelectionStore } from '$lib/stores/data-selection-store.svelte';
 	import { areaSelectionTreeviewStore } from '$lib/stores/area-selection-tree-view-store.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 
@@ -15,21 +15,21 @@
 	let areaInfos: AreaInfo[] = $state<AreaInfo[]>([]);
 
 	$effect(() => {
-		if (!selectedAreasStore.layerHighlightState.areaInfos.length) {
+		if (!areaSelectionStore.layerHighlightState.areaInfos.length) {
 			areaInfos = [];
 			return;
 		}
 
 		const getAreaInfos = async () => {
-			const arenaNames = await selectedAreasStore.getAreaNamesById(
-				selectedAreasStore.layerHighlightState.areaInfos.map((area) => area.id)
+			const arenaNames = await areaSelectionStore.getAreaNamesById(
+				areaSelectionStore.layerHighlightState.areaInfos.map((area) => area.id)
 			);
 
 			const newAreaInfos: AreaInfo[] = [];
 			for (let i = 0; i < arenaNames.length; i++) {
 				newAreaInfos.push({
 					name: arenaNames[i] || 'Unknown Area',
-					HighlightAreaInfo: selectedAreasStore.layerHighlightState.areaInfos[i]
+					HighlightAreaInfo: areaSelectionStore.layerHighlightState.areaInfos[i]
 				});
 			}
 			areaInfos = newAreaInfos;
@@ -39,11 +39,17 @@
 	});
 
 	function removeArea(areaName: string) {
-		// Find the area ID by name and remove it
 		const areaIndex = areaInfos.findIndex((area) => area.name === areaName);
 		if (areaIndex !== -1) {
-			selectedAreasStore.removeSelectedArea(areaInfos[areaIndex]?.HighlightAreaInfo.id);
+			areaSelectionStore.removeSelectedArea(areaInfos[areaIndex]?.HighlightAreaInfo.id);
 		}
+	}
+
+	function removeDataSelection(layerId: string) {
+		// Remove the data selection from the store
+		console.log('Removing data selection for layerId:', layerId);
+		dataSelectionStore.SelectedData.delete(layerId);
+		console.log('Current SelectedData:', $state.snapshot(dataSelectionStore.SelectedData));
 	}
 </script>
 
@@ -78,16 +84,26 @@
 
 <div class="section">
 	<h4>Selected Data</h4>
-	{#if selectedDataStore.SelectedData.size > 0}
+	{#if dataSelectionStore.SelectedData.size > 0}
 		<ul class="selected-list">
-			{#each [...selectedDataStore.SelectedData] as data}
-				<li>
-					{data.name}
-					{data.fields ? `(${data.fields.join(', ')})` : '(all fields)'}
+			{#each [...dataSelectionStore.SelectedData.values()] as data}
+				<li class="data-item">
+					<span class="data-name">
+						{data.name}
+						{data.fields ? `(${data.fields.join(', ')})` : '(all fields)'}
+					</span>
+					<Button
+						variant="ghost"
+						size="sm"
+						class="data-remove-btn"
+						onclick={() => removeDataSelection(data.layerId)}
+					>
+						×
+					</Button>
 				</li>
 			{/each}
 		</ul>
-		<p class="count">{selectedDataStore.SelectedData.size} data layer(s) selected</p>
+		<p class="count">{dataSelectionStore.SelectedData.size} data layer(s) selected</p>
 	{:else}
 		<p class="no-selection">No data selected</p>
 	{/if}
@@ -141,7 +157,8 @@
 		color: #374151;
 	}
 
-	.area-item {
+	.area-item,
+	.data-item {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -153,12 +170,14 @@
 		color: #374151;
 	}
 
-	.area-name {
+	.area-name,
+	.data-name {
 		flex: 1;
 		min-width: 0;
 	}
 
-	:global(.area-remove-btn) {
+	:global(.area-remove-btn),
+	:global(.data-remove-btn) {
 		height: 1.5rem;
 		width: 1.5rem;
 		padding: 0;
@@ -168,7 +187,8 @@
 		transition: color 0.15s ease-in-out;
 	}
 
-	:global(.area-remove-btn:hover) {
+	:global(.area-remove-btn:hover),
+	:global(.data-remove-btn:hover) {
 		color: #ef4444;
 	}
 

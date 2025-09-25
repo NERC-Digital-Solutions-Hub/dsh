@@ -6,11 +6,19 @@
 	type Props = {
 		node: TreeNode;
 		onDownloadStateChanged?: (node: TreeNode, isActive: boolean) => void;
+		getDownloadState?: (node: TreeNode) => boolean;
 	};
 
-	const { node, onDownloadStateChanged }: Props = $props();
+	const { node, onDownloadStateChanged, getDownloadState }: Props = $props();
 
-	let isActive = $state(false);
+	let isActive = $state(getDownloadState?.(node) ?? false);
+
+	$effect(() => {
+		if (getDownloadState) {
+			const externalState = getDownloadState(node);
+			isActive = externalState ?? false;
+		}
+	});
 
 	function handleClick(event: MouseEvent) {
 		event.stopPropagation();
@@ -81,6 +89,6 @@
 	/* Active state */
 	.download-btn.active :global(svg path),
 	.download-btn:active :global(svg path) {
-		fill: #000000; /* Black when active/pressed */
+		fill: hsl(var(--primary));
 	}
 </style>

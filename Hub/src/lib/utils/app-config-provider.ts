@@ -1,5 +1,5 @@
 import { base } from '$app/paths';
-import { type LayerNameField } from '$lib/stores/selected-areas-store.svelte';
+import { type LayerNameField } from '$lib/stores/area-selection-store.svelte';
 
 export type AppConfig = {
 	portalUrl?: string | null;

@@ -1,5 +1,5 @@
 import { SvelteMap } from 'svelte/reactivity';
-import type { TreeNode } from '$lib/components/common/sole-selection-tree-view/types.js';
+import type { TreeNode } from '$lib/components/common/area-selection-tree-view/types.js';
 import type { TreeviewConfig } from '$lib/utils/app-config-provider.js';
 import { toast } from 'svelte-sonner';
 

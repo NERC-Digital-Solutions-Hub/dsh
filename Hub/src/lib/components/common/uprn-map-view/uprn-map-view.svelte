@@ -5,13 +5,14 @@
 	import type MapView from '@arcgis/core/views/MapView';
 	import type { Snippet } from 'svelte';
 	import { mapInteractionStore } from '$lib/stores/map-interaction-store.svelte';
-	import { selectedAreasStore } from '$lib/stores/selected-areas-store.svelte';
+	import { areaSelectionStore } from '$lib/stores/area-selection-store.svelte';
 	import { areaSelectionTreeviewStore } from '$lib/stores/area-selection-tree-view-store.svelte';
 
 	type UIPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'manual';
 
 	type Props = {
 		webMap?: __esri.WebMap | null;
+		interactableLayers?: string[];
 		panelPosition?: UIPosition;
 		menuPosition?: UIPosition;
 		panel?: Snippet;
@@ -20,6 +21,7 @@
 
 	const {
 		webMap = null,
+		interactableLayers = [],
 		panelPosition = 'top-left',
 		menuPosition = 'top-right',
 		panel,
@@ -50,7 +52,7 @@
 			});
 
 			// Initialize the map interaction store with the new MapView
-			await mapInteractionStore.initializeWithMapView(mapView);
+			await mapInteractionStore.initializeAsync(mapView, new Set(interactableLayers));
 
 			// Wait for the map to load
 			await mapView.when();
@@ -105,7 +107,7 @@
 					await mapView.when();
 
 					// Reinitialize the interaction store with the updated MapView
-					await mapInteractionStore.initializeWithMapView(mapView);
+					await mapInteractionStore.initializeAsync(mapView, new Set(interactableLayers));
 
 					console.log('MapView updated with new webMap');
 				} catch (error) {
@@ -117,34 +119,10 @@
 		load();
 	});
 
-	// Effect to log selected area names when areas are selected/deselected
-	$effect(() => {
-		if (
-			!selectedAreasStore.layerHighlightState ||
-			selectedAreasStore.layerHighlightState.areaInfos.length === 0
-		) {
-			return;
-		}
-
-		const getSelectedAreaNames = async () => {
-			if (!selectedAreasStore.layerHighlightState) {
-				return;
-			}
-
-			const names: string[] | null = await selectedAreasStore.getAreaNamesById(
-				selectedAreasStore.layerHighlightState.areaInfos.map((h) => h.id)
-			);
-
-			console.log('Selected Area Names:', names);
-		};
-
-		getSelectedAreaNames();
-	});
-
 	// Effect to handle visible node changes and update layer view
 	$effect(() => {
 		if (!areaSelectionTreeviewStore.visibleNode) {
-			selectedAreasStore.resetSelectedAreas();
+			areaSelectionStore.resetSelectedAreas();
 			return;
 		}
 
@@ -159,7 +137,7 @@
 				return;
 			}
 
-			selectedAreasStore.setSelectedLayerView(layerView);
+			areaSelectionStore.setSelectedLayerView(layerView);
 		};
 
 		const featureLayer = areaSelectionTreeviewStore.visibleNode?.layer as __esri.FeatureLayer;

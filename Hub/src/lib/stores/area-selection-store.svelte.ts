@@ -18,7 +18,7 @@ export type HighlightAreaInfo = {
 /**
  * Store for managing the selected areas.
  */
-class SelectedAreasStore {
+class AreaSelectionStore {
 	public layerHighlightState = $state<LayerHighlightState>({
 		featureLayerView: null,
 		areaInfos: []
@@ -164,6 +164,23 @@ class SelectedAreasStore {
 		return names.map((n) => n ?? '');
 	}
 
+	setHoveredArea(id: number, handle: __esri.Handle): void {
+		if (this.currentHoveredArea) {
+			this.clearHoveredArea();
+		}
+
+		this.currentHoveredArea = { id, handle };
+	}
+
+	clearHoveredArea(): void {
+		if (!this.currentHoveredArea) {
+			return;
+		}
+
+		this.currentHoveredArea?.handle.remove();
+		this.currentHoveredArea = null;
+	}
+
 	getNameFieldForCurrentLayer(): string | null {
 		if (!this.layerHighlightState || !this.layerHighlightState.featureLayerView) {
 			return null;
@@ -184,4 +201,4 @@ class SelectedAreasStore {
 	}
 }
 
-export const selectedAreasStore = new SelectedAreasStore();
+export const areaSelectionStore = new AreaSelectionStore();

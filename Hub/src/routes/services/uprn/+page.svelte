@@ -1,7 +1,7 @@
 <script lang="ts">
-	import SvelteMapView from '$lib/components/common/map-view.svelte';
+	import SvelteMapView from '$lib/components/common/uprn-map-view/uprn-map-view.svelte';
 	import DropDownPanel from '$lib/components/common/drop-down-panel.svelte';
-	import ArcgisTreeView from '$lib/components/common/arcgis-tree-view/tree-view.svelte';
+	import ArcgisTreeView from '$lib/components/common/data-selection-tree-view/tree-view.svelte';
 	import ArcgisSelectionLayerMenu from '$lib/components/common/arcgis-selection-layer-menu/menu.svelte';
 	import {
 		getAppConfigAsync,
