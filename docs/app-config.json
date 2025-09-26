@@ -5,41 +5,45 @@
         "urlPrefix": "https://nercdsh.dev.azure.manchester.ac.uk",
         "proxyUrl": "/proxy/Java/proxy.jsp"
     },
-    "treeviewDataConfig": [
-        {
-            "name": "UPRN (05/2024)",
-            "isDownloadable": false
-        },
-        {
-            "name": "ClimateJust"
-        },
-        {
-            "name": "Noise Levels"
-        },
-        {
-            "name": "Modelled Background Pollution"
-        },
-        {
-            "name": "Carbon Storage"
-        },
-        {
-            "name": "Ellenberg Vegetation Indicators"
-        },
-        {
-            "name": "AQREAN Surface Level"
-        },
-        {
-            "name": "AQREAN Surface Level - Bias Corrected"
-        }
-    ],
-    "treeviewSelectionAreasConfig": [
-        {
-            "name": "Administrative Areas"
-        },
-        {
-            "name": "Tiling Schemes"
-        }
-    ],
+    "treeviewDataConfig": {
+        "layers": [
+            {
+                "name": "UPRN (05/2024)",
+                "isDownloadable": false
+            },
+            {
+                "name": "ClimateJust"
+            },
+            {
+                "name": "Noise Levels"
+            },
+            {
+                "name": "Modelled Background Pollution"
+            },
+            {
+                "name": "Carbon Storage"
+            },
+            {
+                "name": "Ellenberg Vegetation Indicators"
+            },
+            {
+                "name": "AQREAN Surface Level"
+            },
+            {
+                "name": "AQREAN Surface Level - Bias Corrected"
+            }
+        ]
+    },
+    "treeviewSelectionAreasConfig": {
+        "layers": [
+            {
+                "name": "Administrative Areas"
+            },
+            {
+                "name": "Tiling Schemes"
+            }
+        ]
+    },
     "selectionLayersNameFields": [
         {"layerName":"Built Up Areas (Dec 22) GB","field":"BUA22NM"},
         {"layerName":"Lower layer Super Output Areas (Dec 21) - EW Boundaries Fully Clipped V8","field":"LSOA21NM"},
@@ -53,5 +57,32 @@
         {"layerName":"Tiles 20 km","field":"TILENAME"},
         {"layerName":"Tiles 50 km","field":"TILENAME"},
         {"layerName":"Tiles 100 km","field":"TILENAME"}
-    ]
+    ],
+    "fieldsToHide": [
+            "objectid",
+            "shape__area",
+            "shape__length",
+            "long",
+            "lat",
+            "uprn",
+            "x_coord",
+            "y_coord",
+            "fullgrid id",
+            "msoa id",
+            "lsoa id",
+            "ward id",
+            "globalid",
+            "lsoa number",
+            "msoa number",
+            "ward number",
+            "lsoa code (2011)",
+            "lsoa name (2011)",
+            "lsoa code (2011) (v3)",
+            "lsoa name (2011) (v3)",
+            "msoa code (2011)",
+            "msoa name (2011)",
+            "grid code",
+            "perimeter (epsg 27700)",
+            "area (epsg 27700)"
+        ]
 }
