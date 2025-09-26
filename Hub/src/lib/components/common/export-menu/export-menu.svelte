@@ -5,7 +5,16 @@
 	} from '$lib/stores/area-selection-store.svelte';
 	import { dataSelectionStore } from '$lib/stores/data-selection-store.svelte';
 	import { areaSelectionTreeviewStore } from '$lib/stores/area-selection-tree-view-store.svelte';
+	import { WebMapStore } from '$lib/stores/web-map-store.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import FilterButton from '../data-selection-tree-view/filter-button.svelte';
+	import FilterFieldMenuStore from '$lib/stores/field-filter-menu-store.svelte';
+
+	export type Props = {
+		webMapStore: WebMapStore;
+		fieldFilterMenuStore: FilterFieldMenuStore;
+	};
+	const { webMapStore, fieldFilterMenuStore }: Props = $props();
 
 	type AreaInfo = {
 		name: string;
@@ -48,8 +57,31 @@
 	function removeDataSelection(layerId: string) {
 		// Remove the data selection from the store
 		console.log('Removing data selection for layerId:', layerId);
-		dataSelectionStore.SelectedData.delete(layerId);
-		console.log('Current SelectedData:', $state.snapshot(dataSelectionStore.SelectedData));
+		dataSelectionStore.DataSelections.delete(layerId);
+		console.log('Current SelectedData:', $state.snapshot(dataSelectionStore.DataSelections));
+	}
+
+	function handleFilterClicked(layerId: string) {
+		if (fieldFilterMenuStore.ActiveLayer?.uid === layerId) {
+			fieldFilterMenuStore.ActiveLayer = null;
+		} else {
+			fieldFilterMenuStore.ActiveLayer = webMapStore.dataLookup.get(layerId) as __esri.Layer;
+		}
+	}
+
+	function hasFiltersApplied(layerId: string): boolean {
+		const dataSelection = dataSelectionStore.DataSelections.get(layerId);
+		if (
+			!dataSelection ||
+			!dataSelection.fields ||
+			dataSelection.fields.size === 0 ||
+			dataSelection.fields.size ===
+				(webMapStore.dataLookup.get(layerId) as __esri.FeatureLayer).fields?.length
+		) {
+			return false;
+		}
+
+		return true;
 	}
 </script>
 
@@ -84,26 +116,34 @@
 
 <div class="section">
 	<h4>Selected Data</h4>
-	{#if dataSelectionStore.SelectedData.size > 0}
+	{#if dataSelectionStore.DataSelections.size > 0}
 		<ul class="selected-list">
-			{#each [...dataSelectionStore.SelectedData.values()] as data}
+			{#each [...dataSelectionStore.DataSelections.values()] as data}
 				<li class="data-item">
 					<span class="data-name">
 						{data.name}
-						{data.fields ? `(${data.fields.join(', ')})` : '(all fields)'}
 					</span>
-					<Button
-						variant="ghost"
-						size="sm"
-						class="data-remove-btn"
-						onclick={() => removeDataSelection(data.layerId)}
-					>
-						×
-					</Button>
+					<div class="data-actions">
+						{#if data.fields}
+							<FilterButton
+								layerId={data.layerId}
+								onFilterClicked={handleFilterClicked}
+								{hasFiltersApplied}
+							/>
+						{/if}
+						<Button
+							variant="ghost"
+							size="sm"
+							class="data-remove-btn"
+							onclick={() => removeDataSelection(data.layerId)}
+						>
+							×
+						</Button>
+					</div>
 				</li>
 			{/each}
 		</ul>
-		<p class="count">{dataSelectionStore.SelectedData.size} data layer(s) selected</p>
+		<p class="count">{dataSelectionStore.DataSelections.size} data layer(s) selected</p>
 	{:else}
 		<p class="no-selection">No data selected</p>
 	{/if}
@@ -174,6 +214,12 @@
 	.data-name {
 		flex: 1;
 		min-width: 0;
+	}
+
+	.data-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem; /* 8px gap between filter and remove buttons */
 	}
 
 	:global(.area-remove-btn),

@@ -5,9 +5,10 @@ export type AppConfig = {
 	portalUrl?: string | null;
 	portalItemId: string;
 	proxy?: Proxy | null;
-	treeviewDataConfig: TreeviewConfig[];
-	treeviewSelectionAreasConfig: TreeviewConfig[];
+	treeviewDataConfig: TreeviewConfig;
+	treeviewSelectionAreasConfig: TreeviewConfig;
 	selectionLayersNameFields?: LayerNameField[];
+	fieldsToHide?: string[];
 };
 
 export type Proxy = {
@@ -16,6 +17,10 @@ export type Proxy = {
 };
 
 export type TreeviewConfig = {
+	layers: TreeviewLayerConfig[];
+};
+
+export type TreeviewLayerConfig = {
 	name: string;
 	isDownloadable?: boolean;
 };

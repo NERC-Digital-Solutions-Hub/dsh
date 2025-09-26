@@ -2,41 +2,30 @@
 <script lang="ts">
 	import FilterEnabledIcon from '$lib/assets/filter-enabled.svg?raw';
 	import FilterDisabledIcon from '$lib/assets/filter-disabled.svg?raw';
-	import type { TreeNode } from './types.js';
 
 	type Props = {
-		node: TreeNode;
-		onFilterClicked?: (node: TreeNode) => void;
-		hasFiltersApplied?: (node: TreeNode) => boolean;
+		layerId: string;
+		onFilterClicked?: (layerId: string) => void;
+		hasFiltersApplied?: (layerId: string) => boolean;
 	};
 
-	const { node, onFilterClicked, hasFiltersApplied }: Props = $props();
+	const { layerId, onFilterClicked, hasFiltersApplied }: Props = $props();
 
-	let isActive = $state(hasFiltersApplied?.(node) ?? false);
+	let isActive = $state(hasFiltersApplied?.(layerId) ?? false);
 
 	$effect(() => {
-		isActive = hasFiltersApplied?.(node) ?? false;
+		isActive = hasFiltersApplied?.(layerId) ?? false;
 	});
 
 	const iconMarkup = $derived(isActive ? FilterEnabledIcon : FilterDisabledIcon);
 
 	function handleClick(event: MouseEvent) {
 		event.stopPropagation();
-
-		// Optimistic UI update in case parent state updates asynchronously
-		isActive = !isActive;
-		onFilterClicked?.(node);
+		onFilterClicked?.(layerId);
 	}
 </script>
 
-<button
-	class="filter-btn"
-	class:active={isActive}
-	onclick={handleClick}
-	title={`Filter ${node.name}`}
-	aria-label={`Filter ${node.name}`}
-	aria-pressed={isActive}
->
+<button class="filter-btn" class:active={isActive} onclick={handleClick} aria-pressed={isActive}>
 	{@html iconMarkup}
 </button>
 

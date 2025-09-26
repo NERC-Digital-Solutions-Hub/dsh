@@ -3,15 +3,33 @@
 	import Node from './node.svelte';
 	import type { TreeNode } from './types.js';
 	import type { TreeviewConfig } from '$lib/utils/app-config-provider.js';
-	import { dataSelectionStore, type SelectedData } from '$lib/stores/data-selection-store.svelte';
+	import { dataSelectionStore, type DataSelection } from '$lib/stores/data-selection-store.svelte';
+	import { SvelteSet } from 'svelte/reactivity';
+	import FieldFilterMenuStore from '$lib/stores/field-filter-menu-store.svelte';
 
 	type Props = {
 		webMap?: __esri.WebMap | null;
-		treeviewConfig?: TreeviewConfig[] | null;
+		treeviewConfig?: TreeviewConfig | null;
+		fieldFilterMenuStore: FieldFilterMenuStore;
 	};
-	const { webMap = null, treeviewConfig = null }: Props = $props();
+	const { webMap = null, treeviewConfig = null, fieldFilterMenuStore }: Props = $props();
 
 	let layerTree: TreeNode[] = $state<TreeNode[]>([]);
+	let layerTreeLookup: Map<string, TreeNode> = $derived.by(() => {
+		const map = new Map<string, TreeNode>();
+
+		function addNodesToMap(nodes: TreeNode[]) {
+			for (const node of nodes) {
+				map.set(node.id, node);
+				if (node.children && node.children.length) {
+					addNodesToMap(node.children);
+				}
+			}
+		}
+
+		addNodesToMap(layerTree);
+		return map;
+	});
 	let visibilityState: Map<string, boolean> = $state(new Map());
 
 	$effect(() => {
@@ -47,14 +65,13 @@
 	}
 
 	async function buildTreeFromMap(map: __esri.Map): Promise<TreeNode[]> {
-		const nodes: TreeNode[] = [];
-		for (const layer of map.layers.toArray()) {
-			nodes.push(await layerToNode(layer));
-		}
+		const rootNodes = await Promise.all(map.layers.toArray().map((layer) => layerToNode(layer)));
 
 		const filteredNodes = treeviewConfig
-			? nodes.filter((node) => treeviewConfig.some((config) => config.name === node.name))
-			: nodes;
+			? rootNodes.filter((node) =>
+					treeviewConfig.layers.some((config) => config.name === node.name)
+				)
+			: rootNodes;
 
 		const reverseNodes = (nodes: TreeNode[]) => {
 			nodes.reverse();
@@ -67,10 +84,17 @@
 			return nodes;
 		};
 
-		return reverseNodes(filteredNodes);
+		const nodesToReturn = [...filteredNodes];
+		return reverseNodes(nodesToReturn);
 	}
 
 	async function layerToNode(layer: __esri.Layer): Promise<TreeNode> {
+		try {
+			await layer.load();
+		} catch (error) {
+			console.warn('Unable to fully load layer for tree view', layer.title, error);
+		}
+
 		const base: TreeNode = {
 			id: layer.uid,
 			name: layer.title as string,
@@ -104,14 +128,16 @@
 	async function sublayerCollectionToNodes(
 		sublayers: __esri.Collection<__esri.Sublayer>
 	): Promise<TreeNode[]> {
-		const nodes: TreeNode[] = [];
-		for (const subLayer of sublayers.toArray()) {
-			nodes.push(await sublayerToNode(subLayer));
-		}
-		return nodes;
+		return Promise.all(sublayers.toArray().map((subLayer) => sublayerToNode(subLayer)));
 	}
 
 	async function sublayerToNode(subLayer: __esri.Sublayer): Promise<TreeNode> {
+		try {
+			await subLayer.load();
+		} catch (error) {
+			console.warn('Unable to fully load sublayer for tree view', subLayer.title, error);
+		}
+
 		const node: TreeNode = {
 			id: subLayer.uid,
 			name: subLayer.title as string,
@@ -182,31 +208,44 @@
 
 	function onDownloadStateChanged(node: TreeNode, isActive: boolean) {
 		if (isActive) {
-			const selectedData: SelectedData = {
+			const selectedData: DataSelection = {
 				layerId: node.id,
 				name: node.layer.title || '',
-				fields: null
+				fields: new SvelteSet<string>(
+					(node.layer as __esri.FeatureLayer).fields?.map((f) => f.name) || []
+				)
 			};
-			dataSelectionStore.SelectedData.set(node.id, selectedData);
+			dataSelectionStore.addSelection(selectedData);
 		} else {
-			dataSelectionStore.SelectedData.delete(node.id);
+			dataSelectionStore.removeSelection(node.id);
 		}
 	}
 
 	function getDownloadState(node: TreeNode): boolean {
-		return dataSelectionStore.SelectedData.has(node.id);
+		return dataSelectionStore.DataSelections.has(node.id);
 	}
 
-	function handleFilterClicked(node: TreeNode) {
-		if (dataSelectionStore.FieldViewSelection === node.id) {
-			dataSelectionStore.FieldViewSelection = null;
+	function handleFilterClicked(nodeId: string) {
+		if (fieldFilterMenuStore.ActiveLayer?.uid === nodeId) {
+			fieldFilterMenuStore.ActiveLayer = null;
 		} else {
-			dataSelectionStore.FieldViewSelection = node.id;
+			fieldFilterMenuStore.ActiveLayer = layerTreeLookup.get(nodeId)?.layer as __esri.Layer;
 		}
 	}
 
-	function hasFiltersApplied(node: TreeNode): boolean {
-		return false;
+	function hasFiltersApplied(nodeId: string): boolean {
+		const dataSelection = dataSelectionStore.DataSelections.get(nodeId);
+		if (
+			!dataSelection ||
+			!dataSelection.fields ||
+			dataSelection.fields.size === 0 ||
+			dataSelection.fields.size ===
+				(layerTreeLookup.get(nodeId)?.layer as __esri.FeatureLayer).fields?.length
+		) {
+			return false;
+		}
+
+		return true;
 	}
 </script>
 
@@ -215,7 +254,8 @@
 		<Node
 			{treeviewConfig}
 			{node}
-			isDownloadable={treeviewConfig?.find((cfg) => cfg.name === node.name)?.isDownloadable ?? true}
+			isDownloadable={treeviewConfig?.layers.find((cfg) => cfg.name === node.name)
+				?.isDownloadable ?? true}
 			onNodeClick={() => {}}
 			onNodeVisibilityChange={handleNodeVisibleToggle}
 			{getNodeVisibility}

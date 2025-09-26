@@ -16,15 +16,21 @@
 	import { WebMapStore } from '$lib/stores/web-map-store.svelte';
 	import { areaSelectionStore, type LayerNameField } from '$lib/stores/area-selection-store.svelte';
 	import ExportMenu from '$lib/components/common/export-menu/export-menu.svelte';
+	import ExportMenuFooter from '$lib/components/common/export-menu/export-menu-footer.svelte';
 	import CardFooter from '$lib/components/ui/card/card-footer.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import AreaSelectionHoverCard from '$lib/components/common/area-selection-hover-card/area-selection-hover-card.svelte';
+	import FieldFilterMenuStore from '$lib/stores/field-filter-menu-store.svelte';
 	import FieldSelectionMenu from '$lib/components/common/field-selection-menu/field-selection-menu.svelte';
+	import { Toaster } from '$lib/components/ui/sonner';
+	import { dataSelectionStore } from '$lib/stores/data-selection-store.svelte';
 
 	const webMapStore = new WebMapStore();
-	let treeviewSelectionAreasConfig: TreeviewConfig[] | null = $state<TreeviewConfig[] | null>(null);
-	let treeviewDataConfig: TreeviewConfig[] | null = $state<TreeviewConfig[] | null>(null);
+	const fieldFilterMenuStore = new FieldFilterMenuStore();
+	let treeviewSelectionAreasConfig: TreeviewConfig | null = $state<TreeviewConfig | null>(null);
+	let treeviewDataConfig: TreeviewConfig | null = $state<TreeviewConfig | null>(null);
 	let interactableLayers: string[] = $state([]);
+	let fieldsToHide: Set<string> = $state(new Set());
 
 	onMount(async () => {
 		const appConfig: AppConfig = await getAppConfigAsync();
@@ -35,6 +41,7 @@
 		treeviewDataConfig = appConfig.treeviewDataConfig || null;
 		interactableLayers = appConfig.selectionLayersNameFields?.map((layer) => layer.layerName) || [];
 		areaSelectionStore.setNameFields(appConfig.selectionLayersNameFields as LayerNameField[]);
+		fieldsToHide = new Set(appConfig.fieldsToHide || []);
 
 		console.log('Selection Layers:', $state.snapshot(treeviewSelectionAreasConfig));
 
@@ -44,12 +51,13 @@
 			proxy: proxy
 		});
 
-		console.log('WebMap loaded', $state.snapshot(webMapStore.data));
+		console.log('WebMap loaded');
 	});
 </script>
 
+<Toaster />
 <AreaSelectionHoverCard />
-<FieldSelectionMenu />
+<FieldSelectionMenu {fieldFilterMenuStore} {fieldsToHide} />
 
 {#snippet panelContent()}
 	<div class="flex w-120 min-w-0 flex-col gap-6">
@@ -73,7 +81,11 @@
 					<Card.Content class="card-content overflow-hidden p-0">
 						<ScrollArea class="h-[300px] w-full">
 							<div class="min-w-0 space-y-2 overflow-hidden p-4">
-								<ArcgisTreeView webMap={webMapStore.data} treeviewConfig={treeviewDataConfig} />
+								<ArcgisTreeView
+									webMap={webMapStore.data}
+									treeviewConfig={treeviewDataConfig}
+									{fieldFilterMenuStore}
+								/>
 							</div>
 						</ScrollArea>
 					</Card.Content>
@@ -84,13 +96,12 @@
 					<Card.Content class="card-content overflow-hidden p-0">
 						<ScrollArea class="h-[300px] w-full">
 							<div class="min-w-0 space-y-2 overflow-hidden p-4">
-								<ExportMenu />
+								<ExportMenu {webMapStore} {fieldFilterMenuStore} />
 							</div>
 						</ScrollArea>
 					</Card.Content>
 					<CardFooter class="flex items-center justify-between">
-						<p class="text-sm text-muted-foreground">Click "Export" to begin the download.</p>
-						<Button>Export</Button>
+						<ExportMenuFooter />
 					</CardFooter>
 				</Card.Root>
 			</Tabs.Content>
@@ -109,8 +120,19 @@
 			menuPosition="top-right"
 			panel={panelContent}
 		/>
+	{:else if webMapStore.loading}
+		<div class="loading-container">
+			<p>Loading map data...</p>
+		</div>
+	{:else if webMapStore.error}
+		<div class="error-container">
+			<p>Error loading map: {webMapStore.error}</p>
+			<Button onclick={() => webMapStore.clearError()}>Retry</Button>
+		</div>
 	{:else}
-		<p>Loading map...</p>
+		<div class="loading-container">
+			<p>Initializing map...</p>
+		</div>
 	{/if}
 </div>
 
@@ -119,6 +141,22 @@
 		flex: 1 1 auto;
 		min-height: 0;
 		display: flex;
+	}
+
+	.loading-container,
+	.error-container {
+		flex: 1 1 auto;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 2rem;
+		text-align: center;
+		gap: 1rem;
+	}
+
+	.error-container {
+		color: #dc2626; /* red-600 */
 	}
 
 	:global(.card-content) {

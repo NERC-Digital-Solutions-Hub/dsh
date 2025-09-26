@@ -15,6 +15,11 @@
 			const names = await areaSelectionStore.getAreaNamesById([
 				areaSelectionStore.lastAddedArea.id
 			]);
+
+			if (!names || names.length === 0 || !names[0]) {
+				return;
+			}
+
 			toast.success(`Area added: ${names?.[0]}`);
 		};
 
@@ -34,6 +39,11 @@
 			const names = await areaSelectionStore.getAreaNamesById([
 				areaSelectionStore.lastRemovedArea.id
 			]);
+
+			if (!names || names.length === 0 || !names[0]) {
+				return;
+			}
+
 			toast.success(`Area removed: ${names?.[0]}`);
 		};
 

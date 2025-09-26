@@ -187,7 +187,7 @@ class AreaSelectionStore {
 		}
 
 		const nameField: string | undefined = this.#nameFields.find(
-			(l) => l.layerName === this.layerHighlightState?.featureLayerView?.layer.title
+			(l) => l.layerName === this.layerHighlightState?.featureLayerView?.layer?.title
 		)?.field;
 
 		if (!nameField) {

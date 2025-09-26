@@ -44,7 +44,7 @@ class AreaSelectionTreeviewStore {
 	 */
 	public async initializeFromWebMap(
 		webMap: __esri.WebMap | null,
-		treeviewConfig?: TreeviewConfig[] | null
+		treeviewConfig?: TreeviewConfig | null
 	): Promise<void> {
 		if (!webMap) {
 			this.layerTree = [];
@@ -66,7 +66,7 @@ class AreaSelectionTreeviewStore {
 	 */
 	private async buildTreeFromMap(
 		map: __esri.Map,
-		treeviewConfig?: TreeviewConfig[] | null
+		treeviewConfig?: TreeviewConfig | null
 	): Promise<TreeNode[]> {
 		const nodes: TreeNode[] = [];
 		for (const layer of map.layers.toArray()) {
@@ -74,7 +74,7 @@ class AreaSelectionTreeviewStore {
 		}
 
 		const filteredNodes = treeviewConfig
-			? nodes.filter((node) => treeviewConfig.some((config) => config.name === node.name))
+			? nodes.filter((node) => treeviewConfig.layers.some((config) => config.name === node.name))
 			: nodes;
 
 		return this.reverseNodes(filteredNodes);
@@ -214,6 +214,10 @@ class AreaSelectionTreeviewStore {
 
 		// Ensure parent layers are visible so the selected layer can be seen
 		this.activateParentLayers(node);
+
+		if (!node?.layer?.title) {
+			return;
+		}
 
 		toast.success(`'${node.layer.title}' Selected`);
 	}

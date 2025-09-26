@@ -10,15 +10,15 @@
 	import type { TreeviewConfig } from '$lib/utils/app-config-provider.js';
 
 	type Props = {
-		treeviewConfig?: TreeviewConfig[] | null;
+		treeviewConfig?: TreeviewConfig | null;
 		node: TreeNode;
 		isDownloadable?: boolean;
 		onNodeClick?: (node: TreeNode) => void;
 		onNodeVisibilityChange?: (node: TreeNode, visible: boolean) => void;
 		onDownloadStateChanged?: (node: TreeNode, isActive: boolean) => void;
 		getDownloadState?: (node: TreeNode) => boolean;
-		onFilterClicked?: (node: TreeNode) => void;
-		hasFiltersApplied?: (node: TreeNode) => boolean;
+		onFilterClicked?: (layerId: string) => void;
+		hasFiltersApplied?: (layerId: string) => boolean;
 		getNodeVisibility?: (nodeId: string) => boolean | undefined;
 		depth?: number;
 		useLayerTypeIcon?: boolean; // Use ArcGIS layer type specific icons
@@ -63,7 +63,7 @@
 
 	// Handle filter visibility changes with animation
 	$effect(() => {
-		const shouldShow = getDownloadState?.(node) ?? false;
+		const shouldShow = (getDownloadState?.(node) && node.layer.type === 'feature') ?? false;
 
 		if (shouldShow && !showFilter) {
 			// Show immediately
@@ -76,7 +76,7 @@
 			setTimeout(() => {
 				showFilter = false;
 				isAnimatingOut = false;
-			}, 200);
+			}, 180);
 		}
 	});
 
@@ -118,7 +118,7 @@
 				{#each node.children ?? [] as child (child.id)}
 					<Node
 						node={child}
-						isDownloadable={treeviewConfig?.find((cfg) => cfg.name === child.name)
+						isDownloadable={treeviewConfig?.layers.find((cfg) => cfg.name === child.name)
 							?.isDownloadable ?? true}
 						{onNodeClick}
 						{onNodeVisibilityChange}
@@ -145,7 +145,7 @@
 							class:fade-in={!isAnimatingOut}
 							class:fade-out={isAnimatingOut}
 						>
-							<FilterButton {node} {onFilterClicked} {hasFiltersApplied} />
+							<FilterButton layerId={node.id} {onFilterClicked} {hasFiltersApplied} />
 						</div>
 					{/if}
 					<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
@@ -164,7 +164,7 @@
 	}
 
 	.filter-transition-wrapper.fade-in {
-		animation: slideInFade 0.3s ease-out;
+		animation: slideInFade 0.2s ease-out;
 	}
 
 	.filter-transition-wrapper.fade-out {

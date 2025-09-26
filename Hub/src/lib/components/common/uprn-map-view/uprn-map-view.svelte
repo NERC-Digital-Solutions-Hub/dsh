@@ -28,44 +28,98 @@
 		menu
 	}: Props = $props();
 
-	let mapContainer: string | HTMLDivElement | null = null;
+	let mapContainer: HTMLDivElement | null = null;
 	let mapView: MapView | null = $state<MapView | null>(null);
 	let panelContainer = $state<HTMLElement | null>(null);
 	let menuContainer = $state<HTMLElement | null>(null);
 
 	const fallbackBasemap = 'streets-vector';
+	let mapViewCtorPromise: Promise<(typeof import('@arcgis/core/views/MapView'))['default']> | null =
+		null;
+	let mapCtorPromise: Promise<(typeof import('@arcgis/core/Map'))['default']> | null = null;
 
-	onMount(async () => {
+	async function loadMapViewCtor() {
+		if (!browser) {
+			throw new Error('Attempted to load MapView constructor outside the browser');
+		}
+
+		if (!mapViewCtorPromise) {
+			mapViewCtorPromise = import('@arcgis/core/views/MapView').then((module) => module.default);
+		}
+
+		return mapViewCtorPromise;
+	}
+
+	async function loadFallbackMapCtor() {
+		if (!browser) {
+			throw new Error('Attempted to load Map constructor outside the browser');
+		}
+
+		if (!mapCtorPromise) {
+			mapCtorPromise = import('@arcgis/core/Map').then((module) => module.default);
+		}
+
+		return mapCtorPromise;
+	}
+
+	onMount(async () => {});
+
+	$effect(() => {
+		if (!webMap) {
+			return;
+		}
+
+		const load = async () => {
+			try {
+				await loadMapView();
+				if (!mapView) {
+					console.error('MapView is not initialized');
+					return;
+				}
+
+				mapView.map = webMap;
+				await webMap.when();
+				console.log('MapView updated with new webMap');
+			} catch (error) {
+				console.error('Error updating MapView with new webMap:', error);
+			}
+		};
+
+		load();
+	});
+
+	async function loadMapView() {
 		if (!browser) {
 			return; // Ensure this runs only in the browser
 		}
 
+		if (!mapContainer) {
+			console.error('Map container element was not found');
+			return;
+		}
+
 		try {
-			// Import required modules
-			const [{ default: MapView }] = await Promise.all([import('@arcgis/core/views/MapView')]);
+			const MapViewCtor = await loadMapViewCtor();
 
-			await import('@arcgis/core/assets/esri/themes/light/main.css');
-
-			mapView = new MapView({
-				container: mapContainer,
-				popupEnabled: false
+			const view = new MapViewCtor({
+				container: mapContainer as HTMLDivElement,
+				popupEnabled: false,
+				map: webMap ?? undefined
 			});
+			mapView = view;
 
-			// Initialize the map interaction store with the new MapView
-			await mapInteractionStore.initializeAsync(mapView, new Set(interactableLayers));
+			await view.when();
+			await mapInteractionStore.initializeAsync(view, new Set(interactableLayers));
 
-			// Wait for the map to load
-			await mapView.when();
-
-			mapView.ui.move('zoom', 'bottom-right');
+			view.ui.move('zoom', 'bottom-right');
 
 			// Add UI elements to the map if they exist and positioning is not manual
 			if (panelContainer && panelPosition !== 'manual') {
-				mapView.ui.add(panelContainer as HTMLElement, panelPosition);
+				view.ui.add(panelContainer as HTMLElement, panelPosition);
 			}
 
 			if (menuContainer && menuPosition !== 'manual') {
-				mapView.ui.add(menuContainer as HTMLElement, menuPosition);
+				view.ui.add(menuContainer as HTMLElement, menuPosition);
 			}
 
 			console.log('Map loaded successfully');
@@ -74,49 +128,48 @@
 
 			// Fallback: create a basic map if portal loading fails
 			try {
-				const [{ default: MapView }, { default: Map }] = await Promise.all([
-					import('@arcgis/core/views/MapView'),
-					import('@arcgis/core/Map')
+				const [MapViewCtor, MapCtor] = await Promise.all([
+					loadMapViewCtor(),
+					loadFallbackMapCtor()
 				]);
 
-				const fallbackMap = new Map({
+				const fallbackMap = new MapCtor({
 					basemap: fallbackBasemap
 				});
 
-				mapView = new MapView({
-					container: mapContainer,
-					map: fallbackMap
+				const view = new MapViewCtor({
+					container: mapContainer as HTMLDivElement,
+					map: fallbackMap,
+					popupEnabled: false
 				});
+				mapView = view;
+
+				await view.when();
+				await mapInteractionStore.initializeAsync(view, new Set(interactableLayers));
+
+				view.ui.move('zoom', 'bottom-right');
+
+				if (panelContainer && panelPosition !== 'manual') {
+					view.ui.add(panelContainer as HTMLElement, panelPosition);
+				}
+
+				if (menuContainer && menuPosition !== 'manual') {
+					view.ui.add(menuContainer as HTMLElement, menuPosition);
+				}
 
 				console.log('Fallback map loaded');
 			} catch (fallbackError) {
 				console.error('Error loading fallback map:', fallbackError);
 			}
 		}
-	});
+	}
 
 	$effect(() => {
-		if (!mapView || !webMap) {
+		if (!mapView) {
 			return;
 		}
 
-		const load = async () => {
-			if (mapView) {
-				try {
-					mapView.map = webMap;
-					await mapView.when();
-
-					// Reinitialize the interaction store with the updated MapView
-					await mapInteractionStore.initializeAsync(mapView, new Set(interactableLayers));
-
-					console.log('MapView updated with new webMap');
-				} catch (error) {
-					console.error('Error updating MapView with new webMap:', error);
-				}
-			}
-		};
-
-		load();
+		mapInteractionStore.updateInteractableLayers(new Set(interactableLayers));
 	});
 
 	// Effect to handle visible node changes and update layer view

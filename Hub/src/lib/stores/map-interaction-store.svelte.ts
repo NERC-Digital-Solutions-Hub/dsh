@@ -24,6 +24,11 @@ class MapInteractionStore {
 	 * @param interactableLayers - Set of layer names that can be interacted with
 	 */
 	public async initializeAsync(view: MapView, interactableLayers: Set<string>): Promise<void> {
+		if (this.mapView === view && this.isInitialized) {
+			this.interactableLayers = interactableLayers;
+			return;
+		}
+
 		this.cleanup();
 
 		this.mapView = view;
@@ -40,6 +45,10 @@ class MapInteractionStore {
 
 		this.isInitialized = true;
 		console.log('MapInteractionStore initialized with MapView');
+	}
+
+	public updateInteractableLayers(interactableLayers: Set<string>): void {
+		this.interactableLayers = interactableLayers;
 	}
 
 	/**
@@ -236,6 +245,10 @@ class MapInteractionStore {
 	 * Clean up event handlers and resources
 	 */
 	public cleanup(): void {
+		if (!this.isInitialized) {
+			return;
+		}
+
 		if (this.pointerMoveHandle) {
 			this.pointerMoveHandle.remove();
 			this.pointerMoveHandle = null;
@@ -260,6 +273,7 @@ class MapInteractionStore {
 		this.isInitialized = false;
 		this.mapView = null;
 		this.pointerInsideMap = true;
+		this.interactableLayers = new Set();
 
 		console.log('MapInteractionStore cleaned up');
 	}
