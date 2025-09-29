@@ -1,21 +1,60 @@
 <!-- MapView component -->
 <script lang="ts">
+	/**
+	 * UPRN Map View Component
+	 *
+	 * A Svelte component that renders an ArcGIS MapView with support for:
+	 * - WebMap integration with fallback to basic basemap
+	 * - Interactive layers configuration
+	 * - Custom UI panel and menu positioning
+	 * - Area selection and map interaction stores integration
+	 * - Automatic cleanup and resource management
+	 *
+	 * @component
+	 * @example
+	 * ```svelte
+	 * <UPRNMapView
+	 *   webMap={myWebMap}
+	 *   interactableLayers={['layer1', 'layer2']}
+	 *   panelPosition="top-left"
+	 *   menuPosition="top-right"
+	 * >
+	 *   {#snippet panel()}
+	 *     <div>Custom panel content</div>
+	 *   {/snippet}
+	 *   {#snippet menu()}
+	 *     <div>Custom menu content</div>
+	 *   {/snippet}
+	 * </UPRNMapView>
+	 * ```
+	 */
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
-	import type MapView from '@arcgis/core/views/MapView';
 	import type { Snippet } from 'svelte';
 	import { mapInteractionStore } from '$lib/stores/map-interaction-store.svelte';
 	import { areaSelectionStore } from '$lib/stores/area-selection-store.svelte';
 	import { areaSelectionTreeviewStore } from '$lib/stores/area-selection-tree-view-store.svelte';
+	import type Map from '@arcgis/core/Map';
+	import type MapView from '@arcgis/core/views/MapView';
+	import type WebMap from '@arcgis/core/WebMap';
 
 	type UIPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'manual';
 
+	/**
+	 * Component props interface
+	 */
 	type Props = {
+		/** The WebMap instance to display. If null, a fallback map will be created */
 		webMap?: __esri.WebMap | null;
+		/** Array of layer IDs that should be interactive (clickable) */
 		interactableLayers?: string[];
+		/** Position for the custom panel UI element */
 		panelPosition?: UIPosition;
+		/** Position for the custom menu UI element */
 		menuPosition?: UIPosition;
+		/** Snippet for custom panel content */
 		panel?: Snippet;
+		/** Snippet for custom menu content */
 		menu?: Snippet;
 	};
 
@@ -29,66 +68,139 @@
 	}: Props = $props();
 
 	let mapContainer: HTMLDivElement | null = null;
-	let mapView: MapView | null = $state<MapView | null>(null);
+	let mapView: __esri.MapView | null = $state<__esri.MapView | null>(null);
 	let panelContainer = $state<HTMLElement | null>(null);
 	let menuContainer = $state<HTMLElement | null>(null);
+	let uiAttached = $state(false);
 
 	const fallbackBasemap = 'streets-vector';
-	let mapViewCtorPromise: Promise<(typeof import('@arcgis/core/views/MapView'))['default']> | null =
-		null;
-	let mapCtorPromise: Promise<(typeof import('@arcgis/core/Map'))['default']> | null = null;
+	let MapContructor: typeof Map;
+	let MapViewContructor: typeof MapView;
+	let WebMapContructor: typeof WebMap;
 
-	async function loadMapViewCtor() {
+	/**
+	 * Asynchronously loads the required ArcGIS modules for map functionality.
+	 * Only loads modules once and only in browser environment.
+	 * @returns Promise that resolves when modules are loaded
+	 */
+	async function loadEsriAsync() {
 		if (!browser) {
-			throw new Error('Attempted to load MapView constructor outside the browser');
+			return;
 		}
 
-		if (!mapViewCtorPromise) {
-			mapViewCtorPromise = import('@arcgis/core/views/MapView').then((module) => module.default);
-		}
+		if (!MapViewContructor) {
+			const [{ default: Map }, { default: MapView }, { default: WebMap }] = await Promise.all([
+				import('@arcgis/core/Map'),
+				import('@arcgis/core/views/MapView'),
+				import('@arcgis/core/WebMap')
+			]);
 
-		return mapViewCtorPromise;
+			MapContructor = Map;
+			MapViewContructor = MapView;
+			WebMapContructor = WebMap;
+		}
 	}
 
-	async function loadFallbackMapCtor() {
-		if (!browser) {
-			throw new Error('Attempted to load Map constructor outside the browser');
-		}
+	/**
+	 * Creates a new MapView instance with the specified map and container.
+	 * @param map - The map instance to display in the view
+	 * @param container - The HTML container element for the map
+	 * @returns Promise that resolves to the created MapView
+	 */
+	async function createMapView(
+		map: __esri.Map | __esri.WebMap | undefined,
+		container: HTMLDivElement
+	): Promise<__esri.MapView> {
+		const view = new MapViewContructor({
+			container: container,
+			popupEnabled: false,
+			map: map
+		});
 
-		if (!mapCtorPromise) {
-			mapCtorPromise = import('@arcgis/core/Map').then((module) => module.default);
-		}
-
-		return mapCtorPromise;
+		await view.when();
+		return view;
 	}
 
-	onMount(async () => {});
+	/**
+	 * Sets up the UI components for the map view, including positioning and adding custom elements.
+	 * @param view - The MapView instance to configure
+	 */
+	function setupMapUI(view: __esri.MapView) {
+		view.ui.move('zoom', 'top-right');
 
-	$effect(() => {
+		if (panelContainer && panelPosition) {
+			view.ui.add(panelContainer as HTMLElement, panelPosition);
+		}
+
+		if (menuContainer && menuPosition) {
+			view.ui.add(menuContainer as HTMLElement, menuPosition);
+		}
+
+		uiAttached = true;
+	}
+
+	/**
+	 * Initializes the map interaction store with the provided view and interactable layers.
+	 * @param view - The MapView instance to initialize interactions for
+	 */
+	async function initializeMapInteractions(view: __esri.MapView) {
+		await mapInteractionStore.initializeAsync(view, new Set(interactableLayers));
+	}
+
+	/**
+	 * Creates a fallback map with basic basemap when the main webmap fails to load.
+	 * @returns Promise that resolves to a basic Map instance
+	 */
+	async function createFallbackMap(): Promise<__esri.Map> {
+		return new MapContructor({
+			basemap: fallbackBasemap
+		});
+	}
+
+	onMount(async () => {
+		await loadEsriAsync();
+		await loadMapViewAsync();
+	});
+
+	/**
+	 * Updates the map view with a new webMap when the webMap prop changes.
+	 * Handles loading and error scenarios gracefully.
+	 */
+	async function updateMapWithWebMap() {
 		if (!webMap) {
 			return;
 		}
 
-		const load = async () => {
-			try {
-				await loadMapView();
-				if (!mapView) {
-					console.error('MapView is not initialized');
-					return;
-				}
-
-				mapView.map = webMap;
-				await webMap.when();
-				console.log('MapView updated with new webMap');
-			} catch (error) {
-				console.error('Error updating MapView with new webMap:', error);
+		try {
+			await loadEsriAsync();
+			await loadMapViewAsync();
+			if (!mapView) {
+				console.error('MapView is not initialized');
+				return;
 			}
-		};
 
-		load();
+			mapView.map = webMap;
+			await webMap.when();
+			console.log('MapView updated with new webMap');
+		} catch (error) {
+			console.error('Error updating MapView with new webMap:', error);
+		}
+	}
+
+	// Effect to handle webMap changes
+	$effect(() => {
+		if (!webMap) {
+			return;
+		}
+		updateMapWithWebMap();
 	});
 
-	async function loadMapView() {
+	/**
+	 * Initializes the map view with either the provided webMap or a fallback map.
+	 * Handles loading, error recovery, and UI setup.
+	 * @returns Promise that resolves when map view is loaded and configured
+	 */
+	async function loadMapViewAsync() {
 		if (!browser) {
 			return; // Ensure this runs only in the browser
 		}
@@ -99,71 +211,34 @@
 		}
 
 		try {
-			const MapViewCtor = await loadMapViewCtor();
-
-			const view = new MapViewCtor({
-				container: mapContainer as HTMLDivElement,
-				popupEnabled: false,
-				map: webMap ?? undefined
-			});
-			mapView = view;
-
-			await view.when();
-			await mapInteractionStore.initializeAsync(view, new Set(interactableLayers));
-
-			view.ui.move('zoom', 'bottom-right');
-
-			// Add UI elements to the map if they exist and positioning is not manual
-			if (panelContainer && panelPosition !== 'manual') {
-				view.ui.add(panelContainer as HTMLElement, panelPosition);
-			}
-
-			if (menuContainer && menuPosition !== 'manual') {
-				view.ui.add(menuContainer as HTMLElement, menuPosition);
-			}
-
+			// Try to load the main map (webMap or undefined)
+			mapView = await createMapView(webMap ?? undefined, mapContainer as HTMLDivElement);
+			await initializeMapInteractions(mapView);
+			setupMapUI(mapView);
 			console.log('Map loaded successfully');
 		} catch (error) {
 			console.error('Error loading map:', error);
-
-			// Fallback: create a basic map if portal loading fails
-			try {
-				const [MapViewCtor, MapCtor] = await Promise.all([
-					loadMapViewCtor(),
-					loadFallbackMapCtor()
-				]);
-
-				const fallbackMap = new MapCtor({
-					basemap: fallbackBasemap
-				});
-
-				const view = new MapViewCtor({
-					container: mapContainer as HTMLDivElement,
-					map: fallbackMap,
-					popupEnabled: false
-				});
-				mapView = view;
-
-				await view.when();
-				await mapInteractionStore.initializeAsync(view, new Set(interactableLayers));
-
-				view.ui.move('zoom', 'bottom-right');
-
-				if (panelContainer && panelPosition !== 'manual') {
-					view.ui.add(panelContainer as HTMLElement, panelPosition);
-				}
-
-				if (menuContainer && menuPosition !== 'manual') {
-					view.ui.add(menuContainer as HTMLElement, menuPosition);
-				}
-
-				console.log('Fallback map loaded');
-			} catch (fallbackError) {
-				console.error('Error loading fallback map:', fallbackError);
-			}
+			await loadFallbackMap();
 		}
 	}
 
+	/**
+	 * Loads a fallback map when the primary map fails to load.
+	 * Creates a basic map with default basemap and handles any additional errors.
+	 */
+	async function loadFallbackMap() {
+		try {
+			const fallbackMap = await createFallbackMap();
+			mapView = await createMapView(fallbackMap, mapContainer as HTMLDivElement);
+			await initializeMapInteractions(mapView);
+			setupMapUI(mapView);
+			console.log('Fallback map loaded');
+		} catch (fallbackError) {
+			console.error('Error loading fallback map:', fallbackError);
+		}
+	}
+
+	// Effect to update interactable layers when they change
 	$effect(() => {
 		if (!mapView) {
 			return;
@@ -172,26 +247,30 @@
 		mapInteractionStore.updateInteractableLayers(new Set(interactableLayers));
 	});
 
+	/**
+	 * Updates the selected layer view in the area selection store when a visible node is available.
+	 * @param layer - The feature layer to set as the selected layer view
+	 */
+	async function updateSelectedLayerView(layer: __esri.FeatureLayer) {
+		if (!mapView) {
+			return;
+		}
+
+		const layerView = await mapView.whenLayerView(layer);
+		if (!layerView) {
+			console.warn('Could not get LayerView for the visible node layer');
+			return;
+		}
+
+		areaSelectionStore.setSelectedLayerView(layerView);
+	}
+
 	// Effect to handle visible node changes and update layer view
 	$effect(() => {
 		if (!areaSelectionTreeviewStore.visibleNode) {
 			areaSelectionStore.resetSelectedAreas();
 			return;
 		}
-
-		const updateSelectedLayerView = async (layer: __esri.FeatureLayer) => {
-			if (!mapView) {
-				return;
-			}
-
-			const layerView = await mapView.whenLayerView(layer);
-			if (!layerView) {
-				console.warn('Could not get LayerView for the visible node layer');
-				return;
-			}
-
-			areaSelectionStore.setSelectedLayerView(layerView);
-		};
 
 		const featureLayer = areaSelectionTreeviewStore.visibleNode?.layer as __esri.FeatureLayer;
 		if (!featureLayer) {
@@ -202,7 +281,10 @@
 		updateSelectedLayerView(featureLayer);
 	});
 
-	// Cleanup function
+	/**
+	 * Cleans up map resources and interaction stores when the component is destroyed.
+	 * Destroys the map view and cleans up any associated event listeners.
+	 */
 	function cleanup() {
 		mapInteractionStore.cleanup();
 		if (mapView) {
@@ -218,27 +300,19 @@
 
 <div class="map-view" bind:this={mapContainer}></div>
 
-{#if panel && panelPosition !== 'manual'}
+{#if panel}
 	<div bind:this={panelContainer} class="esri-ui-element">
-		{@render panel()}
+		{#if uiAttached}
+			{@render panel()}
+		{/if}
 	</div>
 {/if}
 
-{#if menu && menuPosition !== 'manual'}
+{#if menu}
 	<div bind:this={menuContainer} class="esri-ui-element">
-		{@render menu()}
-	</div>
-{/if}
-
-{#if panel && panelPosition === 'manual'}
-	<div class="manual-panel-container">
-		{@render panel()}
-	</div>
-{/if}
-
-{#if menu && menuPosition === 'manual'}
-	<div class="manual-menu-container">
-		{@render menu()}
+		{#if uiAttached}
+			{@render menu()}
+		{/if}
 	</div>
 {/if}
 
@@ -252,21 +326,5 @@
 
 	.esri-ui-element {
 		position: relative;
-	}
-
-	.manual-panel-container,
-	.manual-menu-container {
-		position: absolute;
-		z-index: 10;
-	}
-
-	.manual-panel-container {
-		top: 10px;
-		left: 10px;
-	}
-
-	.manual-menu-container {
-		top: 10px;
-		right: 10px;
 	}
 </style>

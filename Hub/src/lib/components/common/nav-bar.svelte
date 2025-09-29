@@ -42,17 +42,23 @@
 									</div>
 								</a>
 							</NavigationMenu.Link>
-							<NavigationMenu.Link href="#">
-								<a href={`${base}/services/uprn2`}>
-									<div class="font-medium">UPRN (2)</div>
-									<div class="text-muted-foreground">
-										Explore Unique Property Reference Numbers (UPRNs) on an interactive map.
-									</div>
-								</a>
-							</NavigationMenu.Link>
 						</li>
 					</ul>
 				</NavigationMenu.Content>
+			</NavigationMenu.Item>
+			<NavigationMenu.Item>
+				<NavigationMenu.Link>
+					{#snippet child()}
+						<a href={`${base}/usecases`} class={navigationMenuTriggerStyle()}>Use Cases</a>
+					{/snippet}
+				</NavigationMenu.Link>
+			</NavigationMenu.Item>
+			<NavigationMenu.Item>
+				<NavigationMenu.Link>
+					{#snippet child()}
+						<a href={`${base}/labs`} class={navigationMenuTriggerStyle()}>Labs</a>
+					{/snippet}
+				</NavigationMenu.Link>
 			</NavigationMenu.Item>
 		</NavigationMenu.List>
 	</NavigationMenu.Root>

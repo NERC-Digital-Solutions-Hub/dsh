@@ -69,8 +69,10 @@
 	}
 
 	.download-btn :global(svg path) {
-		fill: #d1d5db; /* Default: very light gray */
-		transition: fill 0.1s ease-out;
+		stroke: #d1d5db; /* Also set stroke for stroke-based icons */
+		transition:
+			fill 0.1s ease-out,
+			stroke 0.1s ease-out;
 	}
 
 	/* Interactive states for inactive button */
@@ -79,7 +81,7 @@
 	}
 
 	.download-btn:not(.active):hover :global(svg path) {
-		fill: #9ca3af; /* Medium gray on hover */
+		stroke: #9ca3af; /* Also set stroke for stroke-based icons */
 	}
 
 	.download-btn:not(.active):focus {
@@ -89,6 +91,6 @@
 	/* Active state */
 	.download-btn.active :global(svg path),
 	.download-btn:active :global(svg path) {
-		fill: hsl(var(--primary));
+		stroke: hsl(var(--primary)); /* Also set stroke for stroke-based icons */
 	}
 </style>
