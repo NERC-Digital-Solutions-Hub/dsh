@@ -1,13 +1,15 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import CrossIcon from '$lib/assets/cross.svg?raw';
+	import HouseIcon from '$lib/assets/house.svg?raw';
 </script>
 
 <div class="container">
 	<div class="half left-half">
 		<Button href={`${base}/usecases/housing`} class="use-case-button">
 			<div class="button-content">
-				<div class="icon">🏠</div>
+				<div class="icon">{@html HouseIcon}</div>
 				<span class="text">Housing</span>
 			</div>
 		</Button>
@@ -16,7 +18,7 @@
 	<div class="half right-half">
 		<Button href={`${base}/usecases/health`} class="use-case-button">
 			<div class="button-content">
-				<div class="icon">🏥</div>
+				<div class="icon">{@html CrossIcon}</div>
 				<span class="text">Health</span>
 			</div>
 		</Button>
@@ -58,8 +60,17 @@
 	}
 
 	.icon {
-		font-size: 4rem;
+		font-size: 20rem; /* Increased from 4rem to 6rem for bigger icons */
 		line-height: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.icon :global(svg) {
+		width: 6rem;
+		height: 6rem;
+		display: block;
 	}
 
 	.text {
