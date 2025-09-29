@@ -1,1 +1,0 @@
-import{s as o}from"./B92kdZ15.js";import"./4kudGrBO.js";import{d as s}from"./DJMH-nwm.js";const u=new s;function f(n,r,t){return u.execute(n,r,t,null)}function m(n,r,t){const e=u.executeMany(new o(n),r,t,null);return Array.from(e)}function p(n,r,t){return u.isSimpleAsFeature(n,r,t,null,null)}function a(){return u.supportsCurves()}export{f as e,m as o,a as s,p as u};

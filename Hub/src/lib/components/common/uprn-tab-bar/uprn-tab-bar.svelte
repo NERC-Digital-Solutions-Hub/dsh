@@ -19,8 +19,8 @@
 		<Tabs.Trigger value="select-data" class="tab-trigger">Select Data</Tabs.Trigger>
 		<ChevronRightIcon class="separator" />
 		<Tabs.Trigger value="export" class="tab-trigger">Export</Tabs.Trigger>
-		<ChevronRightIcon class="separator" />
-		<Tabs.Trigger value="downloads" class="tab-trigger">Downloads</Tabs.Trigger>
+		<!-- <ChevronRightIcon class="separator" />
+		<Tabs.Trigger value="downloads" class="tab-trigger">Downloads</Tabs.Trigger> -->
 	</Tabs.List>
 	{@render children?.()}
 </Tabs.Root>
