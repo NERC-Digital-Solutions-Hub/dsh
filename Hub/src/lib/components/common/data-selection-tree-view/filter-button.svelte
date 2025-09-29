@@ -1,7 +1,7 @@
 <!-- FilterButton.svelte -->
 <script lang="ts">
-	import FilterEnabledIcon from '$lib/assets/filter-enabled.svg?raw';
-	import FilterDisabledIcon from '$lib/assets/filter-disabled.svg?raw';
+	import FilterEnabledIcon from '$lib/assets/funnel.svg?raw';
+	import FilterDisabledIcon from '$lib/assets/funnel-x.svg?raw';
 
 	type Props = {
 		layerId: string;
@@ -62,8 +62,7 @@
 	}
 
 	.filter-btn :global(svg path) {
-		fill: #d1d5db; /* Default: lighter gray for disabled state */
-		opacity: 0.3; /* Make disabled state more transparent */
+		stroke: #d1d5db; /* Also set stroke for stroke-based icons */
 		transition:
 			fill 0.1s ease-out,
 			opacity 0.1s ease-out;
@@ -75,8 +74,7 @@
 	}
 
 	.filter-btn:not(.active):hover :global(svg path) {
-		fill: #9ca3af; /* Medium gray on hover */
-		opacity: 0.5; /* Slightly more visible on hover */
+		stroke: #9ca3af; /* Medium gray on hover */
 	}
 
 	.filter-btn:not(.active):focus {
@@ -86,7 +84,7 @@
 	/* Active state */
 	.filter-btn.active :global(svg path),
 	.filter-btn:active :global(svg path) {
-		fill: hsl(var(--primary));
+		stroke: hsl(var(--primary));
 		opacity: 1; /* Full opacity when active */
 	}
 </style>
