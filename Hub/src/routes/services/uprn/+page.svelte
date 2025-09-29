@@ -20,6 +20,7 @@
 	import AreaSelectionHoverCard from '$lib/components/common/area-selection-hover-card/area-selection-hover-card.svelte';
 	import FieldFilterMenuStore from '$lib/stores/field-filter-menu-store.svelte';
 	import FieldSelectionMenu from '$lib/components/common/field-selection-menu/field-selection-menu.svelte';
+	import DownloadsMenu from '$lib/components/common/downloads-menu/downloads-menu.svelte';
 	import { Toaster } from '$lib/components/ui/sonner';
 	import { dataSelectionStore } from '$lib/stores/data-selection-store.svelte';
 
@@ -29,6 +30,7 @@
 	let treeviewDataConfig: TreeviewConfig | null = $state<TreeviewConfig | null>(null);
 	let interactableLayers: string[] = $state([]);
 	let fieldsToHide: Set<string> = $state(new Set());
+	let currentTab = $state('define-areas');
 
 	onMount(async () => {
 		const appConfig: AppConfig = await getAppConfigAsync();
@@ -51,6 +53,14 @@
 
 		console.log('WebMap loaded');
 	});
+
+	function onTabValueChange(value: string) {
+		currentTab = value;
+	}
+
+	function switchToDownloadsTab() {
+		currentTab = 'downloads';
+	}
 </script>
 
 <Toaster />
@@ -59,7 +69,7 @@
 
 {#snippet panelContent()}
 	<div class="flex w-120 min-w-0 flex-col gap-6">
-		<UprnTabBar value="define-areas">
+		<UprnTabBar value={currentTab} onValueChange={onTabValueChange}>
 			<UprnTabBarContent value="define-areas">
 				<ArcgisSoleSelectionTreeView
 					webMap={webMapStore.data}
@@ -75,11 +85,13 @@
 			</UprnTabBarContent>
 			<UprnTabBarContent value="export">
 				{#snippet footer()}
-					<ExportMenuFooter />
+					<ExportMenuFooter onExportSuccess={switchToDownloadsTab} />
 				{/snippet}
 				<ExportMenu {webMapStore} {fieldFilterMenuStore} />
 			</UprnTabBarContent>
-			<UprnTabBarContent value="downloads"></UprnTabBarContent>
+			<UprnTabBarContent value="downloads">
+				<DownloadsMenu />
+			</UprnTabBarContent>
 		</UprnTabBar>
 	</div>
 {/snippet}

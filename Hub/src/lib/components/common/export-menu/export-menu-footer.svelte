@@ -3,6 +3,16 @@
 	import { toast } from 'svelte-sonner';
 	import { areaSelectionStore } from '$lib/stores/area-selection-store.svelte';
 	import { dataSelectionStore } from '$lib/stores/data-selection-store.svelte';
+	import { downloadsStore } from '$lib/stores/downloads-store.svelte';
+	import { page } from '$app/stores';
+	import { Clipboard } from 'lucide-svelte';
+	import { ClipboardCheck } from 'lucide-svelte';
+
+	type Props = {
+		onExportSuccess?: () => void;
+	};
+
+	const { onExportSuccess }: Props = $props();
 
 	let canExport = $derived(
 		areaSelectionStore.layerHighlightState.areaInfos.length > 0 &&
@@ -25,6 +35,16 @@
 		toast.info('Export started successfully.', {
 			duration: 4000
 		});
+
+		const downloadId = crypto.randomUUID();
+		downloadsStore.downloads.push({
+			id: downloadId,
+			url: `${$page.url}/${downloadId}`,
+			status: 'pending'
+		});
+
+		// Call the onExportSuccess callback to switch to downloads tab
+		onExportSuccess?.();
 	}
 </script>
 
