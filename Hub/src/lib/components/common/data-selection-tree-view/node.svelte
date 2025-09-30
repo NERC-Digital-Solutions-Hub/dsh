@@ -102,7 +102,14 @@
 {#if isFolder}
 	<div class="w-full">
 		<!-- Parent folder with its own border - entire area clickable -->
-		<NodeContent {icon} name={node.name} {depth} onclick={handleFolderClick}>
+		<NodeContent
+			{icon}
+			name={node.name}
+			{depth}
+			onclick={handleFolderClick}
+			isGroup={true}
+			{isOpen}
+		>
 			{#snippet children()}
 				<div class="flex items-center gap-2">
 					{#if hasVisibility}
@@ -135,7 +142,7 @@
 		{/if}
 	</div>
 {:else}
-	<NodeContent {icon} name={node.name} {depth} onclick={handleClick}>
+	<NodeContent {icon} name={node.name} {depth} onclick={handleClick} isGroup={false}>
 		{#snippet children()}
 			<div class="flex items-center gap-2">
 				{#if isDownloadable}

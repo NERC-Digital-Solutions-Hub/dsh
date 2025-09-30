@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Toggle } from '$lib/components/ui/toggle/index.js';
+	import OpenIndicator from '../open-indicator.svelte';
 
 	type Props = {
 		isTogglable: boolean;
@@ -9,9 +10,10 @@
 		depth: number;
 		onclick: () => void;
 		children?: any;
+		isOpen: boolean;
 	};
 
-	const { isTogglable, pressed, icon, name, depth, onclick, children }: Props = $props();
+	const { isTogglable, pressed, icon, name, depth, onclick, children, isOpen }: Props = $props();
 
 	const widthCalc = `calc(100% - ${depth * 1}rem)`;
 </script>
@@ -44,6 +46,7 @@
 	>
 		<div class="flex w-full items-center justify-between gap-2">
 			<div class="pointer-events-none flex min-w-0 flex-1 items-center gap-1">
+				<OpenIndicator {isOpen} />
 				<span class="inline-block size-4" aria-hidden="true">
 					{@html icon}
 				</span>

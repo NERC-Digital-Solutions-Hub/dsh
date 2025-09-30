@@ -97,6 +97,7 @@
 			name={node.name}
 			{depth}
 			onclick={handleFolderClick}
+			{isOpen}
 		/>
 
 		<!-- Children nodes outside parent border - only show when open -->
@@ -123,5 +124,6 @@
 		name={node.name}
 		{depth}
 		onclick={handleClick}
+		{isOpen}
 	/>
 {/if}
