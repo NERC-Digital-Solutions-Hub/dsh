@@ -1,12 +1,14 @@
 <script lang="ts">
 	import OpenIndicator from '../open-indicator.svelte';
+	import { getNodeStyles } from '../node-content-styles.js';
+	import type { Snippet } from 'svelte';
 
 	type Props = {
 		icon: string;
 		name: string;
 		depth: number;
 		onclick: () => void;
-		children?: any;
+		children?: Snippet;
 		isGroup?: boolean;
 		isOpen?: boolean;
 	};
@@ -17,7 +19,7 @@
 </script>
 
 <button
-	class="mb-1 cursor-pointer rounded-md border border-border/30 bg-card/50 p-2 text-left transition-colors hover:bg-card/70"
+	class={getNodeStyles({ enhancedHover: true, includeFont: true })}
 	style="width: {widthCalc};"
 	{onclick}
 >

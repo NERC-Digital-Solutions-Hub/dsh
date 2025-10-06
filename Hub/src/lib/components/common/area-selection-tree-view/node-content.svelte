@@ -1,6 +1,14 @@
 <script lang="ts">
 	import { Toggle } from '$lib/components/ui/toggle/index.js';
 	import OpenIndicator from '../open-indicator.svelte';
+	import {
+		baseNodeStyles,
+		enhancedHoverStyles,
+		fontStyles,
+		defaultBgStyles,
+		accentBgStyles,
+		toggleSpecificStyles
+	} from '../node-content-styles.js';
 
 	type Props = {
 		isTogglable: boolean;
@@ -16,12 +24,16 @@
 	const { isTogglable, pressed, icon, name, depth, onclick, children, isOpen }: Props = $props();
 
 	const widthCalc = `calc(100% - ${depth * 1}rem)`;
+
+	const sharedStyles = `${baseNodeStyles} ${enhancedHoverStyles}`;
+	const toggleStyles = `${sharedStyles} ${toggleSpecificStyles} ${defaultBgStyles} ${fontStyles}`;
+	const buttonStyles = `${sharedStyles} ${fontStyles}`;
 </script>
 
 {#if isTogglable}
 	<Toggle
 		{pressed}
-		class="mb-1 !h-auto !min-h-9 cursor-pointer rounded-md border border-border/30 bg-card/50 p-2 text-left !whitespace-normal transition-colors hover:bg-card/70 data-[state=on]:!bg-accent data-[state=on]:!text-accent-foreground data-[state=on]:hover:!bg-accent data-[state=on]:hover:!text-accent-foreground"
+		class={toggleStyles}
 		variant="outline"
 		style="width: {widthCalc};"
 		onPressedChange={onclick}
@@ -38,9 +50,7 @@
 	</Toggle>
 {:else}
 	<button
-		class="mb-1 cursor-pointer rounded-md border border-border/30 p-2 text-left text-sm font-medium transition-colors hover:bg-card/70 {pressed
-			? 'bg-accent text-accent-foreground'
-			: 'bg-card/50'}"
+		class="{buttonStyles} {pressed ? accentBgStyles : defaultBgStyles}"
 		style="width: {widthCalc};"
 		{onclick}
 	>

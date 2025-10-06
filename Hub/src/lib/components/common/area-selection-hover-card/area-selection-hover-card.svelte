@@ -4,6 +4,7 @@
 
 	let currentHoveredAreaName = $state<string | null>(null);
 	let mousePosition = $state<{ x: number; y: number }>({ x: 0, y: 0 });
+	let hoverRequestVersion = 0;
 
 	// Track mouse position
 	const handleMouseMove = (event: MouseEvent) => {
@@ -23,33 +24,24 @@
 	});
 
 	$effect(() => {
-		if (!areaSelectionStore.currentHoveredArea) {
+		const areaId = areaSelectionStore.currentHoveredArea?.id;
+		const myVersion = ++hoverRequestVersion;
+
+		if (!areaId) {
 			currentHoveredAreaName = null;
 			return;
 		}
 
-		const fetchAreaName = async () => {
-			// Check again if the hovered area is still the same before making the async call
-			if (
-				!areaSelectionStore.currentHoveredArea ||
-				areaSelectionStore.currentHoveredArea.id !== areaSelectionStore.currentHoveredArea.id
-			) {
-				currentHoveredAreaName = null;
+		(async () => {
+			const names = await areaSelectionStore.getAreaNamesById([areaId]);
+			if (myVersion !== hoverRequestVersion) return;
+
+			if (areaSelectionStore.currentHoveredArea?.id !== areaId) {
 				return;
 			}
 
-			const names = await areaSelectionStore.getAreaNamesById([
-				areaSelectionStore.currentHoveredArea.id
-			]);
-
-			if (areaSelectionStore.currentHoveredArea) {
-				currentHoveredAreaName = names[0] || null;
-			} else {
-				currentHoveredAreaName = null;
-			}
-		};
-
-		fetchAreaName();
+			currentHoveredAreaName = names[0] ?? null;
+		})();
 	});
 </script>
 

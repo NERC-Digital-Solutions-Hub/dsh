@@ -23,6 +23,7 @@ export type TreeviewConfig = {
 export type TreeviewLayerConfig = {
 	name: string;
 	isDownloadable?: boolean;
+	visibilityGroup?: string;
 };
 
 let appConfig: AppConfig | null = null;

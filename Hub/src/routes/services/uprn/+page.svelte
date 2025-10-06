@@ -34,21 +34,19 @@
 
 	onMount(async () => {
 		const appConfig: AppConfig = await getAppConfigAsync();
-		const portalUrl = appConfig.portalUrl;
-		const portalId = appConfig.portalItemId;
-		const proxy = appConfig.proxy;
+
 		treeviewSelectionAreasConfig = appConfig.treeviewSelectionAreasConfig;
 		treeviewDataConfig = appConfig.treeviewDataConfig || null;
+		fieldsToHide = new Set(appConfig.fieldsToHide || []);
 		interactableLayers = appConfig.selectionLayersNameFields?.map((layer) => layer.layerName) || [];
 		areaSelectionStore.setNameFields(appConfig.selectionLayersNameFields as LayerNameField[]);
-		fieldsToHide = new Set(appConfig.fieldsToHide || []);
 
 		console.log('Selection Layers:', $state.snapshot(treeviewSelectionAreasConfig));
 
 		await webMapStore.initializeAsync({
-			portalUrl: portalUrl,
-			itemId: portalId || '',
-			proxy: proxy
+			portalUrl: appConfig.portalUrl,
+			itemId: appConfig.portalItemId || '',
+			proxy: appConfig.proxy
 		});
 
 		console.log('WebMap loaded');
