@@ -115,6 +115,16 @@
                 "visibilityGroupId": "area"
             },
             {
+                "_name": "BNG Outline",
+                "id": "0fb7ff5d03434a87904636b8f6dce7dc",
+                "isHidden": true
+            },
+            {
+                "_name": "Upper Tier Local Authorities (Dec 22) - UK Boundaries Fully Clipped",
+                "id": "861795fad8e4474ebc9b46b5fed8a95e",
+                "isHidden": true
+            },
+            {
                 "_name": "UPRN (05/2024)",
                 "id": "b6311005e65b4f1c94204ba64dddd3ac",
                 "isHidden": true
