@@ -1,7 +1,7 @@
 <!-- DownloadButton.svelte -->
 <script lang="ts">
 	import DownloadIcon from '$lib/assets/download-icon.svg?raw';
-	import type { TreeNode } from './types.js';
+	import type { TreeNode } from '../types.js';
 
 	type Props = {
 		node: TreeNode;

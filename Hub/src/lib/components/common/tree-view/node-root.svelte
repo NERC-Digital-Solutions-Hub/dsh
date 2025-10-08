@@ -1,56 +1,31 @@
 <!-- NodeRoot.svelte - Unified root component for tree nodes -->
 <script lang="ts">
-	import type { TreeNode } from '../data-selection-tree-view/types.js';
+	import type { TreeNode } from './types.js';
 	import { type Snippet } from 'svelte';
 
 	type Props = {
-		node: TreeNode;
-		depth?: number;
 		isOpen?: boolean;
-		isGroup?: boolean;
-		children?: Snippet; // The node content itself
-		childNode?: Snippet<[TreeNode, number, number]>; // Snippet for rendering child nodes
-		// Animation control
-		enableAnimation?: boolean;
-		// Depth line control
-		showDepthLine?: boolean;
+		childNodes?: TreeNode[] | null; // The child nodes to render.
+		content?: Snippet; // The node content.
+		childNode?: Snippet<[TreeNode]>; // The node to render children.
 	};
-	const {
-		node,
-		depth = 0,
-		isOpen = false,
-		isGroup = false,
-		children,
-		childNode,
-		enableAnimation = true,
-		showDepthLine = true
-	}: Props = $props();
 
-	// Check if this node has children to show
-	const hasChildren = !!(node.children && node.children.length > 0);
-	const shouldShowChildren = isGroup && isOpen && hasChildren;
+	const { isOpen = false, childNodes = null, content, childNode }: Props = $props();
 </script>
 
 <div class="w-full">
 	<!-- Node content -->
-	{@render children?.()}
+	{@render content?.()}
 
 	<!-- Children container with animations and depth lines -->
-	{#if shouldShowChildren}
-		<div class="tree-children relative ml-4 w-full" class:animate={enableAnimation}>
-			<!-- Vertical guide line with animation -->
-			{#if showDepthLine}
-				<div class="tree-guide-line" class:tree-guide-line-animate={enableAnimation}></div>
-			{/if}
-
-			<!-- Child nodes with staggered animation -->
-			{#each node.children ?? [] as child, index (child.id)}
-				<div
-					class="tree-node-item"
-					class:animate={enableAnimation}
-					style="animation-delay: {enableAnimation ? 100 + index * 50 : 0}ms;"
-				>
-					{@render childNode?.(child, index, depth + 1)}
+	<!-- Children nodes outside parent border - only show when open -->
+	{#if isOpen && childNodes}
+		<div class="tree-children relative ml-4 w-full">
+			<!-- Vertical guide line with grow animation -->
+			<div class="tree-guide-line tree-guide-line-animate"></div>
+			{#each childNodes ?? [] as child, index (child.id)}
+				<div class="tree-node-item" style="animation-delay: {100 + index * 50}ms;">
+					{@render childNode?.(child)}
 				</div>
 			{/each}
 		</div>
@@ -94,12 +69,12 @@
 	}
 
 	/* Container for animated children */
-	.tree-children.animate {
+	.tree-children {
 		animation: containerFadeIn 200ms ease-out;
 	}
 
 	/* Individual node animation */
-	.tree-node-item.animate {
+	.tree-node-item {
 		animation: nodeSlideIn 250ms ease-out both;
 		transform-origin: left center;
 	}

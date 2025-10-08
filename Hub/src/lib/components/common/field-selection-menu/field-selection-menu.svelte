@@ -43,7 +43,7 @@
 
 		// Initialize local selected fields when active layer changes
 		if (activeLayer) {
-			const existingDataSelection = dataSelectionStore.DataSelections.get(activeLayer.uid);
+			const existingDataSelection = dataSelectionStore.DataSelections.get(activeLayer.id);
 			if (existingDataSelection?.fields) {
 				// Copy existing selection
 				localSelectedFields = new SvelteSet([...existingDataSelection.fields]);
@@ -65,7 +65,7 @@
 			return;
 		}
 
-		let targetDataSelection = dataSelectionStore.DataSelections.get(activeFeatureLayer.uid);
+		let targetDataSelection = dataSelectionStore.DataSelections.get(activeFeatureLayer.id);
 		if (!targetDataSelection) {
 			return;
 		}
@@ -76,7 +76,7 @@
 		}
 
 		if (localSelectedFields.size === 0) {
-			dataSelectionStore.removeSelection(activeFeatureLayer.uid);
+			dataSelectionStore.removeSelection(activeFeatureLayer.id);
 			return;
 		}
 

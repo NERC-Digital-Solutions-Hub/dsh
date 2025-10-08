@@ -1,10 +1,13 @@
 import { base } from '$app/paths';
 import { type LayerNameField } from '$lib/stores/area-selection-store.svelte';
+import type { TreeviewConfig } from '$lib/utils/treeview-config.js';
 
 export type AppConfig = {
 	portalUrl?: string | null;
 	portalItemId: string;
 	proxy?: Proxy | null;
+	dataSelectionTreeviewConfig?: TreeviewConfig;
+	areaSelectionTreeviewConfig?: TreeviewConfig;
 	treeviewDataConfig: TreeviewConfig;
 	treeviewSelectionAreasConfig: TreeviewConfig;
 	selectionLayersNameFields?: LayerNameField[];
@@ -16,15 +19,15 @@ export type Proxy = {
 	proxyUrl: string;
 };
 
-export type TreeviewConfig = {
-	layers: TreeviewLayerConfig[];
-};
+// export type TreeviewConfig = {
+// 	layers: TreeviewLayerConfig[];
+// };
 
-export type TreeviewLayerConfig = {
-	name: string;
-	isDownloadable?: boolean;
-	visibilityGroup?: string;
-};
+// export type TreeviewLayerConfig = {
+// 	name: string;
+// 	isDownloadable?: boolean;
+// 	visibilityGroup?: string;
+// };
 
 let appConfig: AppConfig | null = null;
 

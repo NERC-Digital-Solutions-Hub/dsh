@@ -1,12 +1,14 @@
 <!-- Node.svelte -->
 <script lang="ts">
-	import { Checkbox } from '$lib/components/ui/no-prop-checkbox/index';
+	import NodeRoot from '../node-root.svelte';
 	import Node from './node.svelte';
 	import NodeContent from './node-content.svelte';
-	import { getNodeIcon } from './get-node-icon';
-	import type { TreeNode } from './types.js';
+	import { getNodeIcon } from '../get-node-icon';
+	import type { TreeNode } from '../types.js';
+	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
 
 	type Props = {
+		treeviewConfigStore: TreeviewConfigStore;
 		node: TreeNode;
 		onNodeClick?: (node: TreeNode) => void;
 		onNodeVisibilityChange?: (node: TreeNode, visible: boolean) => void;
@@ -16,6 +18,7 @@
 	};
 
 	const {
+		treeviewConfigStore,
 		node,
 		onNodeClick,
 		onNodeVisibilityChange,
@@ -87,43 +90,44 @@
 	}
 </script>
 
-{#if isFolder}
-	<div class="w-full">
-		<!-- Parent folder with its own border - entire area clickable -->
-		<NodeContent
-			isTogglable={false}
-			pressed={isPressed}
-			{icon}
-			name={node.name}
-			{depth}
-			onclick={handleFolderClick}
-			{isOpen}
-		/>
-
-		<!-- Children nodes outside parent border - only show when open -->
-		{#if isOpen}
-			<div class="ml-4 w-full">
-				{#each node.children ?? [] as child (child.id)}
-					<Node
-						node={child}
-						{onNodeClick}
-						{onNodeVisibilityChange}
-						{getNodeVisibility}
-						depth={depth + 1}
-						{useLayerTypeIcon}
-					/>
-				{/each}
-			</div>
+{#snippet content()}
+	{#if !treeviewConfigStore.getItemConfig(node.id)?.isHidden}
+		{#if isFolder}
+			<NodeContent
+				isTogglable={false}
+				pressed={isPressed}
+				{icon}
+				name={node.name}
+				{depth}
+				onclick={handleFolderClick}
+				{isOpen}
+			/>
+		{:else}
+			<NodeContent
+				isTogglable={true}
+				pressed={isPressed}
+				{icon}
+				name={node.name}
+				{depth}
+				onclick={handleClick}
+				{isOpen}
+			/>
 		{/if}
-	</div>
-{:else}
-	<NodeContent
-		isTogglable={true}
-		pressed={isPressed}
-		{icon}
-		name={node.name}
-		{depth}
-		onclick={handleClick}
-		{isOpen}
-	/>
-{/if}
+	{/if}
+{/snippet}
+
+{#snippet childNode(node: TreeNode)}
+	{#if isFolder && isOpen && !treeviewConfigStore.getItemConfig(node.id)?.isHidden}
+		<Node
+			{treeviewConfigStore}
+			{node}
+			{onNodeClick}
+			{onNodeVisibilityChange}
+			{getNodeVisibility}
+			depth={depth + 1}
+			{useLayerTypeIcon}
+		/>
+	{/if}
+{/snippet}
+
+<NodeRoot {isOpen} {content} childNodes={isFolder ? node.children : null} {childNode} />

@@ -10,7 +10,7 @@ import {
  */
 class MapInteractionStore {
 	private mapView: MapView | null = $state<MapView | null>(null);
-	private interactableLayers: Set<string> = new Set();
+	private interactableLayers: Set<string> = $state(new Set<string>());
 	private pointerMoveHandle: __esri.Handle | null = null;
 	private clickHandle: __esri.Handle | null = null;
 	private leaveHandle: __esri.Handle | null = null;
@@ -44,7 +44,7 @@ class MapInteractionStore {
 		this.setupEnterHandler(view);
 
 		this.isInitialized = true;
-		console.log('MapInteractionStore initialized with MapView');
+		console.log('[map-interaction-store] Initialized with MapView');
 	}
 
 	public updateInteractableLayers(interactableLayers: Set<string>): void {
@@ -98,7 +98,7 @@ class MapInteractionStore {
 			if (
 				!graphic ||
 				!layer ||
-				!this.isLayerInteractable(layer.title as string) ||
+				!this.isLayerInteractable(layer.id as string) ||
 				graphic.attributes?.[layer.objectIdField] === undefined
 			) {
 				this.clearHoverHighlight();
@@ -161,7 +161,7 @@ class MapInteractionStore {
 			if (
 				!graphic ||
 				!layer ||
-				!this.isLayerInteractable(layer.title as string) ||
+				!this.isLayerInteractable(layer.id as string) ||
 				graphic.attributes?.[layer.objectIdField] === undefined
 			) {
 				return;
@@ -275,7 +275,7 @@ class MapInteractionStore {
 		this.pointerInsideMap = true;
 		this.interactableLayers = new Set();
 
-		console.log('MapInteractionStore cleaned up');
+		console.log('[map-interaction-store] Cleaned up');
 	}
 
 	/**

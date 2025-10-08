@@ -4,17 +4,18 @@
 		type HighlightAreaInfo
 	} from '$lib/stores/area-selection-store.svelte';
 	import { dataSelectionStore } from '$lib/stores/data-selection-store.svelte';
-	import { areaSelectionTreeviewStore } from '$lib/stores/area-selection-tree-view-store.svelte';
 	import { WebMapStore } from '$lib/stores/web-map-store.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import FilterButton from '../data-selection-tree-view/filter-button.svelte';
+	import FilterButton from '../tree-view/data-selection/filter-button.svelte';
 	import FilterFieldMenuStore from '$lib/stores/field-filter-menu-store.svelte';
+	import type { TreeviewStore } from '$lib/stores/treeview-store.svelte';
 
 	export type Props = {
 		webMapStore: WebMapStore;
+		areaSelectionTreeviewStore: TreeviewStore;
 		fieldFilterMenuStore: FilterFieldMenuStore;
 	};
-	const { webMapStore, fieldFilterMenuStore }: Props = $props();
+	const { webMapStore, areaSelectionTreeviewStore, fieldFilterMenuStore }: Props = $props();
 
 	type AreaInfo = {
 		name: string;
@@ -56,13 +57,16 @@
 
 	function removeDataSelection(layerId: string) {
 		// Remove the data selection from the store
-		console.log('Removing data selection for layerId:', layerId);
+		console.log('[export-menu] Removing data selection for layerId:', layerId);
 		dataSelectionStore.DataSelections.delete(layerId);
-		console.log('Current SelectedData:', $state.snapshot(dataSelectionStore.DataSelections));
+		console.log(
+			'[export-menu] Current SelectedData:',
+			$state.snapshot(dataSelectionStore.DataSelections)
+		);
 	}
 
 	function handleFilterClicked(layerId: string) {
-		if (fieldFilterMenuStore.ActiveLayer?.uid === layerId) {
+		if (fieldFilterMenuStore.ActiveLayer?.id === layerId) {
 			fieldFilterMenuStore.ActiveLayer = null;
 		} else {
 			fieldFilterMenuStore.ActiveLayer = webMapStore.dataLookup.get(layerId) as __esri.Layer;
@@ -88,7 +92,7 @@
 <h2>Export Options</h2>
 
 <div class="section">
-	<h3>{areaSelectionTreeviewStore.visibleNode?.layer.title}</h3>
+	<h3>{areaSelectionTreeviewStore.getVisibleNodes()[0]?.layer.title}</h3>
 	<h4>Selected Areas</h4>
 	{#if areaInfos.length > 0}
 		<ul class="selected-list">

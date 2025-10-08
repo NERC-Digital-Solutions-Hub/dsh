@@ -3,14 +3,15 @@
 	import VisibilityCheckbox from '$lib/components/common/visibility-checkbox/visibility-checkbox.svelte';
 	import Node from './node.svelte';
 	import NodeContent from './node-content.svelte';
+	import NodeRoot from '$lib/components/common/tree-view/node-root.svelte';
 	import DownloadButton from './download-button.svelte';
 	import FilterButton from './filter-button.svelte';
-	import { getNodeIcon } from './get-node-icon';
-	import type { TreeNode } from './types.js';
-	import type { TreeviewConfig } from '$lib/utils/app-config-provider.js';
+	import { getNodeIcon } from '../get-node-icon';
+	import type { TreeNode } from '../types.js';
+	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
 
 	type Props = {
-		treeviewConfig?: TreeviewConfig | null;
+		treeviewConfigStore?: TreeviewConfigStore | null;
 		node: TreeNode;
 		isDownloadable?: boolean;
 		onNodeClick?: (node: TreeNode) => void;
@@ -25,7 +26,7 @@
 	};
 
 	const {
-		treeviewConfig = null,
+		treeviewConfigStore = null,
 		node,
 		isDownloadable,
 		onNodeClick,
@@ -99,75 +100,70 @@
 	}
 </script>
 
-{#if isFolder}
-	<div class="w-full">
-		<!-- Parent folder with its own border - entire area clickable -->
-		<NodeContent
-			{icon}
-			name={node.name}
-			{depth}
-			onclick={handleFolderClick}
-			isGroup={true}
-			{isOpen}
-		>
-			{#snippet children()}
-				<div class="flex items-center gap-2">
-					{#if hasVisibility}
-						<VisibilityCheckbox checked={isChecked} onCheckedChange={toggleVisible} />
-					{/if}
-				</div>
-			{/snippet}
-		</NodeContent>
-
-		<!-- Children nodes outside parent border - only show when open -->
-		{#if isOpen}
-			<div class="tree-children relative ml-4 w-full">
-				<!-- Vertical guide line with grow animation -->
-				<div class="tree-guide-line tree-guide-line-animate"></div>
-				{#each node.children ?? [] as child, index (child.id)}
-					<div class="tree-node-item" style="animation-delay: {100 + index * 50}ms;">
-						<Node
-							node={child}
-							isDownloadable={treeviewConfig?.layers.find((cfg) => cfg.name === child.name)
-								?.isDownloadable ?? true}
-							{onNodeClick}
-							{onNodeVisibilityChange}
-							{onDownloadStateChanged}
-							{getDownloadState}
-							{onFilterClicked}
-							{hasFiltersApplied}
-							{getNodeVisibility}
-							depth={depth + 1}
-							{useLayerTypeIcon}
-						/>
+{#snippet content()}
+	{#if !treeviewConfigStore?.getItemConfig(node.id)?.isHidden}
+		{#if isFolder}
+			<NodeContent
+				{icon}
+				name={node.name}
+				{depth}
+				onclick={handleFolderClick}
+				isGroup={true}
+				{isOpen}
+			>
+				{#snippet children()}
+					<div class="flex items-center gap-2">
+						{#if hasVisibility}
+							<VisibilityCheckbox checked={isChecked} onCheckedChange={toggleVisible} />
+						{/if}
 					</div>
-				{/each}
-			</div>
+				{/snippet}
+			</NodeContent>
+		{:else}
+			<NodeContent {icon} name={node.name} {depth} onclick={handleClick} isGroup={false}>
+				{#snippet children()}
+					<div class="flex items-center gap-2">
+						{#if isDownloadable}
+							{#if showFilter}
+								<div
+									class="filter-transition-wrapper"
+									class:fade-in={!isAnimatingOut}
+									class:fade-out={isAnimatingOut}
+								>
+									<FilterButton layerId={node.id} {onFilterClicked} {hasFiltersApplied} />
+								</div>
+							{/if}
+							<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
+						{/if}
+						{#if hasVisibility}
+							<VisibilityCheckbox checked={isChecked} onCheckedChange={toggleVisible} />
+						{/if}
+					</div>
+				{/snippet}
+			</NodeContent>
 		{/if}
-	</div>
-{:else}
-	<NodeContent {icon} name={node.name} {depth} onclick={handleClick} isGroup={false}>
-		{#snippet children()}
-			<div class="flex items-center gap-2">
-				{#if isDownloadable}
-					{#if showFilter}
-						<div
-							class="filter-transition-wrapper"
-							class:fade-in={!isAnimatingOut}
-							class:fade-out={isAnimatingOut}
-						>
-							<FilterButton layerId={node.id} {onFilterClicked} {hasFiltersApplied} />
-						</div>
-					{/if}
-					<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
-				{/if}
-				{#if hasVisibility}
-					<VisibilityCheckbox checked={isChecked} onCheckedChange={toggleVisible} />
-				{/if}
-			</div>
-		{/snippet}
-	</NodeContent>
-{/if}
+	{/if}
+{/snippet}
+
+{#snippet childNode(node: TreeNode)}
+	{#if isFolder && isOpen && !treeviewConfigStore?.getItemConfig(node.id)?.isHidden}
+		<Node
+			{node}
+			isDownloadable={treeviewConfigStore?.getItemConfig(node.id)?.isDownloadable ?? true}
+			{onNodeClick}
+			{onNodeVisibilityChange}
+			{onDownloadStateChanged}
+			{getDownloadState}
+			{onFilterClicked}
+			{hasFiltersApplied}
+			{getNodeVisibility}
+			depth={depth + 1}
+			{useLayerTypeIcon}
+		/>
+	{/if}
+{/snippet}
+
+<NodeRoot {isOpen} {content} childNodes={isFolder ? node.children : null} {childNode} />
 
 <style>
 	.filter-transition-wrapper {
@@ -180,49 +176,6 @@
 
 	.filter-transition-wrapper.fade-out {
 		animation: slideOutFade 0.2s ease-out;
-	}
-
-	/* Tree guide line for showing depth levels */
-	.tree-guide-line {
-		position: absolute;
-		left: -0.5rem;
-		top: 0;
-		bottom: 5px;
-		width: 2px;
-		background-color: var(--secondary-foreground);
-		opacity: 0.5;
-		z-index: 0;
-	}
-
-	/* Animation for line growing when group opens */
-	.tree-guide-line-animate {
-		background-color: transparent;
-	}
-
-	.tree-guide-line-animate::before {
-		content: '';
-		position: absolute;
-		left: 0;
-		top: 0;
-		width: 2px;
-		height: 100%;
-		background-color: var(--secondary-foreground);
-		opacity: 0.3;
-		transform: scaleY(0);
-		transform-origin: top;
-		will-change: transform;
-		animation: lineGrow 300ms ease-out forwards;
-	}
-
-	/* Container for animated children */
-	.tree-children {
-		animation: containerFadeIn 200ms ease-out;
-	}
-
-	/* Individual node animation */
-	.tree-node-item {
-		animation: nodeSlideIn 250ms ease-out both;
-		transform-origin: left center;
 	}
 
 	@keyframes slideInFade {

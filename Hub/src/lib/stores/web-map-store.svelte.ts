@@ -20,7 +20,7 @@ export class WebMapStore {
 	public dataLookup: SvelteMap<string, __esri.Layer> = $derived.by(() => {
 		const map = new SvelteMap<string, __esri.Layer>();
 		function addLayerRecursively(layer: __esri.Layer) {
-			map.set(layer.uid, layer);
+			map.set(layer.id, layer);
 			if (layer.type === 'group') {
 				const groupLayer = layer as __esri.GroupLayer;
 				groupLayer.layers.forEach((lyr) => {

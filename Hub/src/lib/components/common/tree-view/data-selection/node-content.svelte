@@ -1,5 +1,5 @@
 <script lang="ts">
-	import OpenIndicator from '../open-indicator.svelte';
+	import OpenIndicator from '../../open-indicator.svelte';
 	import { getNodeStyles } from '../node-content-styles.js';
 	import type { Snippet } from 'svelte';
 

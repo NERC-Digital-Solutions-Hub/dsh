@@ -8,6 +8,7 @@
 	import XCircleIcon from 'lucide-svelte/icons/x-circle';
 	import ClockIcon from 'lucide-svelte/icons/clock';
 	import { toast } from 'svelte-sonner';
+	import { Spinner } from '$lib/components/ui/spinner/index.js';
 
 	// Track which URLs have been recently copied
 	let copiedUrls = $state<Set<string>>(new Set());
@@ -75,7 +76,7 @@
 				return XCircleIcon;
 			case 'pending':
 			default:
-				return ClockIcon;
+				return Spinner;
 		}
 	}
 </script>

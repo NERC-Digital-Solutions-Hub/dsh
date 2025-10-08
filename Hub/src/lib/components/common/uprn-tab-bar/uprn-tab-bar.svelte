@@ -20,7 +20,7 @@
 		<ChevronRightIcon class="separator" />
 		<Tabs.Trigger value="export" class="tab-trigger">Export</Tabs.Trigger>
 		<ChevronRightIcon class="separator" />
-		<Tabs.Trigger value="downloads" class="tab-trigger">Downloads</Tabs.Trigger>
+		<Tabs.Trigger value="downloads" class="tab-trigger">Download</Tabs.Trigger>
 	</Tabs.List>
 	{@render children?.()}
 </Tabs.Root>
