@@ -6,7 +6,7 @@
 	import { dataSelectionStore } from '$lib/stores/data-selection-store.svelte';
 	import { WebMapStore } from '$lib/stores/web-map-store.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import FilterButton from '../../../tree-view/data-selection/filter-button.svelte';
+	import FilterButton from '../tree-view/data-selection/filter-button.svelte';
 	import FilterFieldMenuStore from '$lib/stores/field-filter-menu-store.svelte';
 	import type { TreeviewStore } from '$lib/stores/treeview-store.svelte';
 

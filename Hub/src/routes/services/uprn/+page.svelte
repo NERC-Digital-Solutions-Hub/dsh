@@ -1,6 +1,6 @@
 <script lang="ts">
 	import UprnMapView from '$lib/components/common/services/uprn/uprn-map-view/uprn-map-view.svelte';
-	import AreaSelectionTreeview from '$lib/components/common/tree-view/area-selection/tree-view.svelte';
+	import AreaSelectionTreeview from '$lib/components/common/services/uprn/tree-view/area-selection/tree-view.svelte';
 	import SelectedAreasMenu from '$lib/components/common/services/uprn/area-selection-menu/area-selection-menu.svelte';
 	import UprnTabBar from '$lib/components/common/services/uprn/uprn-tab-bar/uprn-tab-bar.svelte';
 	import UprnTabBarContent from '$lib/components/common/services/uprn/uprn-tab-bar/uprn-tab-bar-content.svelte';
@@ -15,7 +15,7 @@
 	import FieldFilterMenuStore from '$lib/stores/field-filter-menu-store.svelte';
 	import FieldSelectionMenu from '$lib/components/common/services/uprn/field-selection-menu/field-selection-menu.svelte';
 	import DownloadsMenu from '$lib/components/common/services/uprn/downloads-menu/downloads-menu.svelte';
-	import DataSelectionTreeview from '$lib/components/common/tree-view/data-selection/tree-view.svelte';
+	import DataSelectionTreeview from '$lib/components/common/services/uprn/tree-view/data-selection/tree-view.svelte';
 	import { Toaster } from '$lib/components/ui/sonner';
 	import { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
 	import { TreeviewStore } from '$lib/stores/treeview-store.svelte';

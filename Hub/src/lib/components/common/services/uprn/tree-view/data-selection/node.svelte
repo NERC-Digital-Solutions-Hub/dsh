@@ -3,7 +3,7 @@
 	import VisibilityCheckbox from '$lib/components/common/visibility-checkbox/visibility-checkbox.svelte';
 	import Node from './node.svelte';
 	import NodeContent from './node-content.svelte';
-	import NodeRoot from '$lib/components/common/tree-view/node-root.svelte';
+	import NodeRoot from '$lib/components/common/services/uprn/tree-view/node-root.svelte';
 	import DownloadButton from './download-button.svelte';
 	import FilterButton from './filter-button.svelte';
 	import { getNodeIcon } from '../get-node-icon';

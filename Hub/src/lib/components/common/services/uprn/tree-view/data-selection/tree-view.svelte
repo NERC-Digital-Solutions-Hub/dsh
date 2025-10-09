@@ -25,7 +25,7 @@
 	import * as TreeView from '$lib/components/ui/tree-view/index.js';
 	import Node from './node.svelte';
 	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store.js';
-	import type { TreeNode } from './types.js';
+	import type { TreeNode } from '../types.js';
 	import { dataSelectionStore, type DataSelection } from '$lib/stores/data-selection-store.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import FieldFilterMenuStore from '$lib/stores/field-filter-menu-store.svelte';
