@@ -9,8 +9,6 @@ export type AppConfig = {
 	catalogueApiUrl: string;
 	dataSelectionTreeviewConfig?: TreeviewConfig;
 	areaSelectionTreeviewConfig?: TreeviewConfig;
-	treeviewDataConfig: TreeviewConfig;
-	treeviewSelectionAreasConfig: TreeviewConfig;
 	selectionLayersNameFields?: LayerNameField[];
 	fieldsToHide?: string[];
 };
