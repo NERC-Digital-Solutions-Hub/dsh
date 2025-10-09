@@ -1,1 +1,0 @@
-import{r as n,e as s}from"./BTmB98pI.js";import{fromGeometry as a,toGeometry as m,fromGeometryToGXGeometry as c,fromGeometries as f}from"./CFh-guJt.js";function p(t,o){const e=a(t),r=e.getSpatialReference();return m(n(e.getGeometry(),c(o),r),r)}function u(t){const[o,e]=f(t);return m(s(o,e),e)}export{p as execute,u as executeMany};

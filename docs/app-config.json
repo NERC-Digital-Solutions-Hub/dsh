@@ -5,6 +5,7 @@
         "urlPrefix": "https://nercdsh.dev.azure.manchester.ac.uk",
         "proxyUrl": "/proxy/Java/proxy.jsp"
     },
+    "catalogueApiUrl": "https://catalogue-api-979323691203.europe-west1.run.app/api/v1",
     "dataSelectionTreeviewConfig": {
         "items": [
             {
@@ -169,53 +170,6 @@
             {
                 "id": "area",
                 "maxVisibleLayers": 1
-            }
-        ]
-    },
-    "treeviewDataConfig": {
-        "layers": [
-            {
-                "name": "UPRN (05/2024)",
-                "isDownloadable": false,
-                "visibilityGroup": "uprn"
-            },
-            {
-                "name": "ClimateJust",
-                "visibilityGroup": "main"
-            },
-            {
-                "name": "Noise Levels",
-                "visibilityGroup": "main"
-            },
-            {
-                "name": "Modelled Background Pollution",
-                "visibilityGroup": "main"
-            },
-            {
-                "name": "Carbon Storage",
-                "visibilityGroup": "main"
-            },
-            {
-                "name": "Ellenberg Vegetation Indicators",
-                "visibilityGroup": "main"
-            },
-            {
-                "name": "AQREAN Surface Level",
-                "visibilityGroup": "main"
-            },
-            {
-                "name": "AQREAN Surface Level - Bias Corrected",
-                "visibilityGroup": "main"
-            }
-        ]
-    },
-    "treeviewSelectionAreasConfig": {
-        "layers": [
-            {
-                "name": "Administrative Areas"
-            },
-            {
-                "name": "Tiling Schemes"
             }
         ]
     },
