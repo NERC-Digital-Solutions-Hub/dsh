@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Toggle } from '$lib/components/ui/toggle/index.js';
-	import OpenIndicator from '../../open-indicator.svelte';
+	import OpenIndicator from '../../open-indicator/open-indicator.svelte';
 	import {
 		baseNodeStyles,
 		enhancedHoverStyles,

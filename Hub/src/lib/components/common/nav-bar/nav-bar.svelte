@@ -13,7 +13,7 @@
 			decoding="async"
 		/>
 	</a>
-	<NavigationMenu.Root viewport={false} class="menu-item-container">
+	<NavigationMenu.Root viewport={false} class="menu-item-container z-20">
 		<NavigationMenu.List>
 			<NavigationMenu.Item>
 				<NavigationMenu.Link>
@@ -73,6 +73,8 @@
 		background: #fff;
 		border-bottom: 1px solid #e5e7eb;
 		z-index: 100;
+		position: relative;
+		height: var(--header-height, 64px);
 	}
 
 	.brand {

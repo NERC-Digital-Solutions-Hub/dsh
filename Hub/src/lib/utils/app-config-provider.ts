@@ -6,6 +6,7 @@ export type AppConfig = {
 	portalUrl?: string | null;
 	portalItemId: string;
 	proxy?: Proxy | null;
+	catalogueApiUrl: string;
 	dataSelectionTreeviewConfig?: TreeviewConfig;
 	areaSelectionTreeviewConfig?: TreeviewConfig;
 	treeviewDataConfig: TreeviewConfig;
