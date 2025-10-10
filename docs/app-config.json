@@ -12,7 +12,8 @@
                 "_name": "UPRN (05/2024)",
                 "id": "b6311005e65b4f1c94204ba64dddd3ac",
                 "isDownloadable": false,
-                "isVisible": true
+                "isVisibleOnInit": true,
+                "hideFields": true
             },
             {
                 "_name": "Administrative Areas",
@@ -37,7 +38,10 @@
             {
                 "_name": "Modelled Background Pollution",
                 "id": "e92320c720164a92a74497baca79d75c",
-                "visibilityGroupId": "main"
+                "visibilityGroupId": "main",
+                "visibilityDependencyIds": [
+                    "64b9c32dfce84e359e0055db6305e43d"
+                ]
             },
             {
                 "_name": "Carbon Storage",
@@ -70,6 +74,11 @@
                 "visibilityDependencyIds": [
                     "e769286c49bf4febbabc5ecf4f051a56"
                 ]
+            },
+            {
+                "_name": "Modelled Background Pollution Raster Cells",
+                "id": "64b9c32dfce84e359e0055db6305e43d",
+                "isHidden": true
             },
             {
                 "_name": "Carbon Raster Cells",

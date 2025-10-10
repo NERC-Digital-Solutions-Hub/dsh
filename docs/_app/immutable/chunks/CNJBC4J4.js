@@ -1,0 +1,1 @@
+import{I as i,Z as s}from"./C8PpcA25.js";const e=class e{};e.instance=new i("Etc/UTC");let t=e;function o(n){return n instanceof s?n===t.instance:n?.toString().toLowerCase()==="unknown"}function c(n){return o(n)?t.instance:n}export{o as e,c as i,t as o};
