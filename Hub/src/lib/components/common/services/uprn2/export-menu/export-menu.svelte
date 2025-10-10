@@ -68,9 +68,16 @@
 	function handleFilterClicked(layerId: string) {
 		if (fieldFilterMenuStore.ActiveLayer?.id === layerId) {
 			fieldFilterMenuStore.ActiveLayer = null;
-		} else {
-			fieldFilterMenuStore.ActiveLayer = webMapStore.dataLookup.get(layerId) as __esri.Layer;
+			return;
 		}
+
+		const layer: __esri.Layer | undefined = webMapStore.dataLookup.get(layerId);
+		if (!layer) {
+			console.warn(`[export-menu] Layer with ID ${layerId} not found in web map store.`);
+			return;
+		}
+
+		fieldFilterMenuStore.ActiveLayer = layer;
 	}
 
 	function hasFiltersApplied(layerId: string): boolean {
@@ -80,7 +87,7 @@
 			!dataSelection.fields ||
 			dataSelection.fields.size === 0 ||
 			dataSelection.fields.size ===
-				(webMapStore.dataLookup.get(layerId) as __esri.FeatureLayer).fields?.length
+				(webMapStore.dataLookup.get(layerId) as __esri.FeatureLayer)?.fields?.length
 		) {
 			return false;
 		}
