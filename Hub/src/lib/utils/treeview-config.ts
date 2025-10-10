@@ -29,14 +29,39 @@ export interface TreeviewConfig {
 export interface TreeviewItemConfig {
 	/** Unique identifier for the treeview item */
 	id: string;
+	/** Type of the treeview item, e.g., 'group-layer' */
+	type: TreeviewItemType;
 	/** Whether this item can be downloaded by the user. Optional - defaults to false if not specified */
 	isDownloadable?: boolean;
-	/** Whether this item is currently visible. Optional - defaults to false if not specified */
-	isVisible?: boolean;
+	/** Whether this item is visible on initialisation. Optional - defaults to false if not specified */
+	isVisibleOnInit?: boolean;
 	/** Whether this item should be hidden from the user interface. Optional - defaults to false if not specified */
 	isHidden?: boolean;
+	/** Whether fields under this item should be hidden from the user interface. Optional - defaults to false if not specified */
+	hideFields?: boolean;
 	/** Array of item IDs that this item depends on for visibility. Optional - no dependencies if not specified */
 	visibilityDependencyIds?: string[];
 	/** ID of the visibility group this item belongs to. Optional - item not part of any group if not specified */
 	visibilityGroupId?: string;
+}
+
+export enum TreeviewItemType {
+	None = 'none',
+	GroupLayer = 'group-layer',
+	FeatureLayer = 'feature-layer',
+	TileLayer = 'tile-layer',
+	Field = 'field'
+}
+
+export function getLayerTreeviewItemType(layer: __esri.Layer): TreeviewItemType {
+	switch (layer.type) {
+		case 'group':
+			return TreeviewItemType.GroupLayer;
+		case 'feature':
+			return TreeviewItemType.FeatureLayer;
+		case 'tile':
+			return TreeviewItemType.TileLayer;
+		default:
+			throw new Error(`Unsupported layer type: ${layer.type}`);
+	}
 }

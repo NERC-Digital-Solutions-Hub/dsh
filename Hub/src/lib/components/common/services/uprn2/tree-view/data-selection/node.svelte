@@ -7,7 +7,7 @@
 	import DownloadButton from './download-button.svelte';
 	import FilterButton from './filter-button.svelte';
 	import { getNodeIcon } from '../get-node-icon';
-	import type { TreeNode } from '../types.js';
+	import { TreeLayerNode, type TreeNode } from '../types.js';
 	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
 
 	type Props = {
@@ -44,7 +44,7 @@
 	// Each child is indented by ml-4 (1rem) and should be 1rem narrower
 
 	const isFolder = !!(node.children && node.children.length);
-	const hasVisibility = !!node.layer && 'visible' in node.layer && !isFolder;
+	const hasVisibility = !isFolder;
 
 	let isOpen = $state(false);
 	let isChecked = $state<boolean>(false);
@@ -57,13 +57,20 @@
 			return;
 		}
 
-		const isVisible = getNodeVisibility ? getNodeVisibility(node.id) : undefined;
-		isChecked = isVisible !== undefined ? isVisible : node.layer.visible;
+		const isVisible = getNodeVisibility ? getNodeVisibility(node.id) : false;
+		isChecked = isVisible ?? false;
+		if (!(node instanceof TreeLayerNode)) {
+			return;
+		}
 		icon = getNodeIcon(node.layer, useLayerTypeIcon, isFolder, isOpen);
 	});
 
 	// Handle filter visibility changes with animation
 	$effect(() => {
+		if (!(node instanceof TreeLayerNode)) {
+			return;
+		}
+
 		const shouldShow = (getDownloadState?.(node) && node.layer.type === 'feature') ?? false;
 
 		if (shouldShow && !showFilter) {
@@ -103,14 +110,7 @@
 {#snippet content()}
 	{#if !treeviewConfigStore?.getItemConfig(node.id)?.isHidden}
 		{#if isFolder}
-			<NodeContent
-				{icon}
-				name={node.name}
-				{depth}
-				onclick={handleFolderClick}
-				isGroup={true}
-				{isOpen}
-			>
+			<NodeContent {icon} name={node.name} {depth} onclick={handleFolderClick} {isFolder} {isOpen}>
 				{#snippet children()}
 					<div class="flex items-center gap-2">
 						{#if hasVisibility}
@@ -120,7 +120,7 @@
 				{/snippet}
 			</NodeContent>
 		{:else}
-			<NodeContent {icon} name={node.name} {depth} onclick={handleClick} isGroup={false}>
+			<NodeContent {icon} name={node.name} {depth} onclick={handleClick} {isFolder}>
 				{#snippet children()}
 					<div class="flex items-center gap-2">
 						{#if isDownloadable}
@@ -148,6 +148,7 @@
 {#snippet childNode(node: TreeNode)}
 	{#if isFolder && isOpen && !treeviewConfigStore?.getItemConfig(node.id)?.isHidden}
 		<Node
+			{treeviewConfigStore}
 			{node}
 			isDownloadable={treeviewConfigStore?.getItemConfig(node.id)?.isDownloadable ?? true}
 			{onNodeClick}

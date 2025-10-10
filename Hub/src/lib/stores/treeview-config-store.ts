@@ -51,6 +51,15 @@ export class TreeviewConfigStore {
 		return this.#itemsLookup.get(id);
 	}
 
+	addItemConfig(item: TreeviewItemConfig): void {
+		if (this.#itemsLookup.has(item.id)) {
+			throw new Error(`Item with id ${item.id} already exists.`);
+		}
+
+		this.#items.push(item);
+		this.#itemsLookup.set(item.id, item);
+	}
+
 	/**
 	 * Retrieves the configuration for a specific visibility group by its ID.
 	 *

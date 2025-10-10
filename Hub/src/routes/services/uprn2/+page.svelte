@@ -1,14 +1,14 @@
 <script lang="ts">
 	import UprnMapView from '$lib/components/common/services/uprn2/uprn-map-view/uprn-map-view.svelte';
 	import AreaSelectionTreeview from '$lib/components/common/services/uprn2/tree-view/area-selection/tree-view.svelte';
-	import SelectedAreasMenu from '$lib/components/common/services/uprn2/area-selection-menu/area-selection-menu.svelte';
+	import AreaSelectionToast from '$lib/components/common/services/uprn2/area-selection-toast/area-selection-toast.svelte';
 	import UprnTabBar from '$lib/components/common/services/uprn2/uprn-tab-bar/uprn-tab-bar.svelte';
 	import UprnTabBarContent from '$lib/components/common/services/uprn2/uprn-tab-bar/uprn-tab-bar-content.svelte';
 	import { getAppConfigAsync, type AppConfig } from '$lib/utils/app-config-provider.js';
 	import type { TreeviewConfig } from '$lib/utils/treeview-config.js';
 	import { onMount } from 'svelte';
 	import { WebMapStore } from '$lib/stores/web-map-store.svelte';
-	import { areaSelectionStore, type LayerNameField } from '$lib/stores/area-selection-store.svelte';
+	import { areaSelectionStore } from '$lib/stores/area-selection-store.svelte';
 	import ExportMenu from '$lib/components/common/services/uprn2/export-menu/export-menu.svelte';
 	import ExportMenuFooter from '$lib/components/common/services/uprn2/export-menu/export-menu-footer.svelte';
 	import AreaSelectionHoverCard from '$lib/components/common/services/uprn2/area-selection-hover-card/area-selection-hover-card.svelte';
@@ -18,25 +18,29 @@
 	import DataSelectionTreeview from '$lib/components/common/services/uprn2/tree-view/data-selection/tree-view.svelte';
 	import { Toaster } from '$lib/components/ui/sonner';
 	import { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
-	import { TreeviewStore } from '$lib/stores/treeview-store.svelte';
+	import { TreeviewStore } from '$lib/stores/treeview-store2.svelte';
+	import TabBarTriggers from './tabBarTriggers.json';
+	import Sidebar from '$lib/components/common/sidebar/sidebar.svelte';
 
-	const webMapStore = new WebMapStore();
-	const fieldFilterMenuStore = new FieldFilterMenuStore();
-	let fieldsToHide: Set<string> = $state(new Set());
-	let currentTab = $state('define-areas');
-	let dataSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state<
-		TreeviewConfigStore | undefined
-	>();
-	let areaSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state<
-		TreeviewConfigStore | undefined
-	>();
+	const webMapStore: WebMapStore = $state(new WebMapStore());
+	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
 	const areaSelectionTreeviewStore: TreeviewStore = $state(new TreeviewStore());
+
+	let currentTab = $state('define-areas');
+	let fieldsToHide: Set<string> = $state(new Set());
+	let dataSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
+	let areaSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
+	let sidebarOpen = $state(true);
+
+	function toggleSidebar() {
+		sidebarOpen = !sidebarOpen;
+	}
 
 	onMount(async () => {
 		const appConfig: AppConfig = await getAppConfigAsync();
 
 		fieldsToHide = new Set(appConfig.fieldsToHide || []);
-		areaSelectionStore.setNameFields(appConfig.selectionLayersNameFields as LayerNameField[]);
+		areaSelectionStore.setNameFields(appConfig.selectionLayersNameFields || []);
 		dataSelectionTreeviewConfig = new TreeviewConfigStore(
 			appConfig.dataSelectionTreeviewConfig as TreeviewConfig
 		);
@@ -66,10 +70,11 @@
 <Toaster />
 <AreaSelectionHoverCard />
 <FieldSelectionMenu {fieldFilterMenuStore} {fieldsToHide} />
+<AreaSelectionToast />
 
-{#snippet panelContent()}
-	<div class="flex w-120 min-w-0 flex-col gap-6">
-		<UprnTabBar value={currentTab} onValueChange={onTabValueChange}>
+<div class="layout-container">
+	<Sidebar isOpen={sidebarOpen} onToggle={toggleSidebar}>
+		<UprnTabBar value={currentTab} triggers={TabBarTriggers} onValueChange={onTabValueChange}>
 			<UprnTabBarContent value="define-areas">
 				<AreaSelectionTreeview
 					webMap={webMapStore.data}
@@ -81,6 +86,7 @@
 				<DataSelectionTreeview
 					webMap={webMapStore.data}
 					treeviewConfigStore={dataSelectionTreeviewConfig!}
+					{fieldsToHide}
 					{fieldFilterMenuStore}
 				/>
 			</UprnTabBarContent>
@@ -94,25 +100,30 @@
 				<DownloadsMenu />
 			</UprnTabBarContent>
 		</UprnTabBar>
+	</Sidebar>
+
+	<div class="map-section">
+		<UprnMapView
+			webMap={webMapStore.data}
+			{areaSelectionTreeviewStore}
+			panelPosition="top-left"
+			menuPosition="top-right"
+		/>
 	</div>
-{/snippet}
-
-<SelectedAreasMenu />
-
-<div class="map-section">
-	<UprnMapView
-		webMap={webMapStore.data}
-		{areaSelectionTreeviewStore}
-		panelPosition="top-left"
-		menuPosition="top-right"
-		panel={panelContent}
-	/>
 </div>
 
 <style>
+	.layout-container {
+		display: flex;
+		height: 100vh;
+		width: 100%;
+		overflow: hidden;
+	}
+
 	.map-section {
 		flex: 1 1 auto;
 		min-height: 0;
+		min-width: 0;
 		display: flex;
 	}
 

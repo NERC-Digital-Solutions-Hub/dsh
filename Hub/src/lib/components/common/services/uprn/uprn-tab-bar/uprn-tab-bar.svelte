@@ -3,24 +3,29 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import type { Snippet } from 'svelte';
 
+	type TriggerDefinition = {
+		value: string;
+		label: string;
+	};
+
 	type Props = {
 		value?: string;
+		triggers?: TriggerDefinition[];
 		onValueChange?: (value: string) => void;
 		children?: Snippet;
 	};
 
-	const { value = 'selection-areas', onValueChange, children }: Props = $props();
+	const { value, triggers = [], onValueChange, children }: Props = $props();
 </script>
 
 <Tabs.Root {value} {onValueChange} class="w-full">
 	<Tabs.List class="tab-list">
-		<Tabs.Trigger value="define-areas" class="tab-trigger">Define Areas</Tabs.Trigger>
-		<ChevronRightIcon class="separator" />
-		<Tabs.Trigger value="select-data" class="tab-trigger">Select Data</Tabs.Trigger>
-		<ChevronRightIcon class="separator" />
-		<Tabs.Trigger value="export" class="tab-trigger">Export</Tabs.Trigger>
-		<ChevronRightIcon class="separator" />
-		<Tabs.Trigger value="downloads" class="tab-trigger">Download</Tabs.Trigger>
+		{#each triggers as { value, label }}
+			<Tabs.Trigger {value} class="tab-trigger">{label}</Tabs.Trigger>
+			{#if value !== triggers[triggers.length - 1]?.value}
+				<ChevronRightIcon class="separator" />
+			{/if}
+		{/each}
 	</Tabs.List>
 	{@render children?.()}
 </Tabs.Root>

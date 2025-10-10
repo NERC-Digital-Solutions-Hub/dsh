@@ -107,7 +107,7 @@ export class WebMapStore {
 			portalItem: portalItem
 		});
 
-		//await webmap.load();
+		await webmap.loadAll();
 		this.data = webmap;
 	}
 

@@ -1,0 +1,18 @@
+[
+    {
+        "value": "define-areas",
+        "label": "Define Areas"
+    },
+    {
+        "value": "select-data",
+        "label": "Select Data"
+    },
+    {
+        "value": "export",
+        "label": "Export"
+    },
+    {
+        "value": "downloads",
+        "label": "Download"
+    }
+]

@@ -36,7 +36,15 @@
 						<li>
 							<NavigationMenu.Link href="#">
 								<a href={`${base}/services/uprn`}>
-									<div class="font-medium">UPRN</div>
+									<div class="font-medium">UPRN (1)</div>
+									<div class="text-muted-foreground">
+										Explore Unique Property Reference Numbers (UPRNs) on an interactive map.
+									</div>
+								</a>
+							</NavigationMenu.Link>
+							<NavigationMenu.Link href="#">
+								<a href={`${base}/services/uprn2`}>
+									<div class="font-medium">UPRN (2)</div>
 									<div class="text-muted-foreground">
 										Explore Unique Property Reference Numbers (UPRNs) on an interactive map.
 									</div>

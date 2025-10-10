@@ -12,7 +12,8 @@
                 "_name": "UPRN (05/2024)",
                 "id": "b6311005e65b4f1c94204ba64dddd3ac",
                 "isDownloadable": false,
-                "isVisible": true
+                "isVisibleOnInit": true,
+                "hideFields": true
             },
             {
                 "_name": "Administrative Areas",

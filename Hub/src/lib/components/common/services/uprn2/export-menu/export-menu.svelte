@@ -8,7 +8,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterButton from '../tree-view/data-selection/filter-button.svelte';
 	import FilterFieldMenuStore from '$lib/stores/field-filter-menu-store.svelte';
-	import type { TreeviewStore } from '$lib/stores/treeview-store.svelte';
+	import type { TreeviewStore } from '$lib/stores/treeview-store2.svelte';
 
 	export type Props = {
 		webMapStore: WebMapStore;
@@ -92,7 +92,11 @@
 <h2>Export Options</h2>
 
 <div class="section">
-	<h3>{areaSelectionTreeviewStore.getVisibleNodes()[0]?.layer.title}</h3>
+	<h3>
+		{areaSelectionTreeviewStore.initialized
+			? areaSelectionTreeviewStore.getVisibleNodes()[0]?.name
+			: 'Loading...'}
+	</h3>
 	<h4>Selected Areas</h4>
 	{#if areaInfos.length > 0}
 		<ul class="selected-list">

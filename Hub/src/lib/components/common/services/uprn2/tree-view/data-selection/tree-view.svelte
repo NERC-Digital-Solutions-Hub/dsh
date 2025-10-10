@@ -25,11 +25,11 @@
 	import * as TreeView from '$lib/components/ui/tree-view/index.js';
 	import Node from './node.svelte';
 	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store.js';
-	import type { TreeNode } from '../types.js';
+	import { TreeLayerNode, type TreeNode } from '../types.js';
 	import { dataSelectionStore, type DataSelection } from '$lib/stores/data-selection-store.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import FieldFilterMenuStore from '$lib/stores/field-filter-menu-store.svelte';
-	import { TreeviewStore } from '$lib/stores/treeview-store.svelte';
+	import { TreeviewStore } from '$lib/stores/treeview-store2.svelte';
 
 	// =====================================
 	// TYPES & PROPS
@@ -38,10 +38,16 @@
 	type Props = {
 		webMap?: __esri.WebMap | null;
 		treeviewConfigStore: TreeviewConfigStore;
+		fieldsToHide?: Set<string>; // List of field names to hide in the tree
 		fieldFilterMenuStore: FieldFilterMenuStore;
 	};
 
-	const { webMap = null, treeviewConfigStore, fieldFilterMenuStore }: Props = $props();
+	const {
+		webMap = null,
+		treeviewConfigStore,
+		fieldFilterMenuStore,
+		fieldsToHide
+	}: Props = $props();
 
 	const treeviewStore = new TreeviewStore();
 
@@ -54,18 +60,34 @@
 	 * Initializes layer visibility and builds the tree structure.
 	 */
 	$effect(() => {
-		if (!webMap) {
+		if (!webMap || treeviewStore.initialized) {
 			return;
 		}
 
 		const initializeWebMap = async () => {
 			await webMap.when();
-			treeviewStore.initialize(webMap.layers.toArray(), treeviewConfigStore);
-			console.log('TreeView initialized with layers:', treeviewStore.getNodes());
+			await loadFeatureLayers(webMap.layers.toArray());
+			console.log('[data-selection-tree-view] fields to hide:', fieldsToHide);
+			treeviewStore.initialize(webMap.layers.toArray(), treeviewConfigStore, fieldsToHide);
+			console.log('[data-selection-tree-view] Initialized with layers:', treeviewStore.getNodes());
 		};
 
 		initializeWebMap();
 	});
+
+	async function loadFeatureLayers(layers: __esri.Layer[]): Promise<void> {
+		for (const layer of layers) {
+			if (layer.type === 'feature' && !layer.loaded) {
+				await layer.load();
+				console.log('Loaded feature layer:', layer.title);
+			}
+
+			if (layer.type === 'group') {
+				const groupLayer = layer as __esri.GroupLayer;
+				await loadFeatureLayers(groupLayer.layers.toArray());
+			}
+		}
+	}
 
 	// =====================================
 	// DOWNLOAD STATE MANAGEMENT
@@ -78,18 +100,23 @@
 	 * @param isActive - Whether the node should be available for download
 	 */
 	function onDownloadStateChanged(node: TreeNode, isActive: boolean): void {
-		if (isActive) {
-			const selectedData: DataSelection = {
-				layerId: node.id,
-				name: node.layer.title || '',
-				fields: new SvelteSet<string>(
-					(node.layer as __esri.FeatureLayer).fields?.map((field) => field.name) || []
-				)
-			};
-			dataSelectionStore.addSelection(selectedData);
-		} else {
+		if (!isActive) {
 			dataSelectionStore.removeSelection(node.id);
+			return;
 		}
+
+		if (!(node instanceof TreeLayerNode)) {
+			return;
+		}
+
+		const selectedData: DataSelection = {
+			layerId: node.id,
+			name: node.layer.title || '',
+			fields: new SvelteSet<string>(
+				(node.layer as __esri.FeatureLayer).fields?.map((field) => field.name) || []
+			)
+		};
+		dataSelectionStore.addSelection(selectedData);
 	}
 
 	/**
@@ -116,11 +143,16 @@
 		if (currentActiveLayer?.uid === nodeId) {
 			// Close filter menu if clicking on the currently active layer
 			fieldFilterMenuStore.ActiveLayer = null;
-		} else {
-			// Open filter menu for the clicked layer
-			const layer = treeviewStore.getNodeById(nodeId)?.layer as __esri.Layer;
-			fieldFilterMenuStore.ActiveLayer = layer;
+			return;
 		}
+
+		// Open filter menu for the clicked layer
+		const node = treeviewStore.getNodeById(nodeId);
+		if (!node || !(node instanceof TreeLayerNode)) {
+			return;
+		}
+
+		fieldFilterMenuStore.ActiveLayer = node.layer as __esri.Layer;
 	}
 
 	/**
@@ -135,7 +167,7 @@
 		}
 
 		const node: TreeNode | undefined = treeviewStore.getNodeById(nodeId);
-		if (!node) {
+		if (!node || !(node instanceof TreeLayerNode)) {
 			return false;
 		}
 
@@ -147,24 +179,28 @@
 	}
 </script>
 
-<TreeView.Root>
-	{#each treeviewStore.getNodes() as node (node.id)}
-		<Node
-			{treeviewConfigStore}
-			{node}
-			isDownloadable={treeviewConfigStore.getItemConfig(node.id)?.isDownloadable ?? false}
-			onNodeClick={() => {}}
-			onNodeVisibilityChange={(node, visible) => treeviewStore.setVisibilityState(node.id, visible)}
-			getNodeVisibility={(nodeId) => treeviewStore.getVisibilityState(nodeId)}
-			{onDownloadStateChanged}
-			{getDownloadState}
-			onFilterClicked={handleFilterClicked}
-			{hasFiltersApplied}
-			depth={0}
-			useLayerTypeIcon={true}
-		/>
-	{/each}
-</TreeView.Root>
+{#if treeviewStore.initialized}
+	<TreeView.Root>
+		{#each treeviewStore.getNodes() as node (node.id)}
+			{@const _dbg = console.log('parent pass', !!treeviewConfigStore)}
+			<Node
+				{treeviewConfigStore}
+				{node}
+				isDownloadable={treeviewConfigStore.getItemConfig(node.id)?.isDownloadable ?? false}
+				onNodeClick={() => {}}
+				onNodeVisibilityChange={(node, visible) =>
+					treeviewStore.setVisibilityState(node.id, visible)}
+				getNodeVisibility={(nodeId) => treeviewStore.getVisibilityState(nodeId)}
+				{onDownloadStateChanged}
+				{getDownloadState}
+				onFilterClicked={handleFilterClicked}
+				{hasFiltersApplied}
+				depth={0}
+				useLayerTypeIcon={true}
+			/>
+		{/each}
+	</TreeView.Root>
+{/if}
 
 <style>
 </style>

@@ -36,7 +36,8 @@
 	import type Map from '@arcgis/core/Map';
 	import type MapView from '@arcgis/core/views/MapView';
 	import type WebMap from '@arcgis/core/WebMap';
-	import type { TreeviewStore } from '$lib/stores/treeview-store.svelte';
+	import type { TreeviewStore } from '$lib/stores/treeview-store2.svelte';
+	import { TreeLayerNode } from '../tree-view/types';
 
 	type UIPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'manual';
 
@@ -242,7 +243,7 @@
 
 	// Effect to update interactable layers when they change
 	$effect(() => {
-		if (!mapView || !areaSelectionTreeviewStore) {
+		if (!mapView || !areaSelectionTreeviewStore.initialized) {
 			return;
 		}
 
@@ -270,19 +271,27 @@
 
 	// Effect to handle visible node changes and update layer view
 	$effect(() => {
+		if (!areaSelectionTreeviewStore.initialized) {
+			return;
+		}
+
 		if (!areaSelectionTreeviewStore.getVisibleNodes().length) {
 			areaSelectionStore.resetSelectedAreas();
 			return;
 		}
 
-		const featureLayer = areaSelectionTreeviewStore.getVisibleNodes()[0]
-			.layer as __esri.FeatureLayer;
-		if (!featureLayer) {
+		const node = areaSelectionTreeviewStore.getVisibleNodes()[0];
+		if (!node || !(node instanceof TreeLayerNode) || !(node.layer instanceof __esri.FeatureLayer)) {
+			console.warn('Visible node is not a FeatureLayer');
+			return;
+		}
+
+		if (!node.layer) {
 			console.warn('Visible node layer is not a FeatureLayer');
 			return;
 		}
 
-		updateSelectedLayerView(featureLayer);
+		updateSelectedLayerView(node.layer);
 	});
 
 	/**
