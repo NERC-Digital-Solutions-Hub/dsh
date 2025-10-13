@@ -236,6 +236,14 @@
                 "id": "group:area",
                 "maxVisibleLayers": 1
             }
+        ],
+        "inheritanceGroups": [
+            {
+                "id": "group:area",
+                "inheritedProperties": [
+                    "visibilityGroupId"
+                ]
+            }
         ]
     },
     "selectionLayersNameFields": [
