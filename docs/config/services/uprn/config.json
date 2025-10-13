@@ -5,7 +5,6 @@
         "urlPrefix": "https://nercdsh.dev.azure.manchester.ac.uk",
         "proxyUrl": "/proxy/Java/proxy.jsp"
     },
-    "catalogueApiUrl": "https://catalogue-api-979323691203.europe-west1.run.app/api/v1",
     "dataSelectionTreeviewConfig": {
         "items": [
             {
@@ -158,33 +157,6 @@
                     "customConverterId"
                 ]
             }
-        ],
-        "fieldsToHide": [
-            "objectid",
-            "shape__area",
-            "shape__length",
-            "long",
-            "lat",
-            "uprn",
-            "x_coord",
-            "y_coord",
-            "fullgrid id",
-            "msoa id",
-            "lsoa id",
-            "ward id",
-            "globalid",
-            "lsoa number",
-            "msoa number",
-            "ward number",
-            "lsoa code (2011)",
-            "lsoa name (2011)",
-            "lsoa code (2011) (v3)",
-            "lsoa name (2011) (v3)",
-            "msoa code (2011)",
-            "msoa name (2011)",
-            "grid code",
-            "perimeter (epsg 27700)",
-            "area (epsg 27700)"
         ]
     },
     "areaSelectionTreeviewConfig": {
