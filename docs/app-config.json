@@ -13,7 +13,7 @@
                 "id": "b6311005e65b4f1c94204ba64dddd3ac",
                 "isDownloadable": false,
                 "isVisibleOnInit": true,
-                "hideFields": true
+                "visibilityGroupId": "group:uprn"
             },
             {
                 "_name": "Administrative Areas",
@@ -28,52 +28,59 @@
             {
                 "_name": "ClimateJust",
                 "id": "107874962ec9490ca68ffe477d864392",
-                "visibilityGroupId": "main"
+                "visibilityGroupId": "group:main",
+                "inheritanceGroupId": "group:main"
             },
             {
                 "_name": "Noise Levels",
                 "id": "120d188dceaa4d3ab2d46278fbe26b84",
-                "visibilityGroupId": "main"
+                "visibilityGroupId": "group:main",
+                "inheritanceGroupId": "group:main"
             },
             {
                 "_name": "Modelled Background Pollution",
                 "id": "e92320c720164a92a74497baca79d75c",
-                "visibilityGroupId": "main",
+                "visibilityGroupId": "group:main",
                 "visibilityDependencyIds": [
                     "64b9c32dfce84e359e0055db6305e43d"
-                ]
+                ],
+                "inheritanceGroupId": "group:main"
             },
             {
                 "_name": "Carbon Storage",
                 "id": "5aa90685cb3d4c4883d18987a9c001a2",
-                "visibilityGroupId": "main",
+                "visibilityGroupId": "group:main",
                 "visibilityDependencyIds": [
                     "fe0639d266784e52a650af282be756a3"
-                ]
+                ],
+                "inheritanceGroupId": "group:main"
             },
             {
                 "_name": "Ellenberg Vegetation Indicators",
                 "id": "ec76bdcfae5043f5baf7f857ff4f7faf",
-                "visibilityGroupId": "main",
+                "visibilityGroupId": "group:main",
                 "visibilityDependencyIds": [
                     "9c312305e8404a86af2e2637fcc676dd"
-                ]
+                ],
+                "inheritanceGroupId": "group:main"
             },
             {
                 "_name": "AQREAN Surface Level",
                 "id": "ddd2915865b04106b879cb65d52b4d38",
-                "visibilityGroupId": "main",
+                "visibilityGroupId": "group:main",
                 "visibilityDependencyIds": [
                     "98449003380e442583d27927de806888"
-                ]
+                ],
+                "inheritanceGroupId": "group:main"
             },
             {
                 "_name": "AQREAN Surface Level - Bias Corrected",
                 "id": "96128880b9a2483ba38d76bdf10d8940",
-                "visibilityGroupId": "main",
+                "visibilityGroupId": "group:main",
                 "visibilityDependencyIds": [
                     "e769286c49bf4febbabc5ecf4f051a56"
-                ]
+                ],
+                "inheritanceGroupId": "group:main"
             },
             {
                 "_name": "Modelled Background Pollution Raster Cells",
@@ -99,17 +106,66 @@
                 "_name": "AQREAN Raster Cells (Bias Corrected)",
                 "id": "e769286c49bf4febbabc5ecf4f051a56",
                 "isHidden": true
+            },
+            {
+                "_name": "ClimateJust - Grid (England) - Heat",
+                "id": "27e3fa849b2046e59d8392a3ae42f237",
+                "showFields": true
+            },
+            {
+                "_name": "ClimateJust - LSOAs (EN) (2011 - 2022 V3) - 2022 Data",
+                "id": "6d433602f0564ff9ae3b21a2423f1c5f",
+                "showFields": true
+            },
+            {
+                "_name": "ClimateJust - MSOAs (England) (2011) - SHVI",
+                "id": "a51f91a32c3645e6ae6302785bf24592",
+                "showFields": true
+            },
+            {
+                "_name": "ClimateJust - Grid (UK) - UKCP18",
+                "id": "af6906c7ca3c4b4fa7450183ff9c8982",
+                "showFields": true
+            },
+            {
+                "_name": "ClimateJust - LSOAs (UK) (2011) - Flood Data",
+                "id": "d578d83b32354175ad5f25b2069f79b6",
+                "showFields": true
             }
         ],
         "visibilityGroups": [
             {
-                "id": "uprn",
+                "id": "group:uprn",
                 "maxVisibleLayers": 1
             },
             {
-                "id": "main",
+                "id": "group:main",
                 "maxVisibleLayers": 1
             }
+        ],
+        "inheritanceGroups": [
+            {
+                "id": "group:main",
+                "inheritedProperties": [
+                    "visibilityGroupId",
+                    "visibilityDependencyIds",
+                    "inheritanceGroupId"
+                ]
+            }
+        ],
+        "fieldsToHide": [
+            "objectid",
+            "shape__area",
+            "shape__length",
+            "long",
+            "lat",
+            "uprn",
+            "x_coord",
+            "y_coord",
+            "fullgrid id",
+            "grid code",
+            "perimeter (epsg 27700)",
+            "area (epsg 27700)"
         ]
     },
     "areaSelectionTreeviewConfig": {
@@ -117,12 +173,12 @@
             {
                 "_name": "Administrative Areas",
                 "id": "08051aec5d9e4d8fbf96f8bec3564484",
-                "visibilityGroupId": "area"
+                "visibilityGroupId": "group:area"
             },
             {
                 "_name": "Tiling Schemes",
                 "id": "772b1fff49734e73981247de9f50f4f3",
-                "visibilityGroupId": "area"
+                "visibilityGroupId": "group:area"
             },
             {
                 "_name": "BNG Outline",
@@ -177,7 +233,7 @@
         ],
         "visibilityGroups": [
             {
-                "id": "area",
+                "id": "group:area",
                 "maxVisibleLayers": 1
             }
         ]
