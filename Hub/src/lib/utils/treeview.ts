@@ -1,13 +1,13 @@
-import { TreeviewItemType } from '$lib/types/treeview';
+import { TreeviewNodeType } from '$lib/types/treeview';
 
-export function getLayerTreeviewItemType(layer: __esri.Layer): TreeviewItemType {
+export function getLayerTreeviewItemType(layer: __esri.Layer): TreeviewNodeType {
 	switch (layer.type) {
 		case 'group':
-			return TreeviewItemType.GroupLayer;
+			return TreeviewNodeType.GroupLayer;
 		case 'feature':
-			return TreeviewItemType.FeatureLayer;
+			return TreeviewNodeType.FeatureLayer;
 		case 'tile':
-			return TreeviewItemType.TileLayer;
+			return TreeviewNodeType.TileLayer;
 		default:
 			throw new Error(`Unsupported layer type: ${layer.type}`);
 	}

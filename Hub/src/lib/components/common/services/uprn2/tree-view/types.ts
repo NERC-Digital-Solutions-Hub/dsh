@@ -1,3 +1,5 @@
+// TODO: move to ./models/tree-node.ts, ./models/tree-layer-node.ts, ./models/tree-field-node.ts
+
 export class TreeNode {
 	id: string;
 	name: string;

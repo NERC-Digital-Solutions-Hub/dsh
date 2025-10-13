@@ -5,18 +5,15 @@ import {
 	TreeFieldNode
 } from '$lib/components/common/services/uprn2/tree-view/types.js';
 import {
-	type TreeviewItemConfig,
-	TreeviewItemType,
+	type TreeviewNodeConfig,
 	type VisibilityGroupConfig
 } from '$lib/types/treeview.js';
-import { getLayerTreeviewItemType } from '$lib/utils/treeview.js';
-import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+import { SvelteMap } from 'svelte/reactivity';
 
 export class TreeviewStore {
 	public initialized: boolean = $state<boolean>(false);
 
 	#configStore: TreeviewConfigStore | null = null;
-	#fieldsToHide: SvelteSet<string> = new SvelteSet();
 
 	/** The hierarchical tree structure of map layers */
 	#treeNodes: TreeNode[] = $state<TreeNode[]>([]);
@@ -44,8 +41,7 @@ export class TreeviewStore {
 
 	initialize(
 		layers: __esri.Layer[],
-		configStore: TreeviewConfigStore,
-		fieldsToHide?: Set<string>
+		configStore: TreeviewConfigStore
 	): void {
 		if (this.initialized) {
 			throw new Error('TreeviewStore is already initialized.');
@@ -63,10 +59,7 @@ export class TreeviewStore {
 			throw new Error('TreeviewStore requires a valid array of layers to initialize.');
 		}
 
-		if (fieldsToHide) {
-			this.#fieldsToHide = new SvelteSet(fieldsToHide);
-		}
-
+		this.#initializeConfigurations(layers);
 		this.#treeNodes = this.#buildTreeFromLayers(layers);
 	}
 
@@ -106,8 +99,8 @@ export class TreeviewStore {
 		this.#checkInitialized();
 		const nonHiddenNodes: TreeNode[] = [];
 		for (const node of nodes) {
-			const itemConfig = this.#findTreeviewItemConfig(node.id);
-			if (itemConfig && itemConfig.isHidden) {
+			const nodeConfig = this.#findTreeviewItemConfig(node.id);
+			if (nodeConfig && nodeConfig.isHidden) {
 				continue;
 			}
 
@@ -258,6 +251,14 @@ export class TreeviewStore {
 		return this.#configStore.getVisibilityGroupConfig(id);
 	}
 
+	#initializeConfigurations(layers: __esri.Layer[]): void {
+		if (!this.#configStore) {
+			return;
+		}
+
+		this.#configStore.resolveInheritance(layers);
+	}
+
 	/**
 	 * Builds a tree structure from the map layers.
 	 * Applies configuration filters and reverses layer order to match expected display order.
@@ -266,8 +267,7 @@ export class TreeviewStore {
 	 */
 	#buildTreeFromLayers(layers: __esri.Layer[]): TreeNode[] {
 		const rootNodes = layers.map((layer) => {
-			const itemConfig = this.#getOrCreateLayerNodeItemConfig(layer);
-			return this.#layerToNode(layer, undefined, itemConfig);
+			return this.#layerToNode(layer, undefined);
 		});
 
 		return this.#reverseTreeOrder([...rootNodes]); // reverse the order to match expected display (map layers are typically reverse ordered)
@@ -278,7 +278,7 @@ export class TreeviewStore {
 	 * @param id - The ID of the item to find config for
 	 * @returns The item configuration or undefined if not found
 	 */
-	#findTreeviewItemConfig(id: string): TreeviewItemConfig | undefined {
+	#findTreeviewItemConfig(id: string): TreeviewNodeConfig | undefined {
 		if (!id) {
 			return undefined;
 		}
@@ -307,31 +307,30 @@ export class TreeviewStore {
 	}
 
 	/**
-	 * Converts a map layer to a tree node item, handling different layer types.
+	 * Converts a map layer to a tree node, handling different layer types.
 	 * Recursively processes group layers and sublayers.
 	 * @param layer - The layer to convert
 	 * @param parent - The parent node, if any
-	 * @param itemConfig - Optional configuration for the item
 	 * @returns The created tree node
 	 */
 	#layerToNode(
 		layer: __esri.Layer,
-		parent?: TreeNode,
-		itemConfig?: TreeviewItemConfig
+		parent?: TreeNode
 	): TreeLayerNode {
 		const node = new TreeLayerNode(layer.id, layer.title as string, layer, [], parent);
+		const nodeConfig: TreeviewNodeConfig | undefined = this.#findTreeviewItemConfig(layer.id);
 
-		layer.visible = itemConfig?.isVisibleOnInit ?? false;
+		layer.visible = nodeConfig?.isVisibleOnInit ?? false;
 		this.#visibilityState.set(layer.id, layer.visible);
 
-		if (this.#isFeatureLayer(layer) && itemConfig?.showFields) {
+		if (this.#isFeatureLayer(layer) && nodeConfig?.showFields) {
 			const featureLayer = layer as __esri.FeatureLayer;
 			if (!featureLayer.loaded) {
 				console.warn(`Layer not loaded: ${layer.id}`);
 			}
 
 			for (const field of featureLayer.fields ?? []) {
-				const fieldNode = this.#fieldToNode(field, node, itemConfig);
+				const fieldNode = this.#fieldToNode(field, node);
 				node.children.push(fieldNode);
 			}
 		}
@@ -339,8 +338,7 @@ export class TreeviewStore {
 		if (this.#isGroupLayer(layer)) {
 			const groupLayer = layer as __esri.GroupLayer;
 			node.children = groupLayer.layers.toArray().map((childLayer) => {
-				const childItemConfig = this.#getOrCreateLayerNodeItemConfig(childLayer, itemConfig);
-				return this.#layerToNode(childLayer, node, childItemConfig);
+				return this.#layerToNode(childLayer, node);
 			});
 			return node;
 		}
@@ -359,8 +357,7 @@ export class TreeviewStore {
 
 	#fieldToNode(
 		field: __esri.Field,
-		parentLayerNode: TreeLayerNode,
-		parentItemConfig?: TreeviewItemConfig
+		parentLayerNode: TreeLayerNode
 	): TreeFieldNode {
 		const fieldNodeId: string = this.#getFieldNodeId(parentLayerNode.id, field.name);
 		const fieldNode = new TreeFieldNode(
@@ -372,86 +369,9 @@ export class TreeviewStore {
 			parentLayerNode
 		);
 
-		const fieldItemConfig: TreeviewItemConfig | undefined = this.#getOrCreateFieldNodeItemConfig(
-			fieldNodeId,
-			field.alias || field.name,
-			parentItemConfig
-		);
-
+		const fieldItemConfig: TreeviewNodeConfig | undefined = this.#findTreeviewItemConfig(fieldNodeId);
 		this.#visibilityState.set(fieldNodeId, fieldItemConfig?.isVisibleOnInit ?? false);
 		return fieldNode;
-	}
-
-	#getOrCreateLayerNodeItemConfig(
-		layer: __esri.Layer,
-		parentItemConfig?: TreeviewItemConfig
-	): TreeviewItemConfig | undefined {
-		const itemConfig: TreeviewItemConfig | undefined = this.#getOrCreateNodeItemConfig(
-			layer.id,
-			parentItemConfig
-		);
-		if (itemConfig && itemConfig.type === TreeviewItemType.None) {
-			itemConfig.type = getLayerTreeviewItemType(layer);
-		}
-
-		return itemConfig;
-	}
-
-	#getOrCreateFieldNodeItemConfig(
-		nodeId: string,
-		fieldName: string,
-		parentItemConfig?: TreeviewItemConfig
-	): TreeviewItemConfig | undefined {
-		const itemConfig: TreeviewItemConfig | undefined = this.#getOrCreateNodeItemConfig(
-			nodeId,
-			parentItemConfig
-		);
-		if (itemConfig) {
-			if (itemConfig.type === TreeviewItemType.None) {
-				itemConfig.type = TreeviewItemType.Field;
-			}
-
-			if (this.#fieldsToHide.has(fieldName.trim().toLowerCase())) {
-				itemConfig.isHidden = true;
-			}
-		}
-
-		return itemConfig;
-	}
-
-	/**
-	 * gets or creates the item config for a node, falling back to parent config if not defined for certain properties
-	 * @param nodeId the node identifier
-	 * @param parentItemConfig the parent item config to fall back to
-	 * @returns the node item config or undefined if not found
-	 */
-	#getOrCreateNodeItemConfig(
-		nodeId: string,
-		parentItemConfig?: TreeviewItemConfig
-	): TreeviewItemConfig | undefined {
-		if (!this.#configStore) {
-			return undefined;
-		}
-
-		let itemConfig: TreeviewItemConfig | undefined = this.#configStore.getItemConfig(nodeId);
-		const createNewConfig: boolean = !itemConfig;
-
-		if (createNewConfig) {
-			itemConfig = {
-				id: nodeId,
-				type: TreeviewItemType.None,
-				isDownloadable: itemConfig?.isDownloadable,
-				isVisibleOnInit: itemConfig?.isVisibleOnInit,
-				isHidden: itemConfig?.isHidden ?? parentItemConfig?.isHidden,
-				visibilityDependencyIds:
-					itemConfig?.visibilityDependencyIds ?? parentItemConfig?.visibilityDependencyIds,
-				visibilityGroupId: itemConfig?.visibilityGroupId ?? parentItemConfig?.visibilityGroupId
-			};
-
-			this.#configStore.addItemConfig(itemConfig);
-		}
-
-		return itemConfig;
 	}
 
 	/**

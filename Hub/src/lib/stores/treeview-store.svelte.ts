@@ -1,6 +1,6 @@
 import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store.js';
 import type { TreeNode } from '$lib/components/common/services/uprn/tree-view/types.js';
-import type { TreeviewItemConfig, VisibilityGroupConfig } from '$lib/types/treeview.js';
+import type { TreeviewNodeConfig, VisibilityGroupConfig } from '$lib/types/treeview.js';
 import { SvelteMap } from 'svelte/reactivity';
 
 export class TreeviewStore {
@@ -225,7 +225,7 @@ export class TreeviewStore {
 	 * @param id - The ID of the item to find config for
 	 * @returns The item configuration or undefined if not found
 	 */
-	#findTreeviewItemConfig(id: string): TreeviewItemConfig | undefined {
+	#findTreeviewItemConfig(id: string): TreeviewNodeConfig | undefined {
 		if (!id) {
 			return undefined;
 		}
@@ -261,7 +261,7 @@ export class TreeviewStore {
 	 * @param itemConfig - Optional configuration for the item
 	 * @returns The created tree node
 	 */
-	#layerToNode(layer: __esri.Layer, parent?: TreeNode, itemConfig?: TreeviewItemConfig): TreeNode {
+	#layerToNode(layer: __esri.Layer, parent?: TreeNode, itemConfig?: TreeviewNodeConfig): TreeNode {
 		const node: TreeNode = {
 			id: layer.id,
 			name: layer.title as string,
@@ -304,8 +304,8 @@ export class TreeviewStore {
 	 */
 	#getChildItemConfig(
 		childLayer: __esri.Layer,
-		parentItemConfig?: TreeviewItemConfig
-	): TreeviewItemConfig | undefined {
+		parentItemConfig?: TreeviewNodeConfig
+	): TreeviewNodeConfig | undefined {
 		if (!this.#configStore) {
 			return undefined;
 		}
