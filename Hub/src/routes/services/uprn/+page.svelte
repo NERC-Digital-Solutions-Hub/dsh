@@ -5,7 +5,7 @@
 	import UprnTabBar from '$lib/components/common/services/uprn/uprn-tab-bar/uprn-tab-bar.svelte';
 	import UprnTabBarContent from '$lib/components/common/services/uprn/uprn-tab-bar/uprn-tab-bar-content.svelte';
 	import { getAppConfigAsync, type AppConfig } from '$lib/utils/app-config-provider.js';
-	import type { TreeviewConfig } from '$lib/utils/treeview-config.js';
+	import type { TreeviewConfig } from '$lib/types/treeview.js';
 	import { onMount } from 'svelte';
 	import { WebMapStore } from '$lib/stores/web-map-store.svelte';
 	import { areaSelectionStore } from '$lib/stores/area-selection-store.svelte';

@@ -37,8 +37,8 @@ export interface TreeviewItemConfig {
 	isVisibleOnInit?: boolean;
 	/** Whether this item should be hidden from the user interface. Optional - defaults to false if not specified */
 	isHidden?: boolean;
-	/** Whether fields under this item should be hidden from the user interface. Optional - defaults to false if not specified */
-	hideFields?: boolean;
+	/** Whether fields under this item should be shown in the user interface. Optional - defaults to false if not specified */
+	showFields?: boolean;
 	/** Array of item IDs that this item depends on for visibility. Optional - no dependencies if not specified */
 	visibilityDependencyIds?: string[];
 	/** ID of the visibility group this item belongs to. Optional - item not part of any group if not specified */
@@ -51,17 +51,4 @@ export enum TreeviewItemType {
 	FeatureLayer = 'feature-layer',
 	TileLayer = 'tile-layer',
 	Field = 'field'
-}
-
-export function getLayerTreeviewItemType(layer: __esri.Layer): TreeviewItemType {
-	switch (layer.type) {
-		case 'group':
-			return TreeviewItemType.GroupLayer;
-		case 'feature':
-			return TreeviewItemType.FeatureLayer;
-		case 'tile':
-			return TreeviewItemType.TileLayer;
-		default:
-			throw new Error(`Unsupported layer type: ${layer.type}`);
-	}
 }

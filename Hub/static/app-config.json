@@ -12,8 +12,7 @@
                 "_name": "UPRN (05/2024)",
                 "id": "b6311005e65b4f1c94204ba64dddd3ac",
                 "isDownloadable": false,
-                "isVisibleOnInit": true,
-                "hideFields": true
+                "isVisibleOnInit": true
             },
             {
                 "_name": "Administrative Areas",
@@ -99,6 +98,31 @@
                 "_name": "AQREAN Raster Cells (Bias Corrected)",
                 "id": "e769286c49bf4febbabc5ecf4f051a56",
                 "isHidden": true
+            },
+            {
+                "_name": "ClimateJust - Grid (England) - Heat",
+                "id": "27e3fa849b2046e59d8392a3ae42f237",
+                "showFields": true
+            },
+            {
+                "_name": "ClimateJust - LSOAs (EN) (2011 - 2022 V3) - 2022 Data",
+                "id": "6d433602f0564ff9ae3b21a2423f1c5f",
+                "showFields": true
+            },
+            {
+                "_name": "ClimateJust - MSOAs (England) (2011) - SHVI",
+                "id": "a51f91a32c3645e6ae6302785bf24592",
+                "showFields": true
+            },
+            {
+                "_name": "ClimateJust - Grid (UK) - UKCP18",
+                "id": "af6906c7ca3c4b4fa7450183ff9c8982",
+                "showFields": true
+            },
+            {
+                "_name": "ClimateJust - LSOAs (UK) (2011) - Flood Data",
+                "id": "d578d83b32354175ad5f25b2069f79b6",
+                "showFields": true
             }
         ],
         "visibilityGroups": [

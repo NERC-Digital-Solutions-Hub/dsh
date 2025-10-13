@@ -1,6 +1,6 @@
 import { base } from '$app/paths';
 import { type LayerNameField } from '$lib/stores/area-selection-store.svelte';
-import type { TreeviewConfig } from '$lib/utils/treeview-config.js';
+import type { TreeviewConfig } from '$lib/types/treeview.js';
 
 export type AppConfig = {
 	portalUrl?: string | null;

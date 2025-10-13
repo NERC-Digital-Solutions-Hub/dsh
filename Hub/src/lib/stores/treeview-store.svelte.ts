@@ -1,6 +1,6 @@
 import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store.js';
 import type { TreeNode } from '$lib/components/common/services/uprn/tree-view/types.js';
-import type { TreeviewItemConfig, VisibilityGroupConfig } from '$lib/utils/treeview-config.js';
+import type { TreeviewItemConfig, VisibilityGroupConfig } from '$lib/types/treeview.js';
 import { SvelteMap } from 'svelte/reactivity';
 
 export class TreeviewStore {

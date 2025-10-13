@@ -7,9 +7,9 @@ import {
 import {
 	type TreeviewItemConfig,
 	TreeviewItemType,
-	type VisibilityGroupConfig,
-	getLayerTreeviewItemType
-} from '$lib/utils/treeview-config.js';
+	type VisibilityGroupConfig
+} from '$lib/types/treeview.js';
+import { getLayerTreeviewItemType } from '$lib/utils/treeview.js';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 export class TreeviewStore {
@@ -65,7 +65,6 @@ export class TreeviewStore {
 
 		if (fieldsToHide) {
 			this.#fieldsToHide = new SvelteSet(fieldsToHide);
-			console.log('Fields to hide:', Array.from(this.#fieldsToHide));
 		}
 
 		this.#treeNodes = this.#buildTreeFromLayers(layers);
@@ -325,7 +324,7 @@ export class TreeviewStore {
 		layer.visible = itemConfig?.isVisibleOnInit ?? false;
 		this.#visibilityState.set(layer.id, layer.visible);
 
-		if (this.#isFeatureLayer(layer) && itemConfig?.hideFields !== true) {
+		if (this.#isFeatureLayer(layer) && itemConfig?.showFields) {
 			const featureLayer = layer as __esri.FeatureLayer;
 			if (!featureLayer.loaded) {
 				console.warn(`Layer not loaded: ${layer.id}`);

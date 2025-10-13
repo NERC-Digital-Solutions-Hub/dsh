@@ -2,7 +2,7 @@ import {
 	type TreeviewConfig,
 	type TreeviewItemConfig,
 	type VisibilityGroupConfig
-} from '$lib/utils/treeview-config';
+} from '$lib/types/treeview';
 
 /**
  * Store class that manages treeview configuration data and provides efficient access to items and visibility groups.
