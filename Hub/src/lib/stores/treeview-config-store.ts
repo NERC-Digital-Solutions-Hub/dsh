@@ -188,7 +188,7 @@ export class TreeviewConfigStore {
 				'isDownloadable',
 				nodeConfig,
 				parentNodeConfig,
-				false
+				true
 			),
 			isVisibleOnInit: this.#getConfigValue(
 				inheritanceGroup,

@@ -173,12 +173,14 @@
             {
                 "_name": "Administrative Areas",
                 "id": "08051aec5d9e4d8fbf96f8bec3564484",
-                "visibilityGroupId": "group:area"
+                "visibilityGroupId": "group:area",
+                "inheritanceGroupId": "group:area"
             },
             {
                 "_name": "Tiling Schemes",
                 "id": "772b1fff49734e73981247de9f50f4f3",
-                "visibilityGroupId": "group:area"
+                "visibilityGroupId": "group:area",
+                "inheritanceGroupId": "group:area"
             },
             {
                 "_name": "BNG Outline",
@@ -235,6 +237,14 @@
             {
                 "id": "group:area",
                 "maxVisibleLayers": 1
+            }
+        ],
+        "inheritanceGroups": [
+            {
+                "id": "group:area",
+                "inheritedProperties": [
+                    "visibilityGroupId"
+                ]
             }
         ]
     },
