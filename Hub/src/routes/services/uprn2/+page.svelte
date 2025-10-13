@@ -4,7 +4,7 @@
 	import AreaSelectionToast from '$lib/components/common/services/uprn2/area-selection-toast/area-selection-toast.svelte';
 	import UprnTabBar from '$lib/components/common/services/uprn2/uprn-tab-bar/uprn-tab-bar.svelte';
 	import UprnTabBarContent from '$lib/components/common/services/uprn2/uprn-tab-bar/uprn-tab-bar-content.svelte';
-	import { getAppConfigAsync, type AppConfig } from '$lib/utils/app-config-provider.js';
+	import { getAppConfigAsync } from '$lib/utils/app-config-provider.js';
 	import type { TreeviewConfig } from '$lib/types/treeview.js';
 	import { onMount } from 'svelte';
 	import { WebMapStore } from '$lib/stores/web-map-store.svelte';
@@ -21,13 +21,13 @@
 	import { TreeviewStore } from '$lib/stores/treeview-store2.svelte';
 	import TabBarTriggers from './tabBarTriggers.json';
 	import Sidebar from '$lib/components/common/sidebar/sidebar.svelte';
+	import type { AppConfig } from '$lib/types/config';
 
 	const webMapStore: WebMapStore = $state(new WebMapStore());
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
 	const areaSelectionTreeviewStore: TreeviewStore = $state(new TreeviewStore());
 
 	let currentTab = $state('define-areas');
-	let fieldsToHide: Set<string> = $state(new Set());
 	let dataSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
 	let areaSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
 	let sidebarOpen = $state(true);
@@ -39,20 +39,19 @@
 	onMount(async () => {
 		const appConfig: AppConfig = await getAppConfigAsync();
 
-		fieldsToHide = new Set(appConfig.fieldsToHide || []);
-		areaSelectionStore.setNameFields(appConfig.selectionLayersNameFields || []);
+		areaSelectionStore.setNameFields(appConfig.serviceUprn2Config.selectionLayersNameFields || []);
 		dataSelectionTreeviewConfig = new TreeviewConfigStore(
-			appConfig.dataSelectionTreeviewConfig as TreeviewConfig
+			appConfig.serviceUprn2Config.dataSelectionTreeviewConfig as TreeviewConfig
 		);
 
 		areaSelectionTreeviewConfig = new TreeviewConfigStore(
-			appConfig.areaSelectionTreeviewConfig as TreeviewConfig
+			appConfig.serviceUprn2Config.areaSelectionTreeviewConfig as TreeviewConfig
 		);
 
 		await webMapStore.initializeAsync({
-			portalUrl: appConfig.portalUrl,
-			itemId: appConfig.portalItemId || '',
-			proxy: appConfig.proxy
+			portalUrl: appConfig.serviceUprn2Config.portalUrl,
+			itemId: appConfig.serviceUprn2Config.portalItemId || '',
+			proxy: appConfig.serviceUprn2Config.proxy
 		});
 
 		console.log('[page] WebMap loaded');
@@ -69,7 +68,7 @@
 
 <Toaster />
 <AreaSelectionHoverCard />
-<FieldSelectionMenu {fieldFilterMenuStore} {fieldsToHide} />
+<FieldSelectionMenu {fieldFilterMenuStore} />
 <AreaSelectionToast />
 
 <div class="layout-container">
@@ -86,7 +85,6 @@
 				<DataSelectionTreeview
 					webMap={webMapStore.data}
 					treeviewConfigStore={dataSelectionTreeviewConfig!}
-					{fieldsToHide}
 					{fieldFilterMenuStore}
 				/>
 			</UprnTabBarContent>

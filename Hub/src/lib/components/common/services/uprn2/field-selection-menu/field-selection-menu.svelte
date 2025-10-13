@@ -10,10 +10,9 @@
 
 	export type Props = {
 		fieldFilterMenuStore: FieldFilterMenuStore;
-		fieldsToHide?: Set<string>;
 	};
 
-	const { fieldFilterMenuStore, fieldsToHide }: Props = $props();
+	const { fieldFilterMenuStore }: Props = $props();
 
 	let activeFeatureLayer: __esri.FeatureLayer | null = $state<__esri.FeatureLayer | null>(null);
 	let localSelectedFields: SvelteSet<string> = $state(new SvelteSet<string>());
@@ -131,9 +130,7 @@
 			return [];
 		}
 
-		return activeFeatureLayer.fields.filter(
-			(field) => !fieldsToHide?.has(field.alias?.toLowerCase() ?? '')
-		);
+		return activeFeatureLayer.fields;
 	}
 </script>
 

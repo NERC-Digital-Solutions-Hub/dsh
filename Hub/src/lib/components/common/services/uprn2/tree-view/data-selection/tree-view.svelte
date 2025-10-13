@@ -30,6 +30,7 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import FieldFilterMenuStore from '$lib/stores/field-filter-menu-store.svelte';
 	import { TreeviewStore } from '$lib/stores/treeview-store2.svelte';
+	import { AliasPathNodeConverter } from '$lib/components/common/services/uprn2/tree-view/services/alias-path-node-converter';
 
 	// =====================================
 	// TYPES & PROPS
@@ -68,7 +69,9 @@
 			await webMap.when();
 			await loadFeatureLayers(webMap.layers.toArray());
 			console.log('[data-selection-tree-view] fields to hide:', fieldsToHide);
-			treeviewStore.initialize(webMap.layers.toArray(), treeviewConfigStore, fieldsToHide);
+
+			const aliasPathConverter = new AliasPathNodeConverter(treeviewConfigStore);
+			treeviewStore.initialize(webMap.layers.toArray(), treeviewConfigStore, [aliasPathConverter]);
 			console.log('[data-selection-tree-view] Initialized with layers:', treeviewStore.getNodes());
 		};
 

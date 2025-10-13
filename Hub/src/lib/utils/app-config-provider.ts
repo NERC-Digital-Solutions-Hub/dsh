@@ -1,22 +1,21 @@
 import { base } from '$app/paths';
-import { type LayerNameField } from '$lib/stores/area-selection-store.svelte';
-import type { TreeviewConfig } from '$lib/types/treeview.js';
+import type { AppConfig } from '$lib/types/config';
 
-export type AppConfig = {
-	portalUrl?: string | null;
-	portalItemId: string;
-	proxy?: Proxy | null;
-	catalogueApiUrl: string;
-	dataSelectionTreeviewConfig?: TreeviewConfig;
-	areaSelectionTreeviewConfig?: TreeviewConfig;
-	selectionLayersNameFields?: LayerNameField[];
-	fieldsToHide?: string[];
-};
+// export type AppConfig = {
+// 	portalUrl?: string | null;
+// 	portalItemId: string;
+// 	proxy?: Proxy | null;
+// 	catalogueApiUrl: string;
+// 	dataSelectionTreeviewConfig?: TreeviewConfig;
+// 	areaSelectionTreeviewConfig?: TreeviewConfig;
+// 	selectionLayersNameFields?: LayerNameField[];
+// 	fieldsToHide?: string[];
+// };
 
-export type Proxy = {
-	urlPrefix: string;
-	proxyUrl: string;
-};
+// export type Proxy = {
+// 	urlPrefix: string;
+// 	proxyUrl: string;
+// };
 
 // export type TreeviewConfig = {
 // 	layers: TreeviewLayerConfig[];
@@ -35,7 +34,25 @@ let appConfig: AppConfig | null = null;
  */
 export async function getAppConfigAsync(): Promise<AppConfig> {
 	if (!appConfig) {
-		appConfig = await fetch(`${base}/app-config.json`).then((res) => res.json());
+		appConfig = await fetch(`${base}/config/app.json`).then((res) => res.json());
+		if (!appConfig) {
+			appConfig = {} as AppConfig;
+		}
+
+		const catalogueConfig = await fetch(`${base}/config/catalogue/config.json`).then((res) =>
+			res.json()
+		);
+		appConfig.catalogueConfig = catalogueConfig;
+
+		const serviceUprnConfig = await fetch(`${base}/config/services/uprn/config.json`).then((res) =>
+			res.json()
+		);
+		appConfig.serviceUprnConfig = serviceUprnConfig;
+
+		const serviceUprn2Config = await fetch(`${base}/config/services/uprn2/config.json`).then(
+			(res) => res.json()
+		);
+		appConfig.serviceUprn2Config = serviceUprn2Config;
 	}
 
 	return appConfig as AppConfig;

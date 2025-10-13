@@ -4,11 +4,10 @@ import {
 	TreeLayerNode,
 	TreeFieldNode
 } from '$lib/components/common/services/uprn2/tree-view/types.js';
-import {
-	type TreeviewNodeConfig,
-	type VisibilityGroupConfig
-} from '$lib/types/treeview.js';
+import { type TreeviewNodeConfig, type VisibilityGroupConfig } from '$lib/types/treeview.js';
 import { SvelteMap } from 'svelte/reactivity';
+
+import type { CustomNodeConverter } from '$lib/components/common/services/uprn2/tree-view/services/custom-node-converter';
 
 export class TreeviewStore {
 	public initialized: boolean = $state<boolean>(false);
@@ -39,9 +38,13 @@ export class TreeviewStore {
 	 */
 	#activeInVisibilityGroup: SvelteMap<string, string[]> = $state(new SvelteMap());
 
+	/** Custom converters for nodes */
+	#customConverters: SvelteMap<string, CustomNodeConverter> = $state(new SvelteMap());
+
 	initialize(
 		layers: __esri.Layer[],
-		configStore: TreeviewConfigStore
+		configStore: TreeviewConfigStore,
+		customConverters?: CustomNodeConverter[]
 	): void {
 		if (this.initialized) {
 			throw new Error('TreeviewStore is already initialized.');
@@ -54,6 +57,12 @@ export class TreeviewStore {
 		}
 
 		this.#configStore = configStore;
+
+		if (customConverters) {
+			for (const converter of customConverters) {
+				this.#customConverters.set(converter.id, converter);
+			}
+		}
 
 		if (!layers) {
 			throw new Error('TreeviewStore requires a valid array of layers to initialize.');
@@ -313,13 +322,22 @@ export class TreeviewStore {
 	 * @param parent - The parent node, if any
 	 * @returns The created tree node
 	 */
-	#layerToNode(
-		layer: __esri.Layer,
-		parent?: TreeNode
-	): TreeLayerNode {
-		const node = new TreeLayerNode(layer.id, layer.title as string, layer, [], parent);
+	#layerToNode(layer: __esri.Layer, parent?: TreeNode): TreeLayerNode {
 		const nodeConfig: TreeviewNodeConfig | undefined = this.#findTreeviewItemConfig(layer.id);
+		if (nodeConfig && nodeConfig.customConverterId) {
+			if (!this.#customConverters.has(nodeConfig.customConverterId)) {
+				throw new Error(`Custom converter not found: ${nodeConfig.customConverterId}`);
+			}
 
+			const converter = this.#customConverters.get(nodeConfig.customConverterId);
+			if (!converter) {
+				throw new Error(`Custom converter not found: ${nodeConfig.customConverterId}`);
+			}
+
+			return converter.layerToNode(layer, parent ?? null) as TreeLayerNode;
+		}
+
+		const node = new TreeLayerNode(layer.id, layer.title as string, layer, [], parent);
 		layer.visible = nodeConfig?.isVisibleOnInit ?? false;
 		this.#visibilityState.set(layer.id, layer.visible);
 
@@ -355,10 +373,7 @@ export class TreeviewStore {
 		return node;
 	}
 
-	#fieldToNode(
-		field: __esri.Field,
-		parentLayerNode: TreeLayerNode
-	): TreeFieldNode {
+	#fieldToNode(field: __esri.Field, parentLayerNode: TreeLayerNode): TreeFieldNode {
 		const fieldNodeId: string = this.#getFieldNodeId(parentLayerNode.id, field.name);
 		const fieldNode = new TreeFieldNode(
 			fieldNodeId,
@@ -369,7 +384,8 @@ export class TreeviewStore {
 			parentLayerNode
 		);
 
-		const fieldItemConfig: TreeviewNodeConfig | undefined = this.#findTreeviewItemConfig(fieldNodeId);
+		const fieldItemConfig: TreeviewNodeConfig | undefined =
+			this.#findTreeviewItemConfig(fieldNodeId);
 		this.#visibilityState.set(fieldNodeId, fieldItemConfig?.isVisibleOnInit ?? false);
 		return fieldNode;
 	}

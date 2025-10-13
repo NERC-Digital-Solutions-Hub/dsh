@@ -2,7 +2,7 @@
 	import * as InputGroup from '$lib/components/ui/input-group/index.js';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import FilterIcon from '@lucide/svelte/icons/filter';
-	import { getAppConfigAsync, type AppConfig } from '$lib/utils/app-config-provider.js';
+	import { getAppConfigAsync } from '$lib/utils/app-config-provider.js';
 	import { onMount } from 'svelte';
 	import { CatalogueSearchStore } from '$lib/stores/catalogue-search-store.svelte';
 	import SearchFilter from '$lib/components/common/catalogue/search-filter/search-filter.svelte';
@@ -16,6 +16,7 @@
 		SidebarProvider,
 		SidebarTrigger
 	} from '$lib/components/ui/sidebar/index.js';
+	import type { AppConfig } from '$lib/types/config';
 
 	let catalogueStore: CatalogueSearchStore | undefined = $state<CatalogueSearchStore | undefined>(
 		undefined
@@ -25,7 +26,7 @@
 
 	onMount(async () => {
 		const appConfig: AppConfig = await getAppConfigAsync();
-		catalogueStore = new CatalogueSearchStore(appConfig.catalogueApiUrl);
+		catalogueStore = new CatalogueSearchStore(appConfig.catalogueConfig.catalogueApiUrl);
 	});
 
 	$effect(() => {

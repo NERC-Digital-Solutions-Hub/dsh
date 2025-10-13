@@ -61,6 +61,8 @@ export interface TreeviewNodeConfig {
 	visibilityGroupId?: string;
 	/** ID of the inheritance group this node belongs to. Optional - node not part of any group if not specified */
 	inheritanceGroupId?: string;
+	/** Optional ID of a custom converter to use for this node, if applicable */
+	customConverterId?: string;
 }
 
 export enum TreeviewNodeType {

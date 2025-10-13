@@ -235,11 +235,8 @@ export class TreeviewConfigStore {
 		};
 
 		if (doesConfigExist === false) {
-			console.log('Adding new node config:', nodeConfig);
 			this.#addItemConfig(nodeConfig);
 		}
-
-		console.log('Created node config:', nodeConfig, parentNodeConfig);
 
 		return nodeConfig;
 	}

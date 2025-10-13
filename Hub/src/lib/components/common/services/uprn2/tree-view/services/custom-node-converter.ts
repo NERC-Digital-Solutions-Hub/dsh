@@ -5,10 +5,14 @@ import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
  * Abstract class for converting map layers to tree nodes.
  */
 export abstract class CustomNodeConverter {
+	/**
+	 * Unique identifier for this converter type.
+	 */
+	abstract readonly id: string;
 
-    /**
-     * Configuration store for tree view node configurations..
-     */
+	/**
+	 * Configuration store for tree view node configurations..
+	 */
 	protected configStore: TreeviewConfigStore;
 
 	/**
@@ -26,8 +30,5 @@ export abstract class CustomNodeConverter {
 	 * @param parent - The parent node, if any
 	 * @returns The created tree node
 	 */
-	abstract layerToNode(
-		layer: __esri.Layer,
-		parent: TreeNode | null
-	): TreeNode;
+	abstract layerToNode(layer: __esri.Layer, parent: TreeNode | null): TreeNode;
 }

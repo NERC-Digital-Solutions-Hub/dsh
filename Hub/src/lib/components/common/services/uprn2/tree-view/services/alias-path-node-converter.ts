@@ -1,15 +1,17 @@
-import { CustomNodeConverter } from '$lib/components/common/services/uprn2/tree-view/services/custom-node-reader';
+import { CustomNodeConverter } from '$lib/components/common/services/uprn2/tree-view/services/custom-node-converter';
 import {
 	TreeFieldNode,
 	TreeLayerNode,
 	TreeNode
 } from '$lib/components/common/services/uprn2/tree-view/types';
 import type { TreeviewNodeConfig } from '$lib/types/treeview';
+import { decodeHtmlEntities } from '$lib/utils/decode-html';
 
 export class AliasPathNodeConverter extends CustomNodeConverter {
-	/**
-	 * @inheritdoc
-	 */
+	/** @inheritdoc */
+	readonly id = 'aliasPath';
+
+	/** @inheritdoc */
 	layerToNode(layer: __esri.Layer, parent: TreeNode | null): TreeNode {
 		const node = new TreeLayerNode(layer.id, layer.title as string, layer, [], parent);
 		const nodeConfig: TreeviewNodeConfig | undefined = this.configStore.getItemConfig(layer.id);
@@ -20,85 +22,101 @@ export class AliasPathNodeConverter extends CustomNodeConverter {
 				console.warn(`Layer not loaded: ${layer.id}`);
 			}
 
+			const nodePathMap: Map<string, TreeNode> = new Map();
 			for (const field of featureLayer.fields ?? []) {
-				const fieldNode = this.#fieldToNode(field, node);
-				node.children.push(fieldNode);
+				const fieldConfig = this.configStore.getItemConfig(
+					this.#getFieldNodeId(layer.id, field.name)
+				);
+				if (!fieldConfig || fieldConfig.isHidden) {
+					continue;
+				}
+
+				this.#fieldToNode(field, node, nodePathMap);
 			}
+
+			// Sort children. if they have children, they should come first
+			node.children.sort((a, b) => {
+				if (a.children.length > 0 && b.children.length === 0) {
+					return 1;
+				} else if (a.children.length === 0 && b.children.length > 0) {
+					return -1;
+				}
+
+				return 0;
+			});
 		}
 
 		return node;
 	}
+
 	#fieldToNode(
 		field: __esri.Field,
 		parentLayerNode: TreeLayerNode,
-		parentNode?: TreeNode,
 		nodePathMap: Map<string, TreeNode> = new Map()
 	): TreeFieldNode {
 		const fieldNodeId: string = this.#getFieldNodeId(parentLayerNode.id, field.name);
 
 		// Split alias like "A | B | C" -> ["A","B","C"]
+		const decodedAlias = decodeHtmlEntities(field.alias || '');
 		const pathNodes =
-			field.alias
+			decodedAlias
 				?.split('|')
 				.map((s) => s.trim())
 				.filter(Boolean) ?? [];
 
-		// Start attaching under explicit parentNode (if provided) or the layer node
-		let currentParent: TreeNode = parentNode ?? parentLayerNode;
-		let lastPathNode: TreeNode | undefined;
+		// If no alias path, just attach the field directly under the layer
+		if (pathNodes.length === 0) {
+			const fieldNode = new TreeFieldNode(
+				fieldNodeId,
+				field.alias || field.name,
+				parentLayerNode.layer as __esri.FeatureLayer,
+				field,
+				[],
+				parentLayerNode
+			);
+			parentLayerNode.children.push(fieldNode);
+			return fieldNode;
+		}
 
-		// Helper to safely append a child once
+		// All but the last element are "folder" nodes
+		const parentPathParts = pathNodes.slice(0, -1);
+		const fieldLabel = pathNodes[pathNodes.length - 1];
+
+		let currentParent: TreeNode = parentLayerNode;
+
+		// Helper to add a child safely
 		const attachChild = (parent: TreeNode, child: TreeNode) => {
 			parent.children ??= [];
 			if (!parent.children.includes(child)) parent.children.push(child);
 		};
 
-		for (let i = 0; i < pathNodes.length; i++) {
-			const label = pathNodes[i];
+		// Build / reuse intermediate path nodes
+		for (let i = 0; i < parentPathParts.length; i++) {
+			const label = parentPathParts[i];
+			const cumulativeKey = pathNodes.slice(0, i + 1).join('::');
+			const key = `${parentLayerNode.id}::${cumulativeKey}`;
 
-			// Build a stable key for this level (layerId + cumulative path)
-			const cumulative = pathNodes.slice(0, i + 1).join('::');
-			const key = `${parentLayerNode.id}::${cumulative}`;
-
-			// Reuse if already created; otherwise create and attach
 			let node = nodePathMap.get(key);
 			if (!node) {
-				node = new TreeNode(
-					key, // id
-					label, // label/name
-					[], // children
-					currentParent // parent
-				);
+				node = new TreeNode(key, label, [], currentParent);
 				nodePathMap.set(key, node);
-				attachChild(currentParent, node);
-			} else if (node.parent !== currentParent) {
-				// In case a reused node needs its parent set (defensive)
-				node.parent = currentParent;
 				attachChild(currentParent, node);
 			}
 
 			currentParent = node;
-			lastPathNode = node;
 		}
 
-		// If we created path nodes, the field lives under the deepest one
-		const fieldParent = lastPathNode ?? parentNode ?? parentLayerNode;
-
+		// Create the field node under the final parent
 		const fieldNode = new TreeFieldNode(
 			fieldNodeId,
-			field.alias || field.name,
+			fieldLabel || field.name, // last part of alias is the field node label
 			parentLayerNode.layer as __esri.FeatureLayer,
 			field,
 			[],
-			fieldParent
+			currentParent
 		);
 
-		// Attach the field node as a child of its parent (avoid duplicates)
-		fieldParent.children ??= [];
-		if (!fieldParent.children.includes(fieldNode)) {
-			fieldParent.children.push(fieldNode);
-		}
-
+		attachChild(currentParent, fieldNode);
 		return fieldNode;
 	}
 

@@ -4,7 +4,7 @@
 	import AreaSelectionToast from '$lib/components/common/services/uprn/area-selection-toast/area-selection-toast.svelte';
 	import UprnTabBar from '$lib/components/common/services/uprn/uprn-tab-bar/uprn-tab-bar.svelte';
 	import UprnTabBarContent from '$lib/components/common/services/uprn/uprn-tab-bar/uprn-tab-bar-content.svelte';
-	import { getAppConfigAsync, type AppConfig } from '$lib/utils/app-config-provider.js';
+	import { getAppConfigAsync } from '$lib/utils/app-config-provider.js';
 	import type { TreeviewConfig } from '$lib/types/treeview.js';
 	import { onMount } from 'svelte';
 	import { WebMapStore } from '$lib/stores/web-map-store.svelte';
@@ -20,6 +20,7 @@
 	import { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
 	import { TreeviewStore } from '$lib/stores/treeview-store.svelte';
 	import TabBarTriggers from './tabBarTriggers.json';
+	import type { AppConfig } from '$lib/types/config';
 
 	const webMapStore: WebMapStore = $state(new WebMapStore());
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
@@ -33,20 +34,20 @@
 	onMount(async () => {
 		const appConfig: AppConfig = await getAppConfigAsync();
 
-		fieldsToHide = new Set(appConfig.fieldsToHide || []);
-		areaSelectionStore.setNameFields(appConfig.selectionLayersNameFields || []);
+		fieldsToHide = new Set(appConfig.serviceUprnConfig.fieldsToHide || []);
+		areaSelectionStore.setNameFields(appConfig.serviceUprnConfig.selectionLayersNameFields || []);
 		dataSelectionTreeviewConfig = new TreeviewConfigStore(
-			appConfig.dataSelectionTreeviewConfig as TreeviewConfig
+			appConfig.serviceUprnConfig.dataSelectionTreeviewConfig as TreeviewConfig
 		);
 
 		areaSelectionTreeviewConfig = new TreeviewConfigStore(
-			appConfig.areaSelectionTreeviewConfig as TreeviewConfig
+			appConfig.serviceUprnConfig.areaSelectionTreeviewConfig as TreeviewConfig
 		);
 
 		await webMapStore.initializeAsync({
-			portalUrl: appConfig.portalUrl,
-			itemId: appConfig.portalItemId || '',
-			proxy: appConfig.proxy
+			portalUrl: appConfig.serviceUprnConfig.portalUrl,
+			itemId: appConfig.serviceUprnConfig.portalItemId || '',
+			proxy: appConfig.serviceUprnConfig.proxy
 		});
 
 		console.log('[page] WebMap loaded');
