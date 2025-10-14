@@ -1,0 +1,1 @@
+import{s as o}from"./B92kdZ15.js";import"./Bh_A11hK.js";import{a as u}from"./CZhWOHrb.js";import"./CjRExq0l.js";const t=new u;function m(n,r,e){return t.execute(n,r,e,null)}function a(n,r){return t.executeMany(new o(n),r,null).next()}function f(){return t.supportsCurves()}export{a as e,m as r,f as s};
