@@ -57,6 +57,8 @@ class MapInteractionStore {
 
 		this.isInitialized = true;
 		console.log('[map-interaction-store] Initialized with MapView');
+
+		this.initializationInProgress = false;
 	}
 
 	public updateInteractableLayers(interactableLayers: Set<string>): void {
@@ -257,10 +259,6 @@ class MapInteractionStore {
 	 * Clean up event handlers and resources
 	 */
 	public cleanup(): void {
-		if (!this.isInitialized) {
-			return;
-		}
-
 		if (this.pointerMoveHandle) {
 			this.pointerMoveHandle.remove();
 			this.pointerMoveHandle = null;

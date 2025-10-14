@@ -56,6 +56,7 @@ class MapInteractionStore {
 		this.setupEnterHandler(view);
 
 		this.isInitialized = true;
+		this.initializationInProgress = false;
 		console.log('[map-interaction-store] Initialized with MapView');
 	}
 
@@ -259,10 +260,6 @@ class MapInteractionStore {
 	 * Clean up event handlers and resources
 	 */
 	public cleanup(): void {
-		if (!this.isInitialized) {
-			return;
-		}
-
 		if (this.pointerMoveHandle) {
 			this.pointerMoveHandle.remove();
 			this.pointerMoveHandle = null;
