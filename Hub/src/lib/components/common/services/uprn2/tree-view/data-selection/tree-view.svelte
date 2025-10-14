@@ -24,13 +24,19 @@
 <script lang="ts">
 	import * as TreeView from '$lib/components/ui/tree-view/index.js';
 	import Node from './node.svelte';
-	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store.js';
-	import { TreeLayerNode, type TreeNode } from '../types.js';
-	import { dataSelectionStore, type DataSelection } from '$lib/stores/data-selection-store.svelte';
+	import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store.js';
+	import { DownloadState, TreeFieldNode, TreeLayerNode, type TreeNode } from '../types.js';
+	import {
+		dataSelectionStore,
+		type DataSelection
+	} from '$lib/stores/services/uprn2/data-selection-store.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
-	import FieldFilterMenuStore from '$lib/stores/field-filter-menu-store.svelte';
-	import { TreeviewStore } from '$lib/stores/treeview-store2.svelte';
+	import FieldFilterMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
+	import { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
 	import { AliasPathNodeConverter } from '$lib/components/common/services/uprn2/tree-view/services/alias-path-node-converter';
+	import { Download } from 'lucide-svelte';
+	import { TreeviewNodeType, type TreeviewNodeConfig } from '$lib/types/treeview';
+	import type { string16 } from '@esri/calcite-ui-icons';
 
 	// =====================================
 	// TYPES & PROPS
@@ -100,35 +106,147 @@
 	 * Handles download state changes for a node.
 	 * Adds or removes the node from the data selection store.
 	 * @param node - The node to update download state for
-	 * @param isActive - Whether the node should be available for download
+	 * @param downloadState - The new download state of the node.
 	 */
-	function onDownloadStateChanged(node: TreeNode, isActive: boolean): void {
-		if (!isActive) {
-			dataSelectionStore.removeSelection(node.id);
+	function onDownloadStateChanged(node: TreeNode, downloadState: DownloadState): void {
+		// TODO: Move this into data selection store...
+
+		if (downloadState === DownloadState.Inactive) {
+			if (node instanceof TreeLayerNode && node.layer.type !== 'group') {
+				dataSelectionStore.removeSelection(node.id);
+			}
+			removeChildSelections(node);
 			return;
 		}
 
-		if (!(node instanceof TreeLayerNode)) {
-			return;
+		if (node instanceof TreeLayerNode && node.layer.type !== 'group') {
+			let existingSelection: DataSelection | undefined = dataSelectionStore.DataSelections.get(
+				node.id
+			);
+			if (!existingSelection) {
+				existingSelection = {
+					layerId: node.id,
+					name: node.layer.title || '',
+					fields: new SvelteSet<string>(
+						(node.layer as __esri.FeatureLayer).fields?.map((field) => field.name) || []
+					)
+				};
+
+				dataSelectionStore.addSelection(existingSelection);
+			}
+
+			if (node instanceof TreeFieldNode) {
+				existingSelection.fields?.add(node.field.name);
+			}
 		}
 
-		const selectedData: DataSelection = {
-			layerId: node.id,
-			name: node.layer.title || '',
-			fields: new SvelteSet<string>(
-				(node.layer as __esri.FeatureLayer).fields?.map((field) => field.name) || []
-			)
-		};
-		dataSelectionStore.addSelection(selectedData);
+		addAllChildSelections(node);
 	}
 
 	/**
 	 * Gets the current download state for a node.
 	 * @param node - The node to check download state for
-	 * @returns True if the node is selected for download
+	 * @returns The download state of the node
 	 */
-	function getDownloadState(node: TreeNode): boolean {
-		return dataSelectionStore.DataSelections.has(node.id);
+	function getDownloadState(node: TreeNode): DownloadState {
+		const selection = dataSelectionStore.DataSelections.get(node.id);
+		if (selection) {
+			return DownloadState.Active;
+		}
+
+		if (node instanceof TreeFieldNode) {
+			const layerSelection = dataSelectionStore.DataSelections.get(node.featureLayer.id);
+			if (layerSelection) {
+				return layerSelection.fields?.has(node.field.name)
+					? DownloadState.Active
+					: DownloadState.Inactive;
+			}
+		}
+
+		const anyChildActive = checkIfAnyChildActive(node);
+		if (!anyChildActive) {
+			return DownloadState.Inactive;
+		}
+
+		const allChildrenActive = checkIfAllChildrenActive(node);
+		if (allChildrenActive) {
+			return DownloadState.Active;
+		}
+
+		return DownloadState.Indeterminate;
+	}
+
+	function checkIfAnyChildActive(node: TreeNode): boolean {
+		if (!(node.children && node.children.length)) {
+			return false;
+		}
+
+		for (const child of node.children) {
+			const downloadState = getDownloadState(child);
+			if (downloadState === DownloadState.Active || checkIfAnyChildActive(child)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	function checkIfAllChildrenActive(node: TreeNode): boolean {
+		if (!(node.children && node.children.length)) {
+			return false;
+		}
+
+		for (const child of node.children) {
+			const downloadState = getDownloadState(child);
+			if (downloadState !== DownloadState.Active) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	function removeChildSelections(node: TreeNode): void {
+		if (!(node.children && node.children.length)) {
+			return;
+		}
+
+		for (const child of node.children) {
+			if (dataSelectionStore.DataSelections.has(child.id)) {
+				dataSelectionStore.removeSelection(child.id);
+			}
+
+			removeChildSelections(child);
+		}
+	}
+
+	function addAllChildSelections(node: TreeNode): void {
+		if (!(node.children && node.children.length)) {
+			return;
+		}
+
+		for (const child of node.children) {
+			if (child instanceof TreeLayerNode) {
+				const id = child.layer.id as string;
+				let existingSelection: DataSelection | undefined =
+					dataSelectionStore.DataSelections.get(id);
+				if (!existingSelection) {
+					existingSelection = {
+						layerId: id,
+						name: child.layer.title || '',
+						fields: new SvelteSet<string>(
+							(child.layer as __esri.FeatureLayer).fields?.map((field) => field.name) || []
+						)
+					};
+
+					dataSelectionStore.addSelection(existingSelection);
+				}
+
+				if (child instanceof TreeFieldNode) {
+					existingSelection.fields?.add(child.field.name);
+				}
+			}
+
+			addAllChildSelections(child);
+		}
 	}
 
 	// =====================================
@@ -189,7 +307,7 @@
 			<Node
 				{treeviewConfigStore}
 				{node}
-				isDownloadable={treeviewConfigStore.getItemConfig(node.id)?.isDownloadable ?? false}
+				isDownloadable={treeviewConfigStore.getItemConfig(node.id)?.isDownloadable ?? true}
 				onNodeClick={() => {}}
 				onNodeVisibilityChange={(node, visible) =>
 					treeviewStore.setVisibilityState(node.id, visible)}

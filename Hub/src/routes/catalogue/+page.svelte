@@ -4,7 +4,7 @@
 	import FilterIcon from '@lucide/svelte/icons/filter';
 	import { getAppConfigAsync } from '$lib/utils/app-config-provider.js';
 	import { onMount } from 'svelte';
-	import { CatalogueSearchStore } from '$lib/stores/catalogue-search-store.svelte';
+	import { CatalogueSearchStore } from '$lib/stores/catalogue/catalogue-search-store.svelte';
 	import SearchFilter from '$lib/components/common/catalogue/search-filter/search-filter.svelte';
 	import ResultsTable from '$lib/components/common/catalogue/results-table/results-table.svelte';
 	import SortSelector from '$lib/components/common/catalogue/sort-selector/sort-selector.svelte';

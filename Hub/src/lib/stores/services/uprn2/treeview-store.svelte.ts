@@ -1,9 +1,17 @@
-import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store.js';
-import type { TreeNode } from '$lib/components/common/services/uprn/tree-view/types.js';
-import type { TreeviewNodeConfig, VisibilityGroupConfig } from '$lib/types/treeview.js';
+import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store.js';
+import {
+	TreeNode,
+	TreeLayerNode,
+	TreeFieldNode
+} from '$lib/components/common/services/uprn2/tree-view/types.js';
+import { type TreeviewNodeConfig, type VisibilityGroupConfig } from '$lib/types/treeview.js';
 import { SvelteMap } from 'svelte/reactivity';
 
+import type { CustomNodeConverter } from '$lib/components/common/services/uprn2/tree-view/services/custom-node-converter';
+
 export class TreeviewStore {
+	public initialized: boolean = $state<boolean>(false);
+
 	#configStore: TreeviewConfigStore | null = null;
 
 	/** The hierarchical tree structure of map layers */
@@ -30,29 +38,52 @@ export class TreeviewStore {
 	 */
 	#activeInVisibilityGroup: SvelteMap<string, string[]> = $state(new SvelteMap());
 
-	initialize(layers: __esri.Layer[], configStore: TreeviewConfigStore) {
+	/** Custom converters for nodes */
+	#customConverters: SvelteMap<string, CustomNodeConverter> = $state(new SvelteMap());
+
+	initialize(
+		layers: __esri.Layer[],
+		configStore: TreeviewConfigStore,
+		customConverters?: CustomNodeConverter[]
+	): void {
+		if (this.initialized) {
+			throw new Error('TreeviewStore is already initialized.');
+		}
+
+		this.initialized = true;
+
 		if (!configStore) {
 			throw new Error('TreeviewStore requires a valid TreeviewConfigStore to initialize.');
 		}
 
 		this.#configStore = configStore;
 
+		if (customConverters) {
+			for (const converter of customConverters) {
+				this.#customConverters.set(converter.id, converter);
+			}
+		}
+
 		if (!layers) {
 			throw new Error('TreeviewStore requires a valid array of layers to initialize.');
 		}
 
+		this.#initializeConfigurations(layers);
 		this.#treeNodes = this.#buildTreeFromLayers(layers);
 	}
 
 	getNodeById(id: string): TreeNode | undefined {
+		this.#checkInitialized();
 		return this.#treeNodesLookup.get(id);
 	}
 
 	getNodes(): TreeNode[] {
+		this.#checkInitialized();
 		return this.#treeNodes;
 	}
 
 	getVisibleNodes(): TreeNode[] {
+		this.#checkInitialized();
 		const visibleNodes: TreeNode[] = [];
 		for (const [nodeId, isVisible] of this.#visibilityState) {
 			if (!isVisible) {
@@ -69,14 +100,16 @@ export class TreeviewStore {
 	}
 
 	getNonHiddenNodes(): TreeNode[] {
+		this.#checkInitialized();
 		return this.#getNonHiddenNodes(this.#treeNodes);
 	}
 
 	#getNonHiddenNodes(nodes: TreeNode[]): TreeNode[] {
+		this.#checkInitialized();
 		const nonHiddenNodes: TreeNode[] = [];
 		for (const node of nodes) {
-			const itemConfig = this.#findTreeviewItemConfig(node.id);
-			if (itemConfig && itemConfig.isHidden) {
+			const nodeConfig = this.#findTreeviewItemConfig(node.id);
+			if (nodeConfig && nodeConfig.isHidden) {
 				continue;
 			}
 
@@ -97,28 +130,43 @@ export class TreeviewStore {
 	 * @returns True if the node is visible, otherwise false
 	 */
 	getVisibilityState(nodeId: string): boolean {
+		this.#checkInitialized();
 		return this.#visibilityState.get(nodeId) ?? false;
 	}
 
 	setVisibilityState(nodeId: string, isVisible: boolean): void {
+		this.#checkInitialized();
 		const node = this.#treeNodesLookup.get(nodeId);
 		if (!node) {
 			throw new Error(`Tree node not found for ID: ${nodeId}`);
 		}
 
-		this.#visibilityState.set(nodeId, isVisible);
-		node.layer.visible = isVisible;
-		this.#updateParentVisibility(node, isVisible);
-
-		if (node.visibilityDependencyIds?.length) {
-			this.#updateDependencyVisibility(node, isVisible);
+		if (!(node instanceof TreeLayerNode)) {
+			throw new Error(`Tree node is not a layer node: ${nodeId}`);
 		}
 
-		if (!node.visibilityGroupId) {
+		this.#visibilityState.set(nodeId, isVisible);
+		node.layer.visible = isVisible;
+		if (node instanceof TreeFieldNode) {
+			node.featureLayer.displayField = isVisible ? node.field.name : '';
+		}
+
+		this.#updateParentVisibility(node, isVisible);
+
+		const config = this.#findTreeviewItemConfig(nodeId);
+		if (!config || config.isHidden) {
 			return;
 		}
 
-		const groupId: string = node.visibilityGroupId;
+		if (config.visibilityDependencyIds?.length) {
+			this.#updateDependencyVisibility(node, isVisible);
+		}
+
+		if (!config.visibilityGroupId) {
+			return;
+		}
+
+		const groupId: string = config.visibilityGroupId;
 		console.log(`Node ${nodeId} is part of visibility group ${groupId}`);
 		let activeNodes: string[] | undefined = this.#activeInVisibilityGroup.get(groupId);
 		if (!activeNodes) {
@@ -141,11 +189,12 @@ export class TreeviewStore {
 		const hideId = (id: string) => {
 			this.#visibilityState.set(id, false);
 			const node = this.#treeNodesLookup.get(id);
-			if (node) {
+			if (node && node instanceof TreeLayerNode) {
 				node.layer.visible = false;
 				this.#updateParentVisibility(node, false);
 
-				if (node.visibilityDependencyIds?.length) {
+				const config = this.#findTreeviewItemConfig(id);
+				if (config && config.visibilityDependencyIds?.length) {
 					this.#updateDependencyVisibility(node, false);
 				}
 			}
@@ -163,29 +212,35 @@ export class TreeviewStore {
 		activeNodes.push(nodeId);
 		this.#updateParentVisibility(node, isVisible);
 
-		if (node.visibilityDependencyIds?.length) {
+		if (config.visibilityDependencyIds?.length) {
 			this.#updateDependencyVisibility(node, isVisible);
 		}
 	}
 
 	#updateParentVisibility(node: TreeNode, isVisible: boolean): void {
-		if (!node.parent) {
+		const parentNode = node.parent;
+		if (!parentNode || !(parentNode instanceof TreeLayerNode)) {
 			return;
 		}
 
-		this.#visibilityState.set(node.parent.id, isVisible);
-		node.parent.layer.visible = isVisible;
-		this.#updateParentVisibility(node.parent, isVisible);
+		this.#visibilityState.set(parentNode.id, isVisible);
+		parentNode.layer.visible = isVisible;
+		this.#updateParentVisibility(parentNode, isVisible);
 	}
 
 	#updateDependencyVisibility(node: TreeNode, isVisible: boolean): void {
-		if (!node.visibilityDependencyIds?.length) {
+		const config = this.#findTreeviewItemConfig(node.id);
+		if (!config) {
 			return;
 		}
 
-		for (const depId of node.visibilityDependencyIds) {
+		if (!config.visibilityDependencyIds?.length) {
+			return;
+		}
+
+		for (const depId of config.visibilityDependencyIds) {
 			const depNode = this.#treeNodesLookup.get(depId);
-			if (depNode) {
+			if (depNode && depNode instanceof TreeLayerNode) {
 				this.#visibilityState.set(depId, isVisible);
 				depNode.layer.visible = isVisible;
 				this.#updateParentVisibility(depNode, isVisible);
@@ -205,6 +260,14 @@ export class TreeviewStore {
 		return this.#configStore.getVisibilityGroupConfig(id);
 	}
 
+	#initializeConfigurations(layers: __esri.Layer[]): void {
+		if (!this.#configStore) {
+			return;
+		}
+
+		this.#configStore.resolveInheritance(layers);
+	}
+
 	/**
 	 * Builds a tree structure from the map layers.
 	 * Applies configuration filters and reverses layer order to match expected display order.
@@ -213,8 +276,7 @@ export class TreeviewStore {
 	 */
 	#buildTreeFromLayers(layers: __esri.Layer[]): TreeNode[] {
 		const rootNodes = layers.map((layer) => {
-			const itemConfig = this.#findTreeviewItemConfig(layer.id);
-			return this.#layerToNode(layer, undefined, itemConfig);
+			return this.#layerToNode(layer, undefined);
 		});
 
 		return this.#reverseTreeOrder([...rootNodes]); // reverse the order to match expected display (map layers are typically reverse ordered)
@@ -254,32 +316,47 @@ export class TreeviewStore {
 	}
 
 	/**
-	 * Converts a map layer to a tree node item, handling different layer types.
+	 * Converts a map layer to a tree node, handling different layer types.
 	 * Recursively processes group layers and sublayers.
 	 * @param layer - The layer to convert
 	 * @param parent - The parent node, if any
-	 * @param itemConfig - Optional configuration for the item
 	 * @returns The created tree node
 	 */
-	#layerToNode(layer: __esri.Layer, parent?: TreeNode, itemConfig?: TreeviewNodeConfig): TreeNode {
-		const node: TreeNode = {
-			id: layer.id,
-			name: layer.title as string,
-			layer: layer,
-			visibilityDependencyIds: itemConfig?.visibilityDependencyIds,
-			visibilityGroupId: itemConfig?.visibilityGroupId,
-			children: [],
-			parent: parent
-		};
+	#layerToNode(layer: __esri.Layer, parent?: TreeNode): TreeLayerNode {
+		const nodeConfig: TreeviewNodeConfig | undefined = this.#findTreeviewItemConfig(layer.id);
+		if (nodeConfig && nodeConfig.customConverterId) {
+			if (!this.#customConverters.has(nodeConfig.customConverterId)) {
+				throw new Error(`Custom converter not found: ${nodeConfig.customConverterId}`);
+			}
 
-		layer.visible = itemConfig?.isVisibleOnInit ?? false;
+			const converter = this.#customConverters.get(nodeConfig.customConverterId);
+			if (!converter) {
+				throw new Error(`Custom converter not found: ${nodeConfig.customConverterId}`);
+			}
+
+			return converter.layerToNode(layer, parent ?? null) as TreeLayerNode;
+		}
+
+		const node = new TreeLayerNode(layer.id, layer.title as string, layer, [], parent);
+		layer.visible = nodeConfig?.isVisibleOnInit ?? false;
 		this.#visibilityState.set(layer.id, layer.visible);
+
+		if (this.#isFeatureLayer(layer) && nodeConfig?.showFields) {
+			const featureLayer = layer as __esri.FeatureLayer;
+			if (!featureLayer.loaded) {
+				console.warn(`Layer not loaded: ${layer.id}`);
+			}
+
+			for (const field of featureLayer.fields ?? []) {
+				const fieldNode = this.#fieldToNode(field, node);
+				node.children.push(fieldNode);
+			}
+		}
 
 		if (this.#isGroupLayer(layer)) {
 			const groupLayer = layer as __esri.GroupLayer;
 			node.children = groupLayer.layers.toArray().map((childLayer) => {
-				const childItemConfig = this.#getChildItemConfig(childLayer, itemConfig);
-				return this.#layerToNode(childLayer, node, childItemConfig);
+				return this.#layerToNode(childLayer, node);
 			});
 			return node;
 		}
@@ -296,34 +373,21 @@ export class TreeviewStore {
 		return node;
 	}
 
-	/**
-	 * gets the item config for a child layer, falling back to parent config if not defined for certain properties
-	 * @param childLayer the child layer
-	 * @param parentItemConfig the parent item config to fall back to
-	 * @returns the child item config or undefined if not found
-	 */
-	#getChildItemConfig(
-		childLayer: __esri.Layer,
-		parentItemConfig?: TreeviewNodeConfig
-	): TreeviewNodeConfig | undefined {
-		if (!this.#configStore) {
-			return undefined;
-		}
+	#fieldToNode(field: __esri.Field, parentLayerNode: TreeLayerNode): TreeFieldNode {
+		const fieldNodeId: string = this.#getFieldNodeId(parentLayerNode.id, field.name);
+		const fieldNode = new TreeFieldNode(
+			fieldNodeId,
+			field.alias || field.name,
+			parentLayerNode.layer as __esri.FeatureLayer,
+			field,
+			[],
+			parentLayerNode
+		);
 
-		if (!parentItemConfig) {
-			return undefined;
-		}
-
-		const childItemConfig = this.#configStore.getItemConfig(childLayer.id);
-		return {
-			id: childLayer.id,
-			isDownloadable: childItemConfig?.isDownloadable,
-			isVisibleOnInit: childItemConfig?.isVisibleOnInit,
-			isHidden: childItemConfig?.isHidden,
-			visibilityDependencyIds:
-				childItemConfig?.visibilityDependencyIds ?? parentItemConfig.visibilityDependencyIds,
-			visibilityGroupId: childItemConfig?.visibilityGroupId ?? parentItemConfig.visibilityGroupId
-		};
+		const fieldItemConfig: TreeviewNodeConfig | undefined =
+			this.#findTreeviewItemConfig(fieldNodeId);
+		this.#visibilityState.set(fieldNodeId, fieldItemConfig?.isVisibleOnInit ?? false);
+		return fieldNode;
 	}
 
 	/**
@@ -341,14 +405,8 @@ export class TreeviewStore {
 	 * @param subLayer - The sublayer to convert
 	 * @returns The created tree node
 	 */
-	#sublayerToNode(subLayer: __esri.Sublayer): TreeNode {
-		const node: TreeNode = {
-			id: subLayer.uid,
-			name: subLayer.title as string,
-			layer: subLayer,
-			children: []
-		};
-
+	#sublayerToNode(subLayer: __esri.Sublayer): TreeLayerNode {
+		const node = new TreeLayerNode(subLayer.uid, subLayer.title as string, subLayer);
 		if (subLayer.sublayers?.length) {
 			node.children = subLayer.sublayers.toArray().map(this.#sublayerToNode);
 		}
@@ -370,6 +428,10 @@ export class TreeviewStore {
 		}
 	}
 
+	#getFieldNodeId(layerId: string, fieldName: string): string {
+		return `${layerId}-${fieldName}`;
+	}
+
 	/**
 	 * Determines if a layer is a group layer that can contain other layers.
 	 * @param layer - The layer to check
@@ -377,5 +439,20 @@ export class TreeviewStore {
 	 */
 	#isGroupLayer(layer: __esri.Layer | __esri.Sublayer): boolean {
 		return layer.type === 'group';
+	}
+
+	/**
+	 * Determines if a layer is a feature layer that can contain fields.
+	 * @param layer - The layer to check
+	 * @returns True if the layer is a feature layer
+	 */
+	#isFeatureLayer(layer: __esri.Layer | __esri.Sublayer): boolean {
+		return layer.type === 'feature';
+	}
+
+	#checkInitialized(): void {
+		if (!this.initialized) {
+			throw new Error('TreeviewStore is not initialized. Call initialize() first.');
+		}
 	}
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { CatalogueSearchStore } from '$lib/stores/catalogue-search-store.svelte';
+	import type { CatalogueSearchStore } from '$lib/stores/catalogue/catalogue-search-store.svelte';
 	import ResultsTableItem from './results-table-item/results-table-item.svelte';
 
 	interface Props {

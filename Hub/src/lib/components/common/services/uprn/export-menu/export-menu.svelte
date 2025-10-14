@@ -2,13 +2,13 @@
 	import {
 		areaSelectionStore,
 		type HighlightAreaInfo
-	} from '$lib/stores/area-selection-store.svelte';
-	import { dataSelectionStore } from '$lib/stores/data-selection-store.svelte';
-	import { WebMapStore } from '$lib/stores/web-map-store.svelte';
+	} from '$lib/stores/services/uprn/area-selection-store.svelte';
+	import { dataSelectionStore } from '$lib/stores/services/uprn/data-selection-store.svelte';
+	import { WebMapStore } from '$lib/stores/services/uprn/web-map-store.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import FilterButton from '../tree-view/data-selection/filter-button.svelte';
-	import FilterFieldMenuStore from '$lib/stores/field-filter-menu-store.svelte';
-	import type { TreeviewStore } from '$lib/stores/treeview-store.svelte';
+	import FilterFieldMenuStore from '$lib/stores/services/uprn/field-filter-menu-store.svelte';
+	import type { TreeviewStore } from '$lib/stores/services/uprn/treeview-store.svelte';
 
 	export type Props = {
 		webMapStore: WebMapStore;
@@ -92,7 +92,11 @@
 <h2>Export Options</h2>
 
 <div class="section">
-	<h3>{areaSelectionTreeviewStore.getVisibleNodes()[0]?.layer.title}</h3>
+	<h3>
+		{areaSelectionTreeviewStore.initialized
+			? areaSelectionTreeviewStore.getVisibleNodes()[0]?.name
+			: 'Loading...'}
+	</h3>
 	<h4>Selected Areas</h4>
 	{#if areaInfos.length > 0}
 		<ul class="selected-list">

@@ -5,7 +5,7 @@
 	import NodeContent from './node-content.svelte';
 	import { getNodeIcon } from '../get-node-icon';
 	import type { TreeNode } from '../types.js';
-	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
+	import type { TreeviewConfigStore } from '$lib/stores/services/uprn/treeview-config-store';
 
 	type Props = {
 		treeviewConfigStore: TreeviewConfigStore;

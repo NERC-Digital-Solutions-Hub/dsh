@@ -31,12 +31,12 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
 	import type { Snippet } from 'svelte';
-	import { mapInteractionStore } from '$lib/stores/map-interaction-store.svelte';
-	import { areaSelectionStore } from '$lib/stores/area-selection-store.svelte';
+	import { mapInteractionStore } from '$lib/stores/services/uprn/map-interaction-store.svelte';
+	import { areaSelectionStore } from '$lib/stores/services/uprn/area-selection-store.svelte';
 	import type Map from '@arcgis/core/Map';
 	import type MapView from '@arcgis/core/views/MapView';
 	import type WebMap from '@arcgis/core/WebMap';
-	import type { TreeviewStore } from '$lib/stores/treeview-store.svelte';
+	import type { TreeviewStore } from '$lib/stores/services/uprn/treeview-store.svelte';
 
 	type UIPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'manual';
 
@@ -140,16 +140,6 @@
 	}
 
 	/**
-	 * Initializes the map interaction store with the provided view and interactable layers.
-	 * @param view - The MapView instance to initialize interactions for
-	 */
-	async function initializeMapInteractions(view: __esri.MapView) {
-		const nonHiddenNodes = areaSelectionTreeviewStore.getNonHiddenNodes().map((node) => node.id);
-		console.log('[uprn-map-view] Initializing map interactions with layers:', nonHiddenNodes);
-		await mapInteractionStore.initializeAsync(view, new Set(nonHiddenNodes));
-	}
-
-	/**
 	 * Creates a fallback map with basic basemap when the main webmap fails to load.
 	 * @returns Promise that resolves to a basic Map instance
 	 */
@@ -158,11 +148,6 @@
 			basemap: fallbackBasemap
 		});
 	}
-
-	onMount(async () => {
-		await loadEsriAsync();
-		await loadMapViewAsync();
-	});
 
 	/**
 	 * Updates the map view with a new webMap when the webMap prop changes.
@@ -182,7 +167,6 @@
 			}
 
 			mapView.map = webMap;
-			await webMap.when();
 			console.log('[uprn-map-view] MapView updated with new webMap');
 		} catch (error) {
 			console.error('Error updating MapView with new webMap:', error);
@@ -215,7 +199,6 @@
 		try {
 			// Try to load the main map (webMap or undefined)
 			mapView = await createMapView(webMap ?? undefined, mapContainer as HTMLDivElement);
-			await initializeMapInteractions(mapView);
 			setupMapUI(mapView);
 			console.log('[uprn-map-view] Map loaded successfully');
 		} catch (error) {
@@ -232,7 +215,6 @@
 		try {
 			const fallbackMap = await createFallbackMap();
 			mapView = await createMapView(fallbackMap, mapContainer as HTMLDivElement);
-			await initializeMapInteractions(mapView);
 			setupMapUI(mapView);
 			console.log('[uprn-map-view] Fallback map loaded');
 		} catch (fallbackError) {
@@ -242,12 +224,16 @@
 
 	// Effect to update interactable layers when they change
 	$effect(() => {
-		if (!mapView || !areaSelectionTreeviewStore) {
+		if (!mapView || !areaSelectionTreeviewStore.initialized) {
 			return;
 		}
 
 		const nonHiddenNodes = areaSelectionTreeviewStore.getNonHiddenNodes().map((node) => node.id);
-		mapInteractionStore.updateInteractableLayers(new Set(nonHiddenNodes));
+		if (mapInteractionStore.initialized) {
+			mapInteractionStore.updateInteractableLayers(new Set(nonHiddenNodes));
+		} else {
+			mapInteractionStore.initializeAsync(mapView, new Set(nonHiddenNodes));
+		}
 	});
 
 	/**
@@ -270,6 +256,10 @@
 
 	// Effect to handle visible node changes and update layer view
 	$effect(() => {
+		if (!areaSelectionTreeviewStore.initialized) {
+			return;
+		}
+
 		if (!areaSelectionTreeviewStore.getVisibleNodes().length) {
 			areaSelectionStore.resetSelectedAreas();
 			return;

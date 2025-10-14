@@ -7,8 +7,9 @@
 	import DownloadButton from './download-button.svelte';
 	import FilterButton from './filter-button.svelte';
 	import { getNodeIcon } from '../get-node-icon';
-	import { TreeLayerNode, type TreeNode } from '../types.js';
-	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
+	import { DownloadState, TreeLayerNode, type TreeNode } from '../types.js';
+	import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store';
+	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 
 	type Props = {
 		treeviewConfigStore?: TreeviewConfigStore | null;
@@ -16,8 +17,8 @@
 		isDownloadable?: boolean;
 		onNodeClick?: (node: TreeNode) => void;
 		onNodeVisibilityChange?: (node: TreeNode, visible: boolean) => void;
-		onDownloadStateChanged?: (node: TreeNode, isActive: boolean) => void;
-		getDownloadState?: (node: TreeNode) => boolean;
+		onDownloadStateChanged?: (node: TreeNode, downloadState: DownloadState) => void;
+		getDownloadState?: (node: TreeNode) => DownloadState;
 		onFilterClicked?: (layerId: string) => void;
 		hasFiltersApplied?: (layerId: string) => boolean;
 		getNodeVisibility?: (nodeId: string) => boolean | undefined;
@@ -71,7 +72,8 @@
 			return;
 		}
 
-		const shouldShow = (getDownloadState?.(node) && node.layer.type === 'feature') ?? false;
+		const shouldShow =
+			(getDownloadState?.(node) === DownloadState.Active && node.layer.type === 'feature') ?? false;
 
 		if (shouldShow && !showFilter) {
 			// Show immediately
@@ -113,6 +115,18 @@
 			<NodeContent {icon} name={node.name} {depth} onclick={handleFolderClick} {isFolder} {isOpen}>
 				{#snippet children()}
 					<div class="flex items-center gap-2">
+						{#if isDownloadable}
+							<!-- {#if showFilter}
+								<div
+									class="filter-transition-wrapper"
+									class:fade-in={!isAnimatingOut}
+									class:fade-out={isAnimatingOut}
+								>
+									<FilterButton layerId={node.id} {onFilterClicked} {hasFiltersApplied} />
+								</div>
+							{/if} -->
+							<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
+						{/if}
 						{#if hasVisibility}
 							<VisibilityCheckbox checked={isChecked} onCheckedChange={toggleVisible} />
 						{/if}
@@ -124,7 +138,7 @@
 				{#snippet children()}
 					<div class="flex items-center gap-2">
 						{#if isDownloadable}
-							{#if showFilter}
+							<!-- {#if showFilter}
 								<div
 									class="filter-transition-wrapper"
 									class:fade-in={!isAnimatingOut}
@@ -132,7 +146,7 @@
 								>
 									<FilterButton layerId={node.id} {onFilterClicked} {hasFiltersApplied} />
 								</div>
-							{/if}
+							{/if} -->
 							<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
 						{/if}
 						{#if hasVisibility}

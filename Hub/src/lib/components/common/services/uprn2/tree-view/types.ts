@@ -46,3 +46,9 @@ export class TreeFieldNode extends TreeLayerNode {
 		this.featureLayer = layer;
 	}
 }
+
+export enum DownloadState {
+	Inactive = 'inactive',
+	Indeterminate = 'indeterminate',
+	Active = 'active'
+}

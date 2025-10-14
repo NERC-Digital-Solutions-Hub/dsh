@@ -4,8 +4,8 @@
 	import Node from './node.svelte';
 	import NodeContent from './node-content.svelte';
 	import { getNodeIcon } from '../get-node-icon';
-	import type { TreeNode } from '../types.js';
-	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
+	import { TreeLayerNode, type TreeNode } from '../types.js';
+	import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store';
 
 	type Props = {
 		treeviewConfigStore: TreeviewConfigStore;
@@ -30,8 +30,8 @@
 	// Calculate width reduction to match ml-4 indentation (1rem per level)
 	// Each child is indented by ml-4 (1rem) and should be 1rem narrower
 
-	const hasVisibility = !!node.layer && 'visible' in node.layer;
 	const isFolder = !!(node.children && node.children.length);
+	const hasVisibility = !isFolder;
 
 	let isOpen = $state(false);
 	let isPressed = $state<boolean>(false);
@@ -45,12 +45,16 @@
 
 		return node.children.some((child) => {
 			const childVisibility = getNodeVisibility(child.id);
-			return childVisibility !== undefined ? childVisibility : child.layer.visible;
+			return childVisibility !== undefined
+				? childVisibility
+				: child instanceof TreeLayerNode
+					? child.layer.visible
+					: false;
 		});
 	}
 
 	$effect(() => {
-		if (!node) {
+		if (!node || !(node instanceof TreeLayerNode)) {
 			return;
 		}
 

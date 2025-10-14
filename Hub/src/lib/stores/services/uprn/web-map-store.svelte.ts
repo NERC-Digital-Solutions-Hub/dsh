@@ -16,6 +16,7 @@ export type Proxy = {
  * Store for managing the webmap.
  */
 export class WebMapStore {
+	public isLoaded: boolean = $state(false);
 	public data: __esri.WebMap | null = $state<__esri.WebMap | null>(null);
 	public dataLookup: SvelteMap<string, __esri.Layer> = $derived.by(() => {
 		const map = new SvelteMap<string, __esri.Layer>();
@@ -107,8 +108,12 @@ export class WebMapStore {
 			portalItem: portalItem
 		});
 
-		await webmap.loadAll();
 		this.data = webmap;
+
+		await this.data.when();
+		if (this.data.loaded) {
+			this.isLoaded = true;
+		}
 	}
 
 	/**

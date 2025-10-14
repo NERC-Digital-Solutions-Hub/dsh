@@ -34,6 +34,7 @@ class AreaSelectionStore {
 	>();
 
 	setNameFields(nameFields: LayerNameField[]): void {
+		console.log('Setting name fields:', nameFields);
 		this.#nameFields = nameFields;
 	}
 
@@ -85,6 +86,7 @@ class AreaSelectionStore {
 	}
 
 	addSelectedArea(id: number, handle: __esri.Handle): void {
+		console.log('Adding selected area with ID:', id);
 		if (!this.layerHighlightState) {
 			console.warn('SelectedAreasStore: No feature layer view is set.');
 			return;
@@ -96,6 +98,7 @@ class AreaSelectionStore {
 	}
 
 	removeSelectedArea(id: number): void {
+		console.log('Removing selected area with ID:', id);
 		if (!this.layerHighlightState) {
 			console.warn('SelectedAreasStore: No feature layer view is set.');
 			return;
@@ -192,7 +195,8 @@ class AreaSelectionStore {
 
 		if (!nameField) {
 			console.warn(
-				`SelectedAreasStore: No name field configured for layer ${this.layerHighlightState.featureLayerView.layer.title}.`
+				`SelectedAreasStore: No name field configured for layer ${this.layerHighlightState.featureLayerView.layer.title}`,
+				this.#nameFields
 			);
 			return null;
 		}

@@ -1,5 +1,5 @@
 import type { TreeNode } from '$lib/components/common/services/uprn2/tree-view/types';
-import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
+import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store';
 
 /**
  * Abstract class for converting map layers to tree nodes.

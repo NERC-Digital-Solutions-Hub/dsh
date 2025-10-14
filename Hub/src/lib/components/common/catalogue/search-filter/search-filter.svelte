@@ -1,7 +1,7 @@
 <script lang="ts">
 	import DateSelector from '$lib/components/common/date-selector/date-selector.svelte';
 	import { Combobox, type ComboboxOption } from '$lib/components/common/combobox';
-	import type { CatalogueSearchStore } from '$lib/stores/catalogue-search-store.svelte';
+	import type { CatalogueSearchStore } from '$lib/stores/catalogue/catalogue-search-store.svelte';
 
 	type Props = {
 		catalogueSearchStore: CatalogueSearchStore;

@@ -1,11 +1,14 @@
 <script lang="ts">
-	import { dataSelectionStore, type DataSelection } from '$lib/stores/data-selection-store.svelte';
+	import {
+		dataSelectionStore,
+		type DataSelection
+	} from '$lib/stores/services/uprn2/data-selection-store.svelte';
 	import * as Command from '$lib/components/ui/command/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { X } from '@lucide/svelte';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
-	import FieldFilterMenuStore from '$lib/stores/field-filter-menu-store.svelte';
+	import FieldFilterMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
 	import InformationIcon from '$lib/assets/information.svg?raw';
 
 	export type Props = {

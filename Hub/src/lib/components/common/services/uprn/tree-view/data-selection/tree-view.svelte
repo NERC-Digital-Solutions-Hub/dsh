@@ -24,12 +24,15 @@
 <script lang="ts">
 	import * as TreeView from '$lib/components/ui/tree-view/index.js';
 	import Node from './node.svelte';
-	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store.js';
+	import type { TreeviewConfigStore } from '$lib/stores/services/uprn/treeview-config-store.js';
 	import type { TreeNode } from '../types.js';
-	import { dataSelectionStore, type DataSelection } from '$lib/stores/data-selection-store.svelte';
+	import {
+		dataSelectionStore,
+		type DataSelection
+	} from '$lib/stores/services/uprn/data-selection-store.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
-	import FieldFilterMenuStore from '$lib/stores/field-filter-menu-store.svelte';
-	import { TreeviewStore } from '$lib/stores/treeview-store.svelte';
+	import FieldFilterMenuStore from '$lib/stores/services/uprn/field-filter-menu-store.svelte';
+	import { TreeviewStore } from '$lib/stores/services/uprn/treeview-store.svelte';
 
 	// =====================================
 	// TYPES & PROPS
@@ -54,12 +57,12 @@
 	 * Initializes layer visibility and builds the tree structure.
 	 */
 	$effect(() => {
-		if (!webMap) {
+		if (!webMap || treeviewStore.initialized) {
 			return;
 		}
 
 		const initializeWebMap = async () => {
-			await webMap.when();
+			//await webMap.when();
 			treeviewStore.initialize(webMap.layers.toArray(), treeviewConfigStore);
 			console.log('TreeView initialized with layers:', treeviewStore.getNodes());
 		};
@@ -147,24 +150,27 @@
 	}
 </script>
 
-<TreeView.Root>
-	{#each treeviewStore.getNodes() as node (node.id)}
-		<Node
-			{treeviewConfigStore}
-			{node}
-			isDownloadable={treeviewConfigStore.getItemConfig(node.id)?.isDownloadable ?? false}
-			onNodeClick={() => {}}
-			onNodeVisibilityChange={(node, visible) => treeviewStore.setVisibilityState(node.id, visible)}
-			getNodeVisibility={(nodeId) => treeviewStore.getVisibilityState(nodeId)}
-			{onDownloadStateChanged}
-			{getDownloadState}
-			onFilterClicked={handleFilterClicked}
-			{hasFiltersApplied}
-			depth={0}
-			useLayerTypeIcon={true}
-		/>
-	{/each}
-</TreeView.Root>
+{#if treeviewStore.initialized}
+	<TreeView.Root>
+		{#each treeviewStore.getNodes() as node (node.id)}
+			<Node
+				{treeviewConfigStore}
+				{node}
+				isDownloadable={treeviewConfigStore.getItemConfig(node.id)?.isDownloadable ?? false}
+				onNodeClick={() => {}}
+				onNodeVisibilityChange={(node, visible) =>
+					treeviewStore.setVisibilityState(node.id, visible)}
+				getNodeVisibility={(nodeId) => treeviewStore.getVisibilityState(nodeId)}
+				{onDownloadStateChanged}
+				{getDownloadState}
+				onFilterClicked={handleFilterClicked}
+				{hasFiltersApplied}
+				depth={0}
+				useLayerTypeIcon={true}
+			/>
+		{/each}
+	</TreeView.Root>
+{/if}
 
 <style>
 </style>

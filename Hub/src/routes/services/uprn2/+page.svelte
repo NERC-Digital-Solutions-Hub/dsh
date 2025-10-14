@@ -7,18 +7,18 @@
 	import { getAppConfigAsync } from '$lib/utils/app-config-provider.js';
 	import type { TreeviewConfig } from '$lib/types/treeview.js';
 	import { onMount } from 'svelte';
-	import { WebMapStore } from '$lib/stores/web-map-store.svelte';
-	import { areaSelectionStore } from '$lib/stores/area-selection-store.svelte';
+	import { WebMapStore } from '$lib/stores/services/uprn2/web-map-store.svelte';
+	import { areaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
 	import ExportMenu from '$lib/components/common/services/uprn2/export-menu/export-menu.svelte';
 	import ExportMenuFooter from '$lib/components/common/services/uprn2/export-menu/export-menu-footer.svelte';
 	import AreaSelectionHoverCard from '$lib/components/common/services/uprn2/area-selection-hover-card/area-selection-hover-card.svelte';
-	import FieldFilterMenuStore from '$lib/stores/field-filter-menu-store.svelte';
+	import FieldFilterMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
 	import FieldSelectionMenu from '$lib/components/common/services/uprn2/field-selection-menu/field-selection-menu.svelte';
 	import DownloadsMenu from '$lib/components/common/services/uprn2/downloads-menu/downloads-menu.svelte';
 	import DataSelectionTreeview from '$lib/components/common/services/uprn2/tree-view/data-selection/tree-view.svelte';
 	import { Toaster } from '$lib/components/ui/sonner';
-	import { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
-	import { TreeviewStore } from '$lib/stores/treeview-store2.svelte';
+	import { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store';
+	import { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
 	import TabBarTriggers from './tabBarTriggers.json';
 	import Sidebar from '$lib/components/common/sidebar/sidebar.svelte';
 	import type { AppConfig } from '$lib/types/config';
@@ -75,18 +75,22 @@
 	<Sidebar isOpen={sidebarOpen} onToggle={toggleSidebar}>
 		<UprnTabBar value={currentTab} triggers={TabBarTriggers} onValueChange={onTabValueChange}>
 			<UprnTabBarContent value="define-areas">
-				<AreaSelectionTreeview
-					webMap={webMapStore.data}
-					treeviewStore={areaSelectionTreeviewStore}
-					treeviewConfigStore={areaSelectionTreeviewConfig!}
-				/>
+				{#if webMapStore.isLoaded}
+					<AreaSelectionTreeview
+						webMap={webMapStore.data}
+						treeviewStore={areaSelectionTreeviewStore}
+						treeviewConfigStore={areaSelectionTreeviewConfig!}
+					/>
+				{/if}
 			</UprnTabBarContent>
 			<UprnTabBarContent value="select-data">
-				<DataSelectionTreeview
-					webMap={webMapStore.data}
-					treeviewConfigStore={dataSelectionTreeviewConfig!}
-					{fieldFilterMenuStore}
-				/>
+				{#if webMapStore.isLoaded}
+					<DataSelectionTreeview
+						webMap={webMapStore.data}
+						treeviewConfigStore={dataSelectionTreeviewConfig!}
+						{fieldFilterMenuStore}
+					/>
+				{/if}
 			</UprnTabBarContent>
 			<UprnTabBarContent value="export">
 				{#snippet footer()}

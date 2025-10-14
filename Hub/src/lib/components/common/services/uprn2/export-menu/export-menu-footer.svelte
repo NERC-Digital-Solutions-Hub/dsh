@@ -1,9 +1,9 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { toast } from 'svelte-sonner';
-	import { areaSelectionStore } from '$lib/stores/area-selection-store.svelte';
-	import { dataSelectionStore } from '$lib/stores/data-selection-store.svelte';
-	import { downloadsStore } from '$lib/stores/downloads-store.svelte';
+	import { areaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
+	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
+	import { downloadsStore } from '$lib/stores/services/uprn2/downloads-store.svelte';
 	import { page } from '$app/stores';
 	import { Clipboard } from 'lucide-svelte';
 	import { ClipboardCheck } from 'lucide-svelte';

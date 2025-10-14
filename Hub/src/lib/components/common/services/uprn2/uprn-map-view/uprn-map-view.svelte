@@ -31,12 +31,13 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
 	import type { Snippet } from 'svelte';
-	import { mapInteractionStore } from '$lib/stores/map-interaction-store.svelte';
-	import { areaSelectionStore } from '$lib/stores/area-selection-store.svelte';
+	import { mapInteractionStore } from '$lib/stores/services/uprn2/map-interaction-store.svelte';
+	import { areaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
 	import type Map from '@arcgis/core/Map';
 	import type MapView from '@arcgis/core/views/MapView';
 	import type WebMap from '@arcgis/core/WebMap';
-	import type { TreeviewStore } from '$lib/stores/treeview-store2.svelte';
+	import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+	import type { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
 	import { TreeLayerNode } from '../tree-view/types';
 
 	type UIPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'manual';
@@ -78,6 +79,12 @@
 	let MapContructor: typeof Map;
 	let MapViewContructor: typeof MapView;
 	let WebMapContructor: typeof WebMap;
+	let FeatureLayerContructor: typeof FeatureLayer;
+
+	onMount(async () => {
+		await loadEsriAsync();
+		await loadMapViewAsync();
+	});
 
 	/**
 	 * Asynchronously loads the required ArcGIS modules for map functionality.
@@ -90,15 +97,22 @@
 		}
 
 		if (!MapViewContructor) {
-			const [{ default: Map }, { default: MapView }, { default: WebMap }] = await Promise.all([
+			const [
+				{ default: Map },
+				{ default: MapView },
+				{ default: WebMap },
+				{ default: FeatureLayer }
+			] = await Promise.all([
 				import('@arcgis/core/Map'),
 				import('@arcgis/core/views/MapView'),
-				import('@arcgis/core/WebMap')
+				import('@arcgis/core/WebMap'),
+				import('@arcgis/core/layers/FeatureLayer')
 			]);
 
 			MapContructor = Map;
 			MapViewContructor = MapView;
 			WebMapContructor = WebMap;
+			FeatureLayerContructor = FeatureLayer;
 		}
 	}
 
@@ -141,16 +155,6 @@
 	}
 
 	/**
-	 * Initializes the map interaction store with the provided view and interactable layers.
-	 * @param view - The MapView instance to initialize interactions for
-	 */
-	async function initializeMapInteractions(view: __esri.MapView) {
-		const nonHiddenNodes = areaSelectionTreeviewStore.getNonHiddenNodes().map((node) => node.id);
-		console.log('[uprn-map-view] Initializing map interactions with layers:', nonHiddenNodes);
-		await mapInteractionStore.initializeAsync(view, new Set(nonHiddenNodes));
-	}
-
-	/**
 	 * Creates a fallback map with basic basemap when the main webmap fails to load.
 	 * @returns Promise that resolves to a basic Map instance
 	 */
@@ -159,11 +163,6 @@
 			basemap: fallbackBasemap
 		});
 	}
-
-	onMount(async () => {
-		await loadEsriAsync();
-		await loadMapViewAsync();
-	});
 
 	/**
 	 * Updates the map view with a new webMap when the webMap prop changes.
@@ -183,7 +182,6 @@
 			}
 
 			mapView.map = webMap;
-			await webMap.when();
 			console.log('[uprn-map-view] MapView updated with new webMap');
 		} catch (error) {
 			console.error('Error updating MapView with new webMap:', error);
@@ -216,7 +214,6 @@
 		try {
 			// Try to load the main map (webMap or undefined)
 			mapView = await createMapView(webMap ?? undefined, mapContainer as HTMLDivElement);
-			await initializeMapInteractions(mapView);
 			setupMapUI(mapView);
 			console.log('[uprn-map-view] Map loaded successfully');
 		} catch (error) {
@@ -233,7 +230,6 @@
 		try {
 			const fallbackMap = await createFallbackMap();
 			mapView = await createMapView(fallbackMap, mapContainer as HTMLDivElement);
-			await initializeMapInteractions(mapView);
 			setupMapUI(mapView);
 			console.log('[uprn-map-view] Fallback map loaded');
 		} catch (fallbackError) {
@@ -248,7 +244,11 @@
 		}
 
 		const nonHiddenNodes = areaSelectionTreeviewStore.getNonHiddenNodes().map((node) => node.id);
-		mapInteractionStore.updateInteractableLayers(new Set(nonHiddenNodes));
+		if (mapInteractionStore.initialized) {
+			mapInteractionStore.updateInteractableLayers(new Set(nonHiddenNodes));
+		} else {
+			mapInteractionStore.initializeAsync(mapView, new Set(nonHiddenNodes));
+		}
 	});
 
 	/**
@@ -281,7 +281,7 @@
 		}
 
 		const node = areaSelectionTreeviewStore.getVisibleNodes()[0];
-		if (!node || !(node instanceof TreeLayerNode) || !(node.layer instanceof __esri.FeatureLayer)) {
+		if (!node || !(node instanceof TreeLayerNode)) {
 			console.warn('Visible node is not a FeatureLayer');
 			return;
 		}
@@ -291,7 +291,7 @@
 			return;
 		}
 
-		updateSelectedLayerView(node.layer);
+		updateSelectedLayerView(node.layer as __esri.FeatureLayer);
 	});
 
 	/**

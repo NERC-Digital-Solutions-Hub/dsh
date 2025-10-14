@@ -2,7 +2,7 @@ import type MapView from '@arcgis/core/views/MapView';
 import {
 	areaSelectionStore,
 	type HighlightAreaInfo
-} from '$lib/stores/area-selection-store.svelte';
+} from '$lib/stores/services/uprn2/area-selection-store.svelte';
 
 /**
  * Store for managing MapView interactions including pointer-move and click events.
@@ -18,17 +18,29 @@ class MapInteractionStore {
 	private isInitialized = $state<boolean>(false);
 	private pointerInsideMap = $state<boolean>(true);
 
+	private initializationInProgress = false;
+
 	/**
 	 * Initialize the store with a MapView and set up event handlers
 	 * @param view - The Esri MapView to attach interactions to
 	 * @param interactableLayers - Set of layer names that can be interacted with
 	 */
 	public async initializeAsync(view: MapView, interactableLayers: Set<string>): Promise<void> {
+		console.log('[map-interaction-store] Initializing with MapView');
 		if (this.mapView === view && this.isInitialized) {
+			console.log('[map-interaction-store] MapView is already initialized');
 			this.interactableLayers = interactableLayers;
 			return;
 		}
 
+		if (this.initializationInProgress) {
+			console.log('[map-interaction-store] Initialization already in progress');
+			return;
+		}
+
+		this.initializationInProgress = true;
+
+		console.log('[map-interaction-store] Cleaning up previous MapView if any');
 		this.cleanup();
 
 		this.mapView = view;

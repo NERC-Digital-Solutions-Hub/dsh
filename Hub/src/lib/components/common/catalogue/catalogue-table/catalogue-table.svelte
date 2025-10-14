@@ -8,7 +8,7 @@
 		type SortingState
 	} from '@tanstack/table-core';
 	import type { MetadataCommonDto } from '$lib/types/metadata';
-	import type { CatalogueSearchStore } from '$lib/stores/catalogue-search-store.svelte';
+	import type { CatalogueSearchStore } from '$lib/stores/catalogue/catalogue-search-store.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { ArrowUpDown } from 'lucide-svelte';
 

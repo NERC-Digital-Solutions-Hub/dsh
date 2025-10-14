@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { downloadsStore } from '$lib/stores/downloads-store.svelte';
+	import { downloadsStore } from '$lib/stores/services/uprn2/downloads-store.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import ClipboardIcon from 'lucide-svelte/icons/clipboard';
 	import ClipboardCheckIcon from 'lucide-svelte/icons/clipboard-check';

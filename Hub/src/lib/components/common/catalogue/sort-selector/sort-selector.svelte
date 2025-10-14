@@ -5,7 +5,7 @@
 	import {
 		SortByCriteria,
 		type CatalogueSearchStore
-	} from '$lib/stores/catalogue-search-store.svelte';
+	} from '$lib/stores/catalogue/catalogue-search-store.svelte';
 
 	interface Props {
 		catalogueStore: CatalogueSearchStore;

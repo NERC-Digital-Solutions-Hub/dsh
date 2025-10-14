@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { areaSelectionStore } from '$lib/stores/area-selection-store.svelte';
+	import { areaSelectionStore } from '$lib/stores/services/uprn/area-selection-store.svelte';
 	import { toast } from 'svelte-sonner';
 
 	$effect(() => {
