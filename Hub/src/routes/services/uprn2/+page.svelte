@@ -20,8 +20,12 @@
 	import { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store';
 	import { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
 	import TabBarTriggers from './tabBarTriggers.json';
+	import SidebarLayout from '$lib/components/common/sidebar/sidebar-layout.svelte';
 	import Sidebar from '$lib/components/common/sidebar/sidebar.svelte';
+	import { SidebarPosition } from '$lib/components/common/sidebar/sidebar-position';
 	import type { AppConfig } from '$lib/types/config';
+	import { Bot } from 'lucide-svelte';
+	import UprnChat from '$lib/components/common/services/uprn2/chat/chat.svelte';
 
 	const webMapStore: WebMapStore = $state(new WebMapStore());
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
@@ -30,10 +34,21 @@
 	let currentTab = $state('define-areas');
 	let dataSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
 	let areaSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
-	let sidebarOpen = $state(true);
+	let mainSidebarOpen = $state(true);
+	let mainSidebarPosition = $state<(typeof SidebarPosition)[keyof typeof SidebarPosition]>(
+		SidebarPosition.LEFT
+	);
+	let chatSidebarOpen = $state(true);
+	let chatSidebarPosition = $state<(typeof SidebarPosition)[keyof typeof SidebarPosition]>(
+		SidebarPosition.BOTTOM
+	);
 
-	function toggleSidebar() {
-		sidebarOpen = !sidebarOpen;
+	function toggleMainSidebar() {
+		mainSidebarOpen = !mainSidebarOpen;
+	}
+
+	function toggleChatSidebar() {
+		chatSidebarOpen = !chatSidebarOpen;
 	}
 
 	onMount(async () => {
@@ -71,64 +86,66 @@
 <FieldSelectionMenu {fieldFilterMenuStore} />
 <AreaSelectionToast />
 
-<div class="layout-container">
-	<Sidebar isOpen={sidebarOpen} onToggle={toggleSidebar}>
-		<UprnTabBar value={currentTab} triggers={TabBarTriggers} onValueChange={onTabValueChange}>
-			<UprnTabBarContent value="define-areas">
-				{#if webMapStore.isLoaded}
-					<AreaSelectionTreeview
-						webMap={webMapStore.data}
-						treeviewStore={areaSelectionTreeviewStore}
-						treeviewConfigStore={areaSelectionTreeviewConfig!}
-					/>
-				{/if}
-			</UprnTabBarContent>
-			<UprnTabBarContent value="select-data">
-				{#if webMapStore.isLoaded}
-					<DataSelectionTreeview
-						webMap={webMapStore.data}
-						treeviewConfigStore={dataSelectionTreeviewConfig!}
-						{fieldFilterMenuStore}
-					/>
-				{/if}
-			</UprnTabBarContent>
-			<UprnTabBarContent value="export">
-				{#snippet footer()}
-					<ExportMenuFooter onExportSuccess={switchToDownloadsTab} />
-				{/snippet}
-				<ExportMenu {webMapStore} {areaSelectionTreeviewStore} {fieldFilterMenuStore} />
-			</UprnTabBarContent>
-			<UprnTabBarContent value="downloads">
-				<DownloadsMenu />
-			</UprnTabBarContent>
-		</UprnTabBar>
-	</Sidebar>
+<SidebarLayout isOpen={mainSidebarOpen} onToggle={toggleMainSidebar} position={mainSidebarPosition}>
+	{#snippet sidebarContent()}
+		<div class="relative flex h-full w-full min-w-0 overflow-visible">
+			<div class="flex h-full w-full min-w-0 flex-col overflow-hidden">
+				<UprnTabBar value={currentTab} triggers={TabBarTriggers} onValueChange={onTabValueChange}>
+					<UprnTabBarContent value="define-areas">
+						{#if webMapStore.isLoaded}
+							<AreaSelectionTreeview
+								webMap={webMapStore.data}
+								treeviewStore={areaSelectionTreeviewStore}
+								treeviewConfigStore={areaSelectionTreeviewConfig!}
+							/>
+						{/if}
+					</UprnTabBarContent>
+					<UprnTabBarContent value="select-data">
+						{#if webMapStore.isLoaded}
+							<DataSelectionTreeview
+								webMap={webMapStore.data}
+								treeviewConfigStore={dataSelectionTreeviewConfig!}
+								{fieldFilterMenuStore}
+							/>
+						{/if}
+					</UprnTabBarContent>
+					<UprnTabBarContent value="export">
+						{#snippet footer()}
+							<ExportMenuFooter onExportSuccess={switchToDownloadsTab} />
+						{/snippet}
+						<ExportMenu {webMapStore} {areaSelectionTreeviewStore} {fieldFilterMenuStore} />
+					</UprnTabBarContent>
+					<UprnTabBarContent value="downloads">
+						<DownloadsMenu />
+					</UprnTabBarContent>
+				</UprnTabBar>
+			</div>
 
-	<div class="map-section">
+			<Sidebar
+				isOpen={chatSidebarOpen}
+				onToggle={toggleChatSidebar}
+				position={chatSidebarPosition}
+				overlay
+				openIcon={Bot}
+			>
+				{#snippet children()}
+					<UprnChat />
+				{/snippet}
+			</Sidebar>
+		</div>
+	{/snippet}
+
+	{#snippet mainContent()}
 		<UprnMapView
 			webMap={webMapStore.data}
 			{areaSelectionTreeviewStore}
 			panelPosition="top-left"
 			menuPosition="top-right"
 		/>
-	</div>
-</div>
+	{/snippet}
+</SidebarLayout>
 
 <style>
-	.layout-container {
-		display: flex;
-		height: 100vh;
-		width: 100%;
-		overflow: hidden;
-	}
-
-	.map-section {
-		flex: 1 1 auto;
-		min-height: 0;
-		min-width: 0;
-		display: flex;
-	}
-
 	:global(.card-content) {
 		font-size: 0.875rem;
 		line-height: 1.25rem;

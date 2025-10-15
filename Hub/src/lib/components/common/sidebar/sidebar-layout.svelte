@@ -1,0 +1,83 @@
+<script lang="ts">
+	/**
+	 * Sidebar Layout Component
+	 *
+	 * A layout wrapper that manages the sidebar and main content positioning.
+	 * Automatically adjusts flex direction based on sidebar position.
+	 *
+	 * Props:
+	 * - isOpen: boolean - Controls whether the sidebar is open or closed
+	 * - onToggle: () => void - Callback when the toggle button is clicked
+	 * - position: SidebarPosition value - Position of the sidebar (default: SidebarPosition.LEFT)
+	 * - minSize: string - Minimum size of the sidebar
+	 * - sidebarContent: Snippet - Content to render inside the sidebar
+	 * - mainContent: Snippet - Content to render in the main area
+	 */
+	import type { Snippet } from 'svelte';
+	import Sidebar from './sidebar.svelte';
+	import { SidebarPosition } from './sidebar-position';
+	import type { Menu } from 'lucide-svelte';
+
+	type SidebarPositionType = (typeof SidebarPosition)[keyof typeof SidebarPosition];
+
+	type Props = {
+		isOpen: boolean;
+		onToggle: () => void;
+		position?: SidebarPositionType;
+		minSize?: string;
+		openIcon?: typeof Menu;
+		sidebarContent?: Snippet;
+		mainContent?: Snippet;
+	};
+
+	const {
+		isOpen,
+		onToggle,
+		position = SidebarPosition.LEFT,
+		minSize,
+		openIcon,
+		sidebarContent,
+		mainContent
+	}: Props = $props();
+
+	// Determine if we need column layout (for top/bottom positions)
+	const isVertical = $derived(
+		position === SidebarPosition.TOP || position === SidebarPosition.BOTTOM
+	);
+</script>
+
+<div class="sidebar-layout" class:vertical={isVertical}>
+	<Sidebar {isOpen} {onToggle} {position} {minSize} {openIcon}>
+		{#if sidebarContent}
+			{@render sidebarContent()}
+		{/if}
+	</Sidebar>
+
+	<div class="main-content">
+		{#if mainContent}
+			{@render mainContent()}
+		{/if}
+	</div>
+</div>
+
+<style>
+	.sidebar-layout {
+		display: flex;
+		flex-direction: row;
+		height: 100vh;
+		width: 100%;
+		overflow: hidden;
+	}
+
+	.sidebar-layout.vertical {
+		flex-direction: column;
+	}
+
+	.main-content {
+		flex: 1 1 auto;
+		min-height: 0;
+		min-width: 0;
+		display: flex;
+		overflow: hidden;
+	}
+</style>

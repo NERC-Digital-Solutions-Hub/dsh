@@ -18,8 +18,8 @@
 	const { value, triggers = [], onValueChange, children }: Props = $props();
 </script>
 
-<Tabs.Root {value} {onValueChange} class="w-full">
-	<div class="tab-list-wrapper">
+<Tabs.Root {value} {onValueChange} class="flex h-full w-full flex-col">
+	<div class="tab-list-wrapper flex-shrink-0">
 		<Tabs.List class="tab-list">
 			{#each triggers as { value, label }}
 				<Tabs.Trigger {value} class="tab-trigger">{label}</Tabs.Trigger>
@@ -37,6 +37,7 @@
 		display: flex;
 		justify-content: center;
 		width: 100%;
+		padding: 0.75rem 0;
 	}
 
 	:global(.tab-list) {
