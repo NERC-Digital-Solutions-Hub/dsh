@@ -1,14 +1,14 @@
 <script lang="ts">
+	import Button from '$lib/components/ui/button/button.svelte';
 	import {
 		areaSelectionStore,
 		type HighlightAreaInfo
 	} from '$lib/stores/services/uprn2/area-selection-store.svelte';
 	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
-	import { WebMapStore } from '$lib/stores/services/uprn2/web-map-store.svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import FilterButton from '../tree-view/data-selection/filter-button.svelte';
 	import FilterFieldMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
 	import type { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
+	import { WebMapStore } from '$lib/stores/services/uprn2/web-map-store.svelte';
+	import FilterButton from '../tree-view/data-selection/filter-button.svelte';
 
 	export type Props = {
 		webMapStore: WebMapStore;
@@ -31,14 +31,14 @@
 		}
 
 		const getAreaInfos = async () => {
-			const arenaNames = await areaSelectionStore.getAreaNamesById(
+			const areaNames = await areaSelectionStore.getAreaNamesById(
 				areaSelectionStore.layerHighlightState.areaInfos.map((area) => area.id)
 			);
 
 			const newAreaInfos: AreaInfo[] = [];
-			for (let i = 0; i < arenaNames.length; i++) {
+			for (let i = 0; i < areaNames.length; i++) {
 				newAreaInfos.push({
-					name: arenaNames[i] || 'Unknown Area',
+					name: areaNames[i] || 'Unknown Area',
 					HighlightAreaInfo: areaSelectionStore.layerHighlightState.areaInfos[i]
 				});
 			}
@@ -48,6 +48,10 @@
 		getAreaInfos();
 	});
 
+	/**
+	 * Removes an area from the selection by its name.
+	 * @param areaName - The name of the area to remove.
+	 */
 	function removeArea(areaName: string) {
 		const areaIndex = areaInfos.findIndex((area) => area.name === areaName);
 		if (areaIndex !== -1) {
@@ -55,6 +59,10 @@
 		}
 	}
 
+	/**
+	 * Removes a data selection from the store by layer ID.
+	 * @param layerId - The ID of the layer to remove from data selections.
+	 */
 	function removeDataSelection(layerId: string) {
 		// Remove the data selection from the store
 		console.log('[export-menu] Removing data selection for layerId:', layerId);
@@ -65,6 +73,11 @@
 		);
 	}
 
+	/**
+	 * Handles the filter button click for a layer.
+	 * Toggles the active layer in the field filter menu store.
+	 * @param layerId - The ID of the layer to filter.
+	 */
 	function handleFilterClicked(layerId: string) {
 		if (fieldFilterMenuStore.ActiveLayer?.id === layerId) {
 			fieldFilterMenuStore.ActiveLayer = null;
@@ -80,6 +93,11 @@
 		fieldFilterMenuStore.ActiveLayer = layer;
 	}
 
+	/**
+	 * Checks if any filters have been applied to a layer's fields.
+	 * @param layerId - The ID of the layer to check.
+	 * @returns True if filters are applied, false otherwise.
+	 */
 	function hasFiltersApplied(layerId: string): boolean {
 		const dataSelection = dataSelectionStore.DataSelections.get(layerId);
 		if (

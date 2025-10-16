@@ -2,35 +2,51 @@
 	import { Toggle } from '$lib/components/ui/toggle/index.js';
 	import OpenIndicator from '../../../../open-indicator/open-indicator.svelte';
 	import {
+		accentBgStyles,
 		baseNodeStyles,
+		defaultBgStyles,
 		enhancedHoverStyles,
 		fontStyles,
-		defaultBgStyles,
-		accentBgStyles,
 		toggleSpecificStyles
 	} from '../node-content-styles.js';
 
+	/**
+	 * Props for the NodeContent component.
+	 */
 	type Props = {
+		/** Whether the node can be toggled (for visibility). */
 		isTogglable: boolean;
+		/** Whether the node is currently pressed/selected. */
 		pressed: boolean;
+		/** The icon HTML/SVG to display. */
 		icon: string;
+		/** The display name of the node. */
 		name: string;
+		/** The depth level for indentation. */
 		depth: number;
+		/** Click handler function. */
 		onclick: () => void;
+		/** Additional children to render (e.g., checkboxes). */
 		children?: any;
+		/** Whether the node is open (for folders). */
 		isOpen: boolean;
 	};
 
+	/** Destructured props. */
 	const { isTogglable, pressed, icon, name, depth, onclick, children, isOpen }: Props = $props();
 
+	/** Calculate width to account for indentation. */
 	const widthCalc = `calc(100% - ${depth * 1}rem)`;
 
-	const sharedStyles = `${baseNodeStyles} ${enhancedHoverStyles}`;
-	const toggleStyles = `${sharedStyles} ${toggleSpecificStyles} ${defaultBgStyles} ${fontStyles}`;
-	const buttonStyles = `${sharedStyles} ${fontStyles}`;
+	/** Combined styles for toggle elements. */
+	const toggleStyles = `${baseNodeStyles} ${enhancedHoverStyles} ${toggleSpecificStyles} ${defaultBgStyles} ${fontStyles}`;
+
+	/** Combined styles for button elements. */
+	const buttonStyles = `${baseNodeStyles} ${enhancedHoverStyles} ${fontStyles}`;
 </script>
 
 {#if isTogglable}
+	<!-- Render as a toggle for selectable nodes -->
 	<Toggle
 		{pressed}
 		class={toggleStyles}
@@ -49,6 +65,7 @@
 		</div>
 	</Toggle>
 {:else}
+	<!-- Render as a button for folder nodes -->
 	<button
 		class="{buttonStyles} {pressed ? accentBgStyles : defaultBgStyles}"
 		style="width: {widthCalc};"

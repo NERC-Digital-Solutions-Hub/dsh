@@ -1,18 +1,31 @@
 <script lang="ts">
-	import { downloadsStore } from '$lib/stores/services/uprn2/downloads-store.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
+	import { Spinner } from '$lib/components/ui/spinner/index.js';
+	import { downloadsStore } from '$lib/stores/services/uprn2/downloads-store.svelte';
+	import CheckCircleIcon from 'lucide-svelte/icons/check-circle';
 	import ClipboardIcon from 'lucide-svelte/icons/clipboard';
 	import ClipboardCheckIcon from 'lucide-svelte/icons/clipboard-check';
-	import CheckCircleIcon from 'lucide-svelte/icons/check-circle';
 	import LoaderIcon from 'lucide-svelte/icons/loader';
 	import XCircleIcon from 'lucide-svelte/icons/x-circle';
-	import ClockIcon from 'lucide-svelte/icons/clock';
 	import { toast } from 'svelte-sonner';
-	import { Spinner } from '$lib/components/ui/spinner/index.js';
 
 	// Track which URLs have been recently copied
 	let copiedUrls = $state<Set<string>>(new Set());
 
+	/**
+	 * Status configuration for downloads, mapping status to colors, text, and icons.
+	 */
+	const statusConfig = {
+		completed: { color: '#059669', text: 'Completed', icon: CheckCircleIcon },
+		'in-progress': { color: '#2563eb', text: 'In Progress', icon: LoaderIcon },
+		failed: { color: '#dc2626', text: 'Failed', icon: XCircleIcon },
+		pending: { color: '#6b7280', text: 'Pending', icon: Spinner }
+	} as const;
+
+	/**
+	 * Removes a download from the queue by URL.
+	 * @param url - The URL of the download to remove.
+	 */
 	function removeDownload(url: string) {
 		const index = downloadsStore.downloads.findIndex((download) => download.url === url);
 		if (index !== -1) {
@@ -20,6 +33,11 @@
 		}
 	}
 
+	/**
+	 * Copies the given URL to the clipboard and shows a toast notification.
+	 * Temporarily marks the URL as copied for UI feedback.
+	 * @param url - The URL to copy.
+	 */
 	async function copyUrlToClipboard(url: string) {
 		try {
 			await navigator.clipboard.writeText(url);
@@ -38,46 +56,31 @@
 		}
 	}
 
+	/**
+	 * Gets the color associated with a download status.
+	 * @param status - The download status.
+	 * @returns The color string.
+	 */
 	function getStatusColor(status: string) {
-		switch (status) {
-			case 'completed':
-				return '#059669'; // green-600
-			case 'in-progress':
-				return '#2563eb'; // blue-600
-			case 'failed':
-				return '#dc2626'; // red-600
-			case 'pending':
-			default:
-				return '#6b7280'; // gray-500
-		}
+		return statusConfig[status as keyof typeof statusConfig]?.color ?? statusConfig.pending.color;
 	}
 
+	/**
+	 * Gets the display text for a download status.
+	 * @param status - The download status.
+	 * @returns The status text.
+	 */
 	function getStatusText(status: string) {
-		switch (status) {
-			case 'completed':
-				return 'Completed';
-			case 'in-progress':
-				return 'In Progress';
-			case 'failed':
-				return 'Failed';
-			case 'pending':
-			default:
-				return 'Pending';
-		}
+		return statusConfig[status as keyof typeof statusConfig]?.text ?? statusConfig.pending.text;
 	}
 
+	/**
+	 * Gets the icon component for a download status.
+	 * @param status - The download status.
+	 * @returns The icon component.
+	 */
 	function getStatusIcon(status: string) {
-		switch (status) {
-			case 'completed':
-				return CheckCircleIcon;
-			case 'in-progress':
-				return LoaderIcon;
-			case 'failed':
-				return XCircleIcon;
-			case 'pending':
-			default:
-				return Spinner;
-		}
+		return statusConfig[status as keyof typeof statusConfig]?.icon ?? statusConfig.pending.icon;
 	}
 </script>
 

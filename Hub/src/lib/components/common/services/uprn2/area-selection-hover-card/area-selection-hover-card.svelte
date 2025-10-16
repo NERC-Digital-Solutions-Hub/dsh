@@ -1,12 +1,26 @@
 <script lang="ts">
-	import { areaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
+	import { areaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
 
+	/**
+	 * The name of the currently hovered area, displayed in the hover card.
+	 */
 	let currentHoveredAreaName = $state<string | null>(null);
-	let mousePosition = $state<{ x: number; y: number }>({ x: 0, y: 0 });
-	let hoverRequestVersion = 0;
 
-	// Track mouse position
+	/**
+	 * The current mouse position, used to position the hover card.
+	 */
+	let mousePosition = $state<{ x: number; y: number }>({ x: 0, y: 0 });
+
+	/**
+	 * Counter to track hover requests and prevent race conditions when fetching area names.
+	 */
+	let hoverRequestCounter = 0;
+
+	/**
+	 * Handles mouse movement events to update the mouse position state.
+	 * @param event - The mouse move event containing client coordinates.
+	 */
 	const handleMouseMove = (event: MouseEvent) => {
 		mousePosition = {
 			x: event.clientX,
@@ -14,7 +28,7 @@
 		};
 	};
 
-	// Add mouse move listener when component mounts
+	// Add mouse move listener when component mounts and remove on unmount
 	$effect(() => {
 		document.addEventListener('mousemove', handleMouseMove);
 
@@ -23,9 +37,10 @@
 		};
 	});
 
+	// Effect to fetch and display area name when hovering over an area
 	$effect(() => {
 		const areaId = areaSelectionStore.currentHoveredArea?.id;
-		const myVersion = ++hoverRequestVersion;
+		const myVersion = ++hoverRequestCounter;
 
 		if (!areaId) {
 			currentHoveredAreaName = null;
@@ -34,7 +49,7 @@
 
 		(async () => {
 			const names = await areaSelectionStore.getAreaNamesById([areaId]);
-			if (myVersion !== hoverRequestVersion) return;
+			if (myVersion !== hoverRequestCounter) return;
 
 			if (areaSelectionStore.currentHoveredArea?.id !== areaId) {
 				return;

@@ -7,6 +7,10 @@ import {
 import type { TreeviewNodeConfig } from '$lib/types/treeview';
 import { decodeHtmlEntities } from '$lib/utils/decode-html';
 
+/**
+ * Node converter that handles field alias paths for feature layers.
+ * Converts field aliases like "A | B | C" into hierarchical tree nodes.
+ */
 export class AliasPathNodeConverter extends CustomNodeConverter {
 	/** @inheritdoc */
 	readonly id = 'aliasPath';
@@ -49,6 +53,14 @@ export class AliasPathNodeConverter extends CustomNodeConverter {
 		return node;
 	}
 
+	/**
+	 * Converts a field into tree nodes based on its alias path.
+	 * Handles hierarchical paths separated by '|'.
+	 * @param field - The ESRI field to convert.
+	 * @param parentLayerNode - The parent layer node.
+	 * @param nodePathMap - Map to track created path nodes.
+	 * @returns The created field node.
+	 */
 	#fieldToNode(
 		field: __esri.Field,
 		parentLayerNode: TreeLayerNode,
@@ -120,6 +132,12 @@ export class AliasPathNodeConverter extends CustomNodeConverter {
 		return fieldNode;
 	}
 
+	/**
+	 * Generates a unique ID for a field node.
+	 * @param layerId - The layer ID.
+	 * @param fieldName - The field name.
+	 * @returns The field node ID.
+	 */
 	#getFieldNodeId(layerId: string, fieldName: string): string {
 		return `${layerId}-${fieldName}`;
 	}

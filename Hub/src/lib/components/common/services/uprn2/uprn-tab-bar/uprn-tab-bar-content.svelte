@@ -1,12 +1,18 @@
 <script lang="ts">
-	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
+	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import type { Snippet } from 'svelte';
 
+	/**
+	 * Props for the UPRNTabBarContent component.
+	 */
 	type Props = {
+		/** The value of the tab content to display. */
 		value: string;
+		/** Optional children snippet for the tab content. */
 		children?: Snippet;
+		/** Optional footer snippet for the tab content. */
 		footer?: Snippet;
 	};
 

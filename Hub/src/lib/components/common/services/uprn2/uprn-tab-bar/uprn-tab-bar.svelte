@@ -3,15 +3,27 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import type { Snippet } from 'svelte';
 
+	/**
+	 * Definition for a tab trigger.
+	 */
 	type TriggerDefinition = {
+		/** The value of the tab trigger. */
 		value: string;
+		/** The label to display for the tab trigger. */
 		label: string;
 	};
 
+	/**
+	 * Props for the UPRNTabBar component.
+	 */
 	type Props = {
+		/** The currently selected tab value. */
 		value?: string;
+		/** Array of trigger definitions for the tabs. */
 		triggers?: TriggerDefinition[];
+		/** Callback function when the tab value changes. */
 		onValueChange?: (value: string) => void;
+		/** Optional children snippet for the tab content. */
 		children?: Snippet;
 	};
 

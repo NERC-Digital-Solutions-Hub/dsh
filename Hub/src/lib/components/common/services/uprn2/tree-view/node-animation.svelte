@@ -1,20 +1,27 @@
-<!-- NodeRoot.svelte - Unified root component for tree nodes -->
 <script lang="ts">
 	import type { TreeNode } from './types.js';
 	import { type Snippet } from 'svelte';
 
+	/**
+	 * Props for the NodeAnimation component.
+	 */
 	type Props = {
+		/** Whether the node is currently open (expanded). */
 		isOpen?: boolean;
-		childNodes?: TreeNode[] | null; // The child nodes to render.
-		content?: Snippet; // The node content.
-		childNode?: Snippet<[TreeNode]>; // The node to render children.
+		/** The child nodes to render when expanded. */
+		childNodes?: TreeNode[] | null;
+		/** The content snippet to render for the node. */
+		content?: Snippet;
+		/** The snippet to render for each child node. */
+		childNode?: Snippet<[TreeNode]>;
 	};
 
+	/** Destructured props with defaults. */
 	const { isOpen = false, childNodes = null, content, childNode }: Props = $props();
 </script>
 
 <div class="w-full">
-	<!-- Node content -->
+	<!-- Render the main node content -->
 	{@render content?.()}
 
 	<!-- Children container with animations and depth lines -->

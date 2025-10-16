@@ -1,22 +1,33 @@
 <!-- Node.svelte -->
 <script lang="ts">
-	import NodeRoot from '../node-root.svelte';
-	import Node from './node.svelte';
-	import NodeContent from './node-content.svelte';
-	import { getNodeIcon } from '../get-node-icon';
-	import { TreeLayerNode, type TreeNode } from '../types.js';
 	import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store';
+	import { getNodeIcon } from '../get-node-icon';
+	import NodeAnimation from '../node-animation.svelte';
+	import { TreeLayerNode, type TreeNode } from '../types.js';
+	import NodeContent from './node-content.svelte';
+	import Node from './node.svelte';
 
+	/**
+	 * Props for the Node component.
+	 */
 	type Props = {
+		/** Configuration store for tree view settings. */
 		treeviewConfigStore: TreeviewConfigStore;
+		/** The tree node to render. */
 		node: TreeNode;
+		/** Callback when node is clicked. */
 		onNodeClick?: (node: TreeNode) => void;
+		/** Callback when node visibility changes. */
 		onNodeVisibilityChange?: (node: TreeNode, visible: boolean) => void;
+		/** Function to get current node visibility. */
 		getNodeVisibility?: (nodeId: string) => boolean | undefined;
+		/** Depth level in the tree. */
 		depth?: number;
-		useLayerTypeIcon?: boolean; // Use ArcGIS layer type specific icons
+		/** Whether to use layer type specific icons. */
+		useLayerTypeIcon?: boolean;
 	};
 
+	/** Destructured props with defaults. */
 	const {
 		treeviewConfigStore,
 		node,
@@ -27,17 +38,26 @@
 		useLayerTypeIcon = false
 	}: Props = $props();
 
-	// Calculate width reduction to match ml-4 indentation (1rem per level)
-	// Each child is indented by ml-4 (1rem) and should be 1rem narrower
-
+	/** Whether this node represents a folder (has children). */
 	const isFolder = !!(node.children && node.children.length);
+
+	/** Whether this node has visibility controls (leaf nodes). */
 	const hasVisibility = !isFolder;
 
+	/** Reactive state for whether the folder is open. */
 	let isOpen = $state(false);
+
+	/** Reactive state for whether the node is pressed/selected. */
 	let isPressed = $state<boolean>(false);
+
+	/** Reactive state for the node's icon. */
 	let icon = $state<string>('');
 
-	// Function to check if any child nodes are visible
+	/**
+	 * Checks if any child nodes are visible.
+	 * Used to determine folder pressed state.
+	 * @returns True if any child is visible.
+	 */
 	function hasVisibleChildren(): boolean {
 		if (!node.children || !getNodeVisibility) {
 			return false;
@@ -53,6 +73,7 @@
 		});
 	}
 
+	// Update pressed state and icon based on node properties
 	$effect(() => {
 		if (!node || !(node instanceof TreeLayerNode)) {
 			return;
@@ -70,6 +91,10 @@
 		icon = getNodeIcon(node.layer, useLayerTypeIcon, isFolder, isOpen);
 	});
 
+	/**
+	 * Toggles the visibility of the node.
+	 * Only applicable for leaf nodes.
+	 */
 	function toggleVisible() {
 		// Only allow toggling for leaf nodes (non-folders)
 		if (!hasVisibility || !onNodeVisibilityChange || isFolder) {
@@ -80,6 +105,10 @@
 		onNodeVisibilityChange(node, isPressed);
 	}
 
+	/**
+	 * Handles click events on the node.
+	 * For leaf nodes, toggles visibility; for folders, handled separately.
+	 */
 	function handleClick() {
 		// Only toggle visibility for leaf nodes
 		if (!isFolder) {
@@ -88,6 +117,10 @@
 		onNodeClick?.(node);
 	}
 
+	/**
+	 * Handles click events specifically for folder nodes.
+	 * Toggles the open/closed state.
+	 */
 	function handleFolderClick() {
 		isOpen = !isOpen;
 		onNodeClick?.(node);
@@ -134,4 +167,4 @@
 	{/if}
 {/snippet}
 
-<NodeRoot {isOpen} {content} childNodes={isFolder ? node.children : null} {childNode} />
+<NodeAnimation {isOpen} {content} childNodes={isFolder ? node.children : null} {childNode} />

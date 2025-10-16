@@ -6,12 +6,7 @@ import {
 	TreeFieldNode,
 	TreeLayerNode
 } from '$lib/components/common/services/uprn2/tree-view/types';
-
-export interface DataSelection {
-	layerId: string;
-	name: string;
-	fields: SvelteSet<string>;
-}
+import type { DataSelection } from '$lib/types/uprn';
 
 /**
  * Store for managing the data selected for download.

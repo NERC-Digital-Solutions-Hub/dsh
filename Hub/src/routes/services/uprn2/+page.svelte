@@ -1,32 +1,31 @@
 <script lang="ts">
-	import UprnMapView from '$lib/components/common/services/uprn2/uprn-map-view/uprn-map-view.svelte';
-	import AreaSelectionTreeview from '$lib/components/common/services/uprn2/tree-view/area-selection/tree-view.svelte';
-	import AreaSelectionToast from '$lib/components/common/services/uprn2/area-selection-toast/area-selection-toast.svelte';
-	import UprnTabBar from '$lib/components/common/services/uprn2/uprn-tab-bar/uprn-tab-bar.svelte';
-	import UprnTabBarContent from '$lib/components/common/services/uprn2/uprn-tab-bar/uprn-tab-bar-content.svelte';
-	import { getAppConfigAsync } from '$lib/utils/app-config-provider.js';
-	import type { TreeviewConfig } from '$lib/types/treeview.js';
-	import { onMount } from 'svelte';
-	import { WebMapStore } from '$lib/stores/services/uprn2/web-map-store.svelte';
-	import { areaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
-	import ExportMenu from '$lib/components/common/services/uprn2/export-menu/export-menu.svelte';
-	import ExportMenuFooter from '$lib/components/common/services/uprn2/export-menu/export-menu-footer.svelte';
 	import AreaSelectionHoverCard from '$lib/components/common/services/uprn2/area-selection-hover-card/area-selection-hover-card.svelte';
-	import FieldFilterMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
-	import FieldSelectionMenu from '$lib/components/common/services/uprn2/field-selection-menu/field-selection-menu.svelte';
+	import AreaSelectionToast from '$lib/components/common/services/uprn2/area-selection-toast/area-selection-toast.svelte';
+	import UprnChat from '$lib/components/common/services/uprn2/chat/chat.svelte';
 	import DownloadsMenu from '$lib/components/common/services/uprn2/downloads-menu/downloads-menu.svelte';
+	import ExportMenuFooter from '$lib/components/common/services/uprn2/export-menu/export-menu-footer.svelte';
+	import ExportMenu from '$lib/components/common/services/uprn2/export-menu/export-menu.svelte';
+	import FieldSelectionMenu from '$lib/components/common/services/uprn2/field-selection-menu/field-selection-menu.svelte';
+	import AreaSelectionTreeview from '$lib/components/common/services/uprn2/tree-view/area-selection/tree-view.svelte';
 	import DataSelectionTreeview from '$lib/components/common/services/uprn2/tree-view/data-selection/tree-view.svelte';
+	import UprnMapView from '$lib/components/common/services/uprn2/uprn-map-view/uprn-map-view.svelte';
+	import UprnTabBarContent from '$lib/components/common/services/uprn2/uprn-tab-bar/uprn-tab-bar-content.svelte';
+	import UprnTabBar from '$lib/components/common/services/uprn2/uprn-tab-bar/uprn-tab-bar.svelte';
+	import SidebarLayout from '$lib/components/common/sidebar/sidebar-layout.svelte';
+	import { SidebarPosition } from '$lib/components/common/sidebar/sidebar-position';
+	import Sidebar from '$lib/components/common/sidebar/sidebar.svelte';
 	import { Toaster } from '$lib/components/ui/sonner';
+	import { areaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
+	import FieldFilterMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
 	import { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store';
 	import { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
-	import TabBarTriggers from './tabBarTriggers.json';
-	import SidebarLayout from '$lib/components/common/sidebar/sidebar-layout.svelte';
-	import Sidebar from '$lib/components/common/sidebar/sidebar.svelte';
-	import { SidebarPosition } from '$lib/components/common/sidebar/sidebar-position';
+	import { WebMapStore } from '$lib/stores/services/uprn2/web-map-store.svelte';
 	import type { AppConfig, SizeConfig } from '$lib/types/config';
+	import type { TreeviewConfig } from '$lib/types/treeview.js';
+	import { getAppConfigAsync } from '$lib/utils/app-config-provider.js';
 	import { Bot } from 'lucide-svelte';
-	import UprnChat from '$lib/components/common/services/uprn2/chat/chat.svelte';
-	import { get } from 'svelte/store';
+	import { onMount } from 'svelte';
+	import TabBarTriggers from './tabBarTriggers.json';
 
 	const webMapStore: WebMapStore = $state(new WebMapStore());
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
@@ -35,6 +34,8 @@
 	let currentTab = $state('define-areas');
 	let dataSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
 	let areaSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
+
+	// === Sidebar State ===
 	let mainSidebarOpen = $state(true);
 	let mainSidebarPosition = $state<(typeof SidebarPosition)[keyof typeof SidebarPosition]>(
 		SidebarPosition.LEFT
@@ -46,16 +47,28 @@
 	let mainSidebarSizes: SizeConfig[] = $state([]);
 	let windowWidth = $state(typeof window !== 'undefined' ? window.innerWidth : 1280);
 
-	// Derive the original size (initial size) based on window width and breakpoints
+	// === Derived State for Responsive Sidebar Sizing ===
+
+	/**
+	 * Derives the original size (initial size) based on window width and breakpoints.
+	 */
 	let mainSidebarOriginalSize = $derived.by(() =>
 		getMatchingSize(mainSidebarSizes, (config) => config.originalSize)
 	);
 
-	// Derive the minimum size (for resizing)
+	/**
+	 * Derives the minimum size (for resizing) based on window width and breakpoints.
+	 */
 	let mainSidebarMinSize = $derived.by(() =>
 		getMatchingSize(mainSidebarSizes, (config) => config.minSize)
 	);
 
+	/**
+	 * Gets the matching size configuration based on window width breakpoints.
+	 * @param sizes - Array of size configurations with breakpoints
+	 * @param expr - Function to extract the desired size property from a config
+	 * @returns The matching size string or '0' if no match found
+	 */
 	function getMatchingSize(sizes: SizeConfig[], expr: (config: SizeConfig) => string) {
 		if (!sizes || sizes.length === 0) {
 			return undefined;
@@ -66,14 +79,38 @@
 		return matchingSize ? expr(matchingSize) : '0';
 	}
 
+	/**
+	 * Toggles the main sidebar open/closed state.
+	 */
 	function toggleMainSidebar() {
 		mainSidebarOpen = !mainSidebarOpen;
 	}
 
+	/**
+	 * Toggles the chat sidebar open/closed state.
+	 */
 	function toggleChatSidebar() {
 		chatSidebarOpen = !chatSidebarOpen;
 	}
 
+	/**
+	 * Handles tab value changes and updates the current tab state.
+	 * @param value - The new tab value to switch to
+	 */
+	function onTabValueChange(value: string) {
+		currentTab = value;
+	}
+
+	/**
+	 * Switches to the downloads tab, typically called after a successful export.
+	 */
+	function switchToDownloadsTab() {
+		currentTab = 'downloads';
+	}
+
+	/**
+	 * Initializes the application by loading configuration and setting up stores.
+	 */
 	onMount(async () => {
 		const appConfig: AppConfig = await getAppConfigAsync();
 
@@ -97,7 +134,9 @@
 		console.log('[page] WebMap loaded');
 	});
 
-	// Set up window resize listener for reactive sidebar sizing
+	/**
+	 * Sets up window resize listener for reactive sidebar sizing.
+	 */
 	onMount(() => {
 		const handleResize = () => {
 			windowWidth = window.innerWidth;
@@ -109,14 +148,6 @@
 			window.removeEventListener('resize', handleResize);
 		};
 	});
-
-	function onTabValueChange(value: string) {
-		currentTab = value;
-	}
-
-	function switchToDownloadsTab() {
-		currentTab = 'downloads';
-	}
 </script>
 
 <Toaster />

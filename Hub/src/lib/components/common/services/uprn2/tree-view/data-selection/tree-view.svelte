@@ -22,28 +22,30 @@
 -->
 
 <script lang="ts">
-	import * as TreeView from '$lib/components/ui/tree-view/index.js';
-	import Node from './node.svelte';
-	import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store.js';
-	import { DownloadState, TreeFieldNode, TreeLayerNode, type TreeNode } from '../types.js';
-	import {
-		dataSelectionStore,
-	} from '$lib/stores/services/uprn2/data-selection-store.svelte';
-	import FieldFilterMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
-	import { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
 	import { AliasPathNodeConverter } from '$lib/components/common/services/uprn2/tree-view/services/alias-path-node-converter';
+	import * as TreeView from '$lib/components/ui/tree-view/index.js';
+	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
+	import FieldFilterMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
+	import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store.js';
+	import { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
+	import { DownloadState, TreeLayerNode, type TreeNode } from '../types.js';
+	import Node from './node.svelte';
 
-	// =====================================
-	// TYPES & PROPS
-	// =====================================
-
+	/**
+	 * Props for the TreeView component.
+	 */
 	type Props = {
+		/** The ESRI WebMap containing layers to display. */
 		webMap?: __esri.WebMap | null;
+		/** Configuration store for tree view settings. */
 		treeviewConfigStore: TreeviewConfigStore;
-		fieldsToHide?: Set<string>; // List of field names to hide in the tree
+		/** Set of field names to hide from the tree. */
+		fieldsToHide?: Set<string>;
+		/** Store for managing field filter menus. */
 		fieldFilterMenuStore: FieldFilterMenuStore;
 	};
 
+	/** Destructured props with defaults. */
 	const {
 		webMap = null,
 		treeviewConfigStore,
@@ -51,11 +53,8 @@
 		fieldsToHide
 	}: Props = $props();
 
+	/** Instance of the tree view store. */
 	const treeviewStore = new TreeviewStore();
-
-	// =====================================
-	// REACTIVE EFFECTS
-	// =====================================
 
 	/**
 	 * Main effect that watches for webMap changes and rebuilds the layer tree.
@@ -69,16 +68,18 @@
 		const initializeWebMap = async () => {
 			await webMap.when();
 			await loadFeatureLayers(webMap.layers.toArray());
-			console.log('[data-selection-tree-view] fields to hide:', fieldsToHide);
 
 			const aliasPathConverter = new AliasPathNodeConverter(treeviewConfigStore);
 			treeviewStore.initialize(webMap.layers.toArray(), treeviewConfigStore, [aliasPathConverter]);
-			console.log('[data-selection-tree-view] Initialized with layers:', treeviewStore.getNodes());
 		};
 
 		initializeWebMap();
 	});
 
+	/**
+	 * Loads feature layers recursively to ensure they are ready for field access.
+	 * @param layers - Array of layers to load.
+	 */
 	async function loadFeatureLayers(layers: __esri.Layer[]): Promise<void> {
 		for (const layer of layers) {
 			if (layer.type === 'feature' && !layer.loaded) {
@@ -92,10 +93,6 @@
 			}
 		}
 	}
-
-	// =====================================
-	// DOWNLOAD STATE MANAGEMENT
-	// =====================================
 
 	/**
 	 * Handles download state changes for a node.
@@ -115,10 +112,6 @@
 	function getDownloadState(node: TreeNode): DownloadState {
 		return dataSelectionStore.getSelectionState(node);
 	}
-
-	// =====================================
-	// FILTER MANAGEMENT
-	// =====================================
 
 	/**
 	 * Handles filter button clicks for a node.
@@ -170,7 +163,6 @@
 {#if treeviewStore.initialized}
 	<TreeView.Root>
 		{#each treeviewStore.getNodes() as node (node.id)}
-			{@const _dbg = console.log('parent pass', !!treeviewConfigStore)}
 			<Node
 				{treeviewConfigStore}
 				{node}

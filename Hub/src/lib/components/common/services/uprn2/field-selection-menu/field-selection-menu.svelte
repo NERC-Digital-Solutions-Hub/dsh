@@ -1,15 +1,12 @@
 <script lang="ts">
-	import {
-		dataSelectionStore,
-		type DataSelection
-	} from '$lib/stores/services/uprn2/data-selection-store.svelte';
-	import * as Command from '$lib/components/ui/command/index.js';
-	import * as Card from '$lib/components/ui/card/index.js';
-	import { X } from '@lucide/svelte';
-	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
-	import { SvelteSet } from 'svelte/reactivity';
-	import FieldFilterMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
 	import InformationIcon from '$lib/assets/information.svg?raw';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
+	import * as Command from '$lib/components/ui/command/index.js';
+	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
+	import FieldFilterMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
+	import { X } from '@lucide/svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	export type Props = {
 		fieldFilterMenuStore: FieldFilterMenuStore;
@@ -56,12 +53,18 @@
 		}
 	});
 
+	/**
+	 * Closes the modal and applies any changes to the data store.
+	 */
 	function closeModal() {
 		// Apply local changes to the data store before closing
 		applyChangesToDataStore();
 		fieldFilterMenuStore.ActiveLayer = null;
 	}
 
+	/**
+	 * Applies the local field selections to the global data store.
+	 */
 	function applyChangesToDataStore() {
 		if (!activeFeatureLayer) {
 			return;
@@ -89,6 +92,10 @@
 		});
 	}
 
+	/**
+	 * Handles backdrop click to close the modal without saving changes.
+	 * @param event - The mouse event.
+	 */
 	function handleBackdropClick(event: MouseEvent) {
 		// Close modal only if clicking the backdrop, not the card content
 		// Backdrop click cancels changes
@@ -97,6 +104,10 @@
 		}
 	}
 
+	/**
+	 * Toggles the selection state of a field.
+	 * @param fieldName - The name of the field to toggle.
+	 */
 	function toggleFieldSelection(fieldName: string) {
 		if (!activeFeatureLayer) {
 			return;
@@ -110,6 +121,9 @@
 		}
 	}
 
+	/**
+	 * Handles the master checkbox click to select/deselect all fields.
+	 */
 	function handleMasterCheckboxClick() {
 		if (!activeFeatureLayer?.fields) {
 			return;
@@ -128,6 +142,10 @@
 		}
 	}
 
+	/**
+	 * Gets the list of fields to display in the menu.
+	 * @returns Array of field objects.
+	 */
 	function getFieldNamesToShow(): __esri.Field[] {
 		if (!activeFeatureLayer?.fields) {
 			return [];

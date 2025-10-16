@@ -3,18 +3,31 @@
 	import DownloadCheckbox from '$lib/components/ui/checkbox/download-checkbox.svelte';
 	import { DownloadState, type TreeNode } from '../types.js';
 
+	/**
+	 * Props for the DownloadButton component.
+	 */
 	type Props = {
+		/** The tree node this button controls. */
 		node: TreeNode;
+		/** Callback when download state changes. */
 		onDownloadStateChanged?: (node: TreeNode, downloadState: DownloadState) => void;
+		/** Function to get current download state. */
 		getDownloadState?: (node: TreeNode) => DownloadState;
 	};
 
+	/** Destructured props. */
 	const { node, onDownloadStateChanged, getDownloadState }: Props = $props();
 
+	/** Derived state for whether the checkbox is checked. */
 	let externalState = $derived(getDownloadState?.(node) ?? DownloadState.Inactive);
 	let isChecked = $derived(externalState === DownloadState.Active);
 	let isIndeterminate = $derived(externalState === DownloadState.Indeterminate);
 
+	/**
+	 * Handles click events on the download button.
+	 * Toggles between active and inactive states.
+	 * @param event - The mouse event.
+	 */
 	function handleClick(event: MouseEvent) {
 		event.stopPropagation();
 		const newState =

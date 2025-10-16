@@ -3,22 +3,37 @@
 	import FilterEnabledIcon from '$lib/assets/funnel.svg?raw';
 	import FilterDisabledIcon from '$lib/assets/funnel-x.svg?raw';
 
+	/**
+	 * Props for the FilterButton component.
+	 */
 	type Props = {
+		/** The ID of the layer this button controls. */
 		layerId: string;
+		/** Callback when filter button is clicked. */
 		onFilterClicked?: (layerId: string) => void;
+		/** Function to check if filters are applied. */
 		hasFiltersApplied?: (layerId: string) => boolean;
 	};
 
+	/** Destructured props. */
 	const { layerId, onFilterClicked, hasFiltersApplied }: Props = $props();
 
+	/** Reactive state for whether filters are active. */
 	let isActive = $state(hasFiltersApplied?.(layerId) ?? false);
 
+	// Update active state when filters change
 	$effect(() => {
 		isActive = hasFiltersApplied?.(layerId) ?? false;
 	});
 
+	/** Derived icon markup based on active state. */
 	const iconMarkup = $derived(isActive ? FilterEnabledIcon : FilterDisabledIcon);
 
+	/**
+	 * Handles click events on the filter button.
+	 * Stops event propagation and calls the callback.
+	 * @param event - The mouse event.
+	 */
 	function handleClick(event: MouseEvent) {
 		event.stopPropagation();
 		onFilterClicked?.(layerId);

@@ -1,12 +1,10 @@
 <script lang="ts">
+	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { toast } from 'svelte-sonner';
 	import { areaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
 	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
 	import { downloadsStore } from '$lib/stores/services/uprn2/downloads-store.svelte';
-	import { page } from '$app/stores';
-	import { Clipboard } from 'lucide-svelte';
-	import { ClipboardCheck } from 'lucide-svelte';
+	import { toast } from 'svelte-sonner';
 
 	type Props = {
 		onExportSuccess?: () => void;
@@ -14,11 +12,10 @@
 
 	const { onExportSuccess }: Props = $props();
 
-	let canExport = $derived(
-		areaSelectionStore.layerHighlightState.areaInfos.length > 0 &&
-			dataSelectionStore.DataSelections.size > 0
-	);
-
+	/**
+	 * Handles the export button click event.
+	 * Validates that areas and data are selected, then initiates the export process.
+	 */
 	function handleExportClick() {
 		if (areaSelectionStore.layerHighlightState.areaInfos.length <= 0) {
 			toast.error('Please select at least one area to export.');
@@ -43,7 +40,6 @@
 			status: 'pending'
 		});
 
-		// Call the onExportSuccess callback to switch to downloads tab
 		onExportSuccess?.();
 	}
 </script>

@@ -28,16 +28,16 @@
 	 * </UPRNMapView>
 	 * ```
 	 */
-	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
-	import type { Snippet } from 'svelte';
-	import { mapInteractionStore } from '$lib/stores/services/uprn2/map-interaction-store.svelte';
 	import { areaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
+	import { mapInteractionStore } from '$lib/stores/services/uprn2/map-interaction-store.svelte';
+	import type { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
+	import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 	import type Map from '@arcgis/core/Map';
 	import type MapView from '@arcgis/core/views/MapView';
 	import type WebMap from '@arcgis/core/WebMap';
-	import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-	import type { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
+	import type { Snippet } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { TreeLayerNode } from '../tree-view/types';
 
 	type UIPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'manual';
@@ -85,6 +85,8 @@
 		await loadEsriAsync();
 		await loadMapViewAsync();
 	});
+
+	// === Map Loading Functions ===
 
 	/**
 	 * Asynchronously loads the required ArcGIS modules for map functionality.
@@ -188,14 +190,6 @@
 		}
 	}
 
-	// Effect to handle webMap changes
-	$effect(() => {
-		if (!webMap) {
-			return;
-		}
-		updateMapWithWebMap();
-	});
-
 	/**
 	 * Initializes the map view with either the provided webMap or a fallback map.
 	 * Handles loading, error recovery, and UI setup.
@@ -237,6 +231,16 @@
 		}
 	}
 
+	// === Effects ===
+
+	// Effect to handle webMap changes
+	$effect(() => {
+		if (!webMap) {
+			return;
+		}
+		updateMapWithWebMap();
+	});
+
 	// Effect to update interactable layers when they change
 	$effect(() => {
 		if (!mapView || !areaSelectionTreeviewStore.initialized) {
@@ -250,24 +254,6 @@
 			mapInteractionStore.initializeAsync(mapView, new Set(nonHiddenNodes));
 		}
 	});
-
-	/**
-	 * Updates the selected layer view in the area selection store when a visible node is available.
-	 * @param layer - The feature layer to set as the selected layer view
-	 */
-	async function updateSelectedLayerView(layer: __esri.FeatureLayer) {
-		if (!mapView) {
-			return;
-		}
-
-		const layerView = await mapView.whenLayerView(layer);
-		if (!layerView) {
-			console.warn('Could not get LayerView for the visible node layer');
-			return;
-		}
-
-		areaSelectionStore.setSelectedLayerView(layerView);
-	}
 
 	// Effect to handle visible node changes and update layer view
 	$effect(() => {
@@ -293,6 +279,26 @@
 
 		updateSelectedLayerView(node.layer as __esri.FeatureLayer);
 	});
+
+	// === Utility Functions ===
+
+	/**
+	 * Updates the selected layer view in the area selection store when a visible node is available.
+	 * @param layer - The feature layer to set as the selected layer view
+	 */
+	async function updateSelectedLayerView(layer: __esri.FeatureLayer) {
+		if (!mapView) {
+			return;
+		}
+
+		const layerView = await mapView.whenLayerView(layer);
+		if (!layerView) {
+			console.warn('Could not get LayerView for the visible node layer');
+			return;
+		}
+
+		areaSelectionStore.setSelectedLayerView(layerView);
+	}
 
 	/**
 	 * Cleans up map resources and interaction stores when the component is destroyed.

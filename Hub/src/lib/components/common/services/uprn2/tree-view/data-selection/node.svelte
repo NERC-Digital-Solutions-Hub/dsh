@@ -1,31 +1,45 @@
 <!-- Node.svelte -->
 <script lang="ts">
+	import NodeAnimation from '$lib/components/common/services/uprn2/tree-view/node-animation.svelte';
 	import VisibilityCheckbox from '$lib/components/common/visibility-checkbox/visibility-checkbox.svelte';
-	import Node from './node.svelte';
-	import NodeContent from './node-content.svelte';
-	import NodeRoot from '$lib/components/common/services/uprn2/tree-view/node-root.svelte';
-	import DownloadButton from './download-button.svelte';
-	import FilterButton from './filter-button.svelte';
+	import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store';
 	import { getNodeIcon } from '../get-node-icon';
 	import { DownloadState, TreeLayerNode, type TreeNode } from '../types.js';
-	import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store';
-	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
+	import DownloadButton from './download-button.svelte';
+	import NodeContent from './node-content.svelte';
+	import Node from './node.svelte';
 
+	/**
+	 * Props for the Node component.
+	 */
 	type Props = {
+		/** Configuration store for tree view settings. */
 		treeviewConfigStore?: TreeviewConfigStore | null;
+		/** The tree node to render. */
 		node: TreeNode;
+		/** Whether the node is downloadable. */
 		isDownloadable?: boolean;
+		/** Callback when node is clicked. */
 		onNodeClick?: (node: TreeNode) => void;
+		/** Callback when node visibility changes. */
 		onNodeVisibilityChange?: (node: TreeNode, visible: boolean) => void;
+		/** Callback when download state changes. */
 		onDownloadStateChanged?: (node: TreeNode, downloadState: DownloadState) => void;
+		/** Function to get current download state. */
 		getDownloadState?: (node: TreeNode) => DownloadState;
+		/** Callback when filter is clicked. */
 		onFilterClicked?: (layerId: string) => void;
+		/** Function to check if filters are applied. */
 		hasFiltersApplied?: (layerId: string) => boolean;
+		/** Function to get current node visibility. */
 		getNodeVisibility?: (nodeId: string) => boolean | undefined;
+		/** Depth level in the tree. */
 		depth?: number;
-		useLayerTypeIcon?: boolean; // Use ArcGIS layer type specific icons
+		/** Whether to use layer type specific icons. */
+		useLayerTypeIcon?: boolean;
 	};
 
+	/** Destructured props with defaults. */
 	const {
 		treeviewConfigStore = null,
 		node,
@@ -41,18 +55,28 @@
 		useLayerTypeIcon = false
 	}: Props = $props();
 
-	// Calculate width reduction to match ml-4 indentation (1rem per level)
-	// Each child is indented by ml-4 (1rem) and should be 1rem narrower
-
+	/** Whether this node represents a folder (has children). */
 	const isFolder = !!(node.children && node.children.length);
+
+	/** Whether this node has visibility controls (leaf nodes). */
 	const hasVisibility = !isFolder;
 
+	/** Reactive state for whether the folder is open. */
 	let isOpen = $state(false);
+
+	/** Reactive state for whether the node is checked/visible. */
 	let isChecked = $state<boolean>(false);
+
+	/** Reactive state for the node's icon. */
 	let icon = $state<string>('');
+
+	/** Reactive state for whether filter button should be shown. */
 	let showFilter = $state(false);
+
+	/** Reactive state for filter animation. */
 	let isAnimatingOut = $state(false);
 
+	// Update checked state and icon based on node properties
 	$effect(() => {
 		if (!node) {
 			return;
@@ -90,6 +114,10 @@
 		}
 	});
 
+	/**
+	 * Toggles the visibility of the node.
+	 * Only applicable for leaf nodes with visibility controls.
+	 */
 	function toggleVisible() {
 		if (!hasVisibility || !onNodeVisibilityChange) {
 			return;
@@ -99,10 +127,18 @@
 		onNodeVisibilityChange(node, isChecked);
 	}
 
+	/**
+	 * Handles click events on the node.
+	 * Calls the node click callback.
+	 */
 	function handleClick() {
 		onNodeClick?.(node);
 	}
 
+	/**
+	 * Handles click events specifically for folder nodes.
+	 * Toggles the open/closed state.
+	 */
 	function handleFolderClick() {
 		isOpen = !isOpen;
 		onNodeClick?.(node);
@@ -178,43 +214,9 @@
 	{/if}
 {/snippet}
 
-<NodeRoot {isOpen} {content} childNodes={isFolder ? node.children : null} {childNode} />
+<NodeAnimation {isOpen} {content} childNodes={isFolder ? node.children : null} {childNode} />
 
 <style>
-	.filter-transition-wrapper {
-		display: inline-block;
-	}
-
-	.filter-transition-wrapper.fade-in {
-		animation: slideInFade 0.2s ease-out;
-	}
-
-	.filter-transition-wrapper.fade-out {
-		animation: slideOutFade 0.2s ease-out;
-	}
-
-	@keyframes slideInFade {
-		from {
-			opacity: 0;
-			transform: translateX(10px) scale(0.8);
-		}
-		to {
-			opacity: 1;
-			transform: translateX(0) scale(1);
-		}
-	}
-
-	@keyframes slideOutFade {
-		from {
-			opacity: 1;
-			transform: translateX(0) scale(1);
-		}
-		to {
-			opacity: 0;
-			transform: translateX(10px) scale(0.8);
-		}
-	}
-
 	@keyframes lineGrow {
 		from {
 			transform: scaleY(0);

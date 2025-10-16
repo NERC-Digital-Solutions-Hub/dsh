@@ -3,8 +3,9 @@
 	import * as Chat from '$lib/components/ui/chat';
 	import { Input } from '$lib/components/ui/input';
 	import SendIcon from '@lucide/svelte/icons/send';
-	import { tick, onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 
+	// Component state
 	let message = $state('');
 	let container = $state<HTMLDivElement>(); // outer shell (for ResizeObserver)
 	let viewport = $state<HTMLDivElement>(); // the scrollable area
@@ -14,6 +15,7 @@
 	let atBottom = $state(true);
 	const BOTTOM_TOLERANCE = 8; // px
 
+	// Sample messages for demonstration
 	const messages = $state([
 		{ senderId: 2, message: 'How do I use the treeview?', sentAt: '10:00 AM' },
 		{
@@ -24,24 +26,39 @@
 		{ senderId: 2, message: 'Can you show me how?', sentAt: '10:02 AM' }
 	]);
 
+	/**
+	 * Formats a Date object into a short time string (e.g., "10:00 AM").
+	 * @param date - The date to format.
+	 * @returns The formatted time string.
+	 */
 	function formatShortTime(date: Date): string {
 		const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 		return `${time} ${date.getHours() >= 12 ? 'PM' : 'AM'}`;
 	}
 
+	/**
+	 * Checks if the viewport is near the bottom within the tolerance.
+	 * @returns True if near bottom, false otherwise.
+	 */
 	function isNearBottom(): boolean {
 		if (!viewport) return true;
 		const dist = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
 		return dist <= BOTTOM_TOLERANCE;
 	}
 
+	/**
+	 * Scrolls the viewport to the bottom smoothly or instantly.
+	 * @param behavior - The scroll behavior ('smooth' or 'auto').
+	 */
 	async function scrollToBottom(behavior: ScrollBehavior = 'smooth') {
 		await tick();
 		if (!viewport) return;
 		viewport.scrollTo({ top: viewport.scrollHeight, behavior });
 	}
 
-	// Track if the user is at the bottom while they scroll
+	/**
+	 * Handles scroll events to track if the user is at the bottom.
+	 */
 	function onScroll() {
 		atBottom = isNearBottom();
 	}

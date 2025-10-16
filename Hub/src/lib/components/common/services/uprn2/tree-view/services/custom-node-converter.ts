@@ -3,6 +3,7 @@ import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-co
 
 /**
  * Abstract class for converting map layers to tree nodes.
+ * Provides a base implementation for layer-to-node conversion with configuration support.
  */
 export abstract class CustomNodeConverter {
 	/**
@@ -11,7 +12,7 @@ export abstract class CustomNodeConverter {
 	abstract readonly id: string;
 
 	/**
-	 * Configuration store for tree view node configurations..
+	 * Configuration store for tree view node configurations.
 	 */
 	protected configStore: TreeviewConfigStore;
 

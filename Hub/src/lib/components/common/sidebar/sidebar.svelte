@@ -12,10 +12,10 @@
 	 * - openIcon: Icon component - Custom icon to display when sidebar is closed (default: Menu)
 	 * - children: Snippet - Content to render inside the sidebar
 	 */
-	import type { Snippet } from 'svelte';
-	import { Menu, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-svelte';
-	import { onMount } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Menu } from 'lucide-svelte';
+	import type { Snippet } from 'svelte';
+	import { onMount } from 'svelte';
 	import { SidebarPosition } from './sidebar-position';
 
 	type SidebarPositionType = (typeof SidebarPosition)[keyof typeof SidebarPosition];
