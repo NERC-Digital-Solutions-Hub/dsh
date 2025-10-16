@@ -162,6 +162,25 @@
 		return roundingMap[position];
 	});
 
+	// Directional shadow - points away from the sidebar
+	const buttonShadow = $derived(() => {
+		// No shadow if not in overlay mode and sidebar is open (attached to sidebar)
+		if (!overlay && isOpen) return '';
+
+		// Directional shadows that point away from the sidebar
+		const shadowMap = {
+			[SidebarPosition.LEFT]:
+				'box-shadow: 4px 0 8px -2px rgb(0 0 0 / 0.1), 2px 0 4px -2px rgb(0 0 0 / 0.1);', // shadow to the right
+			[SidebarPosition.RIGHT]:
+				'box-shadow: -4px 0 8px -2px rgb(0 0 0 / 0.1), -2px 0 4px -2px rgb(0 0 0 / 0.1);', // shadow to the left
+			[SidebarPosition.TOP]:
+				'box-shadow: 0 4px 8px -2px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);', // shadow to the bottom
+			[SidebarPosition.BOTTOM]:
+				'box-shadow: 0 -4px 8px -2px rgb(0 0 0 / 0.1), 0 -2px 4px -2px rgb(0 0 0 / 0.1);' // shadow to the top
+		};
+		return shadowMap[position];
+	});
+
 	const closeIcon = $derived(() => {
 		const iconMap = {
 			[SidebarPosition.LEFT]: ChevronLeft,
@@ -192,6 +211,73 @@
 			[SidebarPosition.BOTTOM]: `height: ${size}; top: ${offset}`
 		};
 		return styleMap[position];
+	});
+
+	// Position for resize handle when moved outside wrapper
+	const handlePosition = $derived(() => {
+		if (!isOpen) return {};
+
+		const size = `${RESIZE_HANDLE_SIZE}px`;
+		const sidebarOffset = isOpen ? currentSize : 0;
+		const handleOffset = -RESIZE_HANDLE_SIZE / 2;
+
+		if (overlay) {
+			const overlayMap = {
+				[SidebarPosition.LEFT]: {
+					left: `${sidebarOffset + handleOffset}px`,
+					top: '0',
+					width: size,
+					height: '100%'
+				},
+				[SidebarPosition.RIGHT]: {
+					right: `${sidebarOffset + handleOffset}px`,
+					top: '0',
+					width: size,
+					height: '100%'
+				},
+				[SidebarPosition.TOP]: {
+					top: `${sidebarOffset + handleOffset}px`,
+					left: '0',
+					height: size,
+					width: '100%'
+				},
+				[SidebarPosition.BOTTOM]: {
+					bottom: `${sidebarOffset + handleOffset}px`,
+					left: '0',
+					height: size,
+					width: '100%'
+				}
+			};
+			return overlayMap[position];
+		}
+
+		const positionMap = {
+			[SidebarPosition.LEFT]: {
+				left: `${sidebarOffset + handleOffset}px`,
+				top: '0',
+				width: size,
+				height: '100%'
+			},
+			[SidebarPosition.RIGHT]: {
+				right: `${sidebarOffset + handleOffset}px`,
+				top: '0',
+				width: size,
+				height: '100%'
+			},
+			[SidebarPosition.TOP]: {
+				top: `${sidebarOffset + handleOffset}px`,
+				left: '0',
+				height: size,
+				width: '100%'
+			},
+			[SidebarPosition.BOTTOM]: {
+				bottom: `${sidebarOffset + handleOffset}px`,
+				left: '0',
+				height: size,
+				width: '100%'
+			}
+		};
+		return positionMap[position];
 	});
 
 	// Helper to convert object to inline styles
@@ -259,19 +345,21 @@
 	size="icon"
 	class="{overlay
 		? 'absolute'
-		: 'fixed'} z-[40] !bg-primary shadow-lg hover:scale-105 hover:!bg-primary/90 {buttonRounding()} {isResizing
-		? ''
-		: 'transition-all duration-300'}"
-	style="{toInlineStyles(buttonPosition())}; pointer-events: auto;"
+		: 'fixed'} z-[40] !bg-background hover:scale-105 hover:!bg-background/90 {buttonRounding()} {!isResizing
+		? 'transition-all duration-300'
+		: ''}"
+	style="{toInlineStyles(buttonPosition())}; pointer-events: auto; {buttonShadow()} {isResizing
+		? 'transition: none !important;'
+		: ''}"
 	aria-label={isOpen ? 'Close sidebar' : 'Open sidebar'}
 	aria-expanded={isOpen}
 >
 	{#if isOpen}
 		{@const Icon = closeIcon()}
-		<Icon class="h-6 w-6" />
+		<Icon class="h-6 w-6 text-primary" />
 	{:else}
 		{@const OpenIcon = openIcon}
-		<OpenIcon class="h-6 w-6" />
+		<OpenIcon class="h-6 w-6 text-primary" />
 	{/if}
 </Button>
 
@@ -290,7 +378,7 @@
 	<!-- Sidebar -->
 	<aside
 		bind:this={sidebarElement}
-		class="relative flex bg-card text-card-foreground shadow-lg"
+		class="relative flex bg-card text-card-foreground {overlay ? 'shadow-2xl' : 'shadow-lg'}"
 		class:flex-col={isHorizontal}
 		class:flex-row={!isHorizontal}
 		class:h-full={isHorizontal}
@@ -327,17 +415,21 @@
 				{/if}
 			</div>
 		</div>
-
-		<!-- Resize handle -->
-		{#if isOpen}
-			<Button
-				class="absolute border-0 bg-transparent p-0 transition-colors hover:!bg-primary/50 {isHorizontal
-					? 'top-0 h-full cursor-ew-resize'
-					: 'left-0 w-full cursor-ns-resize'}"
-				onmousedown={startResize}
-				aria-label="Resize sidebar by dragging"
-				style={handleStyle()}
-			/>
-		{/if}
 	</aside>
 </div>
+
+<!-- Resize handle (outside wrapper to avoid clipping) -->
+{#if isOpen}
+	<Button
+		class="{overlay
+			? 'absolute'
+			: 'fixed'} z-50 border-0 bg-transparent p-0 ring-0 transition-colors outline-none hover:!bg-primary/50 focus-visible:ring-0 {isHorizontal
+			? 'cursor-ew-resize'
+			: 'cursor-ns-resize'} {!isResizing ? 'transition-all duration-300' : ''}"
+		onmousedown={startResize}
+		aria-label="Resize sidebar by dragging"
+		style="{toInlineStyles(
+			handlePosition()
+		)}; outline: none !important; box-shadow: none !important; border: none !important;"
+	/>
+{/if}
