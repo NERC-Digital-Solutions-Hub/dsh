@@ -9,7 +9,8 @@
 	 * - isOpen: boolean - Controls whether the sidebar is open or closed
 	 * - onToggle: () => void - Callback when the toggle button is clicked
 	 * - position: SidebarPosition value - Position of the sidebar (default: SidebarPosition.LEFT)
-	 * - minSize: string - Minimum size of the sidebar
+	 * - originalSize: string - Initial/default size of the sidebar
+	 * - minSize: string - Minimum size of the sidebar when resizing
 	 * - sidebarContent: Snippet - Content to render inside the sidebar
 	 * - mainContent: Snippet - Content to render in the main area
 	 */
@@ -24,6 +25,7 @@
 		isOpen: boolean;
 		onToggle: () => void;
 		position?: SidebarPositionType;
+		originalSize?: string;
 		minSize?: string;
 		openIcon?: typeof Menu;
 		sidebarContent?: Snippet;
@@ -34,6 +36,7 @@
 		isOpen,
 		onToggle,
 		position = SidebarPosition.LEFT,
+		originalSize,
 		minSize,
 		openIcon,
 		sidebarContent,
@@ -47,7 +50,7 @@
 </script>
 
 <div class="sidebar-layout" class:vertical={isVertical}>
-	<Sidebar {isOpen} {onToggle} {position} {minSize} {openIcon}>
+	<Sidebar {isOpen} {onToggle} {position} {originalSize} {minSize} {openIcon}>
 		{#if sidebarContent}
 			{@render sidebarContent()}
 		{/if}

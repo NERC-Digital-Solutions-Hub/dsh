@@ -5,6 +5,23 @@
         "urlPrefix": "https://nercdsh.dev.azure.manchester.ac.uk",
         "proxyUrl": "/proxy/Java/proxy.jsp"
     },
+    "mainSidebarSizes": [
+        {
+            "breakpoint": 1280,
+            "originalSize": "700px",
+            "minSize": "300px"
+        },
+        {
+            "breakpoint": 1024,
+            "originalSize": "500px",
+            "minSize": "250px"
+        },
+        {
+            "breakpoint": 768,
+            "originalSize": "400px",
+            "minSize": "200px"
+        }
+    ],
     "dataSelectionTreeviewConfig": {
         "items": [
             {

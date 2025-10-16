@@ -23,9 +23,10 @@
 	import SidebarLayout from '$lib/components/common/sidebar/sidebar-layout.svelte';
 	import Sidebar from '$lib/components/common/sidebar/sidebar.svelte';
 	import { SidebarPosition } from '$lib/components/common/sidebar/sidebar-position';
-	import type { AppConfig } from '$lib/types/config';
+	import type { AppConfig, SizeConfig } from '$lib/types/config';
 	import { Bot } from 'lucide-svelte';
 	import UprnChat from '$lib/components/common/services/uprn2/chat/chat.svelte';
+	import { get } from 'svelte/store';
 
 	const webMapStore: WebMapStore = $state(new WebMapStore());
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
@@ -42,6 +43,28 @@
 	let chatSidebarPosition = $state<(typeof SidebarPosition)[keyof typeof SidebarPosition]>(
 		SidebarPosition.BOTTOM
 	);
+	let mainSidebarSizes: SizeConfig[] = $state([]);
+	let windowWidth = $state(typeof window !== 'undefined' ? window.innerWidth : 1280);
+
+	// Derive the original size (initial size) based on window width and breakpoints
+	let mainSidebarOriginalSize = $derived.by(() =>
+		getMatchingSize(mainSidebarSizes, (config) => config.originalSize)
+	);
+
+	// Derive the minimum size (for resizing)
+	let mainSidebarMinSize = $derived.by(() =>
+		getMatchingSize(mainSidebarSizes, (config) => config.minSize)
+	);
+
+	function getMatchingSize(sizes: SizeConfig[], expr: (config: SizeConfig) => string) {
+		if (!sizes || sizes.length === 0) {
+			return undefined;
+		}
+
+		const sortedSizes = [...sizes].sort((a, b) => b.breakpoint - a.breakpoint);
+		const matchingSize = sortedSizes.find((config) => windowWidth >= config.breakpoint);
+		return matchingSize ? expr(matchingSize) : '0';
+	}
 
 	function toggleMainSidebar() {
 		mainSidebarOpen = !mainSidebarOpen;
@@ -55,6 +78,8 @@
 		const appConfig: AppConfig = await getAppConfigAsync();
 
 		areaSelectionStore.setNameFields(appConfig.serviceUprn2Config.selectionLayersNameFields || []);
+		mainSidebarSizes = appConfig.serviceUprn2Config.mainSidebarSizes || [];
+
 		dataSelectionTreeviewConfig = new TreeviewConfigStore(
 			appConfig.serviceUprn2Config.dataSelectionTreeviewConfig as TreeviewConfig
 		);
@@ -72,6 +97,19 @@
 		console.log('[page] WebMap loaded');
 	});
 
+	// Set up window resize listener for reactive sidebar sizing
+	onMount(() => {
+		const handleResize = () => {
+			windowWidth = window.innerWidth;
+		};
+
+		window.addEventListener('resize', handleResize);
+
+		return () => {
+			window.removeEventListener('resize', handleResize);
+		};
+	});
+
 	function onTabValueChange(value: string) {
 		currentTab = value;
 	}
@@ -86,7 +124,13 @@
 <FieldSelectionMenu {fieldFilterMenuStore} />
 <AreaSelectionToast />
 
-<SidebarLayout isOpen={mainSidebarOpen} onToggle={toggleMainSidebar} position={mainSidebarPosition}>
+<SidebarLayout
+	isOpen={mainSidebarOpen}
+	onToggle={toggleMainSidebar}
+	position={mainSidebarPosition}
+	originalSize={mainSidebarOriginalSize}
+	minSize={mainSidebarMinSize}
+>
 	{#snippet sidebarContent()}
 		<div class="relative flex h-full w-full min-w-0 overflow-visible">
 			<div class="flex h-full w-full min-w-0 flex-col overflow-hidden">
@@ -125,6 +169,7 @@
 				isOpen={chatSidebarOpen}
 				onToggle={toggleChatSidebar}
 				position={chatSidebarPosition}
+				originalSize="300px"
 				overlay
 				openIcon={Bot}
 			>

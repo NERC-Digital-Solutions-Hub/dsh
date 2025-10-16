@@ -25,6 +25,7 @@
 		onToggle: () => void;
 		children?: Snippet;
 		minSize?: string;
+		originalSize?: string;
 		position?: SidebarPositionType;
 		openIcon?: typeof Menu;
 		overlay?: boolean;
@@ -35,6 +36,7 @@
 		onToggle,
 		children,
 		minSize,
+		originalSize,
 		position = SidebarPosition.LEFT,
 		openIcon = Menu,
 		overlay = false
@@ -42,14 +44,15 @@
 
 	// Constants
 	const RESIZE_HANDLE_SIZE = 8;
-	const DEFAULT_SIZE = 500;
+	const DEFAULT_SIZE = '500px';
 	const HEADER_OFFSET = 'calc(var(--header-height, 64px) + 1rem)';
 
 	// State
 	let sidebarElement: HTMLElement;
 	let sidebarSize = $state(0);
-	let currentSize = $state(DEFAULT_SIZE);
+	let currentSize = $state(originalSize ?? DEFAULT_SIZE);
 	let isResizing = $state(false);
+	let hasManuallyResized = $state(false);
 
 	// Derived values
 	const isHorizontal = $derived(
@@ -64,11 +67,15 @@
 	const sizeProperty = $derived(isHorizontal ? 'width' : 'height');
 	const resizeCursor = $derived(isHorizontal ? 'ew-resize' : 'ns-resize');
 
-	// Ensure current size meets minimum requirements
+	// Update current size when minSize or originalSize changes (only if user hasn't manually resized)
 	$effect(() => {
-		const parsedSize = parseFloat(finalMinSize);
-		if (currentSize < parsedSize) {
-			currentSize = parsedSize;
+		if (!hasManuallyResized) {
+			currentSize = originalSize ?? finalMinSize;
+			console.log(
+				'Sidebar size updated due to minSize/originalSize change:',
+				currentSize,
+				originalSize
+			);
 		}
 	});
 
@@ -94,12 +101,14 @@
 		e.preventDefault();
 
 		const startPos = isHorizontal ? e.clientX : e.clientY;
-		const startSize = currentSize;
+		const startSize = parseFloat(currentSize);
 
 		function onMouseMove(e: MouseEvent) {
 			const currentPos = isHorizontal ? e.clientX : e.clientY;
 			const delta = isStartPosition ? currentPos - startPos : startPos - currentPos;
-			currentSize = Math.max(minSizePx, startSize + delta);
+			const newSize = Math.max(minSizePx, startSize + delta);
+			currentSize = `${newSize}px`;
+			hasManuallyResized = true;
 		}
 
 		function onMouseUp() {
@@ -118,22 +127,22 @@
 
 	// UI configuration helpers
 	const buttonPosition = $derived(() => {
-		const offset = isOpen ? currentSize : 0;
+		const offset = isOpen ? currentSize : '0px';
 		if (overlay) {
 			const overlayPositionMap = {
-				[SidebarPosition.LEFT]: { top: '1rem', left: `${offset}px` },
-				[SidebarPosition.RIGHT]: { top: '1rem', right: `${offset}px` },
-				[SidebarPosition.TOP]: { top: `${offset}px`, left: '1rem' },
-				[SidebarPosition.BOTTOM]: { bottom: `${offset}px`, left: '1rem' }
+				[SidebarPosition.LEFT]: { top: '1rem', left: offset },
+				[SidebarPosition.RIGHT]: { top: '1rem', right: offset },
+				[SidebarPosition.TOP]: { top: offset, left: '1rem' },
+				[SidebarPosition.BOTTOM]: { bottom: offset, left: '1rem' }
 			};
 			return overlayPositionMap[position];
 		}
 
 		const positionMap = {
-			[SidebarPosition.LEFT]: { top: HEADER_OFFSET, left: `${offset}px` },
-			[SidebarPosition.RIGHT]: { top: HEADER_OFFSET, right: `${offset}px` },
-			[SidebarPosition.TOP]: { top: `${offset}px`, left: '1rem' },
-			[SidebarPosition.BOTTOM]: { bottom: `${offset}px`, left: '1rem' }
+			[SidebarPosition.LEFT]: { top: HEADER_OFFSET, left: offset },
+			[SidebarPosition.RIGHT]: { top: HEADER_OFFSET, right: offset },
+			[SidebarPosition.TOP]: { top: offset, left: '1rem' },
+			[SidebarPosition.BOTTOM]: { bottom: offset, left: '1rem' }
 		};
 		return positionMap[position];
 	});
@@ -144,10 +153,10 @@
 
 		// Button should follow sidebar's sliding animation
 		const transformMap = {
-			[SidebarPosition.LEFT]: `translate(-${currentSize}px, 0)`,
-			[SidebarPosition.RIGHT]: `translate(${currentSize}px, 0)`,
-			[SidebarPosition.TOP]: `translate(0, -${currentSize}px)`,
-			[SidebarPosition.BOTTOM]: `translate(0, ${currentSize}px)`
+			[SidebarPosition.LEFT]: `translate(-${currentSize}, 0)`,
+			[SidebarPosition.RIGHT]: `translate(${currentSize}, 0)`,
+			[SidebarPosition.TOP]: `translate(0, -${currentSize})`,
+			[SidebarPosition.BOTTOM]: `translate(0, ${currentSize})`
 		};
 		return transformMap[position];
 	});
@@ -218,31 +227,30 @@
 		if (!isOpen) return {};
 
 		const size = `${RESIZE_HANDLE_SIZE}px`;
-		const sidebarOffset = isOpen ? currentSize : 0;
-		const handleOffset = -RESIZE_HANDLE_SIZE / 2;
+		const sidebarOffset = isOpen ? `calc(${currentSize} + ${-RESIZE_HANDLE_SIZE / 2}px)` : '0px';
 
 		if (overlay) {
 			const overlayMap = {
 				[SidebarPosition.LEFT]: {
-					left: `${sidebarOffset + handleOffset}px`,
+					left: sidebarOffset,
 					top: '0',
 					width: size,
 					height: '100%'
 				},
 				[SidebarPosition.RIGHT]: {
-					right: `${sidebarOffset + handleOffset}px`,
+					right: sidebarOffset,
 					top: '0',
 					width: size,
 					height: '100%'
 				},
 				[SidebarPosition.TOP]: {
-					top: `${sidebarOffset + handleOffset}px`,
+					top: sidebarOffset,
 					left: '0',
 					height: size,
 					width: '100%'
 				},
 				[SidebarPosition.BOTTOM]: {
-					bottom: `${sidebarOffset + handleOffset}px`,
+					bottom: sidebarOffset,
 					left: '0',
 					height: size,
 					width: '100%'
@@ -253,30 +261,31 @@
 
 		const positionMap = {
 			[SidebarPosition.LEFT]: {
-				left: `${sidebarOffset + handleOffset}px`,
+				left: sidebarOffset,
 				top: '0',
 				width: size,
 				height: '100%'
 			},
 			[SidebarPosition.RIGHT]: {
-				right: `${sidebarOffset + handleOffset}px`,
+				right: sidebarOffset,
 				top: '0',
 				width: size,
 				height: '100%'
 			},
 			[SidebarPosition.TOP]: {
-				top: `${sidebarOffset + handleOffset}px`,
+				top: sidebarOffset,
 				left: '0',
 				height: size,
 				width: '100%'
 			},
 			[SidebarPosition.BOTTOM]: {
-				bottom: `${sidebarOffset + handleOffset}px`,
+				bottom: sidebarOffset,
 				left: '0',
 				height: size,
 				width: '100%'
 			}
 		};
+
 		return positionMap[position];
 	});
 
@@ -295,16 +304,16 @@
 		if (isOpen) return 'translate(0, 0)';
 
 		const transformMap = {
-			[SidebarPosition.LEFT]: `translate(-${currentSize}px, 0)`,
-			[SidebarPosition.RIGHT]: `translate(${currentSize}px, 0)`,
-			[SidebarPosition.TOP]: `translate(0, -${currentSize}px)`,
-			[SidebarPosition.BOTTOM]: `translate(0, ${currentSize}px)`
+			[SidebarPosition.LEFT]: `translate(-${currentSize}, 0)`,
+			[SidebarPosition.RIGHT]: `translate(${currentSize}, 0)`,
+			[SidebarPosition.TOP]: `translate(0, -${currentSize})`,
+			[SidebarPosition.BOTTOM]: `translate(0, ${currentSize})`
 		};
 		return transformMap[position];
 	});
 
 	const wrapperStyles = $derived(() => {
-		const sizeValue = isOpen ? `${currentSize}px` : '0';
+		const sizeValue = isOpen ? currentSize : '0px';
 		if (overlay) {
 			if (isHorizontal) {
 				const horizontalStyles: Record<string, string> = {
@@ -392,7 +401,7 @@
 		class:duration-300={!isResizing}
 		class:pointer-events-auto={overlay}
 		class:z-30={overlay}
-		style="{sizeProperty}: {currentSize}px; transform: {sidebarTransform()};"
+		style="{sizeProperty}: {currentSize}; transform: {sidebarTransform()};"
 	>
 		<div
 			class="flex overflow-hidden"
