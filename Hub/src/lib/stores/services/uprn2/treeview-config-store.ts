@@ -109,6 +109,8 @@ export class TreeviewConfigStore {
 			parentNodeConfig
 		);
 
+		console.log(`Resolved config for node ${layer.title}:`, nodeConfig);
+
 		// If the layer is a feature layer and has fields to show, create field nodes
 		if (this.#isFeatureLayer(layer) && nodeConfig.showFields) {
 			const featureLayer = layer as __esri.FeatureLayer;
@@ -221,6 +223,13 @@ export class TreeviewConfigStore {
 			visibilityGroupId: this.#getConfigValue(
 				inheritanceGroup,
 				'visibilityGroupId',
+				nodeConfig,
+				parentNodeConfig,
+				undefined
+			),
+			customConverterId: this.#getConfigValue(
+				inheritanceGroup,
+				'customConverterId',
 				nodeConfig,
 				parentNodeConfig,
 				undefined

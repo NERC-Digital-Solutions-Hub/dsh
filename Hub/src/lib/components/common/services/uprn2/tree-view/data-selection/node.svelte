@@ -45,8 +45,7 @@
 	// Each child is indented by ml-4 (1rem) and should be 1rem narrower
 
 	const isFolder = !!(node.children && node.children.length);
-	const hasVisibility =
-		!isFolder || (node instanceof TreeLayerNode && node.layer.type === 'feature');
+	const hasVisibility = !isFolder;
 
 	let isOpen = $state(false);
 	let isChecked = $state<boolean>(false);
