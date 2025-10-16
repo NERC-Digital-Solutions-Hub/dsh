@@ -158,6 +158,8 @@ export class TreeviewStore {
 			return;
 		}
 
+		console.log(`Setting visibility of node ${nodeId} to ${isVisible}`, config, node);
+		// handle visibility groups
 		if (config.visibilityDependencyIds?.length) {
 			this.#updateDependencyVisibility(node, isVisible);
 		}

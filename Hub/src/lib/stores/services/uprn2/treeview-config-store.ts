@@ -98,7 +98,8 @@ export class TreeviewConfigStore {
 
 		// resolve inheritance groups
 		for (const layer of layers) {
-			this.#resolveLayerInheritance(layer);
+			const config = this.getItemConfig(layer.id);
+			this.#resolveLayerInheritance(layer, config);
 		}
 	}
 
@@ -175,7 +176,6 @@ export class TreeviewConfigStore {
 		parentNodeConfig?: TreeviewNodeConfig
 	): TreeviewNodeConfig {
 		let nodeConfig: TreeviewNodeConfig | undefined = this.getItemConfig(nodeId);
-		const doesConfigExist: boolean = nodeConfig !== undefined;
 		const inheritanceGroup: InheritanceGroupConfig | undefined = nodeConfig?.inheritanceGroupId
 			? this.getInheritanceGroupConfig(nodeConfig.inheritanceGroupId)
 			: this.getInheritanceGroupConfig(parentNodeConfig?.inheritanceGroupId ?? '');
@@ -234,9 +234,8 @@ export class TreeviewConfigStore {
 			)
 		};
 
-		if (doesConfigExist === false) {
-			this.#addItemConfig(nodeConfig);
-		}
+		this.#removeItemConfig(nodeConfig); // remove existing config if present
+		this.#addItemConfig(nodeConfig);
 
 		return nodeConfig;
 	}
@@ -269,6 +268,15 @@ export class TreeviewConfigStore {
 
 		this.#configs.push(item);
 		this.#configLookup.set(item.id, item);
+	}
+
+	#removeItemConfig(item: TreeviewNodeConfig): void {
+		if (!this.#configLookup.has(item.id)) {
+			return;
+		}
+
+		this.#configs = this.#configs.filter((config) => config.id !== item.id);
+		this.#configLookup.delete(item.id);
 	}
 
 	#getFieldNodeId(layerId: string, fieldName: string): string {
