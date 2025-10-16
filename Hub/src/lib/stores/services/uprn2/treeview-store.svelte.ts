@@ -219,7 +219,12 @@ export class TreeviewStore {
 
 	#updateParentVisibility(node: TreeNode, isVisible: boolean): void {
 		const parentNode = node.parent;
-		if (!parentNode || !(parentNode instanceof TreeLayerNode)) {
+		if (!parentNode) {
+			return;
+		}
+
+		if (!(parentNode instanceof TreeLayerNode)) {
+			this.#updateParentVisibility(parentNode, isVisible);
 			return;
 		}
 
