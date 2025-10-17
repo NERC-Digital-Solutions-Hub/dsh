@@ -219,6 +219,15 @@ export class TreeviewStore {
 		}
 	}
 
+	cleanup(): void {
+		this.initialized = false;
+		this.#visibilityState.clear();
+		this.#activeInVisibilityGroup.clear();
+		this.#customConverters.clear();
+		this.#treeNodes = [];
+		this.#treeNodesLookup.clear();
+	}
+
 	#updateParentVisibility(node: TreeNode, isVisible: boolean): void {
 		const parentNode = node.parent;
 		if (!parentNode) {

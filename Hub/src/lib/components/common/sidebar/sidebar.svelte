@@ -354,7 +354,7 @@
 	size="icon"
 	class="size-7 {overlay
 		? 'absolute'
-		: 'fixed'} z-[40] !bg-background hover:scale-105 hover:!bg-background/90 {buttonRounding()} {!isResizing
+		: 'fixed'} z-[10] !bg-background hover:scale-105 hover:!bg-background/90 {buttonRounding()} {!isResizing
 		? 'transition-all duration-300'
 		: ''}"
 	style="{toInlineStyles(buttonPosition())}; pointer-events: auto; {buttonShadow()} {isResizing
@@ -432,7 +432,7 @@
 	<Button
 		class="{overlay
 			? 'absolute'
-			: 'fixed'} z-5 border-0 bg-transparent p-0 ring-0 transition-colors outline-none hover:!bg-primary/50 focus-visible:ring-0 {isHorizontal
+			: 'fixed'} z-40 border-0 bg-transparent p-0 ring-0 transition-colors outline-none hover:!bg-primary/50 focus-visible:ring-0 {isHorizontal
 			? 'cursor-ew-resize'
 			: 'cursor-ns-resize'} {!isResizing ? 'transition-all duration-300' : ''}"
 		onmousedown={startResize}

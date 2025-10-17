@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { page } from '$app/stores';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { areaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
 	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
@@ -34,9 +33,8 @@
 		});
 
 		const downloadId = crypto.randomUUID();
-		downloadsStore.downloads.push({
+		downloadsStore.addDownload({
 			id: downloadId,
-			url: `${$page.url}/${downloadId}`,
 			status: 'pending'
 		});
 

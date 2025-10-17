@@ -8,6 +8,7 @@
 	import LoaderIcon from 'lucide-svelte/icons/loader';
 	import XCircleIcon from 'lucide-svelte/icons/x-circle';
 	import { toast } from 'svelte-sonner';
+	import { page } from '$app/stores';
 
 	// Track which URLs have been recently copied
 	let copiedUrls = $state<Set<string>>(new Set());
@@ -23,14 +24,11 @@
 	} as const;
 
 	/**
-	 * Removes a download from the queue by URL.
-	 * @param url - The URL of the download to remove.
+	 * Removes a download from the queue by ID.
+	 * @param id - The ID of the download to remove.
 	 */
-	function removeDownload(url: string) {
-		const index = downloadsStore.downloads.findIndex((download) => download.url === url);
-		if (index !== -1) {
-			downloadsStore.downloads.splice(index, 1);
-		}
+	function removeDownload(id: string) {
+		downloadsStore.removeDownload(id);
 	}
 
 	/**
@@ -82,16 +80,20 @@
 	function getStatusIcon(status: string) {
 		return statusConfig[status as keyof typeof statusConfig]?.icon ?? statusConfig.pending.icon;
 	}
+
+	function getDownloadUrl(downloadId: string): string {
+		return `${$page.url}/${downloadId}`;
+	}
 </script>
 
 <div class="section">
 	<h4>Download Queue</h4>
-	{#if downloadsStore.downloads.length > 0}
+	{#if downloadsStore.getDownloads().length > 0}
 		<ul class="selected-list">
-			{#each downloadsStore.downloads as download}
+			{#each downloadsStore.getDownloads() as download}
 				<li class="download-item">
 					<div class="download-info">
-						<span class="download-url" title={download.url}>{download.id}</span>
+						<span class="download-url" title={getDownloadUrl(download.id)}>{download.id}</span>
 					</div>
 					<div class="download-actions">
 						<div title={getStatusText(download.status)}>
@@ -110,10 +112,10 @@
 							variant="ghost"
 							size="sm"
 							class="download-clipboard-btn"
-							onclick={() => copyUrlToClipboard(download.url)}
+							onclick={() => copyUrlToClipboard(getDownloadUrl(download.id))}
 							title="Copy URL to clipboard"
 						>
-							{#if copiedUrls.has(download.url)}
+							{#if copiedUrls.has(getDownloadUrl(download.id))}
 								<ClipboardCheckIcon size={14} />
 							{:else}
 								<ClipboardIcon size={14} />
@@ -124,7 +126,7 @@
 								variant="ghost"
 								size="sm"
 								class="download-action-btn"
-								onclick={() => window.open(download.url, '_blank')}
+								onclick={() => window.open(getDownloadUrl(download.id), '_blank')}
 								title="Open download"
 							>
 								📥
@@ -134,7 +136,7 @@
 							variant="ghost"
 							size="sm"
 							class="download-remove-btn"
-							onclick={() => removeDownload(download.url)}
+							onclick={() => removeDownload(download.id)}
 							title="Remove from queue"
 						>
 							×
@@ -143,7 +145,7 @@
 				</li>
 			{/each}
 		</ul>
-		<p class="count">{downloadsStore.downloads.length} download(s) in queue</p>
+		<p class="count">{downloadsStore.getDownloads().length} download(s) in queue</p>
 	{:else}
 		<p class="no-selection">No downloads in queue</p>
 	{/if}

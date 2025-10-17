@@ -24,9 +24,11 @@
 	import type { TreeviewConfig } from '$lib/types/treeview.js';
 	import { getAppConfigAsync } from '$lib/utils/app-config-provider.js';
 	import { Bot } from 'lucide-svelte';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import TabBarTriggers from './tabBarTriggers.json';
 	import ChatToggleBar from '$lib/components/common/services/uprn2/chat/chat-toggle-bar.svelte';
+	import { mapInteractionStore } from '$lib/stores/services/uprn2/map-interaction-store.svelte';
+	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
 
 	const webMapStore: WebMapStore = $state(new WebMapStore());
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
@@ -144,6 +146,12 @@
 		return () => {
 			window.removeEventListener('resize', handleResize);
 		};
+	});
+
+	onDestroy(() => {
+		areaSelectionStore.cleanup();
+		dataSelectionStore.cleanup();
+		mapInteractionStore.cleanup();
 	});
 </script>
 

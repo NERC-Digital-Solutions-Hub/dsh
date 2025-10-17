@@ -2,6 +2,7 @@
 	import * as TreeView from '$lib/components/ui/tree-view/index.js';
 	import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store';
 	import { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
+	import { onDestroy } from 'svelte';
 	import Node from './node.svelte';
 
 	/**
@@ -26,6 +27,10 @@
 		}
 
 		treeviewStore.initialize(webMap.layers.toArray(), treeviewConfigStore);
+	});
+
+	onDestroy(() => {
+		treeviewStore.cleanup();
 	});
 
 	/**

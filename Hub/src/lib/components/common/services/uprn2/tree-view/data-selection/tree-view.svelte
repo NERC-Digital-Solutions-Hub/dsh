@@ -28,6 +28,7 @@
 	import FieldFilterMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
 	import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store.js';
 	import { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
+	import { onDestroy } from 'svelte';
 	import { DownloadState, TreeLayerNode, type TreeNode } from '../types.js';
 	import Node from './node.svelte';
 
@@ -74,6 +75,11 @@
 		};
 
 		initializeWebMap();
+	});
+
+	onDestroy(() => {
+		console.log('Cleaning up treeviewStore...');
+		treeviewStore.cleanup();
 	});
 
 	/**

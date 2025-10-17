@@ -183,7 +183,11 @@ class AreaSelectionStore {
 	}
 
 	getNameFieldForCurrentLayer(): string | null {
-		if (!this.layerHighlightState || !this.layerHighlightState.featureLayerView) {
+		if (
+			!this.layerHighlightState ||
+			!this.layerHighlightState.featureLayerView ||
+			!this.layerHighlightState.featureLayerView.layer
+		) {
 			return null;
 		}
 
@@ -200,6 +204,16 @@ class AreaSelectionStore {
 		}
 
 		return nameField;
+	}
+
+	cleanup(): void {
+		this.resetSelectedAreas();
+		this.clearHoveredArea();
+		this.lastAddedArea = null;
+		this.lastRemovedArea = null;
+		this.currentHoveredArea = null;
+		this.#cachedNames.clear();
+		this.#nameFields = [];
 	}
 }
 

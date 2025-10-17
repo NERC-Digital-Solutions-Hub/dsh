@@ -67,6 +67,10 @@ class DataSelectionStore {
 		this.updateLayerSelection(node, state);
 	}
 
+	public cleanup(): void {
+		this.DataSelections.clear();
+	}
+
 	/**
 	 * Get the DownloadState for a node.
 	 *
