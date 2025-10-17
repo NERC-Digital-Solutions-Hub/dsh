@@ -1,8 +1,8 @@
 <script lang="ts">
 	/**
-	 * Sidebar Layout Component
+	 * Sidebar root Component
 	 *
-	 * A layout wrapper that manages the sidebar and main content positioning.
+	 * A root wrapper that manages the sidebar and main content positioning.
 	 * Automatically adjusts flex direction based on sidebar position.
 	 *
 	 * Props:

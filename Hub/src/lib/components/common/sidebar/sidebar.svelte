@@ -352,7 +352,7 @@
 	onclick={onToggle}
 	variant="default"
 	size="icon"
-	class="{overlay
+	class="size-7 {overlay
 		? 'absolute'
 		: 'fixed'} z-[40] !bg-background hover:scale-105 hover:!bg-background/90 {buttonRounding()} {!isResizing
 		? 'transition-all duration-300'

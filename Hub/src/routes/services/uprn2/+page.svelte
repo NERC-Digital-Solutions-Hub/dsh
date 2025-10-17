@@ -11,9 +11,9 @@
 	import UprnMapView from '$lib/components/common/services/uprn2/uprn-map-view/uprn-map-view.svelte';
 	import UprnTabBarContent from '$lib/components/common/services/uprn2/uprn-tab-bar/uprn-tab-bar-content.svelte';
 	import UprnTabBar from '$lib/components/common/services/uprn2/uprn-tab-bar/uprn-tab-bar.svelte';
-	import SidebarLayout from '$lib/components/common/sidebar/sidebar-layout.svelte';
-	import { SidebarPosition } from '$lib/components/common/sidebar/sidebar-position';
-	import Sidebar from '$lib/components/common/sidebar/sidebar.svelte';
+	import * as Sidebar from '$lib/components/common/sidebar/index.js';
+	import * as SidebarLayout from '$lib/components/common/sidebar-layout/index.js';
+	import { SidebarPosition } from '$lib/components/common/sidebar/sidebar-position.js';
 	import { Toaster } from '$lib/components/ui/sonner';
 	import { areaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
 	import FieldFilterMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
@@ -26,6 +26,7 @@
 	import { Bot } from 'lucide-svelte';
 	import { onMount } from 'svelte';
 	import TabBarTriggers from './tabBarTriggers.json';
+	import ChatToggleBar from '$lib/components/common/services/uprn2/chat/chat-toggle-bar.svelte';
 
 	const webMapStore: WebMapStore = $state(new WebMapStore());
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
@@ -37,13 +38,9 @@
 
 	// === Sidebar State ===
 	let mainSidebarOpen = $state(true);
-	let mainSidebarPosition = $state<(typeof SidebarPosition)[keyof typeof SidebarPosition]>(
-		SidebarPosition.LEFT
-	);
+	let mainSidebarPosition = $state<Sidebar.PositionType>(SidebarPosition.LEFT);
 	let chatSidebarOpen = $state(true);
-	let chatSidebarPosition = $state<(typeof SidebarPosition)[keyof typeof SidebarPosition]>(
-		SidebarPosition.BOTTOM
-	);
+	let chatSidebarPosition = $state<Sidebar.PositionType>(SidebarPosition.BOTTOM);
 	let mainSidebarSizes: SizeConfig[] = $state([]);
 	let windowWidth = $state(typeof window !== 'undefined' ? window.innerWidth : 1280);
 
@@ -155,7 +152,7 @@
 <FieldSelectionMenu {fieldFilterMenuStore} />
 <AreaSelectionToast />
 
-<SidebarLayout
+<Sidebar.Root
 	isOpen={mainSidebarOpen}
 	onToggle={toggleMainSidebar}
 	position={mainSidebarPosition}
@@ -163,11 +160,21 @@
 	minSize={mainSidebarMinSize}
 >
 	{#snippet sidebarContent()}
-		<div class="relative flex h-full w-full min-w-0 overflow-visible">
-			<div class="flex h-full w-full min-w-0 flex-col overflow-hidden">
-				<UprnTabBar value={currentTab} triggers={TabBarTriggers} onValueChange={onTabValueChange}>
-					<UprnTabBarContent value="define-areas">
-						{#if webMapStore.isLoaded}
+		<div class="relative flex h-full w-full min-w-0 flex-col overflow-visible">
+			<SidebarLayout.Header>
+				<div class="flex h-full w-full min-w-0 flex-col overflow-hidden">
+					<UprnTabBar
+						value={currentTab}
+						triggers={TabBarTriggers}
+						onValueChange={onTabValueChange}
+					/>
+				</div>
+			</SidebarLayout.Header>
+
+			<SidebarLayout.Content>
+				{#if currentTab === 'define-areas'}
+					<UprnTabBarContent>
+						{#if currentTab === 'define-areas' && webMapStore.isLoaded}
 							<AreaSelectionTreeview
 								webMap={webMapStore.data}
 								treeviewStore={areaSelectionTreeviewStore}
@@ -175,7 +182,10 @@
 							/>
 						{/if}
 					</UprnTabBarContent>
-					<UprnTabBarContent value="select-data">
+				{/if}
+
+				{#if currentTab === 'select-data'}
+					<UprnTabBarContent>
 						{#if webMapStore.isLoaded}
 							<DataSelectionTreeview
 								webMap={webMapStore.data}
@@ -184,19 +194,28 @@
 							/>
 						{/if}
 					</UprnTabBarContent>
-					<UprnTabBarContent value="export">
-						{#snippet footer()}
-							<ExportMenuFooter onExportSuccess={switchToDownloadsTab} />
-						{/snippet}
+				{/if}
+
+				{#if currentTab === 'export'}
+					<UprnTabBarContent>
 						<ExportMenu {webMapStore} {areaSelectionTreeviewStore} {fieldFilterMenuStore} />
 					</UprnTabBarContent>
-					<UprnTabBarContent value="downloads">
+				{/if}
+
+				{#if currentTab === 'downloads'}
+					<UprnTabBarContent>
 						<DownloadsMenu />
 					</UprnTabBarContent>
-				</UprnTabBar>
-			</div>
+				{/if}
+			</SidebarLayout.Content>
 
-			<Sidebar
+			<SidebarLayout.Footer>
+				{#if currentTab === 'export'}
+					<ExportMenuFooter onExportSuccess={switchToDownloadsTab} />
+				{/if}
+			</SidebarLayout.Footer>
+
+			<Sidebar.Sidebar
 				isOpen={chatSidebarOpen}
 				onToggle={toggleChatSidebar}
 				position={chatSidebarPosition}
@@ -207,7 +226,9 @@
 				{#snippet children()}
 					<UprnChat />
 				{/snippet}
-			</Sidebar>
+			</Sidebar.Sidebar>
+
+			<!-- <ChatToggleBar /> -->
 		</div>
 	{/snippet}
 
@@ -219,7 +240,7 @@
 			menuPosition="top-right"
 		/>
 	{/snippet}
-</SidebarLayout>
+</Sidebar.Root>
 
 <style>
 	:global(.card-content) {

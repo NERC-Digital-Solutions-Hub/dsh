@@ -8,3 +8,5 @@ export const SidebarPosition = Object.freeze({
 	TOP: 'top',
 	BOTTOM: 'bottom'
 });
+
+export default SidebarPosition;
