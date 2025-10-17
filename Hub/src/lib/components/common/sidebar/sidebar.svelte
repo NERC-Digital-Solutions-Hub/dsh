@@ -432,7 +432,7 @@
 	<Button
 		class="{overlay
 			? 'absolute'
-			: 'fixed'} z-50 border-0 bg-transparent p-0 ring-0 transition-colors outline-none hover:!bg-primary/50 focus-visible:ring-0 {isHorizontal
+			: 'fixed'} z-5 border-0 bg-transparent p-0 ring-0 transition-colors outline-none hover:!bg-primary/50 focus-visible:ring-0 {isHorizontal
 			? 'cursor-ew-resize'
 			: 'cursor-ns-resize'} {!isResizing ? 'transition-all duration-300' : ''}"
 		onmousedown={startResize}
