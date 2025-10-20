@@ -77,11 +77,6 @@
 		initializeWebMap();
 	});
 
-	onDestroy(() => {
-		console.log('Cleaning up treeviewStore...');
-		treeviewStore.cleanup();
-	});
-
 	/**
 	 * Loads feature layers recursively to ensure they are ready for field access.
 	 * @param layers - Array of layers to load.

@@ -179,6 +179,7 @@
 
 	onDestroy(() => {
 		areaSelectionStore.cleanup();
+		areaSelectionTreeviewStore.cleanup();
 		dataSelectionStore.cleanup();
 		mapInteractionStore.cleanup();
 	});

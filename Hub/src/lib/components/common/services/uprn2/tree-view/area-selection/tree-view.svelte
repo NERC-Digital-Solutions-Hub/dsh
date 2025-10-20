@@ -29,10 +29,6 @@
 		treeviewStore.initialize(webMap.layers.toArray(), treeviewConfigStore);
 	});
 
-	onDestroy(() => {
-		treeviewStore.cleanup();
-	});
-
 	/**
 	 * Loads area selection layers recursively.
 	 * Ensures all layers in group layers are loaded.
