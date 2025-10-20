@@ -42,6 +42,9 @@
 	let areaSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
 	let uprnDownloadService: UprnDownloadService | undefined = $state();
 	let aiUprnChatbotService: AiUprnChatbotService | undefined = $state();
+	let isUprnDownloadServiceAvailable: boolean = $state(false);
+	let isAiUprnChatbotServiceAvailable: boolean = $state(false);
+	let fieldsToHide: Set<string> = $state(new Set());
 
 	// === Sidebar State ===
 	let mainSidebarOpen = $state(true);
@@ -129,10 +132,26 @@
 			appConfig.serviceUprn2Config.areaSelectionTreeviewConfig as TreeviewConfig
 		);
 
-		const uprnDownloadServiceEndpoints: UprnDownloadEndpoints | undefined = appConfig.serviceUprn2Config.uprnDownloadServiceEndpoints;
-		const aiUprnChatbotServiceEndpoints: AiUprnChatbotEndpoints | undefined = appConfig.serviceUprn2Config.aiUprnChatbotServiceEndpoints;
+		const uprnDownloadServiceEndpoints: UprnDownloadEndpoints | undefined =
+			appConfig.serviceUprn2Config.uprnDownloadServiceEndpoints;
+		const aiUprnChatbotServiceEndpoints: AiUprnChatbotEndpoints | undefined =
+			appConfig.serviceUprn2Config.aiUprnChatbotServiceEndpoints;
 		uprnDownloadService = new UprnDownloadService(uprnDownloadServiceEndpoints);
 		aiUprnChatbotService = new AiUprnChatbotService(aiUprnChatbotServiceEndpoints);
+
+		isUprnDownloadServiceAvailable = await uprnDownloadService.getHealth();
+		if (isUprnDownloadServiceAvailable)
+			console.log('[uprn-2/page] UPRN Download Service is available');
+		else console.warn('[uprn-2/page] UPRN Download Service is NOT available');
+
+		isAiUprnChatbotServiceAvailable = await aiUprnChatbotService.getHealth();
+		if (isAiUprnChatbotServiceAvailable)
+			console.log('[uprn-2/page] AI UPRN Chatbot Service is available');
+		else console.warn('[uprn-2/page] AI UPRN Chatbot Service is NOT available');
+
+		fieldsToHide = new Set(
+			appConfig.serviceUprn2Config.dataSelectionTreeviewConfig?.fieldsToHide || []
+		);
 
 		await webMapStore.initializeAsync({
 			portalUrl: appConfig.serviceUprn2Config.portalUrl,
@@ -216,7 +235,13 @@
 
 				{#if currentTab === 'downloads'}
 					<UprnTabBarContent>
-						<DownloadsMenu />
+						{#if !uprnDownloadService || !isUprnDownloadServiceAvailable}
+							<p class="p-4 text-center text-sm text-gray-500">
+								Download service is not available.
+							</p>
+						{:else}
+							<DownloadsMenu {webMapStore} {uprnDownloadService} {fieldsToHide} />
+						{/if}
 					</UprnTabBarContent>
 				{/if}
 			</SidebarLayout.Content>

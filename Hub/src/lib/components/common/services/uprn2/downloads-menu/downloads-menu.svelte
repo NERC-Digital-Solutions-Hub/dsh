@@ -9,9 +9,30 @@
 	import XCircleIcon from 'lucide-svelte/icons/x-circle';
 	import { toast } from 'svelte-sonner';
 	import { page } from '$app/stores';
+	import type { UprnDownloadService } from '$lib/services/uprn-download-service';
+	import type { WebMapStore } from '$lib/stores/services/uprn2/web-map-store.svelte';
+	import {
+		DownloadStatus,
+		JobRequestResponseType,
+		JobStatusType,
+		type UprnDownloadGetJobStatusesRequest,
+		type UprnDownloadGetJobStatusesResponse,
+		type UprnDownloadJobRequest,
+		type UprnDownloadJobRequestResponse
+	} from '$lib/types/uprn';
+	import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+	import { onMount } from 'svelte';
 
-	// Track which URLs have been recently copied
-	let copiedUrls = $state<Set<string>>(new Set());
+	type Props = {
+		webMapStore: WebMapStore;
+		uprnDownloadService: UprnDownloadService;
+		fieldsToHide?: Set<string>;
+	};
+
+	const { webMapStore, uprnDownloadService, fieldsToHide }: Props = $props();
+
+	let copiedUrls = $state<Set<string>>(new Set()); // track which URLs have been recently copied
+	const downloads = $derived.by(() => downloadsStore.getDownloads());
 
 	/**
 	 * Status configuration for downloads, mapping status to colors, text, and icons.
@@ -21,14 +42,120 @@
 		'in-progress': { color: '#2563eb', text: 'In Progress', icon: LoaderIcon },
 		failed: { color: '#dc2626', text: 'Failed', icon: XCircleIcon },
 		pending: { color: '#6b7280', text: 'Pending', icon: Spinner }
-	} as const;
+	} as const; // TODO: move into config file.
+
+	onMount(() => {
+		const interval = setInterval(() => {
+			checkJobStatuses();
+		}, 5000); // Check every 5 seconds
+
+		return () => {
+			clearInterval(interval);
+		};
+	});
+
+	$effect(() => {
+		if (!downloads) {
+			return;
+		}
+
+		// if downloads has changed, then submit a request to the uprn download service.;
+		if (downloads.length <= 0 || !uprnDownloadService) {
+			return;
+		}
+
+		const submitRequests = async () => {
+			for (const download of downloads) {
+				if (download.externalId || download.status !== DownloadStatus.Pending) {
+					continue;
+				}
+
+				const request: UprnDownloadJobRequest = {
+					exports: {
+						areaSelectionLayer: {
+							index: download.areaSelection.layerIndex,
+							areas: download.areaSelection.areas
+						},
+						dataSelectionLayers: download.dataSelections.map((selection) => {
+							return {
+								index: selection.layerIndex,
+								fields: ['*'] // TODO: Temp fix due to the backend API having a limit on field character length.
+							};
+						})
+					}
+				};
+
+				const response: UprnDownloadJobRequestResponse | undefined =
+					await uprnDownloadService.requestJob(request);
+				if (!response || response.type === JobRequestResponseType.Error) {
+					console.error('[downloads-menu] Failed to submit download request.', response);
+					continue;
+				}
+
+				download.externalId = response.guid;
+				download.status = DownloadStatus.InProgress;
+
+				downloadsStore.updateDownloadStatus(download);
+			}
+		};
+
+		submitRequests();
+	});
+
+	async function checkJobStatuses() {
+		if (downloads.length <= 0 || !uprnDownloadService) {
+			return;
+		}
+
+		const request: UprnDownloadGetJobStatusesRequest = {
+			jobs: downloads
+				.filter((download) => download.externalId)
+				.map((download) => download.externalId!)
+		};
+
+		const response: UprnDownloadGetJobStatusesResponse | undefined =
+			(await uprnDownloadService.requestJobStatuses(request)) as
+				| UprnDownloadGetJobStatusesResponse
+				| undefined;
+
+		if (!response) {
+			console.error('[downloads-menu] Failed to get job statuses.', response);
+			return;
+		}
+
+		for (const job of response.jobs) {
+			const download = downloads.find((download) => download.externalId === job.guid);
+			if (!download) {
+				console.warn('[downloads-menu] Received job status for unknown download:', job.guid);
+				continue;
+			}
+
+			switch (job.status.type) {
+				case JobStatusType.Submitted:
+				case JobStatusType.Processing:
+					download.status = DownloadStatus.InProgress;
+					break;
+				case JobStatusType.Completed:
+					download.status = DownloadStatus.Completed;
+					break;
+				case JobStatusType.Failed:
+					download.status = DownloadStatus.Failed;
+					break;
+				default:
+					console.warn('[downloads-menu] Unknown job status type:', job.status.type);
+					break;
+			}
+
+			downloadsStore.updateDownloadStatus(download);
+		}
+	}
 
 	/**
-	 * Removes a download from the queue by ID.
-	 * @param id - The ID of the download to remove.
+	 * Removes a download from the queue by its local ID.
+	 * @param localId - The local ID of the download to remove.
 	 */
-	function removeDownload(id: string) {
-		downloadsStore.removeDownload(id);
+	function removeDownload(localId: string) {
+		downloadsStore.removeDownload(localId);
 	}
 
 	/**
@@ -81,19 +208,25 @@
 		return statusConfig[status as keyof typeof statusConfig]?.icon ?? statusConfig.pending.icon;
 	}
 
-	function getDownloadUrl(downloadId: string): string {
-		return `${$page.url}/${downloadId}`;
+	function getDownloadUrl(externalId: string): string {
+		return `${$page.url}/${externalId}`;
 	}
 </script>
 
 <div class="section">
 	<h4>Download Queue</h4>
-	{#if downloadsStore.getDownloads().length > 0}
+	{#if downloads.length > 0}
 		<ul class="selected-list">
-			{#each downloadsStore.getDownloads() as download}
+			{#each downloads as download}
 				<li class="download-item">
 					<div class="download-info">
-						<span class="download-url" title={getDownloadUrl(download.id)}>{download.id}</span>
+						{#if !download.externalId}
+							<span class="download-url" title="Pending...">Pending...</span>
+						{:else}
+							<span class="download-url" title={getDownloadUrl(download.externalId)}
+								>{download.externalId}</span
+							>
+						{/if}
 					</div>
 					<div class="download-actions">
 						<div title={getStatusText(download.status)}>
@@ -108,25 +241,27 @@
 								<StatusIcon size={14} class={download.status === 'in-progress' ? 'spinning' : ''} />
 							</Button>
 						</div>
-						<Button
-							variant="ghost"
-							size="sm"
-							class="download-clipboard-btn"
-							onclick={() => copyUrlToClipboard(getDownloadUrl(download.id))}
-							title="Copy URL to clipboard"
-						>
-							{#if copiedUrls.has(getDownloadUrl(download.id))}
-								<ClipboardCheckIcon size={14} />
-							{:else}
-								<ClipboardIcon size={14} />
-							{/if}
-						</Button>
-						{#if download.status === 'completed'}
+						{#if download.externalId}
+							<Button
+								variant="ghost"
+								size="sm"
+								class="download-clipboard-btn"
+								onclick={() => copyUrlToClipboard(getDownloadUrl(download.externalId!))}
+								title="Copy URL to clipboard"
+							>
+								{#if copiedUrls.has(getDownloadUrl(download.externalId))}
+									<ClipboardCheckIcon size={14} />
+								{:else}
+									<ClipboardIcon size={14} />
+								{/if}
+							</Button>
+						{/if}
+						{#if download.externalId && download.status === 'completed'}
 							<Button
 								variant="ghost"
 								size="sm"
 								class="download-action-btn"
-								onclick={() => window.open(getDownloadUrl(download.id), '_blank')}
+								onclick={() => window.open(getDownloadUrl(download.externalId!), '_blank')}
 								title="Open download"
 							>
 								📥
@@ -136,7 +271,7 @@
 							variant="ghost"
 							size="sm"
 							class="download-remove-btn"
-							onclick={() => removeDownload(download.id)}
+							onclick={() => removeDownload(download.localId)}
 							title="Remove from queue"
 						>
 							×
@@ -145,7 +280,7 @@
 				</li>
 			{/each}
 		</ul>
-		<p class="count">{downloadsStore.getDownloads().length} download(s) in queue</p>
+		<p class="count">{downloads.length} download(s) in queue</p>
 	{:else}
 		<p class="no-selection">No downloads in queue</p>
 	{/if}

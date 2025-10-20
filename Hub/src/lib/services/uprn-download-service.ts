@@ -15,6 +15,20 @@ export class UprnDownloadService {
 	#endpoints: UprnDownloadEndpoints;
 
 	constructor(endpoints: UprnDownloadEndpoints) {
+		if (!endpoints) {
+			throw new Error('UprnDownloadService endpoints configuration is required');
+		}
+
+		if (
+			!endpoints.baseUrl ||
+			!endpoints.healthRoute ||
+			!endpoints.requestJobRoute ||
+			!endpoints.requestJobStatusesRoute ||
+			!endpoints.getAreaSelectionLimitsRoute
+		) {
+			throw new Error('UprnDownloadService endpoints configuration is incomplete');
+		}
+
 		this.#endpoints = endpoints;
 	}
 
@@ -58,7 +72,12 @@ export class UprnDownloadService {
 			});
 
 			if (!response.ok) {
-				console.error('Failed to request job:', response.statusText);
+				console.error(
+					'Failed to request job:',
+					response.statusText,
+					'request:',
+					JSON.stringify(request)
+				);
 				return undefined;
 			}
 
@@ -75,11 +94,11 @@ export class UprnDownloadService {
 	 * @param request - The request containing job GUIDs to check
 	 * @returns The job statuses response, or undefined if the request failed
 	 */
-	public async getJobStatuses(
+	public async requestJobStatuses(
 		request: UprnDownloadGetJobStatusesRequest
 	): Promise<UprnDownloadGetJobStatusesResult | undefined> {
 		try {
-			const url = `${this.#endpoints.baseUrl}${this.#endpoints.getJobStatusesRoute}`;
+			const url = `${this.#endpoints.baseUrl}${this.#endpoints.requestJobStatusesRoute}`;
 			const response = await fetch(url, {
 				method: 'POST',
 				headers: {

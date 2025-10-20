@@ -6,10 +6,21 @@ import type { SvelteSet } from 'svelte/reactivity';
 export interface DataSelection {
 	/** The ID of the layer this selection belongs to */
 	layerId: string;
-	/** A human-readable name for the selection, typically the layer's name */
-	name: string;
+	layer: __esri.Layer | __esri.Sublayer;
 	/** A set of field names selected from the layer */
 	fields: SvelteSet<string>;
+}
+
+export interface AreaSelectionInfo {
+	layerId: string;
+	layerIndex: number;
+	areas: string[];
+}
+
+export interface DataSelectionInfo {
+	layerId: string;
+	layerIndex: number;
+	fields: string[];
 }
 
 /**
@@ -26,35 +37,46 @@ export const DownloadStatus = Object.freeze({
 /** Type representing the possible download statuses. */
 export type DownloadStatus = (typeof DownloadStatus)[keyof typeof DownloadStatus];
 
+export const JobStatusType = Object.freeze({
+	Submitted: 'submitted',
+	Processing: 'processing',
+	Completed: 'completed',
+	Failed: 'failed'
+});
+
+export type JobStatusType = (typeof JobStatusType)[keyof typeof JobStatusType];
+
 /**
  * An entry representing a download task.
  * Includes the unique ID and current status of the download.
  * Used in the DownloadsStore to manage user downloads.
  */
 export type DownloadEntry = {
-	id: string;
+	localId: string;
+	externalId?: string;
 	status: DownloadStatus;
+	areaSelection: AreaSelectionInfo;
+	dataSelections: DataSelectionInfo[];
 };
 
 export type UprnDownloadEndpoints = {
 	baseUrl: string;
 	healthRoute: string;
 	requestJobRoute: string;
-	getJobStatusesRoute: string;
+	requestJobStatusesRoute: string;
 	getAreaSelectionLimitsRoute: string;
 };
 
 export type UprnDownloadHealthResponse = {
-	status: UprnDownloadHealthStatus;
+	status: EndpointHealthStatus;
 	uptime: number;
 };
 
-export const UprnDownloadHealthStatuses = Object.freeze({
+export const EndpointHealthStatus = Object.freeze({
 	ok: 'ok'
 });
 
-export type UprnDownloadHealthStatus =
-	(typeof UprnDownloadHealthStatuses)[keyof typeof UprnDownloadHealthStatuses];
+export type EndpointHealthStatus = (typeof EndpointHealthStatus)[keyof typeof EndpointHealthStatus];
 
 export type UrpnDownloadAreaSelectionLimitResponse = {
 	layerName: string;
@@ -82,10 +104,18 @@ export type UprnDownloadJobRequestDataSelectionLayer = {
 };
 
 export type UprnDownloadJobRequestResponse = {
-	type: string;
+	type: JobRequestResponseType;
 	guid: string;
 	message?: string;
 };
+
+export const JobRequestResponseType = Object.freeze({
+	Success: 'success',
+	Error: 'error'
+});
+
+export type JobRequestResponseType =
+	(typeof JobRequestResponseType)[keyof typeof JobRequestResponseType];
 
 export type UprnDownloadGetJobStatusesRequest = {
 	jobs: string[];
@@ -97,7 +127,7 @@ export type UprnDownloadQueueStatus = {
 };
 
 export type UprnDownloadJobStatus = {
-	type: string;
+	type: JobStatusType;
 	fileSize: number;
 	message: string;
 };
@@ -122,8 +152,14 @@ export type UprnDownloadGetJobStatusesResult =
 
 export type AiUprnChatbotEndpoints = {
 	baseUrl: string;
+	healthRoute: string;
 	chatRoute: string;
 	chatStreamRoute: string;
+};
+
+export type AiUprnChatbotHealthResponse = {
+	status: EndpointHealthStatus;
+	uptime: number;
 };
 
 export type AiUprnChatbotRequest = {

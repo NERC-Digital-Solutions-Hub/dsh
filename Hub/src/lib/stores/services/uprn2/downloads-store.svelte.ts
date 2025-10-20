@@ -1,5 +1,11 @@
 import { SvelteMap } from 'svelte/reactivity';
-import { db, addUserDownload, deleteUserDownload, getUserDownloads } from '$lib/db';
+import {
+	db,
+	addUserDownload,
+	deleteUserDownload,
+	getUserDownloads,
+	updateUserDownload
+} from '$lib/db';
 import { browser } from '$app/environment';
 import { type DownloadEntry, DownloadStatus } from '$lib/types/uprn';
 
@@ -18,14 +24,20 @@ class DownloadsStore {
 	}
 
 	addDownload(entry: DownloadEntry) {
-		console.log('Adding download:', entry);
-		this.#downloads.set(entry.id, entry);
-		addUserDownload(entry.id);
+		console.log('[downloads-store] Adding download:', entry);
+		this.#downloads.set(entry.localId, entry);
+		addUserDownload(entry.localId, entry.areaSelection, entry.dataSelections);
 	}
 
-	removeDownload(id: string) {
-		this.#downloads.delete(id);
-		deleteUserDownload(id);
+	updateDownloadStatus(entry: DownloadEntry) {
+		console.log('[downloads-store] Updating download status:', entry);
+		this.#downloads.set(entry.localId, { ...entry });
+		updateUserDownload(entry.localId, entry.externalId, entry.areaSelection, entry.dataSelections);
+	}
+
+	removeDownload(localId: string) {
+		this.#downloads.delete(localId);
+		deleteUserDownload(localId);
 	}
 
 	getDownloads(): DownloadEntry[] {
@@ -40,9 +52,11 @@ class DownloadsStore {
 
 		console.log('Loaded downloads from DB:', storedDownloads);
 		storedDownloads.forEach((download) => {
-			this.#downloads.set(download.downloadId, {
-				id: download.downloadId,
-				status: DownloadStatus.Pending
+			this.#downloads.set(download.localId, {
+				localId: download.localId,
+				status: DownloadStatus.Pending,
+				areaSelection: download.areaSelection,
+				dataSelections: download.dataSelections
 			});
 		});
 	}

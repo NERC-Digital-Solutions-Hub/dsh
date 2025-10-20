@@ -24,7 +24,7 @@ class DataSelectionStore {
 	 */
 	public addSelection(dataSelection: DataSelection) {
 		this.DataSelections.set(dataSelection.layerId, dataSelection);
-		toast.success(`'${dataSelection.name}' Added`);
+		toast.success(`'${dataSelection.layer.title}' Added`);
 	}
 
 	/**
@@ -39,7 +39,7 @@ class DataSelectionStore {
 	public removeSelection(layerId: string) {
 		const removed = this.DataSelections.get(layerId);
 		this.DataSelections.delete(layerId);
-		toast.success(`'${removed?.name}' Removed`);
+		toast.success(`'${removed?.layer.title}' Removed`);
 	}
 
 	/**
@@ -132,7 +132,7 @@ class DataSelectionStore {
 		switch (state) {
 			case DownloadState.Active:
 				if (!selection && !this.isGroupLayer(node)) {
-					selection = this.createAndAddDataSelection(node.id, node.layer.title || '');
+					selection = this.createAndAddDataSelection(node.id, node.layer);
 				}
 
 				for (const child of node.children || []) {
@@ -168,7 +168,7 @@ class DataSelectionStore {
 				if (!selection) {
 					selection = this.createAndAddDataSelection(
 						node.featureLayer.id,
-						node.featureLayer.title || ''
+						node.featureLayer
 					);
 				}
 
@@ -249,13 +249,13 @@ class DataSelectionStore {
 	 * created object is returned for immediate use.
 	 *
 	 * @param id - The layer id to use for the DataSelection.layerId.
-	 * @param name - The human readable name for the selection.
+	 * @param layer - The layer to associate with the DataSelection.
 	 * @returns The newly created DataSelection.
 	 */
-	private createAndAddDataSelection(id: string, name: string): DataSelection {
+	private createAndAddDataSelection(id: string, layer: __esri.Layer | __esri.Sublayer): DataSelection {
 		const selection: DataSelection = {
 			layerId: id,
-			name: name,
+			layer: layer,
 			fields: new SvelteSet()
 		};
 

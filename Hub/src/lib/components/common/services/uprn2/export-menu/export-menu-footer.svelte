@@ -4,7 +4,8 @@
 	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
 	import { downloadsStore } from '$lib/stores/services/uprn2/downloads-store.svelte';
 	import { toast } from 'svelte-sonner';
-	import { DownloadStatus } from '$lib/types/uprn';
+	import { DownloadStatus, type AreaSelectionInfo, type DataSelectionInfo } from '$lib/types/uprn';
+	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 
 	type Props = {
 		onExportSuccess?: () => void;
@@ -29,17 +30,37 @@
 
 		console.log('Starting export...');
 
-		toast.info('Export started successfully.', {
-			duration: 4000
-		});
+		const addDownload = async () => {
+			const areaSelection: AreaSelectionInfo = {
+				layerId: areaSelectionStore.layerHighlightState.featureLayerView?.layer.id || '',
+				layerIndex: areaSelectionStore.layerHighlightState.featureLayerView?.layer.layerId || 0,
+				areas: await areaSelectionStore.getAreaNamesById(
+					areaSelectionStore.layerHighlightState.areaInfos.map((area) => area.id)
+				)
+			};
 
-		const downloadId = crypto.randomUUID();
-		downloadsStore.addDownload({
-			id: downloadId,
-			status: DownloadStatus.Pending
-		});
+			const dataSelections: DataSelectionInfo[] = dataSelectionStore.DataSelections.values()
+				.map((selection) => {
+					return {
+						layerId: selection.layerId,
+						layerIndex: selection.layer instanceof FeatureLayer ? selection.layer.layerId! : -1,
+						fields: Array.from(selection.fields)
+					};
+				})
+				.toArray();
 
-		onExportSuccess?.();
+			const localId = crypto.randomUUID();
+			downloadsStore.addDownload({
+				localId: localId,
+				status: DownloadStatus.Pending,
+				areaSelection,
+				dataSelections
+			});
+
+			onExportSuccess?.();
+		};
+
+		addDownload();
 	}
 </script>
 

@@ -1,34 +1,35 @@
+import {
+	DownloadStatus,
+	type AreaSelectionInfo,
+	type DataSelectionInfo,
+	type DownloadEntry
+} from '$lib/types/uprn';
 import Dexie, { type Table } from 'dexie';
 
 export interface DbUprnSelection {
 	id?: number;
-	areas: DbUprnAreaSelection;
-	data: DbUprnDataSelection[];
+	areas: DbUprnAreaSelectionInfo;
+	data: DbUprnDataSelectionInfo[];
 	createdAt: number;
 }
 
-export interface DbUprnDataSelection {
+export interface DbUprnAreaSelectionInfo extends AreaSelectionInfo {
 	id?: number;
-	layerId: string;
-	fields: string[];
 }
 
-export interface DbUprnAreaSelection {
+export interface DbUprnDataSelectionInfo extends DataSelectionInfo {
 	id?: number;
-	layerId: string;
-	areaIds: string[];
 }
 
-export interface DbUserDownload {
+export interface DbUserDownload extends DownloadEntry {
 	id?: number;
-	downloadId: string;
 	createdAt: number;
 }
 
 class AppDB extends Dexie {
 	uprnSelections!: Table<DbUprnSelection, number>;
-	areaSelections!: Table<DbUprnAreaSelection, number>;
-	dataSelections!: Table<DbUprnDataSelection, number>;
+	areaSelections!: Table<DbUprnAreaSelectionInfo, number>;
+	dataSelections!: Table<DbUprnDataSelectionInfo, number>;
 	userDownloads!: Table<DbUserDownload, number>;
 
 	constructor() {
@@ -39,7 +40,7 @@ class AppDB extends Dexie {
 			uprnSelections: '++id, createdAt',
 			areaSelections: '++id, layerId, *areaIds',
 			dataSelections: '++id, layerId, *fields',
-			userDownloads: '++id, &downloadId, createdAt'
+			userDownloads: '++id, &localId, createdAt'
 		});
 	}
 }
@@ -59,11 +60,39 @@ export const deleteSelection = async (id: number) => await db.uprnSelections.del
 
 export const clearAll = async () => await db.uprnSelections.clear();
 
-export const addUserDownload = async (downloadId: string) =>
-	await db.userDownloads.add({ downloadId, createdAt: Date.now() });
+export const addUserDownload = async (
+	localId: string,
+	areaSelection: AreaSelectionInfo,
+	dataSelections: DataSelectionInfo[]
+) =>
+	await db.userDownloads.add({
+		localId,
+		areaSelection,
+		dataSelections,
+		status: DownloadStatus.Pending,
+		createdAt: Date.now()
+	});
 
+export const updateUserDownload = async (
+	localId: string,
+	externalId?: string,
+	areaSelection?: AreaSelectionInfo,
+	dataSelections?: DataSelectionInfo[]
+) => {
+	// Build update object without undefined values
+	const update: Record<string, any> = {};
+	if (externalId !== undefined) update.externalId = externalId;
+	if (areaSelection !== undefined) update.areaSelection = areaSelection;
+	if (dataSelections !== undefined) update.dataSelections = dataSelections;
+
+	if (Object.keys(update).length === 0) {
+		return; // Nothing to update
+	}
+
+	await db.userDownloads.where('localId').equals(localId).modify(update);
+};
 export const getUserDownloads = async () =>
 	await db.userDownloads.orderBy('createdAt').reverse().toArray();
 
 export const deleteUserDownload = async (downloadId: string) =>
-	await db.userDownloads.where('downloadId').equals(downloadId).delete();
+	await db.userDownloads.where('localId').equals(downloadId).delete();
