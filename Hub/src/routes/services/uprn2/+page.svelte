@@ -170,13 +170,7 @@
 	{#snippet sidebarContent()}
 		<div class="relative flex h-full w-full min-w-0 flex-col overflow-visible">
 			<SidebarLayout.Header>
-				<div class="flex h-full w-full min-w-0 flex-col overflow-hidden">
-					<UprnTabBar
-						value={currentTab}
-						triggers={TabBarTriggers}
-						onValueChange={onTabValueChange}
-					/>
-				</div>
+				<UprnTabBar value={currentTab} triggers={TabBarTriggers} onValueChange={onTabValueChange} />
 			</SidebarLayout.Header>
 
 			<SidebarLayout.Content>
@@ -236,7 +230,7 @@
 				{/snippet}
 			</Sidebar.Sidebar>
 
-			<!-- <ChatToggleBar /> -->
+			<ChatToggleBar />
 		</div>
 	{/snippet}
 
