@@ -1,5 +1,6 @@
 import type {
 	AiUprnChatbotEndpoints,
+	AiUprnChatbotHealthResponse,
 	AiUprnChatbotRequest,
 	AiUprnChatbotResponse
 } from '$lib/types/uprn';
@@ -12,6 +13,27 @@ export class AiUprnChatbotService {
 
 	constructor(endpoints: AiUprnChatbotEndpoints) {
 		this.#endpoints = endpoints;
+	}
+
+	/**
+	 * Check the health status of the AI UPRN chatbot service.
+	 * @returns true if the service is healthy, false otherwise
+	 */
+	public async getHealth(): Promise<boolean> {
+		try {
+			const url = `${this.#endpoints.baseUrl}${this.#endpoints.healthRoute}`;
+			const response = await fetch(url);
+
+			if (!response.ok) {
+				return false;
+			}
+
+			const data: AiUprnChatbotHealthResponse = await response.json();
+			return data.status === 'ok';
+		} catch (error) {
+			console.error('Health check failed:', error);
+			return false;
+		}
 	}
 
 	/**
