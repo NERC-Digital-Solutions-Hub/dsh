@@ -1,0 +1,1 @@
+import{$ as t,a0 as b,B as h,a1 as k,a2 as B}from"./CssMMRv9.js";function u(r,a){return r===a||r?.[B]===a}function c(r={},a,f,S){return t(()=>{var i,s;return b(()=>{i=s,s=[],h(()=>{r!==f(...s)&&(a(r,...s),i&&u(f(...i),r)&&a(null,...i))})}),()=>{k(()=>{s&&u(f(...s),r)&&a(null,...s)})}}),r}export{c as b};
