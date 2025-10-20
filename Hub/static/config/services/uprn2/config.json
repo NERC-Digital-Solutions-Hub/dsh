@@ -5,6 +5,18 @@
         "urlPrefix": "https://nercdsh.dev.azure.manchester.ac.uk",
         "proxyUrl": "/proxy/Java/proxy.jsp"
     },
+    "uprnDownloadServiceEndpoints": {
+        "baseUrl": "http://127.0.0.1:3000",
+        "healthRoute": "health",
+        "requestJobRoute": "request-job",
+        "getJobStatusesRoute": "get-job-statuses",
+        "getAreaSelectionLimitsRoute": "get-area-selection-limits"
+    },
+    "aiUprnChatbotServiceEndpoints": {
+        "baseUrl": "",
+        "chatRoute": "chat",
+        "chatStreamRoute": "chat_stream"
+    },
     "mainSidebarSizes": [
         {
             "breakpoint": 1280,

@@ -29,14 +29,19 @@
 	import ChatToggleBar from '$lib/components/common/services/uprn2/chat/chat-toggle-bar.svelte';
 	import { mapInteractionStore } from '$lib/stores/services/uprn2/map-interaction-store.svelte';
 	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
+	import type { AiUprnChatbotEndpoints, UprnDownloadEndpoints } from '$lib/types/uprn';
+	import { UprnDownloadService } from '$lib/services/uprn-download-service';
+	import { AiUprnChatbotService } from '$lib/services/ai-uprn-chatbot-service';
 
 	const webMapStore: WebMapStore = $state(new WebMapStore());
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
 	const areaSelectionTreeviewStore: TreeviewStore = $state(new TreeviewStore());
 
-	let currentTab = $state('define-areas');
+	let currentTab: string = $state('define-areas');
 	let dataSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
 	let areaSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
+	let uprnDownloadService: UprnDownloadService | undefined = $state();
+	let aiUprnChatbotService: AiUprnChatbotService | undefined = $state();
 
 	// === Sidebar State ===
 	let mainSidebarOpen = $state(true);
@@ -123,6 +128,11 @@
 		areaSelectionTreeviewConfig = new TreeviewConfigStore(
 			appConfig.serviceUprn2Config.areaSelectionTreeviewConfig as TreeviewConfig
 		);
+
+		const uprnDownloadServiceEndpoints: UprnDownloadEndpoints | undefined = appConfig.serviceUprn2Config.uprnDownloadServiceEndpoints;
+		const aiUprnChatbotServiceEndpoints: AiUprnChatbotEndpoints | undefined = appConfig.serviceUprn2Config.aiUprnChatbotServiceEndpoints;
+		uprnDownloadService = new UprnDownloadService(uprnDownloadServiceEndpoints);
+		aiUprnChatbotService = new AiUprnChatbotService(aiUprnChatbotServiceEndpoints);
 
 		await webMapStore.initializeAsync({
 			portalUrl: appConfig.serviceUprn2Config.portalUrl,
