@@ -4,6 +4,7 @@
 	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
 	import { downloadsStore } from '$lib/stores/services/uprn2/downloads-store.svelte';
 	import { toast } from 'svelte-sonner';
+	import { DownloadStatus } from '$lib/types/uprn';
 
 	type Props = {
 		onExportSuccess?: () => void;
@@ -35,7 +36,7 @@
 		const downloadId = crypto.randomUUID();
 		downloadsStore.addDownload({
 			id: downloadId,
-			status: 'pending'
+			status: DownloadStatus.Pending
 		});
 
 		onExportSuccess?.();

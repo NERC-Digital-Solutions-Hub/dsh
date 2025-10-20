@@ -1,18 +1,12 @@
 import { SvelteMap } from 'svelte/reactivity';
 import { db, addUserDownload, deleteUserDownload, getUserDownloads } from '$lib/db';
 import { browser } from '$app/environment';
-
-export type DownloadEntry = {
-	id: string;
-	status: 'pending' | 'in-progress' | 'completed' | 'failed';
-};
+import { type DownloadEntry, DownloadStatus } from '$lib/types/uprn';
 
 /**
  * Store for managing the current downloads.
  */
 class DownloadsStore {
-	public downloads: DownloadEntry[] = $state<DownloadEntry[]>([]);
-
 	#downloads: SvelteMap<string, DownloadEntry> = $state(new SvelteMap<string, DownloadEntry>());
 
 	constructor() {
@@ -27,10 +21,6 @@ class DownloadsStore {
 		console.log('Adding download:', entry);
 		this.#downloads.set(entry.id, entry);
 		addUserDownload(entry.id);
-		console.log(
-			'tables:',
-			db.tables.map((t) => t.name)
-		);
 	}
 
 	removeDownload(id: string) {
@@ -52,7 +42,7 @@ class DownloadsStore {
 		storedDownloads.forEach((download) => {
 			this.#downloads.set(download.downloadId, {
 				id: download.downloadId,
-				status: 'pending'
+				status: DownloadStatus.Pending
 			});
 		});
 	}
