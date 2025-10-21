@@ -1,6 +1,9 @@
 import { browser } from '$app/environment';
 import { SvelteMap } from 'svelte/reactivity';
-
+import WebMap from '@arcgis/core/WebMap';
+import PortalItem from '@arcgis/core/portal/PortalItem';
+import esriConfig from '@arcgis/core/config.js';
+import * as urlUtils from '@arcgis/core/core/urlUtils.js';
 export type WebMapStoreParams = {
 	portalUrl?: string | null;
 	itemId: string;
@@ -77,7 +80,6 @@ export class WebMapStore {
 			return;
 		}
 
-		const esriConfig = await loadEsriConfig();
 		esriConfig.portalUrl = portalUrl as string;
 		console.log(esriConfig);
 
@@ -85,7 +87,7 @@ export class WebMapStore {
 			return;
 		}
 
-		const { addProxyRule } = await loadUrlUtils();
+		const { addProxyRule } = urlUtils;
 		console.log('Adding proxy rule for portal traffic');
 		addProxyRule({
 			urlPrefix: proxy?.urlPrefix as string,
@@ -97,8 +99,6 @@ export class WebMapStore {
 		if (this.data) {
 			return;
 		}
-
-		const [WebMap, PortalItem] = await Promise.all([loadWebMapCtor(), loadPortalItemCtor()]);
 
 		const portalItem = new PortalItem({
 			id: itemId
@@ -138,61 +138,4 @@ export class WebMapStore {
 	getWebmap(): __esri.WebMap | null {
 		return this.data;
 	}
-}
-
-let webMapCtorPromise: Promise<(typeof import('@arcgis/core/WebMap'))['default']> | null = null;
-let portalItemCtorPromise: Promise<
-	(typeof import('@arcgis/core/portal/PortalItem'))['default']
-> | null = null;
-let esriConfigPromise: Promise<(typeof import('@arcgis/core/config.js'))['default']> | null = null;
-let urlUtilsPromise: Promise<typeof import('@arcgis/core/core/urlUtils.js')> | null = null;
-
-async function loadWebMapCtor() {
-	if (!browser) {
-		throw new Error('Attempted to load WebMap outside the browser');
-	}
-
-	if (!webMapCtorPromise) {
-		webMapCtorPromise = import('@arcgis/core/WebMap').then((module) => module.default);
-	}
-
-	return webMapCtorPromise;
-}
-
-async function loadPortalItemCtor() {
-	if (!browser) {
-		throw new Error('Attempted to load PortalItem outside the browser');
-	}
-
-	if (!portalItemCtorPromise) {
-		portalItemCtorPromise = import('@arcgis/core/portal/PortalItem').then(
-			(module) => module.default
-		);
-	}
-
-	return portalItemCtorPromise;
-}
-
-async function loadEsriConfig() {
-	if (!browser) {
-		throw new Error('Attempted to load esriConfig outside the browser');
-	}
-
-	if (!esriConfigPromise) {
-		esriConfigPromise = import('@arcgis/core/config.js').then((module) => module.default);
-	}
-
-	return esriConfigPromise;
-}
-
-async function loadUrlUtils() {
-	if (!browser) {
-		throw new Error('Attempted to load urlUtils outside the browser');
-	}
-
-	if (!urlUtilsPromise) {
-		urlUtilsPromise = import('@arcgis/core/core/urlUtils.js');
-	}
-
-	return urlUtilsPromise;
 }

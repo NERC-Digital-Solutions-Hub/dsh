@@ -305,7 +305,6 @@
 	 * Destroys the map view and cleans up any associated event listeners.
 	 */
 	function cleanup() {
-		mapInteractionStore.cleanup();
 		if (mapView) {
 			mapView.destroy();
 		}

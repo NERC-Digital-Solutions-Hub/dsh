@@ -354,7 +354,7 @@ export class TreeviewStore {
 		}
 
 		const node = new TreeLayerNode(layer.id, layer.title as string, layer, [], parent);
-		layer.visible = nodeConfig?.isVisibleOnInit ?? false;
+		layer.visible = nodeConfig?.isHidden ? layer.visible : (nodeConfig?.isVisibleOnInit ?? false); // if hidden, keep layer visibility as is
 		this.#visibilityState.set(layer.id, layer.visible);
 
 		if (this.#isFeatureLayer(layer) && nodeConfig?.showFields) {

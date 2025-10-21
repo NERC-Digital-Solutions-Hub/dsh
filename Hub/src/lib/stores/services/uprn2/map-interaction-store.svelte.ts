@@ -285,7 +285,7 @@ class MapInteractionStore {
 		this.pointerInsideMap = true;
 		this.interactableLayers = new Set();
 
-		console.log('[map-interaction-store] Cleaned up');
+		console.log('[map-interaction-store] cleaned up');
 	}
 
 	/**

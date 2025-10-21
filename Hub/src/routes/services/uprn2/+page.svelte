@@ -206,7 +206,7 @@
 			<SidebarLayout.Content>
 				{#if currentTab === 'define-areas'}
 					<UprnTabBarContent>
-						{#if currentTab === 'define-areas' && webMapStore.isLoaded}
+						{#if webMapStore.isLoaded}
 							<AreaSelectionTreeview
 								webMap={webMapStore.data}
 								treeviewStore={areaSelectionTreeviewStore}

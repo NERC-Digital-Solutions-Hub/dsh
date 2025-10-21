@@ -214,6 +214,8 @@ class AreaSelectionStore {
 		this.currentHoveredArea = null;
 		this.#cachedNames.clear();
 		this.#nameFields = [];
+
+		console.log('[area-selection-store] cleaned up.');
 	}
 }
 
