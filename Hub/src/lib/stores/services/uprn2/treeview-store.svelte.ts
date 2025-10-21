@@ -158,7 +158,6 @@ export class TreeviewStore {
 			return;
 		}
 
-		console.log(`Setting visibility of node ${nodeId} to ${isVisible}`, config, node);
 		// handle visibility groups
 		if (config.visibilityDependencyIds?.length) {
 			this.#updateDependencyVisibility(node, isVisible);
@@ -169,7 +168,6 @@ export class TreeviewStore {
 		}
 
 		const groupId: string = config.visibilityGroupId;
-		console.log(`Node ${nodeId} is part of visibility group ${groupId}`);
 		let activeNodes: string[] | undefined = this.#activeInVisibilityGroup.get(groupId);
 		if (!activeNodes) {
 			activeNodes = [];
