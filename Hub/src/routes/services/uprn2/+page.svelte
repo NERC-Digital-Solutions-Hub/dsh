@@ -266,7 +266,7 @@
 				{/snippet}
 			</Sidebar.Sidebar>
 
-			<ChatToggleBar />
+			<!-- <ChatToggleBar /> -->
 		</div>
 	{/snippet}
 
