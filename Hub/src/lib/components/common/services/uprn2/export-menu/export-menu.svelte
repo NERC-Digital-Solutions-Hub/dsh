@@ -154,7 +154,7 @@
 			{#each [...dataSelectionStore.DataSelections.values()] as data}
 				<li class="data-item">
 					<span class="data-name">
-						{data.name}
+						{data.layer.title}
 					</span>
 					<div class="data-actions">
 						{#if data.fields}
