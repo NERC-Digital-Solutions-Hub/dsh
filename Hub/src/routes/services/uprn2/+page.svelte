@@ -262,7 +262,13 @@
 				openIcon={Bot}
 			>
 				{#snippet children()}
-					<UprnChat />
+					{#if !aiUprnChatbotService || !isAiUprnChatbotServiceAvailable}
+						<p class="p-4 text-center text-sm text-gray-500">
+							AI UPRN Chatbot service is not available.
+						</p>
+					{:else}
+						<UprnChat {aiUprnChatbotService} />
+					{/if}
 				{/snippet}
 			</Sidebar.Sidebar>
 
