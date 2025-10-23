@@ -5,6 +5,9 @@ import type {
 	AiUprnChatbotResponse
 } from '$lib/types/uprn';
 
+// TODO: Each endpoint needs to be moved into their own class so loading and error can be handled
+// more gracefully and consistently across the app.
+
 /**
  * Service for managing the AI UPRN chatbot.
  */
