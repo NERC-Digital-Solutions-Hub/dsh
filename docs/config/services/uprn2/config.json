@@ -13,7 +13,7 @@
         "getAreaSelectionLimitsRoute": "/get-area-selection-limits"
     },
     "aiUprnChatbotServiceEndpoints": {
-        "baseUrl": "",
+        "baseUrl": "http://127.0.0.1:4000",
         "healthRoute": "/health",
         "chatRoute": "/chat",
         "chatStreamRoute": "/chat_stream"
@@ -47,12 +47,14 @@
             {
                 "_name": "Administrative Areas",
                 "id": "08051aec5d9e4d8fbf96f8bec3564484",
-                "isHidden": true
+                "isHidden": true,
+                "inheritanceGroupId": "group:hidden"
             },
             {
                 "_name": "Tiling Schemes",
                 "id": "772b1fff49734e73981247de9f50f4f3",
-                "isHidden": true
+                "isHidden": true,
+                "inheritanceGroupId": "group:hidden"
             },
             {
                 "_name": "ClimateJust",
@@ -185,6 +187,13 @@
                     "visibilityDependencyIds",
                     "inheritanceGroupId",
                     "customConverterId"
+                ]
+            },
+            {
+                "id": "group:hidden",
+                "inheritedProperties": [
+                    "inheritanceGroupId",
+                    "isHidden"
                 ]
             }
         ],
