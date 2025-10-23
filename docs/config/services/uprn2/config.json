@@ -13,7 +13,7 @@
         "getAreaSelectionLimitsRoute": "/get-area-selection-limits"
     },
     "aiUprnChatbotServiceEndpoints": {
-        "baseUrl": "http://127.0.0.1:4000",
+        "baseUrl": "https://172.166.133.156/uprn-chatbot",
         "healthRoute": "/health",
         "chatRoute": "/chat",
         "chatStreamRoute": "/chat_stream"
