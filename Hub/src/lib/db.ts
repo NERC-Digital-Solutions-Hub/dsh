@@ -58,7 +58,7 @@ export const updateSelection = async (id: number, patch: Partial<DbUprnSelection
 
 export const deleteSelection = async (id: number) => await db.uprnSelections.delete(id);
 
-export const clearAll = async () => await db.uprnSelections.clear();
+export const clearSelections = async () => await db.uprnSelections.clear();
 
 export const addUserDownload = async (
 	localId: string,
@@ -96,3 +96,10 @@ export const getUserDownloads = async () =>
 
 export const deleteUserDownload = async (downloadId: string) =>
 	await db.userDownloads.where('localId').equals(downloadId).delete();
+
+export const clearUserDownloads = async () => await db.userDownloads.clear();
+
+export const clearDatabase = async () => {
+	await db.uprnSelections.clear();
+	await db.userDownloads.clear();
+};

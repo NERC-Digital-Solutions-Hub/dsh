@@ -32,6 +32,7 @@
 	import type { AiUprnChatbotEndpoints, UprnDownloadEndpoints } from '$lib/types/uprn';
 	import { UprnDownloadService } from '$lib/services/uprn-download-service';
 	import { AiUprnChatbotService } from '$lib/services/ai-uprn-chatbot-service';
+	import { clearDatabase } from '$lib/db';
 
 	const webMapStore: WebMapStore = $state(new WebMapStore());
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
@@ -114,11 +115,13 @@
 	function switchToDownloadsTab() {
 		currentTab = 'downloads';
 	}
-
+	
 	/**
 	 * Initializes the application by loading configuration and setting up stores.
 	 */
 	onMount(async () => {
+		await clearDatabase(); // TODO: Remove this line after testing
+
 		const appConfig: AppConfig = await getAppConfigAsync();
 
 		areaSelectionStore.setNameFields(appConfig.serviceUprn2Config.selectionLayersNameFields || []);
