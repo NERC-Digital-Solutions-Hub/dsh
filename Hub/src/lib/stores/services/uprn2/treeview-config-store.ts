@@ -204,6 +204,13 @@ export class TreeviewConfigStore {
 				parentNodeConfig,
 				false
 			),
+			disableVisibilityToggle: this.#getConfigValue(
+				inheritanceGroup,
+				'disableVisibilityToggle',
+				nodeConfig,
+				parentNodeConfig,
+				false
+			),
 			showFields: this.#getConfigValue(
 				inheritanceGroup,
 				'showFields',

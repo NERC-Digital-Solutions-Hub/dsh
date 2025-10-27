@@ -51,8 +51,13 @@ export interface TreeviewNodeConfig {
 	isDownloadable?: boolean;
 	/** Whether this node is visible on initialisation. Optional - defaults to false if not specified */
 	isVisibleOnInit?: boolean;
-	/** Whether this node should be hidden from the user interface. Optional - defaults to false if not specified */
+
+	/** Whether this node should be hidden from the user interface AND have its layer visibility set to false. Optional - defaults to false if not specified */
 	isHidden?: boolean;
+
+	/** Whether this node can have its layer visibility changed. Optional - defaults to false if not specified */
+	disableVisibilityToggle?: boolean;
+
 	/** Whether fields under this node should be shown in the user interface. Optional - defaults to false if not specified */
 	showFields?: boolean;
 	/** Array of node IDs that this node depends on for visibility. Optional - no dependencies if not specified */

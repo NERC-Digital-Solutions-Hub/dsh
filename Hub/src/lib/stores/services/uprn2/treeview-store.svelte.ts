@@ -145,6 +145,11 @@ export class TreeviewStore {
 			throw new Error(`Tree node is not a layer node: ${nodeId}`);
 		}
 
+		const config = this.#findTreeviewItemConfig(nodeId);
+		if (config?.disableVisibilityToggle) {
+			return; // do nothing if visibility toggle is prevented
+		}
+
 		this.#visibilityState.set(nodeId, isVisible);
 		node.layer.visible = isVisible;
 		if (node instanceof TreeFieldNode) {
@@ -152,8 +157,6 @@ export class TreeviewStore {
 		}
 
 		this.#updateParentVisibility(node, isVisible);
-
-		const config = this.#findTreeviewItemConfig(nodeId);
 		if (!config || config.isHidden) {
 			return;
 		}
@@ -352,7 +355,12 @@ export class TreeviewStore {
 		}
 
 		const node = new TreeLayerNode(layer.id, layer.title as string, layer, [], parent);
-		layer.visible = nodeConfig?.isHidden ? layer.visible : (nodeConfig?.isVisibleOnInit ?? false); // if hidden, keep layer visibility as is
+		layer.visible = nodeConfig?.disableVisibilityToggle
+			? layer.visible // if disabled, keep layer visibility as is
+			: nodeConfig?.isHidden
+				? false
+				: (nodeConfig?.isVisibleOnInit ?? false);
+
 		this.#visibilityState.set(layer.id, layer.visible);
 
 		if (this.#isFeatureLayer(layer) && nodeConfig?.showFields) {
