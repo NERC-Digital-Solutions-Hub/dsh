@@ -38,10 +38,10 @@ export const DownloadStatus = Object.freeze({
 export type DownloadStatus = (typeof DownloadStatus)[keyof typeof DownloadStatus];
 
 export const JobStatusType = Object.freeze({
-	Submitted: 'submitted',
-	Processing: 'processing',
-	Completed: 'completed',
-	Failed: 'failed'
+	Submitted: 'SUBMITTED',
+	Processing: 'IN_PROGRESS',
+	Completed: 'COMPLETED',
+	Error: 'ERROR'
 });
 
 export type JobStatusType = (typeof JobStatusType)[keyof typeof JobStatusType];

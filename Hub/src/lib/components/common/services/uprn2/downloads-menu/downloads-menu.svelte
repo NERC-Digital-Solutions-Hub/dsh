@@ -138,7 +138,7 @@
 				case JobStatusType.Completed:
 					download.status = DownloadStatus.Completed;
 					break;
-				case JobStatusType.Failed:
+				case JobStatusType.Error:
 					download.status = DownloadStatus.Failed;
 					break;
 				default:
