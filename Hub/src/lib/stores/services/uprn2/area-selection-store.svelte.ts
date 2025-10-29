@@ -1,8 +1,9 @@
 import { SvelteMap } from 'svelte/reactivity';
 
-export type LayerNameField = {
+export type AreaSelectionFieldInfo = {
 	layerName: string;
-	field: string;
+	nameField: string;
+	codeField: string;
 };
 
 export type LayerHighlightState = {
@@ -27,15 +28,15 @@ class AreaSelectionStore {
 	public lastRemovedArea = $state<HighlightAreaInfo | null>(null);
 	public currentHoveredArea = $state<HighlightAreaInfo | null>(null);
 
-	#nameFields: LayerNameField[] = [];
+	#fieldInfo: AreaSelectionFieldInfo[] = [];
 	#cachedNames: SvelteMap<string, Map<number, string>> = new SvelteMap<
 		string,
 		Map<number, string>
 	>();
 
-	setNameFields(nameFields: LayerNameField[]): void {
-		console.log('Setting name fields:', nameFields);
-		this.#nameFields = nameFields;
+	setFieldInfo(fieldInfo: AreaSelectionFieldInfo[]): void {
+		console.log('Setting field info:', fieldInfo);
+		this.#fieldInfo = fieldInfo;
 	}
 
 	setSelectedLayerView(layerView: __esri.FeatureLayerView): void {
@@ -165,6 +166,35 @@ class AreaSelectionStore {
 		return names.map((n) => n ?? '');
 	}
 
+	async getAreaCodesById(ids: number[]): Promise<string[]> {
+		if (!this.layerHighlightState?.featureLayerView) return [];
+
+		const codeField = this.getCodeFieldForCurrentLayer();
+		if (!codeField) return [];
+
+		const layer = this.layerHighlightState.featureLayerView.layer as __esri.FeatureLayer;
+
+		const objectIdField: string = layer.objectIdField;
+		const result = await layer.queryFeatures({
+			objectIds: ids,
+			outFields: [codeField, objectIdField],
+			returnGeometry: false
+		});
+
+		const codes: (string | undefined)[] = new Array(ids.length);
+		for (const feature of result.features) {
+			const id = feature.attributes[objectIdField] as number;
+			const code = feature.attributes[codeField] as string;
+
+			const index = ids.indexOf(id);
+			if (index !== -1) {
+				codes[index] = code ?? '';
+			}
+		}
+
+		return codes.map((n) => n ?? '');
+	}
+
 	setHoveredArea(id: number, handle: __esri.Handle): void {
 		if (this.currentHoveredArea) {
 			this.clearHoveredArea();
@@ -191,19 +221,40 @@ class AreaSelectionStore {
 			return null;
 		}
 
-		const nameField: string | undefined = this.#nameFields.find(
+		const nameField: string | undefined = this.#fieldInfo.find(
 			(l) => l.layerName === this.layerHighlightState?.featureLayerView?.layer?.title
-		)?.field;
+		)?.nameField;
 
 		if (!nameField) {
 			console.warn(
 				`SelectedAreasStore: No name field configured for layer ${this.layerHighlightState.featureLayerView.layer.title}`,
-				this.#nameFields
+				this.#fieldInfo
 			);
 			return null;
 		}
 
 		return nameField;
+	}
+
+	getCodeFieldForCurrentLayer(): string | null {
+		if (
+			!this.layerHighlightState ||
+			!this.layerHighlightState.featureLayerView ||
+			!this.layerHighlightState.featureLayerView.layer
+		) {
+			return null;
+		}
+		const codeField: string | undefined = this.#fieldInfo.find(
+			(l) => l.layerName === this.layerHighlightState?.featureLayerView?.layer?.title
+		)?.codeField;
+		if (!codeField) {
+			console.warn(
+				`SelectedAreasStore: No code field configured for layer ${this.layerHighlightState.featureLayerView.layer.title}`,
+				this.#fieldInfo
+			);
+			return null;
+		}
+		return codeField;
 	}
 
 	cleanup(): void {
@@ -213,7 +264,7 @@ class AreaSelectionStore {
 		this.lastRemovedArea = null;
 		this.currentHoveredArea = null;
 		this.#cachedNames.clear();
-		this.#nameFields = [];
+		this.#fieldInfo = [];
 
 		console.log('[area-selection-store] cleaned up.');
 	}

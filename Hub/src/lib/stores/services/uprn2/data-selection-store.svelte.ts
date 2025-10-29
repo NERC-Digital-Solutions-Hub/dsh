@@ -166,10 +166,7 @@ class DataSelectionStore {
 		switch (state) {
 			case DownloadState.Active:
 				if (!selection) {
-					selection = this.createAndAddDataSelection(
-						node.featureLayer.id,
-						node.featureLayer
-					);
+					selection = this.createAndAddDataSelection(node.featureLayer.id, node.featureLayer);
 				}
 
 				selection.fields.add(node.field.name);
@@ -252,7 +249,10 @@ class DataSelectionStore {
 	 * @param layer - The layer to associate with the DataSelection.
 	 * @returns The newly created DataSelection.
 	 */
-	private createAndAddDataSelection(id: string, layer: __esri.Layer | __esri.Sublayer): DataSelection {
+	private createAndAddDataSelection(
+		id: string,
+		layer: __esri.Layer | __esri.Sublayer
+	): DataSelection {
 		const selection: DataSelection = {
 			layerId: id,
 			layer: layer,

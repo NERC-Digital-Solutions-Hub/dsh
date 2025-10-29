@@ -10,7 +10,8 @@
         "healthRoute": "/health",
         "requestJobRoute": "/request-job",
         "requestJobStatusesRoute": "/request-job-statuses",
-        "getAreaSelectionLimitsRoute": "/get-area-selection-limits"
+        "getAreaSelectionLimitsRoute": "/get-area-selection-limits",
+        "fetchDownloadRoute": "/fetch-download"
     },
     "aiUprnChatbotServiceEndpoints": {
         "baseUrl": "https://172.166.133.156/uprn-chatbot",
@@ -312,51 +313,63 @@
     "selectionLayersNameFields": [
         {
             "layerName": "Built Up Areas (Dec 22) GB",
-            "field": "BUA22NM"
+            "nameField": "BUA22NM",
+            "codeField": "BUA22CD"
         },
         {
             "layerName": "Lower layer Super Output Areas (Dec 21) - EW Boundaries Fully Clipped V8",
-            "field": "LSOA21NM"
+            "nameField": "LSOA21NM",
+            "codeField": "LSOA21CD"
         },
         {
             "layerName": "Middle layer Super Output Areas (Dec 21) - EW Boundaries Fully Clipped V6",
-            "field": "MSOA21NM"
+            "nameField": "MSOA21NM",
+            "codeField": "MSOA21CD"
         },
         {
             "layerName": "Wards (Dec 23) - UK Boundaries Fully Clipped",
-            "field": "WD23NM"
+            "nameField": "WD23NM",
+            "codeField": "WD23CD"
         },
         {
             "layerName": "Counties and Unitary Authorities (Dec 23) - UK Boundaries Fully Clipped",
-            "field": "CTYUA23NM"
+            "nameField": "CTYUA23NM",
+            "codeField": "CTYUA23CD"
         },
         {
             "layerName": "Upper Tier Local Authorities (Dec 22) - UK Boundaries Fully Clipped",
-            "field": "UTLA22NM"
+            "nameField": "UTLA22NM",
+            "codeField": "UTLA22CD"
         },
         {
             "layerName": "Tiles 1 km",
-            "field": "TILENAME"
+            "nameField": "TILENAME",
+            "codeField": "TILENAME"
         },
         {
             "layerName": "Tiles 5 km",
-            "field": "TILENAME"
+            "nameField": "TILENAME",
+            "codeField": "TILENAME"
         },
         {
             "layerName": "Tiles 10 km",
-            "field": "TILENAME"
+            "nameField": "TILENAME",
+            "codeField": "TILENAME"
         },
         {
             "layerName": "Tiles 20 km",
-            "field": "TILENAME"
+            "nameField": "TILENAME",
+            "codeField": "TILENAME"
         },
         {
             "layerName": "Tiles 50 km",
-            "field": "TILENAME"
+            "nameField": "TILENAME",
+            "codeField": "TILENAME"
         },
         {
             "layerName": "Tiles 100 km",
-            "field": "TILENAME"
+            "nameField": "TILENAME",
+            "codeField": "TILENAME"
         }
     ]
 }

@@ -34,7 +34,7 @@
 			const areaSelection: AreaSelectionInfo = {
 				layerId: areaSelectionStore.layerHighlightState.featureLayerView?.layer.id || '',
 				layerIndex: areaSelectionStore.layerHighlightState.featureLayerView?.layer.layerId || 0,
-				areas: await areaSelectionStore.getAreaNamesById(
+				areas: await areaSelectionStore.getAreaCodesById(
 					areaSelectionStore.layerHighlightState.areaInfos.map((area) => area.id)
 				)
 			};

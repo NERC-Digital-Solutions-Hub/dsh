@@ -15,6 +15,7 @@
 		areaSelectionTreeviewStore: TreeviewStore;
 		fieldFilterMenuStore: FilterFieldMenuStore;
 	};
+	
 	const { webMapStore, areaSelectionTreeviewStore, fieldFilterMenuStore }: Props = $props();
 
 	type AreaInfo = {

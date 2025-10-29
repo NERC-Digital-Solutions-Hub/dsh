@@ -1,4 +1,4 @@
-import type { LayerNameField } from '$lib/stores/services/uprn2/area-selection-store.svelte';
+import type { AreaSelectionFieldInfo } from '$lib/stores/services/uprn2/area-selection-store.svelte';
 import type { TreeviewConfig } from '$lib/types/treeview';
 import type { AiUprnChatbotEndpoints, UprnDownloadEndpoints } from '$lib/types/uprn';
 
@@ -18,7 +18,7 @@ export type ServiceUprnConfig = {
 	proxy?: Proxy | null;
 	dataSelectionTreeviewConfig?: TreeviewConfig;
 	areaSelectionTreeviewConfig?: TreeviewConfig;
-	selectionLayersNameFields?: LayerNameField[];
+	selectionLayersNameFields?: AreaSelectionFieldInfo[];
 	fieldsToHide?: string[];
 };
 
@@ -31,7 +31,7 @@ export type ServiceUprn2Config = {
 	mainSidebarSizes?: SizeConfig[];
 	dataSelectionTreeviewConfig?: TreeviewConfig;
 	areaSelectionTreeviewConfig?: TreeviewConfig;
-	selectionLayersNameFields?: LayerNameField[];
+	selectionLayersNameFields?: AreaSelectionFieldInfo[];
 };
 
 export type Proxy = {

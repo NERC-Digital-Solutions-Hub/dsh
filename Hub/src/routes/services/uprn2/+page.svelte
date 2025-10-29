@@ -115,7 +115,7 @@
 	function switchToDownloadsTab() {
 		currentTab = 'downloads';
 	}
-	
+
 	/**
 	 * Initializes the application by loading configuration and setting up stores.
 	 */
@@ -124,7 +124,7 @@
 
 		const appConfig: AppConfig = await getAppConfigAsync();
 
-		areaSelectionStore.setNameFields(appConfig.serviceUprn2Config.selectionLayersNameFields || []);
+		areaSelectionStore.setFieldInfo(appConfig.serviceUprn2Config.selectionLayersNameFields || []);
 		mainSidebarSizes = appConfig.serviceUprn2Config.mainSidebarSizes || [];
 
 		dataSelectionTreeviewConfig = new TreeviewConfigStore(

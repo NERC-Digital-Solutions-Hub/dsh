@@ -73,17 +73,21 @@
 				const request: UprnDownloadJobRequest = {
 					exports: {
 						areaSelectionLayer: {
-							index: download.areaSelection.layerIndex,
+							remoteId: download.areaSelection.layerId,
 							areas: download.areaSelection.areas
 						},
 						dataSelectionLayers: download.dataSelections.map((selection) => {
 							return {
-								index: selection.layerIndex,
-								fields: ['*'] // TODO: Temp fix due to the backend API having a limit on field character length.
+								remoteId: selection.layerId,
+								fields: selection.fields.filter(
+									(field) => !fieldsToHide || !fieldsToHide.has(field)
+								)
 							};
 						})
 					}
 				};
+
+				console.log('[downloads-menu] Submitting download request:', request);
 
 				const response: UprnDownloadJobRequestResponse | undefined =
 					await uprnDownloadService.requestJob(request);
@@ -209,7 +213,7 @@
 	}
 
 	function getDownloadUrl(externalId: string): string {
-		return `${$page.url}/${externalId}`;
+		return uprnDownloadService.getDownloadUrl(externalId);
 	}
 </script>
 

@@ -39,6 +39,7 @@ export type DownloadStatus = (typeof DownloadStatus)[keyof typeof DownloadStatus
 
 export const JobStatusType = Object.freeze({
 	Submitted: 'SUBMITTED',
+	Queued: 'QUEUED',
 	Processing: 'IN_PROGRESS',
 	Completed: 'COMPLETED',
 	Error: 'ERROR'
@@ -65,6 +66,7 @@ export type UprnDownloadEndpoints = {
 	requestJobRoute: string;
 	requestJobStatusesRoute: string;
 	getAreaSelectionLimitsRoute: string;
+	fetchDownloadRoute: string;
 };
 
 export type UprnDownloadHealthResponse = {
@@ -94,12 +96,12 @@ export type UprnDownloadJobRequestExport = {
 };
 
 export type UprnDownloadJobRequestAreaSelectionLayer = {
-	index: number;
+	remoteId: string;
 	areas: string[];
 };
 
 export type UprnDownloadJobRequestDataSelectionLayer = {
-	index: number;
+	remoteId: string;
 	fields: string[];
 };
 
@@ -128,8 +130,9 @@ export type UprnDownloadQueueStatus = {
 
 export type UprnDownloadJobStatus = {
 	type: JobStatusType;
-	fileSize: number;
-	message: string;
+	fileSize: number | undefined;
+	message: string | undefined;
+	index: number | undefined;
 };
 
 export type UprnDownloadJobStatusItem = {

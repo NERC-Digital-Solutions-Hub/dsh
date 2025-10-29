@@ -27,7 +27,8 @@ export class UprnDownloadService {
 			!endpoints.healthRoute ||
 			!endpoints.requestJobRoute ||
 			!endpoints.requestJobStatusesRoute ||
-			!endpoints.getAreaSelectionLimitsRoute
+			!endpoints.getAreaSelectionLimitsRoute ||
+			!endpoints.fetchDownloadRoute
 		) {
 			throw new Error('UprnDownloadService endpoints configuration is incomplete');
 		}
@@ -65,6 +66,8 @@ export class UprnDownloadService {
 		request: UprnDownloadJobRequest
 	): Promise<UprnDownloadJobRequestResponse | undefined> {
 		try {
+			console.log('[uprn-download-service] requesting job with request:', request);
+
 			const url = `${this.#endpoints.baseUrl}${this.#endpoints.requestJobRoute}`;
 			const response = await fetch(url, {
 				method: 'POST',
@@ -145,5 +148,11 @@ export class UprnDownloadService {
 			console.error('Error getting selection area limits:', error);
 			return undefined;
 		}
+	}
+
+	public getDownloadUrl(guid: string): string {
+		const base = this.#endpoints.baseUrl.replace(/\/+$/, '');
+		const route = this.#endpoints.fetchDownloadRoute.replace(/\/+$/, '');
+		return `${base}${route}/${encodeURIComponent(guid)}`;
 	}
 }
