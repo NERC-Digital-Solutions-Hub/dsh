@@ -61,8 +61,10 @@
 	/** Whether this node has visibility controls (leaf nodes). */
 	const hasVisibility = !isFolder;
 
+	let isInitialised = false;
+
 	/** Reactive state for whether the folder is open. */
-	let isOpen = $state(false);
+	let isOpen = $state<boolean>(false);
 
 	/** Reactive state for whether the node is checked/visible. */
 	let isChecked = $state<boolean>(false);
@@ -75,6 +77,15 @@
 
 	/** Reactive state for filter animation. */
 	let isAnimatingOut = $state(false);
+
+	$effect(() => {
+		if (isInitialised) {
+			return;
+		}
+
+		isOpen = treeviewConfigStore?.getItemConfig(node.id)?.isOpenOnInit ?? false;
+		isInitialised = true;
+	});
 
 	// Update checked state and icon based on node properties
 	$effect(() => {

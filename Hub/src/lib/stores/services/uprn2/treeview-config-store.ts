@@ -211,6 +211,13 @@ export class TreeviewConfigStore {
 				parentNodeConfig,
 				false
 			),
+			isOpenOnInit: this.#getConfigValue(
+				inheritanceGroup,
+				'isOpenOnInit',
+				nodeConfig,
+				parentNodeConfig,
+				false
+			),
 			showFields: this.#getConfigValue(
 				inheritanceGroup,
 				'showFields',

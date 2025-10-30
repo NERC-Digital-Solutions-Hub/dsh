@@ -58,6 +58,9 @@ export interface TreeviewNodeConfig {
 	/** Whether this node can have its layer visibility changed. Optional - defaults to false if not specified */
 	disableVisibilityToggle?: boolean;
 
+	/** Whether this node is expanded/open on initialisation. Optional - defaults to false if not specified */
+	isOpenOnInit?: boolean;
+
 	/** Whether fields under this node should be shown in the user interface. Optional - defaults to false if not specified */
 	showFields?: boolean;
 	/** Array of node IDs that this node depends on for visibility. Optional - no dependencies if not specified */

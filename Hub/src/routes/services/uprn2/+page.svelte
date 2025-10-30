@@ -207,7 +207,7 @@
 			</SidebarLayout.Header>
 
 			<SidebarLayout.Content>
-				{#if currentTab === 'define-areas'}
+				<div hidden={currentTab !== 'define-areas'}>
 					<UprnTabBarContent>
 						{#if webMapStore.isLoaded}
 							<AreaSelectionTreeview
@@ -217,9 +217,9 @@
 							/>
 						{/if}
 					</UprnTabBarContent>
-				{/if}
+				</div>
 
-				{#if currentTab === 'select-data'}
+				<div hidden={currentTab !== 'select-data'}>
 					<UprnTabBarContent>
 						{#if webMapStore.isLoaded}
 							<DataSelectionTreeview
@@ -229,15 +229,15 @@
 							/>
 						{/if}
 					</UprnTabBarContent>
-				{/if}
+				</div>
 
-				{#if currentTab === 'export'}
+				<div hidden={currentTab !== 'export'}>
 					<UprnTabBarContent>
 						<ExportMenu {webMapStore} {areaSelectionTreeviewStore} {fieldFilterMenuStore} />
 					</UprnTabBarContent>
-				{/if}
+				</div>
 
-				{#if currentTab === 'downloads'}
+				<div hidden={currentTab !== 'downloads'}>
 					<UprnTabBarContent>
 						{#if !uprnDownloadService || !isUprnDownloadServiceAvailable}
 							<p class="p-4 text-center text-sm text-gray-500">
@@ -247,13 +247,13 @@
 							<DownloadsMenu {webMapStore} {uprnDownloadService} {fieldsToHide} />
 						{/if}
 					</UprnTabBarContent>
-				{/if}
+				</div>
 			</SidebarLayout.Content>
 
 			<SidebarLayout.Footer>
-				{#if currentTab === 'export'}
+				<div hidden={currentTab !== 'export'}>
 					<ExportMenuFooter onExportSuccess={switchToDownloadsTab} />
-				{/if}
+				</div>
 			</SidebarLayout.Footer>
 
 			<Sidebar.Sidebar

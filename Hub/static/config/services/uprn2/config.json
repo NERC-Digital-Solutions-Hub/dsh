@@ -62,6 +62,7 @@
             {
                 "_name": "ClimateJust",
                 "id": "107874962ec9490ca68ffe477d864392",
+                "isOpenOnInit": true,
                 "visibilityGroupId": "group:main",
                 "inheritanceGroupId": "group:main"
             },
