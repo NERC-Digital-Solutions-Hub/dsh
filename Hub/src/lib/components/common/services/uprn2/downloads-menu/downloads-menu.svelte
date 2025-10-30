@@ -20,7 +20,7 @@
 		type UprnDownloadJobRequest,
 		type UprnDownloadJobRequestResponse
 	} from '$lib/types/uprn';
-	import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+	import Download from 'lucide-svelte/icons/download';
 	import { onMount } from 'svelte';
 
 	type Props = {
@@ -268,7 +268,7 @@
 								onclick={() => window.open(getDownloadUrl(download.externalId!), '_blank')}
 								title="Open download"
 							>
-								📥
+								<Download />
 							</Button>
 						{/if}
 						<Button
