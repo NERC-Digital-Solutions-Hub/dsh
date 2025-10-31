@@ -23,7 +23,7 @@
         {
             "breakpoint": 1280,
             "originalSize": "700px",
-            "minSize": "300px"
+            "minSize": "500px"
         },
         {
             "breakpoint": 1024,
