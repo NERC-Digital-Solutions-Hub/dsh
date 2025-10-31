@@ -122,11 +122,11 @@
 	 * Initializes the application by loading configuration and setting up stores.
 	 */
 	onMount(async () => {
-		const customRendererService = new CustomRendererService();
-		await customRendererService.init('/custom-renderers.sqlite');
-		console.log('[uprn-2/page] CustomRendererService initialized');
-		const customRenderer = await customRendererService.getCustomRenderer();
-		console.log('[uprn-2/page] Retrieved custom renderer:', customRenderer);
+		// const customRendererService = new CustomRendererService();
+		// await customRendererService.init('/custom-renderers.sqlite');
+		// console.log('[uprn-2/page] CustomRendererService initialized');
+		// const customRenderer = await customRendererService.getCustomRenderer();
+		// console.log('[uprn-2/page] Retrieved custom renderer:', customRenderer);
 
 		const appConfig: AppConfig = await getAppConfigAsync();
 
