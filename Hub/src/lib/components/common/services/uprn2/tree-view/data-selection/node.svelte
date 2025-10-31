@@ -227,34 +227,3 @@
 {/snippet}
 
 <NodeAnimation {isOpen} {content} childNodes={isFolder ? node.children : null} {childNode} />
-
-<style>
-	@keyframes lineGrow {
-		from {
-			transform: scaleY(0);
-		}
-		to {
-			transform: scaleY(1);
-		}
-	}
-
-	@keyframes containerFadeIn {
-		from {
-			opacity: 0;
-		}
-		to {
-			opacity: 1;
-		}
-	}
-
-	@keyframes nodeSlideIn {
-		from {
-			opacity: 0;
-			transform: translateX(-10px) scale(0.95);
-		}
-		to {
-			opacity: 1;
-			transform: translateX(0) scale(1);
-		}
-	}
-</style>
