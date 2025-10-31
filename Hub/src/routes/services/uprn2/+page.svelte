@@ -197,7 +197,7 @@
 
 <Toaster />
 <AreaSelectionHoverCard />
-<FieldSelectionMenu {fieldFilterMenuStore} />
+<FieldSelectionMenu {fieldFilterMenuStore} {fieldsToHide} />
 <AreaSelectionToast />
 
 <Sidebar.Root

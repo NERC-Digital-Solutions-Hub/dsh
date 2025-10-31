@@ -1,7 +1,7 @@
 <!-- DownloadButton.svelte -->
 <script lang="ts">
 	import DownloadCheckbox from '$lib/components/ui/checkbox/download-checkbox.svelte';
-	import { DownloadState, type TreeNode } from '../types.js';
+	import { SelectionState, type TreeNode } from '../types.js';
 
 	/**
 	 * Props for the DownloadButton component.
@@ -10,18 +10,18 @@
 		/** The tree node this button controls. */
 		node: TreeNode;
 		/** Callback when download state changes. */
-		onDownloadStateChanged?: (node: TreeNode, downloadState: DownloadState) => void;
+		onDownloadStateChanged?: (node: TreeNode, downloadState: SelectionState) => void;
 		/** Function to get current download state. */
-		getDownloadState?: (node: TreeNode) => DownloadState;
+		getDownloadState?: (node: TreeNode) => SelectionState;
 	};
 
 	/** Destructured props. */
 	const { node, onDownloadStateChanged, getDownloadState }: Props = $props();
 
 	/** Derived state for whether the checkbox is checked. */
-	let externalState = $derived(getDownloadState?.(node) ?? DownloadState.Inactive);
-	let isChecked = $derived(externalState === DownloadState.Active);
-	let isIndeterminate = $derived(externalState === DownloadState.Indeterminate);
+	let externalState = $derived(getDownloadState?.(node) ?? SelectionState.Inactive);
+	let isChecked = $derived(externalState === SelectionState.Active);
+	let isIndeterminate = $derived(externalState === SelectionState.Indeterminate);
 
 	/**
 	 * Handles click events on the download button.
@@ -31,7 +31,7 @@
 	function handleClick(event: MouseEvent) {
 		event.stopPropagation();
 		const newState =
-			externalState === DownloadState.Active ? DownloadState.Inactive : DownloadState.Active;
+			externalState === SelectionState.Active ? SelectionState.Inactive : SelectionState.Active;
 
 		onDownloadStateChanged?.(node, newState);
 	}

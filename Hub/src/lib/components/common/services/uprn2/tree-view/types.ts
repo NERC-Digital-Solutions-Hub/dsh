@@ -91,9 +91,9 @@ export class TreeFieldNode extends TreeLayerNode {
 }
 
 /**
- * Enumeration of possible download states for a node.
+ * Enumeration of possible selection states for a node.
  */
-export enum DownloadState {
+export enum SelectionState {
 	/** Node is not selected for download. */
 	Inactive = 'inactive',
 	/** Node is partially selected (some children selected). */

@@ -23,7 +23,7 @@
 			return;
 		}
 
-		if (dataSelectionStore.DataSelections.size <= 0) {
+		if (dataSelectionStore.getAllSelections().length <= 0) {
 			toast.error('Please select at least one data layer to export.');
 			return;
 		}
@@ -39,15 +39,14 @@
 				)
 			};
 
-			const dataSelections: DataSelectionInfo[] = dataSelectionStore.DataSelections.values()
+			const dataSelections: DataSelectionInfo[] = dataSelectionStore.getAllSelections()
 				.map((selection) => {
 					return {
 						layerId: selection.layerId,
 						layerIndex: selection.layer instanceof FeatureLayer ? selection.layer.layerId! : -1,
 						fields: Array.from(selection.fields)
 					};
-				})
-				.toArray();
+				});
 
 			const localId = crypto.randomUUID();
 			downloadsStore.addDownload({

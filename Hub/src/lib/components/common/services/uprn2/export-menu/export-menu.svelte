@@ -8,14 +8,16 @@
 	import FilterFieldMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
 	import type { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
 	import { WebMapStore } from '$lib/stores/services/uprn2/web-map-store.svelte';
+	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 	import FilterButton from '../tree-view/data-selection/filter-button.svelte';
 
 	export type Props = {
 		webMapStore: WebMapStore;
 		areaSelectionTreeviewStore: TreeviewStore;
+		treeviewConfigStore?: TreeviewStore;
 		fieldFilterMenuStore: FilterFieldMenuStore;
 	};
-	
+
 	const { webMapStore, areaSelectionTreeviewStore, fieldFilterMenuStore }: Props = $props();
 
 	type AreaInfo = {
@@ -67,10 +69,10 @@
 	function removeDataSelection(layerId: string) {
 		// Remove the data selection from the store
 		console.log('[export-menu] Removing data selection for layerId:', layerId);
-		dataSelectionStore.DataSelections.delete(layerId);
+		dataSelectionStore.removeSelection(layerId);
 		console.log(
 			'[export-menu] Current SelectedData:',
-			$state.snapshot(dataSelectionStore.DataSelections)
+			$state.snapshot(dataSelectionStore.getAllSelections())
 		);
 	}
 
@@ -100,7 +102,7 @@
 	 * @returns True if filters are applied, false otherwise.
 	 */
 	function hasFiltersApplied(layerId: string): boolean {
-		const dataSelection = dataSelectionStore.DataSelections.get(layerId);
+		const dataSelection = dataSelectionStore.getSelection(layerId);
 		if (
 			!dataSelection ||
 			!dataSelection.fields ||
@@ -150,15 +152,15 @@
 
 <div class="section">
 	<h4>Selected Data</h4>
-	{#if dataSelectionStore.DataSelections.size > 0}
+	{#if dataSelectionStore.getAllSelections().length > 0}
 		<ul class="selected-list">
-			{#each [...dataSelectionStore.DataSelections.values()] as data}
+			{#each dataSelectionStore.getAllSelections() as data}
 				<li class="data-item">
 					<span class="data-name">
 						{data.layer.title}
 					</span>
 					<div class="data-actions">
-						{#if data.fields}
+						{#if data.layer instanceof FeatureLayer}
 							<FilterButton
 								layerId={data.layerId}
 								onFilterClicked={handleFilterClicked}
@@ -177,7 +179,7 @@
 				</li>
 			{/each}
 		</ul>
-		<p class="count">{dataSelectionStore.DataSelections.size} data layer(s) selected</p>
+		<p class="count">{dataSelectionStore.getAllSelections().length} data layer(s) selected</p>
 	{:else}
 		<p class="no-selection">No data selected</p>
 	{/if}

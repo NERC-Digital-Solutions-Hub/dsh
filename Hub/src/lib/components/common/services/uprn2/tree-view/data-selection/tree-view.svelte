@@ -26,11 +26,12 @@
 	import * as TreeView from '$lib/components/ui/tree-view/index.js';
 	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
 	import FieldFilterMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
-	import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store.js';
+	import { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store.js';
 	import { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
 	import { onDestroy } from 'svelte';
-	import { DownloadState, TreeLayerNode, type TreeNode } from '../types.js';
+	import { SelectionState, TreeLayerNode, type TreeNode } from '../types.js';
 	import Node from './node.svelte';
+	import { TreeviewSelectionController } from '$lib/controllers/TreeviewSelectionController.js';
 
 	/**
 	 * Props for the TreeView component.
@@ -56,6 +57,7 @@
 
 	/** Instance of the tree view store. */
 	const treeviewStore = new TreeviewStore();
+	const selectionStore = new TreeviewSelectionController(dataSelectionStore, treeviewConfigStore);
 
 	/**
 	 * Main effect that watches for webMap changes and rebuilds the layer tree.
@@ -101,8 +103,8 @@
 	 * @param node - The node to update download state for
 	 * @param downloadState - The new download state of the node.
 	 */
-	function onDownloadStateChanged(node: TreeNode, downloadState: DownloadState): void {
-		dataSelectionStore.updateSelection(node, downloadState);
+	function onDownloadStateChanged(node: TreeNode, downloadState: SelectionState): void {
+		selectionStore.updateSelection(node, downloadState);
 	}
 
 	/**
@@ -110,8 +112,8 @@
 	 * @param node - The node to check download state for
 	 * @returns The download state of the node
 	 */
-	function getDownloadState(node: TreeNode): DownloadState {
-		return dataSelectionStore.getSelectionState(node);
+	function getDownloadState(node: TreeNode): SelectionState {
+		return selectionStore.getSelectionState(node);
 	}
 
 	/**
@@ -143,7 +145,7 @@
 	 * @returns True if the node has active filters applied
 	 */
 	function hasFiltersApplied(nodeId: string): boolean {
-		const dataSelection = dataSelectionStore.DataSelections.get(nodeId);
+		const dataSelection = dataSelectionStore.getSelection(nodeId);
 		if (!dataSelection?.fields) {
 			return false;
 		}

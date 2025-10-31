@@ -4,7 +4,7 @@
 	import VisibilityCheckbox from '$lib/components/common/visibility-checkbox/visibility-checkbox.svelte';
 	import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store';
 	import { getNodeIcon } from '../get-node-icon';
-	import { DownloadState, TreeLayerNode, type TreeNode } from '../types.js';
+	import { SelectionState, TreeLayerNode, type TreeNode } from '../types.js';
 	import DownloadButton from './download-button.svelte';
 	import NodeContent from './node-content.svelte';
 	import Node from './node.svelte';
@@ -24,9 +24,9 @@
 		/** Callback when node visibility changes. */
 		onNodeVisibilityChange?: (node: TreeNode, visible: boolean) => void;
 		/** Callback when download state changes. */
-		onDownloadStateChanged?: (node: TreeNode, downloadState: DownloadState) => void;
+		onDownloadStateChanged?: (node: TreeNode, downloadState: SelectionState) => void;
 		/** Function to get current download state. */
-		getDownloadState?: (node: TreeNode) => DownloadState;
+		getDownloadState?: (node: TreeNode) => SelectionState;
 		/** Callback when filter is clicked. */
 		onFilterClicked?: (layerId: string) => void;
 		/** Function to check if filters are applied. */
@@ -108,7 +108,8 @@
 		}
 
 		const shouldShow =
-			(getDownloadState?.(node) === DownloadState.Active && node.layer.type === 'feature') ?? false;
+			(getDownloadState?.(node) === SelectionState.Active && node.layer.type === 'feature') ??
+			false;
 
 		if (shouldShow && !showFilter) {
 			// Show immediately

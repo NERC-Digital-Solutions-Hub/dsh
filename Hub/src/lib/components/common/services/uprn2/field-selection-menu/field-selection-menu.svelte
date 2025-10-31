@@ -10,9 +10,10 @@
 
 	export type Props = {
 		fieldFilterMenuStore: FieldFilterMenuStore;
+		fieldsToHide: Set<string>;
 	};
 
-	const { fieldFilterMenuStore }: Props = $props();
+	const { fieldFilterMenuStore, fieldsToHide }: Props = $props();
 
 	let activeFeatureLayer: __esri.FeatureLayer | null = $state<__esri.FeatureLayer | null>(null);
 	let localSelectedFields: SvelteSet<string> = $state(new SvelteSet<string>());
@@ -36,20 +37,21 @@
 	});
 
 	$effect(() => {
-		console.log('Active Layer to Filter:', fieldFilterMenuStore.ActiveLayer);
 		const activeLayer = fieldFilterMenuStore.ActiveLayer as __esri.FeatureLayer;
-		activeFeatureLayer = activeLayer;
+		if (!activeLayer) {
+			activeFeatureLayer = null;
+			localSelectedFields = new SvelteSet<string>();
+			return;
+		}
 
-		// Initialize local selected fields when active layer changes
-		if (activeLayer) {
-			const existingDataSelection = dataSelectionStore.DataSelections.get(activeLayer.id);
-			if (existingDataSelection?.fields) {
-				// Copy existing selection
-				localSelectedFields = new SvelteSet([...existingDataSelection.fields]);
-			} else {
-				// Start with empty selection
-				localSelectedFields = new SvelteSet<string>();
-			}
+		activeFeatureLayer = activeLayer;
+		const existingDataSelection = dataSelectionStore.getSelection(activeLayer.id);
+		if (existingDataSelection?.fields) {
+			// Copy existing selection
+			localSelectedFields = new SvelteSet([...existingDataSelection.fields]);
+		} else {
+			// Start with empty selection
+			localSelectedFields = new SvelteSet<string>();
 		}
 	});
 
@@ -58,19 +60,19 @@
 	 */
 	function closeModal() {
 		// Apply local changes to the data store before closing
-		applyChangesToDataStore();
+		applyChangesToDataSelectionStore();
 		fieldFilterMenuStore.ActiveLayer = null;
 	}
 
 	/**
 	 * Applies the local field selections to the global data store.
 	 */
-	function applyChangesToDataStore() {
+	function applyChangesToDataSelectionStore() {
 		if (!activeFeatureLayer) {
 			return;
 		}
 
-		let targetDataSelection = dataSelectionStore.DataSelections.get(activeFeatureLayer.id);
+		let targetDataSelection = dataSelectionStore.getSelection(activeFeatureLayer.id);
 		if (!targetDataSelection) {
 			return;
 		}
@@ -151,7 +153,17 @@
 			return [];
 		}
 
-		return activeFeatureLayer.fields;
+		const filteredFields = activeFeatureLayer.fields.filter(
+			(field) => !fieldsToHide.has(field.name.toLowerCase())
+		);
+
+		console.log(
+			'Filtered fields to show:',
+			filteredFields,
+			fieldsToHide,
+			activeFeatureLayer.fields
+		);
+		return filteredFields;
 	}
 </script>
 
