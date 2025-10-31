@@ -1,0 +1,1 @@
+import{a as i}from"./C6ccPtdP.js";import{i as s}from"./B2DNp07s.js";import{a as n}from"./Dc40Hn7j.js";import{B as a}from"./LlxHTFc1.js";function u(t,r){const o=a(t,s.absolute);if(!o)return null;let e=o.position;return n(t.spatialReference,r)||(e=new Float64Array(o.position.length),i(o.position,t.spatialReference,0,e,r,0))?e:null}export{u as projectMeshVertexPositions};

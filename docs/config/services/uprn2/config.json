@@ -10,7 +10,8 @@
         "healthRoute": "/health",
         "requestJobRoute": "/request-job",
         "requestJobStatusesRoute": "/request-job-statuses",
-        "getAreaSelectionLimitsRoute": "/get-area-selection-limits"
+        "getAreaSelectionLimitsRoute": "/get-area-selection-limits",
+        "fetchDownloadRoute": "/fetch-download"
     },
     "aiUprnChatbotServiceEndpoints": {
         "baseUrl": "https://172.166.133.156/uprn-chatbot",
@@ -22,7 +23,7 @@
         {
             "breakpoint": 1280,
             "originalSize": "700px",
-            "minSize": "300px"
+            "minSize": "500px"
         },
         {
             "breakpoint": 1024,
@@ -48,17 +49,20 @@
                 "_name": "Administrative Areas",
                 "id": "08051aec5d9e4d8fbf96f8bec3564484",
                 "isHidden": true,
+                "disableVisibilityToggle": true,
                 "inheritanceGroupId": "group:hidden"
             },
             {
                 "_name": "Tiling Schemes",
                 "id": "772b1fff49734e73981247de9f50f4f3",
                 "isHidden": true,
+                "disableVisibilityToggle": true,
                 "inheritanceGroupId": "group:hidden"
             },
             {
                 "_name": "ClimateJust",
                 "id": "107874962ec9490ca68ffe477d864392",
+                "isOpenOnInit": true,
                 "visibilityGroupId": "group:main",
                 "inheritanceGroupId": "group:main"
             },
@@ -193,7 +197,8 @@
                 "id": "group:hidden",
                 "inheritedProperties": [
                     "inheritanceGroupId",
-                    "isHidden"
+                    "isHidden",
+                    "disableVisibilityToggle"
                 ]
             }
         ],
@@ -206,11 +211,23 @@
             "uprn",
             "x_coord",
             "y_coord",
+            "noiseclass",
+            "Road_NLnight_ID",
+            "Rail_NLAeq16h_ID",
+            "fullgridid",
             "fullgrid id",
             "msoa id",
             "lsoa id",
             "ward id",
             "globalid",
+            "lsoa_numbe",
+            "msoa_numbe",
+            "ward_numbe",
+            "lsoa11cd",
+            "lsoa11nm",
+            "msoa11cd",
+            "msoa11nm",
+            "gridcode",
             "lsoa number",
             "msoa number",
             "ward number",
@@ -222,7 +239,9 @@
             "msoa name (2011)",
             "grid code",
             "perimeter (epsg 27700)",
-            "area (epsg 27700)"
+            "perimeterepsg27700",
+            "area (epsg 27700)",
+            "areaepsg27700"
         ]
     },
     "areaSelectionTreeviewConfig": {
@@ -242,6 +261,7 @@
             {
                 "_name": "BNG Outline",
                 "id": "0fb7ff5d03434a87904636b8f6dce7dc",
+                "isVisibleOnInit": false,
                 "isHidden": true
             },
             {
@@ -308,51 +328,63 @@
     "selectionLayersNameFields": [
         {
             "layerName": "Built Up Areas (Dec 22) GB",
-            "field": "BUA22NM"
+            "nameField": "BUA22NM",
+            "codeField": "BUA22CD"
         },
         {
             "layerName": "Lower layer Super Output Areas (Dec 21) - EW Boundaries Fully Clipped V8",
-            "field": "LSOA21NM"
+            "nameField": "LSOA21NM",
+            "codeField": "LSOA21CD"
         },
         {
             "layerName": "Middle layer Super Output Areas (Dec 21) - EW Boundaries Fully Clipped V6",
-            "field": "MSOA21NM"
+            "nameField": "MSOA21NM",
+            "codeField": "MSOA21CD"
         },
         {
             "layerName": "Wards (Dec 23) - UK Boundaries Fully Clipped",
-            "field": "WD23NM"
+            "nameField": "WD23NM",
+            "codeField": "WD23CD"
         },
         {
             "layerName": "Counties and Unitary Authorities (Dec 23) - UK Boundaries Fully Clipped",
-            "field": "CTYUA23NM"
+            "nameField": "CTYUA23NM",
+            "codeField": "CTYUA23CD"
         },
         {
             "layerName": "Upper Tier Local Authorities (Dec 22) - UK Boundaries Fully Clipped",
-            "field": "UTLA22NM"
+            "nameField": "UTLA22NM",
+            "codeField": "UTLA22CD"
         },
         {
             "layerName": "Tiles 1 km",
-            "field": "TILENAME"
+            "nameField": "TILENAME",
+            "codeField": "TILENAME"
         },
         {
             "layerName": "Tiles 5 km",
-            "field": "TILENAME"
+            "nameField": "TILENAME",
+            "codeField": "TILENAME"
         },
         {
             "layerName": "Tiles 10 km",
-            "field": "TILENAME"
+            "nameField": "TILENAME",
+            "codeField": "TILENAME"
         },
         {
             "layerName": "Tiles 20 km",
-            "field": "TILENAME"
+            "nameField": "TILENAME",
+            "codeField": "TILENAME"
         },
         {
             "layerName": "Tiles 50 km",
-            "field": "TILENAME"
+            "nameField": "TILENAME",
+            "codeField": "TILENAME"
         },
         {
             "layerName": "Tiles 100 km",
-            "field": "TILENAME"
+            "nameField": "TILENAME",
+            "codeField": "TILENAME"
         }
     ]
 }
