@@ -387,7 +387,8 @@
 	<!-- Sidebar -->
 	<aside
 		bind:this={sidebarElement}
-		class="relative flex bg-card text-card-foreground {overlay ? 'shadow-2xl' : 'shadow-lg'}"
+		class="border-r-bg-sidebar-border relative flex border-r-1 bg-sidebar text-sidebar-foreground
+    {overlay ? 'shadow-2xl' : 'shadow-lg'}"
 		class:flex-col={isHorizontal}
 		class:flex-row={!isHorizontal}
 		class:h-full={isHorizontal}
@@ -409,7 +410,6 @@
 			class:flex-row={!isHorizontal}
 			class:h-full={isHorizontal}
 			class:w-full={!isHorizontal}
-			style={contentPadding()}
 		>
 			<!-- Content -->
 			<div

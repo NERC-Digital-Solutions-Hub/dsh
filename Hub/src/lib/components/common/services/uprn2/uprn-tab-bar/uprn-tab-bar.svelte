@@ -55,12 +55,10 @@
 	:global(.tab-list) {
 		background: white;
 		border: 1px solid #e5e7eb;
-		border-radius: 0.5rem;
 		display: flex;
 		align-items: center;
 		gap: 0.25rem;
 		height: 2.5rem;
-		padding: 0 0.5rem;
 	}
 
 	:global(.tab-trigger) {
@@ -89,7 +87,7 @@
 
 	:global(.tab-trigger[data-state='active']) {
 		background: #f3f4f6;
-		box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+		box-shadow: none !important;
 	}
 
 	:global(.separator) {

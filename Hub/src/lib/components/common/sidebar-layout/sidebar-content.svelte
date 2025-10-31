@@ -10,9 +10,9 @@
 </script>
 
 <!-- Scrollable content section -->
-<div class="w-full flex-1 overflow-hidden">
+<div class="w-full flex-1 overflow-hidden p-1.5">
 	<ScrollArea class="h-full w-full">
-		<div class="min-w-0 space-y-2 overflow-hidden p-4">
+		<div class="min-w-0 space-y-2 overflow-hidden">
 			{#if children}
 				{@render children()}
 			{/if}

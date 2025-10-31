@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { TreeNode } from './types.js';
 	import { type Snippet } from 'svelte';
+	import { slide } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
 
 	/**
 	 * Props for the NodeAnimation component.
@@ -14,33 +16,33 @@
 		content?: Snippet;
 		/** The snippet to render for each child node. */
 		childNode?: Snippet<[TreeNode]>;
+		/** Optional animation duration in milliseconds. */
+		duration?: number;
 	};
 
 	/** Destructured props with defaults. */
-	const { isOpen = false, childNodes = null, content, childNode }: Props = $props();
+	const { isOpen = false, childNodes = null, content, childNode, duration = 300 }: Props = $props();
 </script>
 
 <div class="w-full">
-	<!-- Render the main node content -->
+	<!-- Render the main node content (label, toggle, etc.) -->
 	{@render content?.()}
 
-	<!-- Children container with animations and depth lines -->
-	<!-- Children nodes outside parent border - only show when open -->
+	<!-- Children -->
 	{#if isOpen && childNodes}
-		<div class="tree-children relative ml-4 w-full">
-			<!-- Vertical guide line with grow animation -->
-			<div class="tree-guide-line tree-guide-line-animate"></div>
-			{#each childNodes ?? [] as child, index (child.id)}
-				<div class="tree-node-item" style="animation-delay: {100 + index * 50}ms;">
+		<div class="relative ml-4 w-full">
+			<div class="tree-guide-line"></div>
+
+			<div class="tree-children" in:slide={{ duration, easing: cubicOut }} out:slide={{ duration }}>
+				{#each childNodes ?? [] as child (child.id)}
 					{@render childNode?.(child)}
-				</div>
-			{/each}
+				{/each}
+			</div>
 		</div>
 	{/if}
 </div>
 
 <style>
-	/* Tree guide line for showing depth levels */
 	.tree-guide-line {
 		position: absolute;
 		left: -0.5rem;
@@ -52,38 +54,9 @@
 		z-index: 0;
 	}
 
-	/* Animation for line growing when group opens */
-	.tree-guide-line-animate {
-		background-color: transparent;
-	}
-
-	.tree-guide-line-animate::before {
-		content: '';
-		position: absolute;
-		left: 0;
-		top: 0;
-		width: 2px;
-		height: 100%;
-		background-color: var(--secondary-foreground);
-		opacity: 0.5;
-		transform: scaleY(0);
-		transform-origin: top;
-		will-change: transform;
-		animation: lineGrow 300ms ease-out forwards;
-		/* Force exact pixel rendering */
-		backface-visibility: hidden;
-		-webkit-backface-visibility: hidden;
-	}
-
-	/* Container for animated children */
 	.tree-children {
-		animation: containerFadeIn 200ms ease-out;
-	}
-
-	/* Individual node animation */
-	.tree-node-item {
-		animation: nodeSlideIn 250ms ease-out both;
-		transform-origin: left center;
+		position: relative;
+		z-index: 1;
 	}
 
 	@keyframes lineGrow {
@@ -107,7 +80,7 @@
 	@keyframes nodeSlideIn {
 		from {
 			opacity: 0;
-			transform: translateX(-10px) scale(0.95);
+			transform: translateX(-10px) scale(0.96);
 		}
 		to {
 			opacity: 1;

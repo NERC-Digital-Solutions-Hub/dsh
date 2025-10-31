@@ -6,20 +6,19 @@
  * Base node styling that all node components share.
  * Provides basic layout and border styling.
  */
-export const baseNodeStyles =
-	'mb-1 cursor-pointer rounded-md border border-border/30 p-2 text-left';
+export const baseNodeStyles = 'mb-1 cursor-pointer rounded-md border border-border p-2 text-left';
 
 /**
  * Enhanced hover effects with smooth transitions.
  * Adds transform and shadow effects on hover.
  */
 export const enhancedHoverStyles =
-	'transform-gpu transition-all duration-150 ease-out hover:border-border/50 hover:bg-card/70 hover:shadow-sm';
+	'transform-gpu transition-all duration-150 ease-out hover:border-border/50 hover:bg-gray-100 hover:shadow-sm';
 
 /**
  * Simple hover effect that only changes background color.
  */
-export const simpleHoverStyles = 'transition-colors hover:bg-card/70';
+export const simpleHoverStyles = 'transition-colors hover:bg-blue-500';
 
 /**
  * Font styling for text content.
@@ -30,7 +29,7 @@ export const fontStyles = 'text-sm font-normal';
 /**
  * Default background styling.
  */
-export const defaultBgStyles = 'bg-card/50';
+export const defaultBgStyles = 'bg-card';
 
 /**
  * Accent background styling for pressed/selected states.
