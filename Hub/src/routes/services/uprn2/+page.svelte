@@ -34,6 +34,7 @@
 	import { AiUprnChatbotService } from '$lib/services/ai-uprn-chatbot-service';
 	import { clearDatabase } from '$lib/db';
 	import { CustomRendererService } from '$lib/services/custom-renderer-service';
+	import CollapsibleWindow from '$lib/components/common/services/collapsible-window/collapsible-window.svelte';
 
 	const webMapStore: WebMapStore = $state(new WebMapStore());
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
@@ -121,8 +122,6 @@
 	 * Initializes the application by loading configuration and setting up stores.
 	 */
 	onMount(async () => {
-		await clearDatabase(); // TODO: Remove this line after testing
-
 		const customRendererService = new CustomRendererService();
 		await customRendererService.init('/custom-renderers.sqlite');
 		console.log('[uprn-2/page] CustomRendererService initialized');
@@ -263,7 +262,17 @@
 				</div>
 			</SidebarLayout.Footer>
 
-			<Sidebar.Sidebar
+			<CollapsibleWindow>
+				{#if !aiUprnChatbotService || !isAiUprnChatbotServiceAvailable}
+					<p class="p-4 text-center text-sm text-gray-500">
+						AI UPRN Chatbot service is not available.
+					</p>
+				{:else}
+					<UprnChat {aiUprnChatbotService} />
+				{/if}
+			</CollapsibleWindow>
+
+			<!-- <Sidebar.Sidebar
 				isOpen={chatSidebarOpen}
 				onToggle={toggleChatSidebar}
 				position={chatSidebarPosition}
@@ -280,7 +289,7 @@
 						<UprnChat {aiUprnChatbotService} />
 					{/if}
 				{/snippet}
-			</Sidebar.Sidebar>
+			</Sidebar.Sidebar> -->
 
 			<!-- <ChatToggleBar /> -->
 		</div>
