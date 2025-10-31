@@ -33,6 +33,7 @@
 	import { UprnDownloadService } from '$lib/services/uprn-download-service';
 	import { AiUprnChatbotService } from '$lib/services/ai-uprn-chatbot-service';
 	import { clearDatabase } from '$lib/db';
+	import { CustomRendererService } from '$lib/services/custom-renderer-service';
 
 	const webMapStore: WebMapStore = $state(new WebMapStore());
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
@@ -121,6 +122,12 @@
 	 */
 	onMount(async () => {
 		await clearDatabase(); // TODO: Remove this line after testing
+
+		const customRendererService = new CustomRendererService();
+		await customRendererService.init('/custom-renderers.sqlite');
+		console.log('[uprn-2/page] CustomRendererService initialized');
+		const customRenderer = await customRendererService.getCustomRenderer();
+		console.log('[uprn-2/page] Retrieved custom renderer:', customRenderer);
 
 		const appConfig: AppConfig = await getAppConfigAsync();
 
