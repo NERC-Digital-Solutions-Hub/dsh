@@ -10,15 +10,23 @@
 	import { WebMapStore } from '$lib/stores/services/uprn2/web-map-store.svelte';
 	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 	import FilterButton from '../tree-view/data-selection/filter-button.svelte';
+	import Card from '$lib/components/ui/card/card.svelte';
+	import SelectionEntryCard from '$lib/components/common/services/uprn2/selection-entry-card/selection-entry-card.svelte';
+	import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store';
 
 	export type Props = {
 		webMapStore: WebMapStore;
 		areaSelectionTreeviewStore: TreeviewStore;
-		treeviewConfigStore?: TreeviewStore;
+		dataSelectionTreeviewConfig: TreeviewConfigStore;
 		fieldFilterMenuStore: FilterFieldMenuStore;
 	};
 
-	const { webMapStore, areaSelectionTreeviewStore, fieldFilterMenuStore }: Props = $props();
+	const {
+		webMapStore,
+		areaSelectionTreeviewStore,
+		dataSelectionTreeviewConfig,
+		fieldFilterMenuStore
+	}: Props = $props();
 
 	type AreaInfo = {
 		name: string;
@@ -129,17 +137,17 @@
 	{#if areaInfos.length > 0}
 		<ul class="selected-list">
 			{#each areaInfos as area}
-				<li class="area-item">
-					<span class="area-name">{area.name}</span>
+				<SelectionEntryCard title={area.name}>
 					<Button
 						variant="ghost"
 						size="sm"
 						class="area-remove-btn"
+						title="Remove area"
 						onclick={() => removeArea(area.name)}
 					>
 						×
 					</Button>
-				</li>
+				</SelectionEntryCard>
 			{/each}
 		</ul>
 		<p class="count">
@@ -153,30 +161,26 @@
 <div class="section">
 	<h4>Selected Data</h4>
 	{#if dataSelectionStore.getAllSelections().length > 0}
-		<ul class="selected-list">
+		<ul>
 			{#each dataSelectionStore.getAllSelections() as data}
-				<li class="data-item">
-					<span class="data-name">
-						{data.layer.title}
-					</span>
-					<div class="data-actions">
-						{#if data.layer instanceof FeatureLayer}
-							<FilterButton
-								layerId={data.layerId}
-								onFilterClicked={handleFilterClicked}
-								{hasFiltersApplied}
-							/>
-						{/if}
-						<Button
-							variant="ghost"
-							size="sm"
-							class="data-remove-btn"
-							onclick={() => removeDataSelection(data.layerId)}
-						>
-							×
-						</Button>
-					</div>
-				</li>
+				<SelectionEntryCard title={data.layer.title ?? ''}>
+					{#if dataSelectionTreeviewConfig?.getItemConfig(data.layerId)?.showFields}
+						<FilterButton
+							layerId={data.layerId}
+							onFilterClicked={handleFilterClicked}
+							{hasFiltersApplied}
+						/>
+					{/if}
+					<Button
+						variant="ghost"
+						size="sm"
+						class="data-remove-btn"
+						title="Remove data selection"
+						onclick={() => removeDataSelection(data.layerId)}
+					>
+						×
+					</Button>
+				</SelectionEntryCard>
 			{/each}
 		</ul>
 		<p class="count">{dataSelectionStore.getAllSelections().length} data layer(s) selected</p>
@@ -215,47 +219,6 @@
 		font-size: 1rem;
 		font-weight: 500;
 		color: #374151;
-	}
-
-	.selected-list {
-		list-style: none;
-		padding: 0;
-		margin: 0 0 0.5rem 0;
-	}
-
-	.selected-list li {
-		padding: 0.25rem 0.5rem;
-		margin-bottom: 0.25rem;
-		background: #f9fafb;
-		border: 1px solid #e5e7eb;
-		border-radius: 0.25rem;
-		font-size: 0.875rem;
-		color: #374151;
-	}
-
-	.area-item,
-	.data-item {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 0.25rem 0.5rem;
-		background: #f9fafb;
-		border: 1px solid #e5e7eb;
-		border-radius: 0.25rem;
-		font-size: 0.875rem;
-		color: #374151;
-	}
-
-	.area-name,
-	.data-name {
-		flex: 1;
-		min-width: 0;
-	}
-
-	.data-actions {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem; /* 8px gap between filter and remove buttons */
 	}
 
 	:global(.area-remove-btn),

@@ -13,6 +13,8 @@
 
 	const { onExportSuccess }: Props = $props();
 
+	// TODO: Add onExport function prop to handle export completion externally
+
 	/**
 	 * Handles the export button click event.
 	 * Validates that areas and data are selected, then initiates the export process.
@@ -39,7 +41,8 @@
 				)
 			};
 
-			const dataSelections: DataSelectionInfo[] = dataSelectionStore.getAllSelections()
+			const dataSelections: DataSelectionInfo[] = dataSelectionStore
+				.getAllSelections()
 				.map((selection) => {
 					return {
 						layerId: selection.layerId,
@@ -76,8 +79,10 @@
 <style>
 	.export-footer {
 		border-top: 1px solid rgba(0, 0, 0, 0.2);
+		background: var(--background);
 		display: grid;
 		grid-template-columns: 1fr 1fr; /* two equal columns */
+		padding-right: 1rem;
 		gap: 0.5rem;
 		align-items: center; /* vertically center content in each column */
 		width: 100%;
@@ -92,8 +97,8 @@
 
 	/* Left column: horizontally center its content within the left half */
 	.export-footer__left {
-		justify-content: center;
-		text-align: center;
+		text-align: left;
+		margin-left: 1rem;
 	}
 
 	/* Right column: keep the button at the right edge and vertically centered */

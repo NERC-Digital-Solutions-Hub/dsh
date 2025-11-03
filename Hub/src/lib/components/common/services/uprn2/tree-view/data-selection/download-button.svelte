@@ -38,5 +38,10 @@
 </script>
 
 <div>
-	<DownloadCheckbox checked={isChecked} indeterminate={isIndeterminate} onclick={handleClick} />
+	<DownloadCheckbox
+		checked={isChecked}
+		indeterminate={isIndeterminate}
+		onclick={handleClick}
+		title="Download"
+	/>
 </div>

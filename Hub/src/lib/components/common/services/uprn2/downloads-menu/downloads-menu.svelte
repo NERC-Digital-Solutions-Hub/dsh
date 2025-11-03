@@ -22,6 +22,7 @@
 	} from '$lib/types/uprn';
 	import Download from 'lucide-svelte/icons/download';
 	import { onMount } from 'svelte';
+	import SelectionEntryCard from '$lib/components/common/services/uprn2/selection-entry-card/selection-entry-card.svelte';
 
 	type Props = {
 		webMapStore: WebMapStore;
@@ -222,66 +223,54 @@
 	{#if downloads.length > 0}
 		<ul class="selected-list">
 			{#each downloads as download}
-				<li class="download-item">
-					<div class="download-info">
-						{#if !download.externalId}
-							<span class="download-url" title="Pending...">Pending...</span>
-						{:else}
-							<span class="download-url" title={getDownloadUrl(download.externalId)}
-								>{download.externalId}</span
-							>
-						{/if}
-					</div>
-					<div class="download-actions">
-						<div title={getStatusText(download.status)}>
-							<Button
-								variant="ghost"
-								size="sm"
-								class="download-status-btn"
-								style="color: {getStatusColor(download.status)}"
-								disabled
-							>
-								{@const StatusIcon = getStatusIcon(download.status)}
-								<StatusIcon size={14} class={download.status === 'in-progress' ? 'spinning' : ''} />
-							</Button>
-						</div>
-						{#if download.externalId}
-							<Button
-								variant="ghost"
-								size="sm"
-								class="download-clipboard-btn"
-								onclick={() => copyUrlToClipboard(getDownloadUrl(download.externalId!))}
-								title="Copy URL to clipboard"
-							>
-								{#if copiedUrls.has(getDownloadUrl(download.externalId))}
-									<ClipboardCheckIcon size={14} />
-								{:else}
-									<ClipboardIcon size={14} />
-								{/if}
-							</Button>
-						{/if}
-						{#if download.externalId && download.status === 'completed'}
-							<Button
-								variant="ghost"
-								size="sm"
-								class="download-action-btn"
-								onclick={() => window.open(getDownloadUrl(download.externalId!), '_blank')}
-								title="Open download"
-							>
-								<Download />
-							</Button>
-						{/if}
+				<SelectionEntryCard title={download.externalId ? download.externalId : 'Pending...'}>
+					<Button
+						variant="ghost"
+						size="sm"
+						class="download-status-btn"
+						style="color: {getStatusColor(download.status)}"
+						title={getStatusText(download.status)}
+						disabled
+					>
+						{@const StatusIcon = getStatusIcon(download.status)}
+						<StatusIcon size={14} class={download.status === 'in-progress' ? 'spinning' : ''} />
+					</Button>
+					{#if download.externalId}
 						<Button
 							variant="ghost"
 							size="sm"
-							class="download-remove-btn"
-							onclick={() => removeDownload(download.localId)}
-							title="Remove from queue"
+							class="download-clipboard-btn"
+							onclick={() => copyUrlToClipboard(getDownloadUrl(download.externalId!))}
+							title="Copy URL to clipboard"
 						>
-							×
+							{#if copiedUrls.has(getDownloadUrl(download.externalId))}
+								<ClipboardCheckIcon size={14} />
+							{:else}
+								<ClipboardIcon size={14} />
+							{/if}
 						</Button>
-					</div>
-				</li>
+					{/if}
+					{#if download.externalId && download.status === 'completed'}
+						<Button
+							variant="ghost"
+							size="sm"
+							class="download-action-btn"
+							onclick={() => window.open(getDownloadUrl(download.externalId!), '_blank')}
+							title="Open download"
+						>
+							<Download />
+						</Button>
+					{/if}
+					<Button
+						variant="ghost"
+						size="sm"
+						class="download-remove-btn"
+						onclick={() => removeDownload(download.localId)}
+						title="Remove from queue"
+					>
+						×
+					</Button>
+				</SelectionEntryCard>
 			{/each}
 		</ul>
 		<p class="count">{downloads.length} download(s) in queue</p>
@@ -309,37 +298,6 @@
 	.selected-list {
 		list-style: none;
 		padding: 0;
-		margin: 0 0 0.5rem 0;
-	}
-
-	.download-item {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 0.25rem 0.5rem;
-		margin-bottom: 0.25rem;
-		background: #f9fafb;
-		border: 1px solid #e5e7eb;
-		border-radius: 0.25rem;
-		font-size: 0.875rem;
-		color: #374151;
-	}
-
-	.download-info {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 0.125rem;
-	}
-
-	.download-url {
-		font-weight: 500;
-		color: #374151;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		max-width: 100%;
 	}
 
 	:global(.download-status-btn .spinning) {
@@ -355,12 +313,6 @@
 		}
 	}
 
-	.download-actions {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
 	:global(.download-action-btn),
 	:global(.download-clipboard-btn),
 	:global(.download-status-btn),
@@ -368,7 +320,6 @@
 		height: 1.5rem;
 		width: 1.5rem;
 		padding: 0;
-		margin-right: -0.5rem;
 		font-size: 1rem;
 		line-height: 1;
 		color: #6b7280;

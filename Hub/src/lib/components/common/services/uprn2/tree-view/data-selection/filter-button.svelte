@@ -40,7 +40,13 @@
 	}
 </script>
 
-<button class="filter-btn" class:active={isActive} onclick={handleClick} aria-pressed={isActive}>
+<button
+	class="filter-btn"
+	class:active={isActive}
+	onclick={handleClick}
+	aria-pressed={isActive}
+	title="Filter"
+>
 	{@html iconMarkup}
 </button>
 
