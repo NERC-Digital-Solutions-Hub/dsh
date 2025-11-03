@@ -35,6 +35,7 @@
 	import { CustomRendererService } from '$lib/services/custom-renderer-service';
 	import CollapsibleWindow from '$lib/components/common/collapsible-window/collapsible-window.svelte';
 	import ClearSelectionsButton from '$lib/components/common/services/uprn2/clear-selections-button/cl/clear-selections-button.svelte';
+	import { base } from '$app/paths';
 
 	let dataSelectionTreeview: DataSelectionTreeview | undefined = undefined;
 
@@ -134,7 +135,7 @@
 	 */
 	onMount(async () => {
 		customRendererService = new CustomRendererService();
-		await customRendererService.init('/custom-renderers.json');
+		await customRendererService.init(`${base}/custom-renderers.json`);
 		console.log('[uprn-2/page] CustomRendererService initialized');
 
 		const appConfig: AppConfig = await getAppConfigAsync();
