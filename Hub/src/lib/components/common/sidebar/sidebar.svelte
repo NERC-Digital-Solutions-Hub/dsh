@@ -28,7 +28,6 @@
 		originalSize?: string;
 		position?: SidebarPositionType;
 		openIcon?: typeof Menu;
-		overlay?: boolean;
 	};
 
 	const {
@@ -38,14 +37,13 @@
 		minSize,
 		originalSize,
 		position = SidebarPosition.LEFT,
-		openIcon = Menu,
-		overlay = false
+		openIcon = Menu
 	}: Props = $props();
 
 	// Constants
 	const RESIZE_HANDLE_SIZE = 8;
 	const DEFAULT_SIZE = '500px';
-	const HEADER_OFFSET = 'calc(var(--header-height, 64px) + 1rem)';
+	const HEADER_OFFSET = 'var(--header-height, 64px)';
 
 	// State
 	let sidebarElement: HTMLElement;
@@ -128,66 +126,13 @@
 	// UI configuration helpers
 	const buttonPosition = $derived(() => {
 		const offset = isOpen ? currentSize : '0px';
-		if (overlay) {
-			const overlayPositionMap = {
-				[SidebarPosition.LEFT]: { top: '1rem', left: offset },
-				[SidebarPosition.RIGHT]: { top: '1rem', right: offset },
-				[SidebarPosition.TOP]: { top: offset, left: '1rem' },
-				[SidebarPosition.BOTTOM]: { bottom: offset, left: '1rem' }
-			};
-			return overlayPositionMap[position];
-		}
-
 		const positionMap = {
 			[SidebarPosition.LEFT]: { top: HEADER_OFFSET, left: offset },
 			[SidebarPosition.RIGHT]: { top: HEADER_OFFSET, right: offset },
-			[SidebarPosition.TOP]: { top: offset, left: '1rem' },
-			[SidebarPosition.BOTTOM]: { bottom: offset, left: '1rem' }
+			[SidebarPosition.TOP]: { top: offset },
+			[SidebarPosition.BOTTOM]: { bottom: offset }
 		};
 		return positionMap[position];
-	});
-
-	// Calculate button transform - matches sidebar transform for smooth animation
-	const buttonTransform = $derived(() => {
-		if (isOpen) return 'translate(0, 0)';
-
-		// Button should follow sidebar's sliding animation
-		const transformMap = {
-			[SidebarPosition.LEFT]: `translate(-${currentSize}, 0)`,
-			[SidebarPosition.RIGHT]: `translate(${currentSize}, 0)`,
-			[SidebarPosition.TOP]: `translate(0, -${currentSize})`,
-			[SidebarPosition.BOTTOM]: `translate(0, ${currentSize})`
-		};
-		return transformMap[position];
-	});
-
-	const buttonRounding = $derived(() => {
-		const roundingMap = {
-			[SidebarPosition.LEFT]: 'rounded-l-none rounded-r-md',
-			[SidebarPosition.RIGHT]: 'rounded-r-none rounded-l-md',
-			[SidebarPosition.TOP]: 'rounded-t-none rounded-b-md',
-			[SidebarPosition.BOTTOM]: 'rounded-b-none rounded-t-md'
-		};
-		return roundingMap[position];
-	});
-
-	// Directional shadow - points away from the sidebar
-	const buttonShadow = $derived(() => {
-		// No shadow if not in overlay mode and sidebar is open (attached to sidebar)
-		if (!overlay && isOpen) return '';
-
-		// Directional shadows that point away from the sidebar
-		const shadowMap = {
-			[SidebarPosition.LEFT]:
-				'box-shadow: 4px 0 8px -2px rgb(0 0 0 / 0.1), 2px 0 4px -2px rgb(0 0 0 / 0.1);', // shadow to the right
-			[SidebarPosition.RIGHT]:
-				'box-shadow: -4px 0 8px -2px rgb(0 0 0 / 0.1), -2px 0 4px -2px rgb(0 0 0 / 0.1);', // shadow to the left
-			[SidebarPosition.TOP]:
-				'box-shadow: 0 4px 8px -2px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);', // shadow to the bottom
-			[SidebarPosition.BOTTOM]:
-				'box-shadow: 0 -4px 8px -2px rgb(0 0 0 / 0.1), 0 -2px 4px -2px rgb(0 0 0 / 0.1);' // shadow to the top
-		};
-		return shadowMap[position];
 	});
 
 	const closeIcon = $derived(() => {
@@ -200,64 +145,12 @@
 		return iconMap[position];
 	});
 
-	const contentPadding = $derived(() => {
-		const paddingMap = {
-			[SidebarPosition.LEFT]: `padding-right: ${RESIZE_HANDLE_SIZE}px`,
-			[SidebarPosition.RIGHT]: `padding-left: ${RESIZE_HANDLE_SIZE}px`,
-			[SidebarPosition.TOP]: `padding-bottom: ${RESIZE_HANDLE_SIZE}px`,
-			[SidebarPosition.BOTTOM]: `padding-top: ${RESIZE_HANDLE_SIZE}px`
-		};
-		return paddingMap[position];
-	});
-
-	const handleStyle = $derived(() => {
-		const size = `${RESIZE_HANDLE_SIZE}px`;
-		const offset = `${-RESIZE_HANDLE_SIZE / 2}px`;
-		const styleMap = {
-			[SidebarPosition.LEFT]: `width: ${size}; right: ${offset}`,
-			[SidebarPosition.RIGHT]: `width: ${size}; left: ${offset}`,
-			[SidebarPosition.TOP]: `height: ${size}; bottom: ${offset}`,
-			[SidebarPosition.BOTTOM]: `height: ${size}; top: ${offset}`
-		};
-		return styleMap[position];
-	});
-
 	// Position for resize handle when moved outside wrapper
 	const handlePosition = $derived(() => {
 		if (!isOpen) return {};
 
 		const size = `${RESIZE_HANDLE_SIZE}px`;
 		const sidebarOffset = isOpen ? `calc(${currentSize} + ${-RESIZE_HANDLE_SIZE / 2}px)` : '0px';
-
-		if (overlay) {
-			const overlayMap = {
-				[SidebarPosition.LEFT]: {
-					left: sidebarOffset,
-					top: '0',
-					width: size,
-					height: '100%'
-				},
-				[SidebarPosition.RIGHT]: {
-					right: sidebarOffset,
-					top: '0',
-					width: size,
-					height: '100%'
-				},
-				[SidebarPosition.TOP]: {
-					top: sidebarOffset,
-					left: '0',
-					height: size,
-					width: '100%'
-				},
-				[SidebarPosition.BOTTOM]: {
-					bottom: sidebarOffset,
-					left: '0',
-					height: size,
-					width: '100%'
-				}
-			};
-			return overlayMap[position];
-		}
 
 		const positionMap = {
 			[SidebarPosition.LEFT]: {
@@ -314,32 +207,6 @@
 
 	const wrapperStyles = $derived(() => {
 		const sizeValue = isOpen ? currentSize : '0px';
-		if (overlay) {
-			if (isHorizontal) {
-				const horizontalStyles: Record<string, string> = {
-					position: 'absolute',
-					top: '0',
-					bottom: '0',
-					width: sizeValue,
-					height: '100%',
-					'z-index': '30'
-				};
-				horizontalStyles[position === SidebarPosition.LEFT ? 'left' : 'right'] = '0';
-				return horizontalStyles;
-			}
-
-			const verticalStyles: Record<string, string> = {
-				position: 'absolute',
-				left: '0',
-				right: '0',
-				height: sizeValue,
-				width: '100%',
-				'z-index': '30'
-			};
-			verticalStyles[position === SidebarPosition.TOP ? 'top' : 'bottom'] = '0';
-			return verticalStyles;
-		}
-
 		return {
 			[sizeProperty]: sizeValue,
 			order: `${sidebarOrder}`
@@ -352,17 +219,24 @@
 	onclick={onToggle}
 	variant="default"
 	size="icon"
-	class="size-7 {overlay
-		? 'absolute'
-		: 'fixed'} z-[10] !bg-background hover:scale-105 hover:!bg-background/90 {buttonRounding()} {!isResizing
+	class="fixed z-2 -ml-1 inline-flex size-7 
+	shrink-0 items-center justify-center gap-2 overflow-hidden rounded-md bg-background text-sm
+	font-medium whitespace-nowrap shadow-none outline-hidden transition-all select-none hover:bg-accent focus-visible:border-ring 
+	focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 {!isResizing
 		? 'transition-all duration-300'
 		: ''}"
-	style="{toInlineStyles(buttonPosition())}; pointer-events: auto; {buttonShadow()} {isResizing
+	style="{toInlineStyles(buttonPosition())}; pointer-events: auto; {isResizing
 		? 'transition: none !important;'
 		: ''}"
 	aria-label={isOpen ? 'Close sidebar' : 'Open sidebar'}
 	aria-expanded={isOpen}
 >
+	<!--aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive 
+	focus-visible:border-ring focus-visible:ring-ring/50 relative inline-flex shrink-0 items-center 
+	justify-center gap-2 overflow-hidden rounded-md text-sm font-medium whitespace-nowrap outline-hidden 
+	transition-all select-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 
+	[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:bg-accent 
+	hover:text-accent-foreground dark:hover:bg-accent/50 size-7 -ml-1 -->
 	{#if isOpen}
 		{@const Icon = closeIcon()}
 		<Icon class="h-6 w-6 text-primary" />
@@ -374,21 +248,17 @@
 
 <!-- Sidebar wrapper for clipping -->
 <div
-	class="relative"
-	class:overflow-hidden={!overlay}
-	class:overflow-visible={overlay}
+	class="relative z-3 h-full w-full overflow-hidden transition-all duration-300"
 	class:h-full={isHorizontal}
 	class:w-full={!isHorizontal}
 	class:transition-all={!isResizing}
 	class:duration-300={!isResizing}
-	class:z-30={overlay}
 	style={toInlineStyles(wrapperStyles())}
 >
 	<!-- Sidebar -->
 	<aside
 		bind:this={sidebarElement}
-		class="border-r-bg-sidebar-border relative flex border-r-1 bg-sidebar text-sidebar-foreground
-    {overlay ? 'shadow-2xl' : 'shadow-lg'}"
+		class="border-r-bg-sidebar-border relative flex border-r-1 bg-sidebar text-sidebar-foreground shadow-lg"
 		class:flex-col={isHorizontal}
 		class:flex-row={!isHorizontal}
 		class:h-full={isHorizontal}
@@ -400,8 +270,6 @@
 		class:border-sidebar-border={true}
 		class:transition-transform={!isResizing}
 		class:duration-300={!isResizing}
-		class:pointer-events-auto={overlay}
-		class:z-30={overlay}
 		style="{sizeProperty}: {currentSize}; transform: {sidebarTransform()};"
 	>
 		<div
@@ -430,9 +298,7 @@
 <!-- Resize handle (outside wrapper to avoid clipping) -->
 {#if isOpen}
 	<Button
-		class="{overlay
-			? 'absolute'
-			: 'fixed'} z-40 border-0 bg-transparent p-0 ring-0 transition-colors outline-none hover:!bg-primary/50 focus-visible:ring-0 {isHorizontal
+		class="fixed z-40 border-0 bg-transparent p-0 ring-0 transition-colors outline-none hover:!bg-primary/50 focus-visible:ring-0 {isHorizontal
 			? 'cursor-ew-resize'
 			: 'cursor-ns-resize'} {!isResizing ? 'transition-all duration-300' : ''}"
 		onmousedown={startResize}
