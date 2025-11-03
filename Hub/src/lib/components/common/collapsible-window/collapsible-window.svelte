@@ -6,24 +6,41 @@
 	import { ChevronDown, ChevronUp, Maximize, Minimize } from '@lucide/svelte';
 
 	type Props = {
-		/** Whether the window is collapsed on initialisation. */
-		isCollapsedOnInit?: boolean;
+		/** Whether the window is opened on initialisation. */
+		isOpenedOnInit?: boolean;
 		children?: Snippet;
 	};
 
-	const { isCollapsedOnInit = true, children }: Props = $props();
+	const { isOpenedOnInit: isOpenedOnInit = false, children }: Props = $props();
 
-	let isCollapsed = $state<boolean>(isCollapsedOnInit);
+	let isInitialised = $state<boolean>(false);
+	let isOpened = $state<boolean>(isOpenedOnInit);
 	let isMaximised = $state<boolean>(false);
 
-	let cardElement: HTMLElement;
+	let cardElement = $state<HTMLElement | undefined>();
 	let lastExpandedWindowHeight: string = '300px';
-	let collapsedWindowHeight: string = '100px';
+	let collapsedWindowHeight: string = '45px';
+
+	$effect(() => {
+		if (isInitialised || !cardElement) {
+			return;
+		}
+
+		if (isOpened) {
+			cardElement.style.height = lastExpandedWindowHeight;
+		}
+
+		isInitialised = true;
+	});
 
 	function onToggleCollapse() {
-		isCollapsed = !isCollapsed;
+		if (!cardElement) {
+			return;
+		}
+
+		isOpened = !isOpened;
 		isMaximised = false;
-		if (!isCollapsed) {
+		if (isOpened) {
 			// Restore to last normal height when expanding
 			collapsedWindowHeight = cardElement.style.height;
 			cardElement.style.height = lastExpandedWindowHeight;
@@ -33,6 +50,10 @@
 	}
 
 	function onToggleMaximise() {
+		if (!cardElement) {
+			return;
+		}
+
 		isMaximised = !isMaximised;
 		if (isMaximised) {
 			lastExpandedWindowHeight = cardElement.style.height;
@@ -44,13 +65,13 @@
 </script>
 
 <div bind:this={cardElement}>
-	<Card.Root class="h-full w-full gap-0 rounded-br-none rounded-bl-none py-0 pt-0 pb-0">
+	<Card.Root class="h-full w-full gap-0 rounded-none py-0 pt-0 pb-0">
 		<Card.Header class="pt-2">
 			<div class="flex w-full items-center justify-between">
 				<div class="font-medium">Chat</div>
 				<div class="flex gap-1">
-					{#if !isCollapsed}
-						<Button size="sm" onclick={onToggleMaximise}>
+					{#if isOpened}
+						<Button class="size-7" onclick={onToggleMaximise}>
 							{#if isMaximised}
 								<Minimize />
 							{:else}
@@ -58,8 +79,8 @@
 							{/if}
 						</Button>
 					{/if}
-					<Button size="sm" onclick={onToggleCollapse}>
-						{#if isCollapsed}
+					<Button class="size-7" onclick={onToggleCollapse}>
+						{#if !isOpened}
 							<ChevronUp />
 						{:else}
 							<ChevronDown />
@@ -68,7 +89,7 @@
 				</div>
 			</div>
 		</Card.Header>
-		{#if !isCollapsed}
+		{#if isOpened}
 			<Card.Content class="h-full min-h-[10px] w-full p-0">
 				{@render children?.()}
 			</Card.Content>
