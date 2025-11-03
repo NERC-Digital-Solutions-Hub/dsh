@@ -26,15 +26,17 @@
 	import { Bot } from 'lucide-svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import TabBarTriggers from './tabBarTriggers.json';
-	import ChatToggleBar from '$lib/components/common/services/uprn2/chat/chat-toggle-bar.svelte';
 	import { mapInteractionStore } from '$lib/stores/services/uprn2/map-interaction-store.svelte';
 	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
 	import type { AiUprnChatbotEndpoints, UprnDownloadEndpoints } from '$lib/types/uprn';
 	import { UprnDownloadService } from '$lib/services/uprn-download-service';
 	import { AiUprnChatbotService } from '$lib/services/ai-uprn-chatbot-service';
-	import { clearDatabase } from '$lib/db';
+	import { clearSelections } from '$lib/db';
 	import { CustomRendererService } from '$lib/services/custom-renderer-service';
-	import CollapsibleWindow from '$lib/components/common/services/collapsible-window/collapsible-window.svelte';
+	import CollapsibleWindow from '$lib/components/common/collapsible-window/collapsible-window.svelte';
+	import ClearSelectionsButton from '$lib/components/common/services/uprn2/clear-selections-button/cl/clear-selections-button.svelte';
+
+	let dataSelectionTreeview: DataSelectionTreeview | undefined = undefined;
 
 	const webMapStore: WebMapStore = $state(new WebMapStore());
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
@@ -43,6 +45,7 @@
 	let currentTab: string = $state('define-areas');
 	let dataSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
 	let areaSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
+	let customRendererService: CustomRendererService | undefined = $state();
 	let uprnDownloadService: UprnDownloadService | undefined = $state();
 	let aiUprnChatbotService: AiUprnChatbotService | undefined = $state();
 	let isUprnDownloadServiceAvailable: boolean = $state(false);
@@ -118,15 +121,21 @@
 		currentTab = 'downloads';
 	}
 
+	function clearAllSelections() {
+		areaSelectionStore.clearSelections();
+		dataSelectionStore.clearSelections();
+		areaSelectionTreeviewStore.clearSelections();
+		dataSelectionTreeview?.clearSelections();
+		clearSelections();
+	}
+
 	/**
 	 * Initializes the application by loading configuration and setting up stores.
 	 */
 	onMount(async () => {
-		// const customRendererService = new CustomRendererService();
-		// await customRendererService.init('/custom-renderers.sqlite');
-		// console.log('[uprn-2/page] CustomRendererService initialized');
-		// const customRenderer = await customRendererService.getCustomRenderer();
-		// console.log('[uprn-2/page] Retrieved custom renderer:', customRenderer);
+		customRendererService = new CustomRendererService();
+		await customRendererService.init('/custom-renderers.json');
+		console.log('[uprn-2/page] CustomRendererService initialized');
 
 		const appConfig: AppConfig = await getAppConfigAsync();
 
@@ -141,22 +150,26 @@
 			appConfig.serviceUprn2Config.areaSelectionTreeviewConfig as TreeviewConfig
 		);
 
-		const uprnDownloadServiceEndpoints: UprnDownloadEndpoints | undefined =
-			appConfig.serviceUprn2Config.uprnDownloadServiceEndpoints;
-		const aiUprnChatbotServiceEndpoints: AiUprnChatbotEndpoints | undefined =
-			appConfig.serviceUprn2Config.aiUprnChatbotServiceEndpoints;
-		uprnDownloadService = new UprnDownloadService(uprnDownloadServiceEndpoints);
-		aiUprnChatbotService = new AiUprnChatbotService(aiUprnChatbotServiceEndpoints);
+		const initServices = async () => {
+			const uprnDownloadServiceEndpoints: UprnDownloadEndpoints | undefined =
+				appConfig.serviceUprn2Config.uprnDownloadServiceEndpoints;
+			const aiUprnChatbotServiceEndpoints: AiUprnChatbotEndpoints | undefined =
+				appConfig.serviceUprn2Config.aiUprnChatbotServiceEndpoints;
+			uprnDownloadService = new UprnDownloadService(uprnDownloadServiceEndpoints);
+			aiUprnChatbotService = new AiUprnChatbotService(aiUprnChatbotServiceEndpoints);
 
-		isUprnDownloadServiceAvailable = await uprnDownloadService.getHealth();
-		if (isUprnDownloadServiceAvailable)
-			console.log('[uprn-2/page] UPRN Download Service is available');
-		else console.warn('[uprn-2/page] UPRN Download Service is NOT available');
+			isUprnDownloadServiceAvailable = await uprnDownloadService.getHealth();
+			if (isUprnDownloadServiceAvailable)
+				console.log('[uprn-2/page] UPRN Download Service is available');
+			else console.warn('[uprn-2/page] UPRN Download Service is NOT available');
 
-		isAiUprnChatbotServiceAvailable = await aiUprnChatbotService.getHealth();
-		if (isAiUprnChatbotServiceAvailable)
-			console.log('[uprn-2/page] AI UPRN Chatbot Service is available');
-		else console.warn('[uprn-2/page] AI UPRN Chatbot Service is NOT available');
+			isAiUprnChatbotServiceAvailable = await aiUprnChatbotService.getHealth();
+			if (isAiUprnChatbotServiceAvailable)
+				console.log('[uprn-2/page] AI UPRN Chatbot Service is available');
+			else console.warn('[uprn-2/page] AI UPRN Chatbot Service is NOT available');
+		};
+
+		initServices(); // Do not await to avoid blocking UI
 
 		fieldsToHide = new Set(
 			appConfig.serviceUprn2Config.dataSelectionTreeviewConfig?.fieldsToHide || []
@@ -167,8 +180,6 @@
 			itemId: appConfig.serviceUprn2Config.portalItemId || '',
 			proxy: appConfig.serviceUprn2Config.proxy
 		});
-
-		console.log('[page] WebMap loaded');
 	});
 
 	/**
@@ -229,8 +240,10 @@
 					<UprnTabBarContent>
 						{#if webMapStore.isLoaded}
 							<DataSelectionTreeview
+								bind:this={dataSelectionTreeview}
 								webMap={webMapStore.data}
 								treeviewConfigStore={dataSelectionTreeviewConfig!}
+								{customRendererService}
 								{fieldFilterMenuStore}
 							/>
 						{/if}
@@ -239,7 +252,12 @@
 
 				<div hidden={currentTab !== 'export'}>
 					<UprnTabBarContent>
-						<ExportMenu {webMapStore} {areaSelectionTreeviewStore} {fieldFilterMenuStore} />
+						<ExportMenu
+							{webMapStore}
+							{areaSelectionTreeviewStore}
+							dataSelectionTreeviewConfig={dataSelectionTreeviewConfig!}
+							{fieldFilterMenuStore}
+						/>
 					</UprnTabBarContent>
 				</div>
 
@@ -256,13 +274,16 @@
 				</div>
 			</SidebarLayout.Content>
 
+			<div class="fixed pt-1 pl-1">
+				<ClearSelectionsButton clear={clearAllSelections} />
+			</div>
 			<SidebarLayout.Footer>
 				<div hidden={currentTab !== 'export'}>
 					<ExportMenuFooter onExportSuccess={switchToDownloadsTab} />
 				</div>
 			</SidebarLayout.Footer>
 
-			<CollapsibleWindow>
+			<CollapsibleWindow isOpenedOnInit={true}>
 				{#if !aiUprnChatbotService || !isAiUprnChatbotServiceAvailable}
 					<p class="p-4 text-center text-sm text-gray-500">
 						AI UPRN Chatbot service is not available.
@@ -271,27 +292,6 @@
 					<UprnChat {aiUprnChatbotService} />
 				{/if}
 			</CollapsibleWindow>
-
-			<!-- <Sidebar.Sidebar
-				isOpen={chatSidebarOpen}
-				onToggle={toggleChatSidebar}
-				position={chatSidebarPosition}
-				originalSize="300px"
-				overlay
-				openIcon={Bot}
-			>
-				{#snippet children()}
-					{#if !aiUprnChatbotService || !isAiUprnChatbotServiceAvailable}
-						<p class="p-4 text-center text-sm text-gray-500">
-							AI UPRN Chatbot service is not available.
-						</p>
-					{:else}
-						<UprnChat {aiUprnChatbotService} />
-					{/if}
-				{/snippet}
-			</Sidebar.Sidebar> -->
-
-			<!-- <ChatToggleBar /> -->
 		</div>
 	{/snippet}
 

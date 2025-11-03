@@ -32,6 +32,7 @@
 	import { SelectionState, TreeLayerNode, type TreeNode } from '../types.js';
 	import Node from './node.svelte';
 	import { TreeviewSelectionController } from '$lib/controllers/TreeviewSelectionController.js';
+	import type { CustomRendererService } from '$lib/services/custom-renderer-service.js';
 
 	/**
 	 * Props for the TreeView component.
@@ -39,10 +40,16 @@
 	type Props = {
 		/** The ESRI WebMap containing layers to display. */
 		webMap?: __esri.WebMap | null;
+
 		/** Configuration store for tree view settings. */
 		treeviewConfigStore: TreeviewConfigStore;
+
+		/** Service for custom renderers */
+		customRendererService?: CustomRendererService;
+
 		/** Set of field names to hide from the tree. */
 		fieldsToHide?: Set<string>;
+
 		/** Store for managing field filter menus. */
 		fieldFilterMenuStore: FieldFilterMenuStore;
 	};
@@ -51,9 +58,14 @@
 	const {
 		webMap = null,
 		treeviewConfigStore,
+		customRendererService,
 		fieldFilterMenuStore,
 		fieldsToHide
 	}: Props = $props();
+
+	export function clearSelections() {
+		treeviewStore.clearSelections();
+	}
 
 	/** Instance of the tree view store. */
 	const treeviewStore = new TreeviewStore();
@@ -73,7 +85,12 @@
 			await loadFeatureLayers(webMap.layers.toArray());
 
 			const aliasPathConverter = new AliasPathNodeConverter(treeviewConfigStore);
-			treeviewStore.initialize(webMap.layers.toArray(), treeviewConfigStore, [aliasPathConverter]);
+			treeviewStore.initialize(
+				webMap.layers.toArray(),
+				treeviewConfigStore,
+				[aliasPathConverter],
+				customRendererService
+			);
 		};
 
 		initializeWebMap();

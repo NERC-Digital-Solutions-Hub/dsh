@@ -8,6 +8,7 @@ import { type TreeviewNodeConfig, type VisibilityGroupConfig } from '$lib/types/
 import { SvelteMap } from 'svelte/reactivity';
 
 import type { CustomNodeConverter } from '$lib/components/common/services/uprn2/tree-view/services/custom-node-converter';
+import type { CustomRendererService } from '$lib/services/custom-renderer-service';
 
 export class TreeviewStore {
 	public initialized: boolean = $state<boolean>(false);
@@ -41,10 +42,14 @@ export class TreeviewStore {
 	/** Custom converters for nodes */
 	#customConverters: SvelteMap<string, CustomNodeConverter> = $state(new SvelteMap());
 
+	/** Service for custom renderers */
+	#customRendererService: CustomRendererService | null = null;
+
 	initialize(
 		layers: __esri.Layer[],
 		configStore: TreeviewConfigStore,
-		customConverters?: CustomNodeConverter[]
+		customConverters?: CustomNodeConverter[],
+		customRendererService?: CustomRendererService
 	): void {
 		if (this.initialized) {
 			throw new Error('TreeviewStore is already initialized.');
@@ -62,6 +67,10 @@ export class TreeviewStore {
 			for (const converter of customConverters) {
 				this.#customConverters.set(converter.id, converter);
 			}
+		}
+
+		if (customRendererService) {
+			this.#customRendererService = customRendererService;
 		}
 
 		if (!layers) {
@@ -102,6 +111,19 @@ export class TreeviewStore {
 	getNonHiddenNodes(): TreeNode[] {
 		this.#checkInitialized();
 		return this.#getNonHiddenNodes(this.#treeNodes);
+	}
+
+	clearSelections(): void {
+		this.#checkInitialized();
+		for (const nodeId of this.#visibilityState.keys()) {
+			this.#visibilityState.set(nodeId, false);
+			const node = this.#treeNodesLookup.get(nodeId);
+			if (node && node instanceof TreeLayerNode) {
+				node.layer.visible = false;
+			}
+		}
+
+		this.#activeInVisibilityGroup.clear();
 	}
 
 	#getNonHiddenNodes(nodes: TreeNode[]): TreeNode[] {
@@ -154,6 +176,11 @@ export class TreeviewStore {
 		node.layer.visible = isVisible;
 		if (node instanceof TreeFieldNode) {
 			node.featureLayer.displayField = isVisible ? node.field.name : '';
+
+			if (isVisible && this.#customRendererService) {
+				console.log('[TreeviewStore] Applying custom renderer for field:', node.field.name);
+				this.#customRendererService.applyCustomRenderer(node.featureLayer, node.field.name);
+			}
 		}
 
 		this.#updateParentVisibility(node, isVisible);

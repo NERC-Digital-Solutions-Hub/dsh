@@ -1,15 +1,32 @@
 import { browser } from '$app/environment';
+import type {
+	CustomRendererClassBreak,
+	CustomRenderers,
+	CustomRenderersSymbolAppearance,
+	CustomRendererSymbol,
+	LODSize
+} from '$lib/types/custom-renderers';
 import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import { type Database } from 'sql.js';
+import Renderer from '@arcgis/core/renderers/Renderer';
+import ClassBreaksRenderer from '@arcgis/core/renderers/ClassBreaksRenderer';
+import SimpleRenderer from '@arcgis/core/renderers/SimpleRenderer';
+import { ImageTileLevelOfDetails } from '$lib/services/image-tile-lods';
+import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
+import SimpleLineSymbol from '@arcgis/core/symbols/SimpleLineSymbol';
+import Color from '@arcgis/core/Color';
+
+type CustomRendererSymbolWithAppearances = CustomRendererSymbol & {
+	Appearances: CustomRenderersSymbolAppearance[];
+};
 
 export class CustomRendererService {
-	#db: Database = null!;
+	#data: CustomRenderers = null!;
 	#isInitialised: boolean = false;
 
-	async init(connectionString: string) {
+	async init(path: string) {
 		if (!browser) {
 			console.warn(
-				'[CustomRendererService] init called in non-browser environment. Skipping initialization.'
+				'[custom-renderer-service] init called in non-browser environment. Skipping initialization.'
 			);
 			return;
 		}
@@ -18,308 +35,313 @@ export class CustomRendererService {
 			return;
 		}
 
-		const dbInstance: Response = await fetch(connectionString);
-		const [{ default: initSqlJs }, { default: sqlWasmUrl }] = await Promise.all([
-			import('sql.js'),
-			import('sql.js/dist/sql-wasm.wasm?url')
-		]);
-
-		const SQL = await initSqlJs({
-			locateFile: (f) => (f === 'sql-wasm.wasm' ? sqlWasmUrl : f)
-		});
-
-		const buffer = await dbInstance.arrayBuffer();
-		this.#db = new SQL.Database(new Uint8Array(buffer));
+		await this.#loadJsonData(path);
 		this.#isInitialised = true;
+	}
+
+	async #loadJsonData(path: string) {
+		const res = await fetch(path);
+		const data = await res.json();
+		this.#data = data as CustomRenderers;
+	}
+
+	doesFieldHaveCustomRenderer(featureLayer: FeatureLayer, fieldName: string): boolean {
+		this.#ensureInitialised();
+
+		// Find the feature layer by name
+		const featureLayerRecord = this.#data.FeatureLayers.find(
+			(fl) => fl.Name === featureLayer.title
+		);
+
+		if (!featureLayerRecord) {
+			return false;
+		}
+
+		// Find the field by name and feature layer ID
+		const fieldRecord = this.#data.Fields.find(
+			(f) => f.FeatureLayerId === featureLayerRecord.Id && f.Name === fieldName
+		);
+
+		if (!fieldRecord) {
+			return false;
+		}
+
+		// Check if there's a custom renderer for this field
+		const customRendererField = this.#data.CustomRenderers_Fields.find(
+			(crf) => crf.FieldId === fieldRecord.Id
+		);
+
+		return !!customRendererField;
+	}
+
+	getAllFieldsWithCustomRenderers(featureLayer: FeatureLayer): string[] {
+		this.#ensureInitialised();
+
+		// Find the feature layer by name
+		const featureLayerRecord = this.#data.FeatureLayers.find(
+			(fl) => fl.Name === featureLayer.title
+		);
+
+		if (!featureLayerRecord) {
+			return [];
+		}
+
+		// Find all fields for this feature layer
+		const fieldsForLayer = this.#data.Fields.filter(
+			(f) => f.FeatureLayerId === featureLayerRecord.Id
+		);
+
+		// Find fields that have custom renderers
+		const fieldNames: string[] = [];
+		for (const field of fieldsForLayer) {
+			const hasCustomRenderer = this.#data.CustomRenderers_Fields.some(
+				(crf) => crf.FieldId === field.Id
+			);
+			if (hasCustomRenderer) {
+				fieldNames.push(field.Name);
+			}
+		}
+
+		return fieldNames;
 	}
 
 	async applyCustomRenderer(featureLayer: FeatureLayer, fieldName: string) {
 		this.#ensureInitialised();
+
+		// Find the feature layer by name
+		const featureLayerRecord = this.#data.FeatureLayers.find(
+			(fl) => fl.Name === featureLayer.title
+		);
+
+		if (!featureLayerRecord) {
+			return;
+		}
+
+		// Find the field by name and feature layer ID
+		const fieldRecord = this.#data.Fields.find(
+			(f) => f.FeatureLayerId === featureLayerRecord.Id && f.Name === fieldName
+		);
+
+		if (!fieldRecord) {
+			console.warn(
+				`[custom-renderer-service] could not find the field ${fieldName} for feature layer id ${featureLayerRecord.Id}`
+			);
+			return;
+		}
+
+		// Find the custom renderer field mapping
+		const customRendererField = this.#data.CustomRenderers_Fields.find(
+			(crf) => crf.FieldId === fieldRecord.Id
+		);
+
+		if (!customRendererField) {
+			console.warn(
+				`[custom-renderer-service] could not find a custom renderer field for field ${fieldName} in feature layer id ${featureLayerRecord.Id}`
+			);
+			return;
+		}
+
+		// Find the custom renderer
+		const customRenderer = this.#data.CustomRenderers.find(
+			(cr) => cr.Id === customRendererField.CustomRendererId
+		);
+
+		if (!customRenderer) {
+			throw new Error(
+				`Could not find a custom renderer with the id ${customRendererField.CustomRendererId}`
+			);
+		}
+
+		const customClassBreaks = await this.getRendererClassBreaks(
+			customRenderer.ClassBreaksGroupId.toString()
+		);
+		const customSymbols = await this.getRendererSymbols(customRenderer.SymbolsId.toString());
+
+		const renderer: Renderer = this.#createRenderer(
+			customRenderer.CustomRendererType,
+			customSymbols,
+			customClassBreaks,
+			[],
+			fieldName
+		);
+
+		featureLayer.renderer = renderer;
+		this.setCustomOutlines(featureLayer, customRenderer.LodsGroupId);
 	}
 
-	// async setCustomOutlines(featureLayer: FeatureLayer, rendererTables: Map<string, FeatureLayer>) {
-	// 	const featureClassesTable = rendererTables.get(NdshRenderersSettings.FeatureClasses);
-	// 	if (!featureClassesTable) {
-	// 		throw new Error('Could not find the FeatureClasses table');
-	// 	}
+	async setCustomOutlines(featureLayer: FeatureLayer, lodsGroupId: number) {
+		// Find all LODs for the given group ID, sorted by Lod
+		const lodsResult = this.#data.CustomRenderers_Lods.filter(
+			(lod) => lod.GroupId === lodsGroupId
+		).sort((a, b) => a.Lod - b.Lod);
 
-	// 	const featureClassesTableQuery = await featureClassesTable.queryFeatures({
-	// 		where: `FeatureClassName = '${featureLayer.title}'`,
-	// 		outFields: ['FeatureClassId']
-	// 	});
-	// 	if (featureClassesTableQuery.features.length === 0) {
-	// 		return;
-	// 	}
-	// 	const featureClassId = featureClassesTableQuery.features[0].attributes['FeatureClassId'];
-	// 	if (!featureClassId) {
-	// 		//throw new Error(`Could not find the feature class id for ${featureLayer.title}`);
-	// 		return;
-	// 	}
-
-	// 	const featureClassesOutlinesTable = rendererTables.get(
-	// 		NdshRenderersSettings.FeatureClassesOutlines
-	// 	);
-	// 	if (!featureClassesOutlinesTable) {
-	// 		throw new Error('Could not find the FeatureClassesOutlines table');
-	// 	}
-
-	// 	const featureClassesOutlinesTableQuery = await featureClassesOutlinesTable.queryFeatures({
-	// 		where: `FeatureClassId = ${featureClassId}`,
-	// 		outFields: ['*']
-	// 	});
-
-	// 	const lodSizes: LODSize[] = [];
-	// 	const levelsOfDetail = Object.values(ImageTileLevelOfDetails);
-
-	// 	featureClassesOutlinesTableQuery.features.forEach((feature) => {
-	// 		if (feature.attributes['FeatureClassId'] !== featureClassId) {
-	// 			return;
-	// 		}
-
-	// 		const size: number = feature.attributes['Size'];
-	// 		const lod: number = feature.attributes['Lod'];
-	// 		const lodIndex: number = this.#getLODIndex(levelsOfDetail, lod) - 1;
-	// 		lodSizes.push({ size, value: levelsOfDetail[lodIndex].scale });
-	// 	});
-
-	// 	if (
-	// 		featureLayer.renderer instanceof ClassBreaksRenderer ||
-	// 		featureLayer.renderer instanceof SimpleRenderer
-	// 	) {
-	// 		this.#setVisualVariables(featureLayer.renderer, lodSizes);
-	// 	}
-	// }
-
-	// async createSymbology(
-	// 	fieldId: string,
-	// 	rendererId: string,
-	// 	rendererTables: Map<string, FeatureLayer>
-	// ): Promise<Renderer> {
-	// 	try {
-	// 		const rendererClassBreaksAttributes = await this.getRendererClassBreaksAttributes(
-	// 			rendererId,
-	// 			rendererTables
-	// 		);
-	// 		const rendererTypeId = rendererClassBreaksAttributes['RendererTypeId'];
-
-	// 		const lodSizes = await this.getLODs(rendererTypeId, rendererTables);
-	// 		const rendererTypesAttributes = await this.getRendererTypesAttributes(
-	// 			rendererTypeId,
-	// 			rendererTables
-	// 		);
-
-	// 		return this.createRenderer(
-	// 			rendererTypesAttributes,
-	// 			rendererClassBreaksAttributes,
-	// 			lodSizes,
-	// 			fieldId
-	// 		);
-	// 	} catch (error) {
-	// 		console.error('Error creating symbology:', error);
-	// 		throw error;
-	// 	}
-	// }
-
-	// async getRendererClassBreaksAttributes(
-	// 	rendererId: string,
-	// 	rendererTables: Map<string, FeatureLayer>
-	// ): Promise<any> {
-	// 	const rendererClassBreaksTable = rendererTables.get(NdshRenderersSettings.RendererClassBreaks);
-	// 	if (!rendererClassBreaksTable) {
-	// 		throw new Error('Could not find the RendererClassBreaks table');
-	// 	}
-
-	// 	const query = await rendererClassBreaksTable.queryFeatures({
-	// 		where: `RendererId = '${rendererId}'`,
-	// 		outFields: ['*']
-	// 	});
-
-	// 	if (query.features.length === 0) {
-	// 		throw new Error(`Could not find the renderer with the id ${rendererId}`);
-	// 	}
-
-	// 	return query.features[0].attributes;
-	// }
-
-	// async getRendererTypesAttributes(
-	// 	rendererTypeId: string,
-	// 	rendererTables: Map<string, FeatureLayer>
-	// ): Promise<any> {
-	// 	const rendererTypesTable = rendererTables.get(NdshRenderersSettings.RendererTypes);
-	// 	if (!rendererTypesTable) {
-	// 		throw new Error('Could not find the RendererTypes table');
-	// 	}
-
-	// 	const query = await rendererTypesTable.queryFeatures({
-	// 		where: `RendererTypeId = '${rendererTypeId}'`,
-	// 		outFields: ['*']
-	// 	});
-
-	// 	if (query.features.length === 0) {
-	// 		throw new Error(`Could not find the renderer type with the id ${rendererTypeId}`);
-	// 	}
-
-	// 	return query.features[0].attributes;
-	// }
-
-	// async getLODs(
-	// 	rendererTypeId: string,
-	// 	rendererTables: Map<string, FeatureLayer>
-	// ): Promise<LODSize[]> {
-	// 	const rendererOutlinesTable = rendererTables.get(NdshRenderersSettings.RendererOutlines);
-	// 	if (!rendererOutlinesTable) {
-	// 		throw new Error('Could not find the RendererOutlines table');
-	// 	}
-
-	// 	const query = await rendererOutlinesTable.queryFeatures({
-	// 		where: `RendererTypeId = '${rendererTypeId}'`,
-	// 		outFields: ['*']
-	// 	});
-
-	// 	return this.extractLODSize(rendererTypeId, query);
-	// }
-
-	// extractLODSize(rendererTypeId: string, query: FeatureSet): LODSize[] {
-	// 	const lodSizes: LODSize[] = [];
-	// 	const levelsOfDetail = Object.values(ImageTileLevelOfDetails);
-
-	// 	query.features.forEach((feature) => {
-	// 		if (feature.attributes['RendererTypeId'] !== rendererTypeId) {
-	// 			return;
-	// 		}
-
-	// 		const size: number = feature.attributes['Size'];
-	// 		const lod: number = feature.attributes['LOD'];
-	// 		const lodIndex: number = this.#getLODIndex(levelsOfDetail, lod);
-	// 		lodSizes.push({ size, value: levelsOfDetail[lodIndex].scale });
-	// 	});
-
-	// 	return lodSizes;
-	// }
-
-	// #getLODIndex(levelsOfDetail: any, lod: number): number {
-	// 	// in ClimateJust, the LODs scale downwards (e.g. LOD 2 size goes upto LOD 1 size; if between 1 and 2, 1 is used).
-	// 	// in Esri, the LODs scale upwards (e.g. LOD 1 size goes upto LOD 2 size; if between 2 and 1, 2 is used).
-	// 	// to ensure that the intended configuration is used, the LODs are incremented by 1.
-	// 	const lodIndex = levelsOfDetail.findIndex((ls) => ls.lod === lod);
-	// 	if (lodIndex === -1) {
-	// 		return 0;
-	// 	}
-
-	// 	return lodIndex < 23 ? lodIndex + 1 : lodIndex;
-	// }
-
-	// private createRenderer(
-	// 	rendererTypesAttributes: any,
-	// 	rendererClassBreaksAttributes: any,
-	// 	lodSizes: LODSize[],
-	// 	fieldId: string
-	// ): Renderer {
-	// 	const renderType = rendererTypesAttributes['Type'];
-
-	// 	switch (renderType) {
-	// 		case 'simple':
-	// 			return this.#createSimpleRenderer(rendererTypesAttributes, lodSizes);
-	// 		case 'classBreaks':
-	// 			return this.#createClassBreaksRenderer(
-	// 				fieldId,
-	// 				rendererClassBreaksAttributes,
-	// 				rendererTypesAttributes,
-	// 				lodSizes
-	// 			);
-	// 		default:
-	// 			throw new Error(`Unknown renderer type: ${renderType}`);
-	// 	}
-	// }
-
-	// #createClassBreaksRenderer(
-	// 	fieldId: string,
-	// 	rendererClassBreaksAttributes: any,
-	// 	rendererTypesAttributes: any,
-	// 	lodSizes: LODSize[]
-	// ): ClassBreaksRenderer {
-	// 	const classMinValueField = 'ClassMinValue';
-	// 	const classMaxValueField = 'ClassMaxValue';
-	// 	const symbolColorField = 'SymbolColor';
-	// 	const outlineColorField = 'OutlineColor';
-	// 	const outlineWidthField = 'OutlineWidth';
-	// 	const totalClasses = rendererTypesAttributes['Classes'];
-
-	// 	const renderer = new ClassBreaksRenderer({
-	// 		field: fieldId
-	// 	});
-
-	// 	for (let i = 1; i <= totalClasses; i++) {
-	// 		const minValue = rendererClassBreaksAttributes[classMinValueField + i];
-	// 		const maxValue = rendererClassBreaksAttributes[classMaxValueField + i];
-	// 		const symbolColor = rendererTypesAttributes[symbolColorField + i];
-	// 		const outlineColor = rendererTypesAttributes[outlineColorField + i];
-	// 		const outlineWidth = rendererTypesAttributes[outlineWidthField + i];
-	// 		renderer.addClassBreakInfo({
-	// 			minValue: minValue,
-	// 			maxValue: maxValue,
-	// 			symbol: new SimpleFillSymbol({
-	// 				color: Color.fromHex(symbolColor),
-	// 				outline: new SimpleLineSymbol({
-	// 					color: Color.fromHex(outlineColor),
-	// 					width: outlineWidth
-	// 				})
-	// 			})
-	// 		});
-	// 	}
-
-	// 	this.#setVisualVariables(renderer, lodSizes);
-
-	// 	return renderer;
-	// }
-
-	// #createSimpleRenderer(rendererTypesAttributes: any, lodSizes: LODSize[]): SimpleRenderer {
-	// 	const symbolColorField = 'SymbolColor1';
-	// 	const outlineColorField = 'OutlineColor1';
-	// 	const outlineWidthField = 'OutlineWidth1';
-
-	// 	const symbolColor = rendererTypesAttributes[symbolColorField];
-	// 	const outlineColor = rendererTypesAttributes[outlineColorField];
-	// 	const outlineWidth = rendererTypesAttributes[outlineWidthField];
-
-	// 	const renderer = new SimpleRenderer({
-	// 		symbol: new SimpleFillSymbol({
-	// 			color: Color.fromHex(symbolColor),
-	// 			outline: new SimpleLineSymbol({
-	// 				color: Color.fromHex(outlineColor),
-	// 				width: outlineWidth
-	// 			})
-	// 		})
-	// 	});
-
-	// 	this.#setVisualVariables(renderer, lodSizes);
-
-	// 	return renderer;
-	// }
-
-	// #setVisualVariables(renderer: ClassBreaksRenderer | SimpleRenderer, lodSizes: LODSize[]): void {
-	// 	renderer.visualVariables = [
-	// 		{
-	// 			type: 'size',
-	// 			target: 'outline', // this is right, Ersi's type declaration for the VisualVariable is incorrect.
-	// 			valueExpression: '$view.scale',
-	// 			stops: lodSizes
-	// 		} as any
-	// 	];
-	// }
-
-	async getCustomRenderer() { // TODO: This is a test.
-		this.#ensureInitialised();
-
-		const stmt = this.#db.prepare('SELECT * FROM CustomRenderers');
-		const rows = [];
-		while (stmt.step()) {
-			rows.push(stmt.getAsObject()); // {col1: val1, col2: val2, ...}
+		if (lodsResult.length === 0) {
+			console.warn(`No LODs found for LODs group id ${lodsGroupId}`);
+			return;
 		}
-		stmt.free();
 
-		console.table(rows);
-		return rows;
+		const lodSizes: LODSize[] = [];
+		const levelsOfDetail = Object.values(ImageTileLevelOfDetails);
+
+		lodsResult.forEach((lodRecord) => {
+			const outlineWidth: number = lodRecord.OutlineWidth;
+			const lod: number = lodRecord.Lod;
+			const lodIndex: number = this.#getLODIndex(levelsOfDetail, lod) - 1;
+			lodSizes.push({ size: outlineWidth, value: levelsOfDetail[lodIndex].scale });
+		});
+
+		if (
+			featureLayer.renderer instanceof ClassBreaksRenderer ||
+			featureLayer.renderer instanceof SimpleRenderer
+		) {
+			this.#setVisualVariables(featureLayer.renderer, lodSizes);
+		}
+	}
+
+	async getRendererClassBreaks(classBreakGroupId: string): Promise<CustomRendererClassBreak[]> {
+		const groupId = parseInt(classBreakGroupId, 10);
+
+		// Find all class breaks for the given group ID, sorted by Order
+		const result = this.#data.CustomRenderers_ClassBreaks.filter(
+			(cb) => cb.GroupId === groupId
+		).sort((a, b) => a.Order - b.Order);
+
+		if (result.length === 0) {
+			throw new Error(`Could not find a group with the id ${classBreakGroupId}`);
+		}
+
+		return result;
+	}
+
+	async getRendererSymbols(symbolsId: string): Promise<CustomRendererSymbolWithAppearances> {
+		const id = parseInt(symbolsId, 10);
+
+		// Find the symbol by ID
+		const symbolsResult = this.#data.CustomRenderers_Symbols.find((s) => s.Id === id);
+
+		if (!symbolsResult) {
+			throw new Error(`Could not find a symbol with the id ${symbolsId}`);
+		}
+
+		// Find all appearances for this symbol, sorted by Order
+		const appearancesResult = this.#data.CustomRenderers_Symbols_Appearances.filter(
+			(a) => a.SymbolsId === id
+		).sort((a, b) => a.Order - b.Order);
+
+		const result: CustomRendererSymbolWithAppearances = {
+			...symbolsResult,
+			Appearances: appearancesResult
+		};
+
+		return result;
+	}
+
+	#getLODIndex(levelsOfDetail: { lod: number; scale: number }[], lod: number): number {
+		// in ClimateJust, the LODs scale downwards (e.g. LOD 2 size goes upto LOD 1 size; if between 1 and 2, 1 is used).
+		// in Esri, the LODs scale upwards (e.g. LOD 1 size goes upto LOD 2 size; if between 2 and 1, 2 is used).
+		// to ensure that the intended configuration is used, the LODs are incremented by 1.
+		const lodIndex = levelsOfDetail.findIndex((ls) => ls.lod === lod);
+		if (lodIndex === -1) {
+			return 0;
+		}
+
+		return lodIndex < 23 ? lodIndex + 1 : lodIndex;
+	}
+
+	#createRenderer(
+		rendererTypeId: number,
+		customSymbols: CustomRendererSymbolWithAppearances,
+		customClassBreaks: CustomRendererClassBreak[],
+		lodSizes: LODSize[],
+		fieldId: string
+	): Renderer {
+		switch (rendererTypeId) {
+			case 1:
+				return this.#createSimpleRenderer(customSymbols, lodSizes);
+			case 2:
+				return this.#createClassBreaksRenderer(fieldId, customSymbols, customClassBreaks, lodSizes);
+			default:
+				throw new Error(`Unknown renderer type: ${rendererTypeId}`);
+		}
+	}
+
+	#createClassBreaksRenderer(
+		fieldId: string,
+		customSymbols: CustomRendererSymbolWithAppearances,
+		customClassBreaks: CustomRendererClassBreak[],
+		lodSizes: LODSize[]
+	): ClassBreaksRenderer {
+		const classMinValueField = 'ClassMinValue';
+		const classMaxValueField = 'ClassMaxValue';
+		const symbolColorField = 'SymbolColor';
+		const outlineColorField = 'OutlineColor';
+		const outlineWidthField = 'OutlineWidth';
+		const totalClasses = customSymbols.Appearances.length;
+
+		const renderer = new ClassBreaksRenderer({
+			field: fieldId
+		});
+
+		for (let i = 0; i < totalClasses; i++) {
+			const minValue = customClassBreaks[i][classMinValueField];
+			const maxValue = customClassBreaks[i][classMaxValueField];
+			const symbolColor = customSymbols.Appearances[i][symbolColorField];
+			const outlineColor = customSymbols.Appearances[i][outlineColorField];
+			const outlineWidth = customSymbols.Appearances[i][outlineWidthField];
+			renderer.addClassBreakInfo({
+				minValue: minValue,
+				maxValue: maxValue,
+				symbol: new SimpleFillSymbol({
+					color: Color.fromHex(symbolColor)!,
+					outline: new SimpleLineSymbol({
+						color: Color.fromHex(outlineColor)!,
+						width: outlineWidth
+					})
+				})
+			});
+		}
+
+		this.#setVisualVariables(renderer, lodSizes);
+
+		return renderer;
+	}
+
+	#createSimpleRenderer(
+		customSymbols: CustomRendererSymbolWithAppearances,
+		lodSizes: LODSize[]
+	): SimpleRenderer {
+		const symbolColorField = 'SymbolColor';
+		const outlineColorField = 'OutlineColor';
+		const outlineWidthField = 'OutlineWidth';
+
+		const symbolColor = customSymbols.Appearances[0][symbolColorField];
+		const outlineColor = customSymbols.Appearances[0][outlineColorField];
+		const outlineWidth = customSymbols.Appearances[0][outlineWidthField];
+
+		const renderer = new SimpleRenderer({
+			symbol: new SimpleFillSymbol({
+				color: Color.fromHex(symbolColor)!,
+				outline: new SimpleLineSymbol({
+					color: Color.fromHex(outlineColor),
+					width: outlineWidth
+				})
+			})
+		});
+
+		this.#setVisualVariables(renderer, lodSizes);
+
+		return renderer;
+	}
+
+	#setVisualVariables(renderer: ClassBreaksRenderer | SimpleRenderer, lodSizes: LODSize[]): void {
+		renderer.visualVariables = [
+			{
+				type: 'size',
+				target: 'outline', // this is right, Ersi's type declaration for the VisualVariable is incorrect.
+				valueExpression: '$view.scale',
+				stops: lodSizes
+			} as __esri.VisualVariableProperties
+		];
 	}
 
 	#ensureInitialised() {
@@ -327,8 +349,8 @@ export class CustomRendererService {
 			throw new Error('CustomRendererService is not initialized');
 		}
 
-		if (!this.#db) {
-			throw new Error('Database instance is not available');
+		if (!this.#data) {
+			throw new Error('Data is not loaded');
 		}
 	}
 }

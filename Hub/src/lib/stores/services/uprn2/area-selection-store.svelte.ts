@@ -257,6 +257,15 @@ class AreaSelectionStore {
 		return codeField;
 	}
 
+	clearSelections(): void {
+		this.resetSelectedAreas();
+		this.clearHoveredArea();
+		this.lastAddedArea = null;
+		this.lastRemovedArea = null;
+		this.currentHoveredArea = null;
+		console.log('[area-selection-store] selections cleared.');
+	}
+
 	cleanup(): void {
 		this.resetSelectedAreas();
 		this.clearHoveredArea();
@@ -271,3 +280,4 @@ class AreaSelectionStore {
 }
 
 export const areaSelectionStore = new AreaSelectionStore();
+export type { AreaSelectionStore };

@@ -59,6 +59,14 @@ class DataSelectionStore {
 	/**
 	 * Clear all DataSelections from the store.
 	 */
+	public clearSelections(): void {
+		this.#dataSelections.clear();
+		console.log('[data-selection-store] selections cleared.');
+	}
+
+	/**
+	 * Clear all DataSelections from the store.
+	 */
 	public cleanup(): void {
 		this.#dataSelections.clear();
 	}
