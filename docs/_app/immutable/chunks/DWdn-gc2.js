@@ -1,1 +1,0 @@
-import{c,v as p}from"./DVFGfKmI.js";function f(r){return{geometryType:p(r[0]),geometries:r.map((t=>t.toJSON()))}}function i(r,t,o){const n=c(t);return r.map((m=>{const e=n.fromJSON(m);return e.spatialReference=o,e}))}export{i as o,f as r};
