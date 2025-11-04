@@ -1,4 +1,5 @@
-import { SvelteMap } from 'svelte/reactivity';
+import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 export type AreaSelectionFieldInfo = {
 	layerName: string;
@@ -20,6 +21,7 @@ export type HighlightAreaInfo = {
  * Store for managing the selected areas.
  */
 class AreaSelectionStore {
+	public visibleLayer = $state<FeatureLayer | null>(null);
 	public layerHighlightState = $state<LayerHighlightState>({
 		featureLayerView: null,
 		areaInfos: []
@@ -27,6 +29,7 @@ class AreaSelectionStore {
 	public lastAddedArea = $state<HighlightAreaInfo | null>(null);
 	public lastRemovedArea = $state<HighlightAreaInfo | null>(null);
 	public currentHoveredArea = $state<HighlightAreaInfo | null>(null);
+	public areaSelectionLayerIds = $state<Set<string>>(new SvelteSet());
 
 	#fieldInfo: AreaSelectionFieldInfo[] = [];
 	#cachedNames: SvelteMap<string, Map<number, string>> = new SvelteMap<
@@ -80,6 +83,7 @@ class AreaSelectionStore {
 			});
 		}
 
+		this.visibleLayer = null;
 		this.layerHighlightState = {
 			featureLayerView: null,
 			areaInfos: []

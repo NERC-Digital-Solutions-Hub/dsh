@@ -29,16 +29,15 @@
 	 * ```
 	 */
 	import { browser } from '$app/environment';
+	import { LayerViewProvider } from '$lib/services/layer-view-provider';
 	import { areaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
 	import { mapInteractionStore } from '$lib/stores/services/uprn2/map-interaction-store.svelte';
-	import type { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
 	import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 	import type Map from '@arcgis/core/Map';
 	import type MapView from '@arcgis/core/views/MapView';
 	import type WebMap from '@arcgis/core/WebMap';
 	import type { Snippet } from 'svelte';
 	import { onDestroy, onMount } from 'svelte';
-	import { TreeLayerNode } from '../tree-view/types';
 
 	type UIPosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'manual';
 
@@ -48,8 +47,6 @@
 	type Props = {
 		/** The WebMap instance to display. If null, a fallback map will be created */
 		webMap?: __esri.WebMap | null;
-		/** The area selection treeview store for managing visible node and selections */
-		areaSelectionTreeviewStore: TreeviewStore;
 		/** Position for the custom panel UI element */
 		panelPosition?: UIPosition;
 		/** Position for the custom menu UI element */
@@ -62,7 +59,6 @@
 
 	const {
 		webMap = null,
-		areaSelectionTreeviewStore,
 		panelPosition = 'top-left',
 		menuPosition = 'top-right',
 		panel,
@@ -80,6 +76,14 @@
 	let MapViewContructor: typeof MapView;
 	let WebMapContructor: typeof WebMap;
 	let FeatureLayerContructor: typeof FeatureLayer;
+
+	export function getLayerViewProvider(): LayerViewProvider {
+		if (!mapView) {
+			throw new Error('MapView is not initialized');
+		}
+
+		return new LayerViewProvider(mapView);
+	}
 
 	onMount(async () => {
 		await loadEsriAsync();
@@ -243,41 +247,24 @@
 
 	// Effect to update interactable layers when they change
 	$effect(() => {
-		if (!mapView || !areaSelectionTreeviewStore.initialized) {
+		if (!mapView) {
 			return;
 		}
 
-		const nonHiddenNodes = areaSelectionTreeviewStore.getNonHiddenNodes().map((node) => node.id);
 		if (mapInteractionStore.initialized) {
-			mapInteractionStore.updateInteractableLayers(new Set(nonHiddenNodes));
+			mapInteractionStore.updateInteractableLayers(areaSelectionStore.areaSelectionLayerIds);
 		} else {
-			mapInteractionStore.initializeAsync(mapView, new Set(nonHiddenNodes));
+			mapInteractionStore.initializeAsync(mapView, areaSelectionStore.areaSelectionLayerIds);
 		}
 	});
 
 	// Effect to handle visible node changes and update layer view
 	$effect(() => {
-		if (!areaSelectionTreeviewStore.initialized) {
+		if (!mapView || !areaSelectionStore.visibleLayer) {
 			return;
 		}
 
-		if (!areaSelectionTreeviewStore.getVisibleNodes().length) {
-			areaSelectionStore.resetSelectedAreas();
-			return;
-		}
-
-		const node = areaSelectionTreeviewStore.getVisibleNodes()[0];
-		if (!node || !(node instanceof TreeLayerNode)) {
-			console.warn('Visible node is not a FeatureLayer');
-			return;
-		}
-
-		if (!node.layer) {
-			console.warn('Visible node layer is not a FeatureLayer');
-			return;
-		}
-
-		updateSelectedLayerView(node.layer as __esri.FeatureLayer);
+		updateSelectedLayerView(areaSelectionStore.visibleLayer);
 	});
 
 	// === Utility Functions ===

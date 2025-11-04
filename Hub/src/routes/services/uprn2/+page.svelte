@@ -37,11 +37,12 @@
 	import ClearSelectionsButton from '$lib/components/common/services/uprn2/clear-selections-button/cl/clear-selections-button.svelte';
 	import { base } from '$app/paths';
 
+	let areaSelectionTreeview: DataSelectionTreeview | undefined = undefined;
 	let dataSelectionTreeview: DataSelectionTreeview | undefined = undefined;
+	let uprnMapView: UprnMapView | undefined = undefined;
 
 	const webMapStore: WebMapStore = $state(new WebMapStore());
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
-	const areaSelectionTreeviewStore: TreeviewStore = $state(new TreeviewStore());
 
 	let currentTab: string = $state('define-areas');
 	let dataSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
@@ -125,7 +126,7 @@
 	function clearAllSelections() {
 		areaSelectionStore.clearSelections();
 		dataSelectionStore.clearSelections();
-		areaSelectionTreeviewStore.clearSelections();
+		areaSelectionTreeview?.clearSelections();
 		dataSelectionTreeview?.clearSelections();
 		clearSelections();
 	}
@@ -200,7 +201,6 @@
 
 	onDestroy(() => {
 		areaSelectionStore.cleanup();
-		areaSelectionTreeviewStore.cleanup();
 		dataSelectionStore.cleanup();
 		mapInteractionStore.cleanup();
 	});
@@ -229,9 +229,10 @@
 					<UprnTabBarContent>
 						{#if webMapStore.isLoaded}
 							<AreaSelectionTreeview
+								bind:this={areaSelectionTreeview}
 								webMap={webMapStore.data}
-								treeviewStore={areaSelectionTreeviewStore}
 								treeviewConfigStore={areaSelectionTreeviewConfig!}
+								{areaSelectionStore}
 							/>
 						{/if}
 					</UprnTabBarContent>
@@ -242,7 +243,8 @@
 						{#if webMapStore.isLoaded}
 							<DataSelectionTreeview
 								bind:this={dataSelectionTreeview}
-								webMap={webMapStore.data}
+								webMap={webMapStore.data!}
+								layerViewProvider={uprnMapView?.getLayerViewProvider()!}
 								treeviewConfigStore={dataSelectionTreeviewConfig!}
 								{customRendererService}
 								{fieldFilterMenuStore}
@@ -255,7 +257,6 @@
 					<UprnTabBarContent>
 						<ExportMenu
 							{webMapStore}
-							{areaSelectionTreeviewStore}
 							dataSelectionTreeviewConfig={dataSelectionTreeviewConfig!}
 							{fieldFilterMenuStore}
 						/>
@@ -298,8 +299,8 @@
 
 	{#snippet mainContent()}
 		<UprnMapView
+			bind:this={uprnMapView}
 			webMap={webMapStore.data}
-			{areaSelectionTreeviewStore}
 			panelPosition="top-left"
 			menuPosition="top-right"
 		/>

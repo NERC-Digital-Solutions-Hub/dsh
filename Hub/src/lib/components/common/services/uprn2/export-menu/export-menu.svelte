@@ -6,27 +6,18 @@
 	} from '$lib/stores/services/uprn2/area-selection-store.svelte';
 	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
 	import FilterFieldMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
-	import type { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
 	import { WebMapStore } from '$lib/stores/services/uprn2/web-map-store.svelte';
-	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 	import FilterButton from '../tree-view/data-selection/filter-button.svelte';
-	import Card from '$lib/components/ui/card/card.svelte';
 	import SelectionEntryCard from '$lib/components/common/services/uprn2/selection-entry-card/selection-entry-card.svelte';
 	import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store';
 
 	export type Props = {
 		webMapStore: WebMapStore;
-		areaSelectionTreeviewStore: TreeviewStore;
 		dataSelectionTreeviewConfig: TreeviewConfigStore;
 		fieldFilterMenuStore: FilterFieldMenuStore;
 	};
 
-	const {
-		webMapStore,
-		areaSelectionTreeviewStore,
-		dataSelectionTreeviewConfig,
-		fieldFilterMenuStore
-	}: Props = $props();
+	const { webMapStore, dataSelectionTreeviewConfig, fieldFilterMenuStore }: Props = $props();
 
 	type AreaInfo = {
 		name: string;
@@ -129,9 +120,7 @@
 
 <div class="section">
 	<h3>
-		{areaSelectionTreeviewStore.initialized
-			? areaSelectionTreeviewStore.getVisibleNodes()[0]?.name
-			: 'Loading...'}
+		{areaSelectionStore.visibleLayer ? areaSelectionStore.visibleLayer.title : 'Loading...'}
 	</h3>
 	<h4>Selected Areas</h4>
 	{#if areaInfos.length > 0}

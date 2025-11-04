@@ -4,6 +4,9 @@
 	import { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
 	import { onDestroy } from 'svelte';
 	import Node from './node.svelte';
+	import type { AreaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
+	import { TreeLayerNode } from '$lib/components/common/services/uprn2/tree-view/types';
+	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 
 	/**
 	 * Props for the TreeView component.
@@ -11,14 +14,22 @@
 	type Props = {
 		/** The ESRI WebMap containing layers to display. */
 		webMap?: __esri.WebMap | null;
-		/** Store for tree view configuration. */
-		treeviewStore: TreeviewStore;
+
 		/** Store for tree view config settings. */
 		treeviewConfigStore: TreeviewConfigStore;
+
+		/** Store for area selection management. */
+		areaSelectionStore: AreaSelectionStore;
 	};
 
 	/** Destructured props with defaults. */
-	const { webMap = null, treeviewStore, treeviewConfigStore }: Props = $props();
+	const { webMap = null, treeviewConfigStore, areaSelectionStore }: Props = $props();
+
+	const treeviewStore = new TreeviewStore();
+
+	export function clearSelections() {
+		treeviewStore.clearSelections();
+	}
 
 	// Initialize the tree view when webMap changes
 	$effect(() => {
@@ -26,34 +37,47 @@
 			return;
 		}
 
-		treeviewStore.initialize(webMap.layers.toArray(), treeviewConfigStore);
+		treeviewStore.initialize(webMap.layers.toArray(), treeviewConfigStore, null);
 	});
 
-	/**
-	 * Loads area selection layers recursively.
-	 * Ensures all layers in group layers are loaded.
-	 * @param layers - Array of layers to load.
-	 */
-	async function loadAreaSelectionLayers(layers: __esri.Layer[]): Promise<void> {
-		for (const layer of layers) {
-			try {
-				const config = treeviewConfigStore.getItemConfig(layer.id);
-				console.log(`[area-selection-tree-view] Checking layer: ${layer.title}, config:`, config);
-				if (config && config.isHidden) {
-					continue;
-				}
-
-				await layer.load();
-				console.log(`[area-selection-tree-view] Loaded layer: ${layer.title}`);
-				if (layer.type === 'group') {
-					const groupLayer = layer as __esri.GroupLayer;
-					await loadAreaSelectionLayers(groupLayer.layers.toArray());
-				}
-			} catch (error) {
-				console.error(`[area-selection-tree-view] Failed to load layer: ${layer.title}`, error);
-			}
+	$effect(() => {
+		if (!treeviewStore.initialized) {
+			return;
 		}
-	}
+
+		const areaSelectionLayerIds = treeviewStore.getNonHiddenNodes().map((node) => node.id);
+		areaSelectionStore.areaSelectionLayerIds = new Set(areaSelectionLayerIds);
+	});
+
+	$effect(() => {
+		if (!treeviewStore.initialized) {
+			return;
+		}
+
+		if (!treeviewStore.getVisibleNodes().length) {
+			areaSelectionStore.visibleLayer = null;
+			areaSelectionStore.resetSelectedAreas();
+			return;
+		}
+
+		const node = treeviewStore
+			.getVisibleNodes()
+			.find((n) => n instanceof TreeLayerNode && n.layer instanceof FeatureLayer) as
+			| TreeLayerNode
+			| undefined;
+
+		if (!node || !(node instanceof TreeLayerNode)) {
+			console.warn('Visible node is not a FeatureLayer');
+			return;
+		}
+
+		if (!node.layer || !(node.layer instanceof FeatureLayer)) {
+			console.warn('Visible node layer is not a FeatureLayer', node.layer.type);
+			return;
+		}
+
+		areaSelectionStore.visibleLayer = node.layer;
+	});
 </script>
 
 {#if treeviewStore.initialized}
