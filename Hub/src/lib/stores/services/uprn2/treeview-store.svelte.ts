@@ -2,18 +2,25 @@ import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-co
 import {
 	TreeNode,
 	TreeLayerNode,
-	TreeFieldNode
+	TreeFieldNode,
+	LayerDrawState
 } from '$lib/components/common/services/uprn2/tree-view/types.js';
 import { type TreeviewNodeConfig, type VisibilityGroupConfig } from '$lib/types/treeview.js';
 import { SvelteMap } from 'svelte/reactivity';
 
 import type { CustomNodeConverter } from '$lib/components/common/services/uprn2/tree-view/services/custom-node-converter';
 import type { CustomRendererService } from '$lib/services/custom-renderer-service';
+import type { LayerViewProvider } from '$lib/services/layer-view-provider';
+import Layer from '@arcgis/core/layers/Layer';
+import LayerView from '@arcgis/core/views/layers/LayerView';
+import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 
 export class TreeviewStore {
 	public initialized: boolean = $state<boolean>(false);
 
 	#configStore: TreeviewConfigStore | null = null;
+
+	#layerViewProvider: LayerViewProvider | null = null;
 
 	/** The hierarchical tree structure of map layers */
 	#treeNodes: TreeNode[] = $state<TreeNode[]>([]);
@@ -32,7 +39,17 @@ export class TreeviewStore {
 	 * Map of visibility groups to a map of node IDs and their visibility state.
 	 * This enables managing visibility state per group.
 	 */
-	#visibilityState: SvelteMap<string, boolean> = $state(new SvelteMap());
+	#visibilityStates: SvelteMap<string, boolean> = $state(new SvelteMap());
+
+	/**
+	 * Tracks the draw state of each node by its ID.
+	 */
+	#drawStates: SvelteMap<string, LayerDrawState> = $state(new SvelteMap());
+
+	/**
+	 * Map of draw state handles for each node. The key is the node ID.
+	 */
+	#drawStateHandles = $state<Map<string, IHandle>>(new SvelteMap());
 
 	/**
 	 * Tracks the active node in each visibility group to enforce single active visibility per group.
@@ -48,6 +65,7 @@ export class TreeviewStore {
 	initialize(
 		layers: __esri.Layer[],
 		configStore: TreeviewConfigStore,
+		layerViewProvider: LayerViewProvider | null,
 		customConverters?: CustomNodeConverter[],
 		customRendererService?: CustomRendererService
 	): void {
@@ -77,6 +95,8 @@ export class TreeviewStore {
 			throw new Error('TreeviewStore requires a valid array of layers to initialize.');
 		}
 
+		this.#layerViewProvider = layerViewProvider;
+
 		this.#initializeConfigurations(layers);
 		this.#treeNodes = this.#buildTreeFromLayers(layers);
 	}
@@ -94,7 +114,7 @@ export class TreeviewStore {
 	getVisibleNodes(): TreeNode[] {
 		this.#checkInitialized();
 		const visibleNodes: TreeNode[] = [];
-		for (const [nodeId, isVisible] of this.#visibilityState) {
+		for (const [nodeId, isVisible] of this.#visibilityStates) {
 			if (!isVisible) {
 				continue;
 			}
@@ -115,8 +135,8 @@ export class TreeviewStore {
 
 	clearSelections(): void {
 		this.#checkInitialized();
-		for (const nodeId of this.#visibilityState.keys()) {
-			this.#visibilityState.set(nodeId, false);
+		for (const nodeId of this.#visibilityStates.keys()) {
+			this.#visibilityStates.set(nodeId, false);
 			const node = this.#treeNodesLookup.get(nodeId);
 			if (node && node instanceof TreeLayerNode) {
 				node.layer.visible = false;
@@ -153,7 +173,7 @@ export class TreeviewStore {
 	 */
 	getVisibilityState(nodeId: string): boolean {
 		this.#checkInitialized();
-		return this.#visibilityState.get(nodeId) ?? false;
+		return this.#visibilityStates.get(nodeId) ?? false;
 	}
 
 	setVisibilityState(nodeId: string, isVisible: boolean): void {
@@ -172,8 +192,10 @@ export class TreeviewStore {
 			return; // do nothing if visibility toggle is prevented
 		}
 
-		this.#visibilityState.set(nodeId, isVisible);
+		this.#visibilityStates.set(nodeId, isVisible);
 		node.layer.visible = isVisible;
+		this.updateDrawState(node, isVisible);
+
 		if (node instanceof TreeFieldNode) {
 			node.featureLayer.displayField = isVisible ? node.field.name : '';
 
@@ -217,10 +239,11 @@ export class TreeviewStore {
 		}
 
 		const hideId = (id: string) => {
-			this.#visibilityState.set(id, false);
+			this.#visibilityStates.set(id, false);
 			const node = this.#treeNodesLookup.get(id);
 			if (node && node instanceof TreeLayerNode) {
 				node.layer.visible = false;
+				this.updateDrawState(node, false);
 				this.#updateParentVisibility(node, false);
 
 				const config = this.#findTreeviewItemConfig(id);
@@ -247,13 +270,85 @@ export class TreeviewStore {
 		}
 	}
 
+	async updateDrawState(node: TreeNode, visible: boolean): Promise<void> {
+		if (!this.#layerViewProvider) {
+			return;
+		}
+
+		if (!visible) {
+			this.#drawStates.delete(node.id);
+			this.#drawStateHandles.get(node.id)?.remove();
+			this.#drawStateHandles.delete(node.id);
+			return; // don't subscribe if not visible
+		}
+
+		if (!(node instanceof TreeLayerNode) || !(node.layer instanceof Layer)) {
+			return;
+		}
+
+		const layerView: LayerView | undefined = await this.#layerViewProvider.getLayerView(node.layer);
+		if (!layerView) {
+			return;
+		}
+
+		this.setInitialDrawState(node, layerView);
+
+		const handle: IHandle = reactiveUtils.watch(
+			() => layerView.suspended,
+			(isSuspended, wasSuspended) => {
+				if (wasSuspended && !isSuspended) {
+					// entered scale range or otherwise unsuspended
+
+					this.#drawStates.set(node.id, LayerDrawState.Visible);
+				} else if (!wasSuspended && isSuspended) {
+					// exited scale range or otherwise suspended
+
+					this.#drawStates.set(node.id, LayerDrawState.Suspended);
+				}
+			}
+		);
+
+		this.#drawStateHandles.set(node.id, handle);
+	}
+
+	getNodeDrawState(nodeId: string): LayerDrawState {
+		this.#checkInitialized();
+		return this.#drawStates.get(nodeId) ?? LayerDrawState.Hidden;
+	}
+
+	setInitialDrawState(node: TreeNode, layerView: LayerView): void {
+		if (!(node instanceof TreeLayerNode) || !(node.layer instanceof Layer)) {
+			return;
+		}
+
+		if (!layerView) {
+			return;
+		}
+
+		if (layerView.suspended) {
+			this.#drawStates.set(node.id, LayerDrawState.Suspended);
+		} else {
+			this.#drawStates.set(node.id, LayerDrawState.Visible);
+		}
+	}
+
+	clearDrawStateHandles(): void {
+		for (const handle of this.#drawStateHandles.values()) {
+			handle.remove();
+		}
+
+		this.#drawStateHandles.clear();
+	}
+
 	cleanup(): void {
 		this.initialized = false;
-		this.#visibilityState.clear();
+		this.#visibilityStates.clear();
 		this.#activeInVisibilityGroup.clear();
 		this.#customConverters.clear();
 		this.#treeNodes = [];
 		this.#treeNodesLookup.clear();
+		this.#drawStates.clear();
+		this.clearDrawStateHandles();
 	}
 
 	#updateParentVisibility(node: TreeNode, isVisible: boolean): void {
@@ -267,7 +362,7 @@ export class TreeviewStore {
 			return;
 		}
 
-		this.#visibilityState.set(parentNode.id, isVisible);
+		this.#visibilityStates.set(parentNode.id, isVisible);
 		parentNode.layer.visible = isVisible;
 		this.#updateParentVisibility(parentNode, isVisible);
 	}
@@ -285,7 +380,7 @@ export class TreeviewStore {
 		for (const depId of config.visibilityDependencyIds) {
 			const depNode = this.#treeNodesLookup.get(depId);
 			if (depNode && depNode instanceof TreeLayerNode) {
-				this.#visibilityState.set(depId, isVisible);
+				this.#visibilityStates.set(depId, isVisible);
 				depNode.layer.visible = isVisible;
 				this.#updateParentVisibility(depNode, isVisible);
 			}
@@ -388,7 +483,8 @@ export class TreeviewStore {
 				? false
 				: (nodeConfig?.isVisibleOnInit ?? false);
 
-		this.#visibilityState.set(layer.id, layer.visible);
+		this.#visibilityStates.set(layer.id, layer.visible);
+		this.updateDrawState(node, layer.visible);
 
 		if (this.#isFeatureLayer(layer) && nodeConfig?.showFields) {
 			const featureLayer = layer as __esri.FeatureLayer;
@@ -435,7 +531,7 @@ export class TreeviewStore {
 
 		const fieldItemConfig: TreeviewNodeConfig | undefined =
 			this.#findTreeviewItemConfig(fieldNodeId);
-		this.#visibilityState.set(fieldNodeId, fieldItemConfig?.isVisibleOnInit ?? false);
+		this.#visibilityStates.set(fieldNodeId, fieldItemConfig?.isVisibleOnInit ?? false);
 		return fieldNode;
 	}
 

@@ -29,17 +29,26 @@
 	import { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store.js';
 	import { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
 	import { onDestroy } from 'svelte';
-	import { SelectionState, TreeLayerNode, type TreeNode } from '../types.js';
+	import { LayerDrawState, SelectionState, TreeLayerNode, type TreeNode } from '../types.js';
 	import Node from './node.svelte';
 	import { TreeviewSelectionController } from '$lib/controllers/TreeviewSelectionController.js';
 	import type { CustomRendererService } from '$lib/services/custom-renderer-service.js';
+	import type { LayerViewProvider } from '$lib/services/layer-view-provider.js';
+	import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
+	import Layer from '@arcgis/core/layers/Layer';
+	import LayerView from '@arcgis/core/views/layers/LayerView';
+	import { draw } from 'svelte/transition';
+	import { SvelteMap } from 'svelte/reactivity';
 
 	/**
 	 * Props for the TreeView component.
 	 */
 	type Props = {
 		/** The ESRI WebMap containing layers to display. */
-		webMap?: __esri.WebMap | null;
+		webMap: __esri.WebMap;
+
+		/** Provider for layer views. */
+		layerViewProvider: LayerViewProvider;
 
 		/** Configuration store for tree view settings. */
 		treeviewConfigStore: TreeviewConfigStore;
@@ -47,20 +56,17 @@
 		/** Service for custom renderers */
 		customRendererService?: CustomRendererService;
 
-		/** Set of field names to hide from the tree. */
-		fieldsToHide?: Set<string>;
-
 		/** Store for managing field filter menus. */
 		fieldFilterMenuStore: FieldFilterMenuStore;
 	};
 
 	/** Destructured props with defaults. */
 	const {
-		webMap = null,
+		webMap,
+		layerViewProvider,
 		treeviewConfigStore,
 		customRendererService,
-		fieldFilterMenuStore,
-		fieldsToHide
+		fieldFilterMenuStore
 	}: Props = $props();
 
 	export function clearSelections() {
@@ -88,6 +94,7 @@
 			treeviewStore.initialize(
 				webMap.layers.toArray(),
 				treeviewConfigStore,
+				layerViewProvider,
 				[aliasPathConverter],
 				customRendererService
 			);
@@ -104,7 +111,6 @@
 		for (const layer of layers) {
 			if (layer.type === 'feature' && !layer.loaded) {
 				await layer.load();
-				console.log('Loaded feature layer:', layer.title);
 			}
 
 			if (layer.type === 'group') {
@@ -112,6 +118,17 @@
 				await loadFeatureLayers(groupLayer.layers.toArray());
 			}
 		}
+	}
+
+	function onNodeVisibilityChange(node: TreeNode, visible: boolean): void {
+		console.log(
+			`[tree-view] onNodeVisibilityChange: Setting visibility of node ${node.id} to ${visible}`
+		);
+		treeviewStore.setVisibilityState(node.id, visible);
+	}
+
+	function getNodeDrawState(nodeId: string): LayerDrawState {
+		return treeviewStore.getNodeDrawState(nodeId);
 	}
 
 	/**
@@ -188,13 +205,13 @@
 				{node}
 				isDownloadable={treeviewConfigStore.getItemConfig(node.id)?.isDownloadable ?? true}
 				onNodeClick={() => {}}
-				onNodeVisibilityChange={(node, visible) =>
-					treeviewStore.setVisibilityState(node.id, visible)}
+				{onNodeVisibilityChange}
 				getNodeVisibility={(nodeId) => treeviewStore.getVisibilityState(nodeId)}
 				{onDownloadStateChanged}
 				{getDownloadState}
 				onFilterClicked={handleFilterClicked}
 				{hasFiltersApplied}
+				{getNodeDrawState}
 				depth={0}
 				useLayerTypeIcon={true}
 			/>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Eye, EyeOff } from 'lucide-svelte';
+	import { Eye, EyeOff, Scale } from 'lucide-svelte';
 	import { cn } from '$lib/utils.js';
 
 	let {
@@ -47,6 +47,11 @@
 	aria-pressed={checked}
 	role="switch"
 	aria-label={checked ? 'Hide layer' : 'Show layer'}
+	title={checked && !indeterminate
+		? 'Visible'
+		: indeterminate
+			? 'Zoom in/out to view layer'
+			: 'Not visible'}
 	{...restProps}
 >
 	{#if checked}

@@ -4,7 +4,7 @@
 	import VisibilityCheckbox from '$lib/components/common/visibility-checkbox/visibility-checkbox.svelte';
 	import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store';
 	import { getNodeIcon } from '../get-node-icon';
-	import { SelectionState, TreeLayerNode, type TreeNode } from '../types.js';
+	import { LayerDrawState, SelectionState, TreeLayerNode, type TreeNode } from '../types.js';
 	import DownloadButton from './download-button.svelte';
 	import NodeContent from './node-content.svelte';
 	import Node from './node.svelte';
@@ -33,6 +33,8 @@
 		hasFiltersApplied?: (layerId: string) => boolean;
 		/** Function to get current node visibility. */
 		getNodeVisibility?: (nodeId: string) => boolean | undefined;
+		/** Function to get current node draw state. */
+		getNodeDrawState?: (nodeId: string) => LayerDrawState;
 		/** Depth level in the tree. */
 		depth?: number;
 		/** Whether to use layer type specific icons. */
@@ -51,6 +53,7 @@
 		onFilterClicked,
 		hasFiltersApplied,
 		getNodeVisibility,
+		getNodeDrawState,
 		depth = 0,
 		useLayerTypeIcon = false
 	}: Props = $props();
@@ -176,7 +179,11 @@
 							<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
 						{/if}
 						{#if hasVisibility}
-							<VisibilityCheckbox checked={isChecked} onCheckedChange={toggleVisible} />
+							<VisibilityCheckbox
+								checked={isChecked}
+								indeterminate={getNodeDrawState?.(node.id) === LayerDrawState.Suspended}
+								onCheckedChange={toggleVisible}
+							/>
 						{/if}
 					</div>
 				{/snippet}
@@ -198,7 +205,11 @@
 							<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
 						{/if}
 						{#if hasVisibility}
-							<VisibilityCheckbox checked={isChecked} onCheckedChange={toggleVisible} />
+							<VisibilityCheckbox
+								checked={isChecked}
+								indeterminate={getNodeDrawState?.(node.id) === LayerDrawState.Suspended}
+								onCheckedChange={toggleVisible}
+							/>
 						{/if}
 					</div>
 				{/snippet}
@@ -220,6 +231,7 @@
 			{onFilterClicked}
 			{hasFiltersApplied}
 			{getNodeVisibility}
+			{getNodeDrawState}
 			depth={depth + 1}
 			{useLayerTypeIcon}
 		/>
