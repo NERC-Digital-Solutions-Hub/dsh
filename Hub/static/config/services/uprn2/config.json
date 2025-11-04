@@ -1,6 +1,7 @@
 {
     "_portalUrl": "https://nercdsh.dev.azure.manchester.ac.uk/portal",
-    "portalItemId": "98fd6151097b4299b099918b2a93c5ec",
+    "_portalItemId": "98fd6151097b4299b099918b2a93c5ec",
+    "portalItemId": "3fddcedca8c84c74903a709bece70326",
     "proxy": {
         "urlPrefix": "https://nercdsh.dev.azure.manchester.ac.uk",
         "proxyUrl": "/proxy/Java/proxy.jsp"
