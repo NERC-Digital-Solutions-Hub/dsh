@@ -120,7 +120,9 @@
 
 <div class="section">
 	<h3>
-		{areaSelectionStore.visibleLayer ? areaSelectionStore.visibleLayer.title : 'Loading...'}
+		{areaSelectionStore.visibleLayer
+			? areaSelectionStore.visibleLayer.title
+			: 'No Area Layer Selected'}
 	</h3>
 	<h4>Selected Areas</h4>
 	{#if areaInfos.length > 0}
