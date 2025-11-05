@@ -6,12 +6,14 @@
 	import { toast } from 'svelte-sonner';
 	import { DownloadStatus, type AreaSelectionInfo, type DataSelectionInfo } from '$lib/types/uprn';
 	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+	import ClearSelectionsButton from '$lib/components/common/services/uprn2/clear-selections-button/cl/clear-selections-button.svelte';
 
 	type Props = {
 		onExportSuccess?: () => void;
+		clearSelections: () => void;
 	};
 
-	const { onExportSuccess }: Props = $props();
+	const { onExportSuccess, clearSelections }: Props = $props();
 
 	// TODO: Add onExport function prop to handle export completion externally
 
@@ -72,7 +74,8 @@
 	</div>
 
 	<div class="export-footer__right">
-		<Button onclick={handleExportClick}>Export</Button>
+		<ClearSelectionsButton class="mr-4" clear={clearSelections} />
+		<Button onclick={handleExportClick} title="Export">Export</Button>
 	</div>
 </div>
 

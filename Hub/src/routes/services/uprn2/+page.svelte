@@ -276,12 +276,15 @@
 				</div>
 			</SidebarLayout.Content>
 
-			<div class="fixed pt-1 pl-1">
+			<!-- <div class="fixed pt-1 pl-1">
 				<ClearSelectionsButton clear={clearAllSelections} />
-			</div>
+			</div> -->
 			<SidebarLayout.Footer>
 				<div hidden={currentTab !== 'export'}>
-					<ExportMenuFooter onExportSuccess={switchToDownloadsTab} />
+					<ExportMenuFooter
+						onExportSuccess={switchToDownloadsTab}
+						clearSelections={clearAllSelections}
+					/>
 				</div>
 			</SidebarLayout.Footer>
 
