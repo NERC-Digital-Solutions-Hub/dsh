@@ -179,22 +179,17 @@ export class AreaSelectionInteractionStore {
 		this.lastAddedArea = areaInfo;
 
 		this.selectionViewState.areaHandles.set(id, handle);
-
-		console.log(
-			`[area-selection-interaction-store] added selected area: ${id}`,
-			this.selectionViewState.areaHandles
-		);
 	}
 
 	removeSelectedArea(id: number): void {
 		if (!this.selectionViewState) {
-			console.warn('SelectedAreasStore: No feature layer view is set.');
+			console.warn(`[area-selection-interaction-store] no feature layer view is set.`);
 			return;
 		}
 
 		const removedHandle = this.selectionViewState.areaHandles.get(id);
 		if (!removedHandle) {
-			console.warn(`SelectedAreasStore: No handle found for area ID ${id}.`);
+			console.warn(`[area-selection-interaction-store] no handle found for area ID ${id}.`);
 			return;
 		}
 
@@ -202,8 +197,6 @@ export class AreaSelectionInteractionStore {
 
 		removedHandle.remove();
 		this.selectionViewState.areaHandles.delete(id);
-
-		console.log(`[area-selection-interaction-store] removed selected area: ${id}`);
 	}
 
 	async getAreaNamesById(ids: number[]): Promise<string[]> {
@@ -296,7 +289,6 @@ export class AreaSelectionInteractionStore {
 			this.clearHoveredArea();
 		}
 
-		console.log('[area-selection-interaction-store] setting hovered area:', id);
 		this.currentHoveredArea = { id, handle };
 	}
 
@@ -305,10 +297,6 @@ export class AreaSelectionInteractionStore {
 			return;
 		}
 
-		console.log(
-			'[area-selection-interaction-store] clearing hovered area:',
-			this.currentHoveredArea.id
-		);
 		this.currentHoveredArea?.handle.remove();
 		this.currentHoveredArea = null;
 	}
@@ -328,7 +316,7 @@ export class AreaSelectionInteractionStore {
 
 		if (!nameField) {
 			console.warn(
-				`SelectedAreasStore: No name field configured for layer ${this.selectionViewState.layerView.layer.title}`,
+				`[area-selection-interaction-store] no name field configured for layer ${this.selectionViewState.layerView.layer.title}`,
 				this.fieldInfos
 			);
 			return null;
@@ -350,7 +338,7 @@ export class AreaSelectionInteractionStore {
 		)?.codeField;
 		if (!codeField) {
 			console.warn(
-				`SelectedAreasStore: No code field configured for layer ${this.selectionViewState.layerView.layer.title}`,
+				`[area-selection-interaction-store] no code field configured for layer ${this.selectionViewState.layerView.layer.title}`,
 				this.fieldInfos
 			);
 			return null;
@@ -364,7 +352,7 @@ export class AreaSelectionInteractionStore {
 		this.lastAddedArea = null;
 		this.lastRemovedArea = null;
 		this.currentHoveredArea = null;
-		console.log('[area-selection-store] selections cleared.');
+		console.log('[area-selection-interaction-store] selections cleared.');
 	}
 
 	cleanup(): void {
@@ -376,6 +364,6 @@ export class AreaSelectionInteractionStore {
 		this.cachedNames.clear();
 		this.fieldInfos = [];
 
-		console.log('[area-selection-store] cleaned up.');
+		console.log('[area-selection-interaction-store] cleaned up.');
 	}
 }
