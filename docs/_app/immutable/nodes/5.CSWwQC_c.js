@@ -1,0 +1,1 @@
+import{f as t,a}from"../chunks/coOZIrlZ.js";import"../chunks/IkZAx_0-.js";import{s as i}from"../chunks/CNhtnZDT.js";var o=t('<iframe width="100%" height="100%" style="border: none;" title="External site"></iframe>');function f(r){var e=o();i(e,"src","https://experience.arcgis.com/experience/910e7fe0c9cf4a7295a691d1ed11e80d"),a(r,e)}export{f as component};
