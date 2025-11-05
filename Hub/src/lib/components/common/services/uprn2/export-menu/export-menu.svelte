@@ -1,47 +1,64 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/button/button.svelte';
-	import {
-		areaSelectionStore,
-		type HighlightAreaInfo
-	} from '$lib/stores/services/uprn2/area-selection-store.svelte';
 	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
 	import FilterFieldMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
 	import { WebMapStore } from '$lib/stores/services/uprn2/web-map-store.svelte';
 	import FilterButton from '../tree-view/data-selection/filter-button.svelte';
 	import SelectionEntryCard from '$lib/components/common/services/uprn2/selection-entry-card/selection-entry-card.svelte';
 	import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store';
+	import type {
+		AreaFieldHandleInfo,
+		AreaSelectionInteractionStore
+	} from '$lib/stores/services/uprn2/area-selection-interaction-store.svelte';
 
 	export type Props = {
 		webMapStore: WebMapStore;
+		areaSelectionInteractionStore: AreaSelectionInteractionStore;
 		dataSelectionTreeviewConfig: TreeviewConfigStore;
 		fieldFilterMenuStore: FilterFieldMenuStore;
 	};
 
-	const { webMapStore, dataSelectionTreeviewConfig, fieldFilterMenuStore }: Props = $props();
+	const {
+		webMapStore,
+		areaSelectionInteractionStore,
+		dataSelectionTreeviewConfig,
+		fieldFilterMenuStore
+	}: Props = $props();
 
 	type AreaInfo = {
 		name: string;
-		HighlightAreaInfo: HighlightAreaInfo;
+		HighlightAreaInfo: AreaFieldHandleInfo;
 	};
 
 	let areaInfos: AreaInfo[] = $state<AreaInfo[]>([]);
 
 	$effect(() => {
-		if (!areaSelectionStore.layerHighlightState.areaInfos.length) {
+		if (!areaSelectionInteractionStore) {
+			areaInfos = [];
+			return;
+		}
+
+		if (!areaSelectionInteractionStore.selectionViewState?.areaHandles.size) {
 			areaInfos = [];
 			return;
 		}
 
 		const getAreaInfos = async () => {
-			const areaNames = await areaSelectionStore.getAreaNamesById(
-				areaSelectionStore.layerHighlightState.areaInfos.map((area) => area.id)
+			const areaNames = await areaSelectionInteractionStore.getAreaNamesById(
+				areaSelectionInteractionStore.selectionViewState.areaHandles.keys().toArray()
 			);
+
+			const fieldHandleInfos: AreaFieldHandleInfo[] =
+				areaSelectionInteractionStore.selectionViewState.areaHandles
+					.entries()
+					.toArray()
+					.map(([id, handle]) => ({ id, handle }));
 
 			const newAreaInfos: AreaInfo[] = [];
 			for (let i = 0; i < areaNames.length; i++) {
 				newAreaInfos.push({
 					name: areaNames[i] || 'Unknown Area',
-					HighlightAreaInfo: areaSelectionStore.layerHighlightState.areaInfos[i]
+					HighlightAreaInfo: fieldHandleInfos[i]
 				});
 			}
 			areaInfos = newAreaInfos;
@@ -57,7 +74,7 @@
 	function removeArea(areaName: string) {
 		const areaIndex = areaInfos.findIndex((area) => area.name === areaName);
 		if (areaIndex !== -1) {
-			areaSelectionStore.removeSelectedArea(areaInfos[areaIndex]?.HighlightAreaInfo.id);
+			areaSelectionInteractionStore.removeSelectedArea(areaInfos[areaIndex]?.HighlightAreaInfo.id);
 		}
 	}
 
@@ -120,8 +137,8 @@
 
 <div class="section">
 	<h3>
-		{areaSelectionStore.visibleLayer
-			? areaSelectionStore.visibleLayer.title
+		{areaSelectionInteractionStore.selectionViewState?.layerView?.layer
+			? areaSelectionInteractionStore.selectionViewState?.layerView?.layer.title
 			: 'No Area Layer Selected'}
 	</h3>
 	<h4>Selected Areas</h4>

@@ -1,19 +1,25 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { areaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
 	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
 	import { downloadsStore } from '$lib/stores/services/uprn2/downloads-store.svelte';
 	import { toast } from 'svelte-sonner';
-	import { DownloadStatus, type AreaSelectionInfo, type DataSelectionInfo } from '$lib/types/uprn';
+	import {
+		DownloadStatus,
+		type AreaFieldInfo,
+		type AreaSelectionInfo,
+		type DataSelectionInfo
+	} from '$lib/types/uprn';
 	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 	import ClearSelectionsButton from '$lib/components/common/services/uprn2/clear-selections-button/cl/clear-selections-button.svelte';
+	import type { AreaSelectionInteractionStore } from '$lib/stores/services/uprn2/area-selection-interaction-store.svelte';
 
 	type Props = {
 		onExportSuccess?: () => void;
 		clearSelections: () => void;
+		areaSelectionInteractionStore: AreaSelectionInteractionStore;
 	};
 
-	const { onExportSuccess, clearSelections }: Props = $props();
+	const { onExportSuccess, clearSelections, areaSelectionInteractionStore }: Props = $props();
 
 	// TODO: Add onExport function prop to handle export completion externally
 
@@ -22,7 +28,7 @@
 	 * Validates that areas and data are selected, then initiates the export process.
 	 */
 	function handleExportClick() {
-		if (areaSelectionStore.layerHighlightState.areaInfos.length <= 0) {
+		if (areaSelectionInteractionStore.selectionViewState?.areaHandles.size <= 0) {
 			toast.error('Please select at least one area to export.');
 			return;
 		}
@@ -35,12 +41,25 @@
 		console.log('Starting export...');
 
 		const addDownload = async () => {
+			const areaFieldCodes: string[] = await areaSelectionInteractionStore.getAreaCodesById(
+				areaSelectionInteractionStore.selectionViewState.areaHandles.keys().toArray()
+			);
+
+			const areaFieldInfos: AreaFieldInfo[] =
+				areaSelectionInteractionStore.selectionViewState.areaHandles
+					.entries()
+					.map(([area, _], index) => {
+						return {
+							id: area,
+							code: areaFieldCodes[index]
+						};
+					})
+					.toArray();
+
 			const areaSelection: AreaSelectionInfo = {
-				layerId: areaSelectionStore.layerHighlightState.featureLayerView?.layer.id || '',
-				layerIndex: areaSelectionStore.layerHighlightState.featureLayerView?.layer.layerId || 0,
-				areas: await areaSelectionStore.getAreaCodesById(
-					areaSelectionStore.layerHighlightState.areaInfos.map((area) => area.id)
-				)
+				layerId: areaSelectionInteractionStore.selectionViewState.layerView?.layer.id || '',
+				layerIndex: areaSelectionInteractionStore.selectionViewState.layerView?.layer.layerId || 0,
+				areaFieldInfos: areaFieldInfos
 			};
 
 			const dataSelections: DataSelectionInfo[] = dataSelectionStore

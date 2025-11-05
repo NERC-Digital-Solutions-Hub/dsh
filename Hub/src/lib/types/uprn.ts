@@ -14,7 +14,12 @@ export interface DataSelection {
 export interface AreaSelectionInfo {
 	layerId: string;
 	layerIndex: number;
-	areas: string[];
+	areaFieldInfos: AreaFieldInfo[];
+}
+
+export interface AreaFieldInfo {
+	id: number;
+	code: string;
 }
 
 export interface DataSelectionInfo {

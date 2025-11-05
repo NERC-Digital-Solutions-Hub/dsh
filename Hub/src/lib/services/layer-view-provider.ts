@@ -21,4 +21,18 @@ export class LayerViewProvider {
 	public async getLayerView(layer: __esri.Layer): Promise<__esri.LayerView | undefined> {
 		return this.#mapView.whenLayerView(layer);
 	}
+
+
+	/**	 *
+	 * @param layerId The ID of the layer to get the layer view of.
+	 * @returns The layer view of the layer with the provided ID.
+	 */
+	public async getLayerViewById(layerId: string): Promise<__esri.LayerView | undefined> {
+		const layer = this.#mapView.map?.findLayerById(layerId);
+		if (!layer) {
+			return undefined;
+		}
+
+		return this.getLayerView(layer);
+	}
 }

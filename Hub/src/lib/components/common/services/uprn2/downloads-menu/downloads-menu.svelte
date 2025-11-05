@@ -75,7 +75,7 @@
 					exports: {
 						areaSelectionLayer: {
 							remoteId: download.areaSelection.layerId,
-							areas: download.areaSelection.areas
+							areas: download.areaSelection.areaFieldInfos.map((area) => area.code)
 						},
 						dataSelectionLayers: download.dataSelections.map((selection) => {
 							return {

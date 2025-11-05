@@ -4,12 +4,11 @@
 	import { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
 	import { onDestroy } from 'svelte';
 	import Node from './node.svelte';
-	import type { AreaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
 	import { TreeLayerNode } from '$lib/components/common/services/uprn2/tree-view/types';
 	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 	import { getSelections, type DbUprnAreaSelectionInfo, type DbUprnSelection } from '$lib/db';
-	import type { LayerViewProvider } from '$lib/services/layer-view-provider';
 	import FeatureLayerView from '@arcgis/core/views/layers/FeatureLayerView';
+	import type { AreaSelectionStore2 } from '$lib/stores/services/uprn2/area-selection-store2.svelte';
 
 	/**
 	 * Props for the TreeView component.
@@ -18,17 +17,14 @@
 		/** The ESRI WebMap containing layers to display. */
 		webMap: __esri.WebMap;
 
-		layerViewProvider: LayerViewProvider;
-
 		/** Store for tree view config settings. */
 		treeviewConfigStore: TreeviewConfigStore;
 
 		/** Store for area selection management. */
-		areaSelectionStore: AreaSelectionStore;
+		areaSelectionStore: AreaSelectionStore2;
 	};
 
-	/** Destructured props with defaults. */
-	const { webMap, layerViewProvider, treeviewConfigStore, areaSelectionStore }: Props = $props();
+	const { webMap, treeviewConfigStore, areaSelectionStore }: Props = $props();
 
 	const treeviewStore = new TreeviewStore();
 
@@ -50,18 +46,8 @@
 			return;
 		}
 
-		const areaSelectionLayerIds = treeviewStore.getNonHiddenNodes().map((node) => node.id);
-		areaSelectionStore.areaSelectionLayerIds = new Set(areaSelectionLayerIds);
-	});
-
-	$effect(() => {
-		if (!treeviewStore.initialized) {
-			return;
-		}
-
 		if (!treeviewStore.getVisibleNodes().length) {
-			areaSelectionStore.layer = null;
-			areaSelectionStore.resetSelectedAreas();
+			areaSelectionStore.setLayerId(null);
 			return;
 		}
 
@@ -81,40 +67,34 @@
 			return;
 		}
 
-		areaSelectionStore.layer = node.layer;
+		areaSelectionStore.setLayerId(node.id);
 	});
 
 	async function restoreSelection() {
-		const selections: DbUprnSelection[] = await getSelections();
-		const lastSelection = selections[selections.length - 1];
-		if (!lastSelection) {
-			return;
-		}
-
-		const areaSelection: DbUprnAreaSelectionInfo = lastSelection.areas;
-		if (!areaSelection) {
-			return;
-		}
-
-		const node: TreeLayerNode | undefined = treeviewStore.getNodeById(areaSelection.layerId) as
-			| TreeLayerNode
-			| undefined;
-
-		if (!node || !(node instanceof TreeLayerNode)) {
-			console.warn('Area selection layer not found in tree view:', areaSelection.layerId);
-			return;
-		}
-
-		areaSelectionStore.layer = node.layer as FeatureLayer;
-
-		const layerView: FeatureLayerView = (await layerViewProvider.getLayerView(
-			areaSelectionStore.layer
-		)) as FeatureLayerView;
-		if (!layerView) {
-			console.warn('Could not get LayerView for area selection layer');
-			return;
-		}
-
+		// const selections: DbUprnSelection[] = await getSelections();
+		// const lastSelection = selections[selections.length - 1];
+		// if (!lastSelection) {
+		// 	return;
+		// }
+		// const areaSelection: DbUprnAreaSelectionInfo = lastSelection.areas;
+		// if (!areaSelection) {
+		// 	return;
+		// }
+		// const node: TreeLayerNode | undefined = treeviewStore.getNodeById(areaSelection.layerId) as
+		// 	| TreeLayerNode
+		// 	| undefined;
+		// if (!node || !(node instanceof TreeLayerNode)) {
+		// 	console.warn('Area selection layer not found in tree view:', areaSelection.layerId);
+		// 	return;
+		// }
+		// areaSelectionStore.layer = node.layer as FeatureLayer;
+		// const layerView: FeatureLayerView = (await layerViewProvider.getLayerView(
+		// 	areaSelectionStore.layer
+		// )) as FeatureLayerView;
+		// if (!layerView) {
+		// 	console.warn('Could not get LayerView for area selection layer');
+		// 	return;
+		// }
 		// for (const areaFieldInfo of areaSelection.areaFieldInfos) {
 		// 	const handle = layerView.highlight()
 		// }

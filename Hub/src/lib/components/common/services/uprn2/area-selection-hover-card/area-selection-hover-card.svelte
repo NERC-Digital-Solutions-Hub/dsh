@@ -1,6 +1,12 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card/index.js';
-	import { areaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
+	import type { AreaSelectionInteractionStore } from '$lib/stores/services/uprn2/area-selection-interaction-store.svelte';
+
+	type Props = {
+		areaSelectionInteractionStore: AreaSelectionInteractionStore;
+	};
+
+	const { areaSelectionInteractionStore }: Props = $props();
 
 	/**
 	 * The name of the currently hovered area, displayed in the hover card.
@@ -39,7 +45,7 @@
 
 	// Effect to fetch and display area name when hovering over an area
 	$effect(() => {
-		const areaId = areaSelectionStore.currentHoveredArea?.id;
+		const areaId = areaSelectionInteractionStore.currentHoveredArea?.id;
 		const myVersion = ++hoverRequestCounter;
 
 		if (!areaId) {
@@ -48,10 +54,10 @@
 		}
 
 		(async () => {
-			const names = await areaSelectionStore.getAreaNamesById([areaId]);
+			const names = await areaSelectionInteractionStore.getAreaNamesById([areaId]);
 			if (myVersion !== hoverRequestCounter) return;
 
-			if (areaSelectionStore.currentHoveredArea?.id !== areaId) {
+			if (areaSelectionInteractionStore.currentHoveredArea?.id !== areaId) {
 				return;
 			}
 

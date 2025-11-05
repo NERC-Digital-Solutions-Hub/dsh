@@ -1,6 +1,12 @@
 <script lang="ts">
-	import { areaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
+	import type { AreaSelectionInteractionStore } from '$lib/stores/services/uprn2/area-selection-interaction-store.svelte';
 	import { toast } from 'svelte-sonner';
+
+	type Props = {
+		areaSelectionInteractionStore: AreaSelectionInteractionStore;
+	};
+
+	const { areaSelectionInteractionStore }: Props = $props();
 
 	/**
 	 * Displays a toast notification for area selection changes.
@@ -8,7 +14,7 @@
 	 * @param action - The action performed ('added' or 'removed').
 	 */
 	async function showAreaChangeToast(areaId: number, action: 'added' | 'removed') {
-		const names = await areaSelectionStore.getAreaNamesById([areaId]);
+		const names = await areaSelectionInteractionStore.getAreaNamesById([areaId]);
 
 		if (!names || names.length === 0 || !names[0]) {
 			return;
@@ -20,20 +26,20 @@
 
 	// Effect to show toast when an area is added
 	$effect(() => {
-		if (!areaSelectionStore.lastAddedArea) {
+		if (!areaSelectionInteractionStore.lastAddedArea) {
 			return;
 		}
 
-		showAreaChangeToast(areaSelectionStore.lastAddedArea.id, 'added');
+		showAreaChangeToast(areaSelectionInteractionStore.lastAddedArea.id, 'added');
 	});
 
 	// Effect to show toast when an area is removed
 	$effect(() => {
-		if (!areaSelectionStore.lastRemovedArea) {
+		if (!areaSelectionInteractionStore.lastRemovedArea) {
 			return;
 		}
 
-		showAreaChangeToast(areaSelectionStore.lastRemovedArea.id, 'removed');
+		showAreaChangeToast(areaSelectionInteractionStore.lastRemovedArea.id, 'removed');
 	});
 </script>
 
