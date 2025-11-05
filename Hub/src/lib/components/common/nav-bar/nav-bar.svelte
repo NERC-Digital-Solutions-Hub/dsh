@@ -30,23 +30,32 @@
 				</NavigationMenu.Link>
 			</NavigationMenu.Item>
 			<NavigationMenu.Item>
-				<NavigationMenu.Trigger>Services</NavigationMenu.Trigger>
+				<NavigationMenu.Trigger>Apps</NavigationMenu.Trigger>
 				<NavigationMenu.Content>
 					<ul class="grid w-[300px] gap-4 p-2">
 						<li>
 							<NavigationMenu.Link href="#">
-								<a href={`${base}/services/uprn`}>
-									<div class="font-medium">UPRN (1)</div>
+								<a href={`${base}/apps/uprn`}>
+									<div class="font-medium">UPRN</div>
 									<div class="text-muted-foreground">
 										Explore Unique Property Reference Numbers (UPRNs) on an interactive map.
 									</div>
 								</a>
 							</NavigationMenu.Link>
 							<NavigationMenu.Link href="#">
-								<a href={`${base}/services/uprn2`}>
-									<div class="font-medium">UPRN (2)</div>
+								<a href={`${base}/apps/climate-just`}>
+									<div class="font-medium">ClimateJust</div>
 									<div class="text-muted-foreground">
-										Explore Unique Property Reference Numbers (UPRNs) on an interactive map.
+										Discover who is vulnerable to climate change and fuel-poverty and why.
+									</div>
+								</a>
+							</NavigationMenu.Link>
+							<NavigationMenu.Link href="#">
+								<a href={`${base}/apps/where-to-build`}>
+									<div class="font-medium">Where to Build</div>
+									<div class="text-muted-foreground">
+										Identify potential sites for housing and undertake a site analysis based on your
+										choices.
 									</div>
 								</a>
 							</NavigationMenu.Link>
@@ -54,13 +63,13 @@
 					</ul>
 				</NavigationMenu.Content>
 			</NavigationMenu.Item>
-			<NavigationMenu.Item>
+			<!-- <NavigationMenu.Item>
 				<NavigationMenu.Link>
 					{#snippet child()}
 						<a href={`${base}/usecases`} class={navigationMenuTriggerStyle()}>Use Cases</a>
 					{/snippet}
 				</NavigationMenu.Link>
-			</NavigationMenu.Item>
+			</NavigationMenu.Item> -->
 			<NavigationMenu.Item>
 				<NavigationMenu.Link>
 					{#snippet child()}
