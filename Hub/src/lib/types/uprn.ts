@@ -13,7 +13,6 @@ export interface DataSelection {
 
 export interface AreaSelectionInfo {
 	layerId: string;
-	layerIndex: number;
 	areaFieldInfos: AreaFieldInfo[];
 }
 
@@ -24,7 +23,6 @@ export interface AreaFieldInfo {
 
 export interface DataSelectionInfo {
 	layerId: string;
-	layerIndex: number;
 	fields: string[];
 }
 

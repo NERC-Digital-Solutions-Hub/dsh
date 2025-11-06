@@ -24,21 +24,15 @@
 <script lang="ts">
 	import { AliasPathNodeConverter } from '$lib/components/common/services/uprn2/tree-view/services/alias-path-node-converter';
 	import * as TreeView from '$lib/components/ui/tree-view/index.js';
-	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
+	import { DataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
 	import FieldFilterMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
 	import { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store.js';
 	import { TreeviewStore } from '$lib/stores/services/uprn2/treeview-store.svelte';
-	import { onDestroy } from 'svelte';
 	import { LayerDrawState, SelectionState, TreeLayerNode, type TreeNode } from '../types.js';
 	import Node from './node.svelte';
 	import { TreeviewSelectionController } from '$lib/controllers/TreeviewSelectionController.js';
 	import type { CustomRendererService } from '$lib/services/custom-renderer-service.js';
 	import type { LayerViewProvider } from '$lib/services/layer-view-provider.js';
-	import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
-	import Layer from '@arcgis/core/layers/Layer';
-	import LayerView from '@arcgis/core/views/layers/LayerView';
-	import { draw } from 'svelte/transition';
-	import { SvelteMap } from 'svelte/reactivity';
 
 	/**
 	 * Props for the TreeView component.
@@ -46,6 +40,9 @@
 	type Props = {
 		/** The ESRI WebMap containing layers to display. */
 		webMap: __esri.WebMap;
+
+		/** Store for managing data selections. */
+		dataSelectionStore: DataSelectionStore;
 
 		/** Provider for layer views. */
 		layerViewProvider: LayerViewProvider;
@@ -63,6 +60,7 @@
 	/** Destructured props with defaults. */
 	const {
 		webMap,
+		dataSelectionStore,
 		layerViewProvider,
 		treeviewConfigStore,
 		customRendererService,
@@ -75,7 +73,10 @@
 
 	/** Instance of the tree view store. */
 	const treeviewStore = new TreeviewStore();
-	const selectionStore = new TreeviewSelectionController(dataSelectionStore, treeviewConfigStore);
+	const selectionController = new TreeviewSelectionController(
+		dataSelectionStore,
+		treeviewConfigStore
+	);
 
 	/**
 	 * Main effect that watches for webMap changes and rebuilds the layer tree.
@@ -138,7 +139,7 @@
 	 * @param downloadState - The new download state of the node.
 	 */
 	function onDownloadStateChanged(node: TreeNode, downloadState: SelectionState): void {
-		selectionStore.updateSelection(node, downloadState);
+		selectionController.updateSelection(node, downloadState);
 	}
 
 	/**
@@ -147,7 +148,7 @@
 	 * @returns The download state of the node
 	 */
 	function getDownloadState(node: TreeNode): SelectionState {
-		return selectionStore.getSelectionState(node);
+		return selectionController.getSelectionState(node);
 	}
 
 	/**
@@ -180,7 +181,7 @@
 	 */
 	function hasFiltersApplied(nodeId: string): boolean {
 		const dataSelection = dataSelectionStore.getSelection(nodeId);
-		if (!dataSelection?.fields) {
+		if (!dataSelection?.selectedFieldIds) {
 			return false;
 		}
 
@@ -190,7 +191,7 @@
 		}
 
 		const totalFields = (node.layer as __esri.FeatureLayer).fields?.length || 0;
-		const selectedFields = dataSelection.fields.size;
+		const selectedFields = dataSelection?.selectedFieldIds.size || 0;
 
 		// Consider filters applied if not all fields are selected or no fields are selected
 		return selectedFields > 0 && selectedFields !== totalFields;

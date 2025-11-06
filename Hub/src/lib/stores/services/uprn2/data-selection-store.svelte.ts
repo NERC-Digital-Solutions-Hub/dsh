@@ -1,13 +1,25 @@
-import { SvelteMap } from 'svelte/reactivity';
-import { toast } from 'svelte-sonner';
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
-import type { DataSelection } from '$lib/types/uprn';
+/**
+ * Snapshot type for data selections.
+ */
+export type DataSelectionSnapshot = {
+	/**
+	 * The ID of the data layer.
+	 */
+	layerId: string;
+
+	/**
+	 * Set of selected field IDs.
+	 */
+	selectedFieldIds: SvelteSet<string>;
+};
 
 /**
  * Store for managing the data selected for download.
  */
-class DataSelectionStore {
-	#dataSelections = $state<SvelteMap<string, DataSelection>>(new SvelteMap());
+export class DataSelectionStore {
+	public dataSelections = $state<SvelteMap<string, DataSelectionSnapshot>>(new SvelteMap());
 
 	/**
 	 * Add a DataSelection to the store.
@@ -17,9 +29,38 @@ class DataSelectionStore {
 	 *
 	 * @param dataSelection - The DataSelection object to add.
 	 */
-	public addSelection(dataSelection: DataSelection) {
-		this.#dataSelections.set(dataSelection.layerId, dataSelection);
-		toast.success(`'${dataSelection.layer.title}' Added`);
+	public addSelection(dataSelection: DataSelectionSnapshot) {
+		this.dataSelections.set(dataSelection.layerId, dataSelection);
+	}
+
+	/**
+	 * Update an existing DataSelection in the store.
+	 * @param layerId - The id of the layer whose selection should be updated.
+	 * @param selectedFieldIds - The new array of selected field IDs.
+	 */
+	public updateSelection(layerId: string, selectedFieldIds: string[]) {
+		const existing = this.dataSelections.get(layerId);
+		if (!existing) {
+			console.warn(`[data-selection-store] no existing selection for layerId ${layerId}`);
+			return;
+		}
+
+		existing.selectedFieldIds = new SvelteSet(selectedFieldIds);
+		this.dataSelections.set(layerId, { ...existing });
+	}
+
+	public addOrUpdateSelection(layerId: string, selectedFieldIds: string[]) {
+		const existing = this.dataSelections.get(layerId);
+		if (existing) {
+			existing.selectedFieldIds = new SvelteSet(selectedFieldIds);
+			this.dataSelections.set(layerId, { ...existing });
+		} else {
+			const newSelection: DataSelectionSnapshot = {
+				layerId,
+				selectedFieldIds: new SvelteSet(selectedFieldIds)
+			};
+			this.dataSelections.set(layerId, newSelection);
+		}
 	}
 
 	/**
@@ -32,9 +73,7 @@ class DataSelectionStore {
 	 * @param layerId - The id of the layer whose selection should be removed.
 	 */
 	public removeSelection(layerId: string) {
-		const removed = this.#dataSelections.get(layerId);
-		this.#dataSelections.delete(layerId);
-		toast.success(`'${removed?.layer.title}' Removed`);
+		this.dataSelections.delete(layerId);
 	}
 
 	/**
@@ -43,8 +82,8 @@ class DataSelectionStore {
 	 * @param layerId - The id of the layer to retrieve the selection for.
 	 * @returns The DataSelection if it exists, otherwise undefined.
 	 */
-	public getSelection(layerId: string): DataSelection | undefined {
-		return this.#dataSelections.get(layerId);
+	public getSelection(layerId: string): DataSelectionSnapshot | undefined {
+		return this.dataSelections.get(layerId);
 	}
 
 	/**
@@ -52,15 +91,15 @@ class DataSelectionStore {
 	 *
 	 * @returns An array of all DataSelection objects currently stored.
 	 */
-	public getAllSelections(): DataSelection[] {
-		return Array.from(this.#dataSelections.values());
+	public getAllSelections(): DataSelectionSnapshot[] {
+		return Array.from(this.dataSelections.values());
 	}
 
 	/**
 	 * Clear all DataSelections from the store.
 	 */
 	public clearSelections(): void {
-		this.#dataSelections.clear();
+		this.dataSelections.clear();
 		console.log('[data-selection-store] selections cleared.');
 	}
 
@@ -68,9 +107,6 @@ class DataSelectionStore {
 	 * Clear all DataSelections from the store.
 	 */
 	public cleanup(): void {
-		this.#dataSelections.clear();
+		this.dataSelections.clear();
 	}
 }
-
-export const dataSelectionStore = new DataSelectionStore();
-export type { DataSelectionStore };

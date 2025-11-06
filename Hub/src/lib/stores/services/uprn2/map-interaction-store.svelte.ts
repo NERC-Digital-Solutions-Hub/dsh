@@ -1,306 +1,270 @@
-// import type MapView from '@arcgis/core/views/MapView';
-// import {
-// 	areaSelectionStore,
-// 	type HighlightAreaInfo
-// } from '$lib/stores/services/uprn2/area-selection-store.svelte';
+import type { AreaSelectionInteractionStore } from '$lib/stores/services/uprn2/area-selection-interaction-store.svelte';
+import type MapView from '@arcgis/core/views/MapView';
+import { SvelteSet } from 'svelte/reactivity';
 
-// /**
-//  * Store for managing MapView interactions including pointer-move and click events.
-//  * Handles hover highlighting and area selection logic.
-//  */
-// class MapInteractionStore {
-// 	private mapView: MapView | null = $state<MapView | null>(null);
-// 	private interactableLayers: Set<string> = $state(new Set<string>());
-// 	private pointerMoveHandle: __esri.Handle | null = null;
-// 	private clickHandle: __esri.Handle | null = null;
-// 	private leaveHandle: __esri.Handle | null = null;
-// 	private enterHandle: __esri.Handle | null = null;
-// 	private isInitialized = $state<boolean>(false);
-// 	private pointerInsideMap = $state<boolean>(true);
+/**
+ * Store for managing MapView interactions including pointer-move and click events.
+ * Handles hover highlighting and area selection logic.
+ */
+export class MapInteractionStore {
+	private mapView: MapView;
+	private areaSelectionInteractionStore: AreaSelectionInteractionStore;
+	private interactableLayers: Set<string>;
+	private pointerMoveHandle: __esri.Handle | null = null;
+	private clickHandle: __esri.Handle | null = null;
+	private leaveHandle: __esri.Handle | null = null;
+	private enterHandle: __esri.Handle | null = null;
+	private pointerInsideMap = $state<boolean>(true);
 
-// 	private initializationInProgress = false;
+	/**
+	 * Initialize the store with a MapView and set up event handlers
+	 * @param view - The Esri MapView to attach interactions to
+	 * @param areaSelectionInteractionStore - The area selection interaction store to manage selections
+	 * @param interactableLayers - Set of layer names that can be interacted with
+	 */
+	constructor(
+		view: MapView,
+		areaSelectionInteractionStore: AreaSelectionInteractionStore,
+		interactableLayers: Set<string>
+	) {
+		console.log('[map-interaction-store] Initializing with MapView');
 
-// 	/**
-// 	 * Initialize the store with a MapView and set up event handlers
-// 	 * @param view - The Esri MapView to attach interactions to
-// 	 * @param interactableLayers - Set of layer names that can be interacted with
-// 	 */
-// 	public async initializeAsync(view: MapView, interactableLayers: Set<string>): Promise<void> {
-// 		console.log('[map-interaction-store] Initializing with MapView');
-// 		if (this.mapView === view && this.isInitialized) {
-// 			console.log('[map-interaction-store] MapView is already initialized');
-// 			this.interactableLayers = interactableLayers;
-// 			return;
-// 		}
+		this.mapView = view;
+		this.areaSelectionInteractionStore = areaSelectionInteractionStore;
+		this.interactableLayers = interactableLayers;
 
-// 		if (this.initializationInProgress) {
-// 			console.log('[map-interaction-store] Initialization already in progress');
-// 			return;
-// 		}
+		this.setupHighlights(view);
 
-// 		this.initializationInProgress = true;
+		this.setupPointerMoveHandler(view);
+		this.setupClickHandler(view);
+		this.setupLeaveHandler(view);
+		this.setupEnterHandler(view);
 
-// 		console.log('[map-interaction-store] Cleaning up previous MapView if any');
-// 		this.cleanup();
+		console.log('[map-interaction-store] Initialized with MapView');
+	}
 
-// 		this.mapView = view;
-// 		this.interactableLayers = interactableLayers;
+	/**
+	 * Set up the highlight styles for hover and selected states
+	 * @param view - The MapView to add highlights to
+	 */
+	private setupHighlights(view: MapView): void {
+		const hoverHighlight = {
+			name: 'hover',
+			color: 'lightgreen',
+			haloOpacity: 1,
+			fillOpacity: 0.2
+		} as unknown as __esri.HighlightOptions;
 
-// 		await view.when();
+		const selectedHighlight = {
+			name: 'selected',
+			color: 'green',
+			haloOpacity: 1,
+			fillOpacity: 0.3
+		} as unknown as __esri.HighlightOptions;
 
-// 		this.setupHighlights(view);
+		view.highlights.push(hoverHighlight);
+		view.highlights.push(selectedHighlight);
+	}
 
-// 		this.setupPointerMoveHandler(view);
-// 		this.setupClickHandler(view);
-// 		this.setupLeaveHandler(view);
-// 		this.setupEnterHandler(view);
+	/**
+	 * Set up the pointer-move event handler for hover highlighting
+	 * @param view - The MapView to attach the handler to
+	 */
+	private setupPointerMoveHandler(view: MapView): void {
+		this.pointerMoveHandle = view.on('pointer-move', async (event) => {
+			if (!this.pointerInsideMap) {
+				return;
+			}
 
-// 		this.isInitialized = true;
-// 		console.log('[map-interaction-store] Initialized with MapView');
+			const { results } = await view.hitTest(event);
+			const result = results[0];
 
-// 		this.initializationInProgress = false;
-// 	}
+			if (!result) {
+				this.clearHoverHighlight();
+				return;
+			}
 
-// 	public updateInteractableLayers(interactableLayers: Set<string>): void {
-// 		this.interactableLayers = interactableLayers;
-// 	}
+			const graphic = (result as __esri.GraphicHit).graphic;
+			const layer = graphic.layer as __esri.FeatureLayer;
 
-// 	/**
-// 	 * Set up the highlight styles for hover and selected states
-// 	 * @param view - The MapView to add highlights to
-// 	 */
-// 	private setupHighlights(view: MapView): void {
-// 		const hoverHighlight = {
-// 			name: 'hover',
-// 			color: 'lightgreen',
-// 			haloOpacity: 1,
-// 			fillOpacity: 0.2
-// 		} as unknown as __esri.HighlightOptions;
+			if (
+				!graphic ||
+				!layer ||
+				!this.isLayerInteractable(layer.title as string) ||
+				graphic.attributes?.[layer.objectIdField] === undefined
+			) {
+				this.clearHoverHighlight();
+				return;
+			}
 
-// 		const selectedHighlight = {
-// 			name: 'selected',
-// 			color: 'green',
-// 			haloOpacity: 1,
-// 			fillOpacity: 0.3
-// 		} as unknown as __esri.HighlightOptions;
+			const objectIdField = graphic.attributes?.[layer.objectIdField];
 
-// 		view.highlights.push(hoverHighlight);
-// 		view.highlights.push(selectedHighlight);
-// 	}
+			if (
+				this.areaSelectionInteractionStore.currentHoveredArea &&
+				this.areaSelectionInteractionStore.currentHoveredArea.id === objectIdField
+			) {
+				return;
+			}
 
-// 	/**
-// 	 * Set up the pointer-move event handler for hover highlighting
-// 	 * @param view - The MapView to attach the handler to
-// 	 */
-// 	private setupPointerMoveHandler(view: MapView): void {
-// 		this.pointerMoveHandle = view.on('pointer-move', async (event) => {
-// 			if (!this.pointerInsideMap) {
-// 				return;
-// 			}
+			try {
+				const layerView = await view.whenLayerView(layer);
 
-// 			const { results } = await view.hitTest(event);
-// 			const result = results[0];
+				if (this.areaSelectionInteractionStore.selectionViewState.layerView !== layerView) {
+					this.areaSelectionInteractionStore.setSelectedLayerView(layerView);
+				}
 
-// 			if (!result) {
-// 				this.clearHoverHighlight();
-// 				return;
-// 			}
+				this.clearHoverHighlight();
 
-// 			const graphic = (result as __esri.GraphicHit).graphic;
-// 			const layer = graphic.layer as __esri.FeatureLayer;
+				const featureLayerView = layerView as __esri.FeatureLayerView;
+				if (!featureLayerView) {
+					console.warn('LayerView is not a FeatureLayerView');
+					return;
+				}
 
-// 			if (
-// 				!graphic ||
-// 				!layer ||
-// 				!this.isLayerInteractable(layer.id as string) ||
-// 				graphic.attributes?.[layer.objectIdField] === undefined
-// 			) {
-// 				this.clearHoverHighlight();
-// 				return;
-// 			}
+				if (!this.pointerInsideMap) {
+					return;
+				}
 
-// 			const objectIdField = graphic.attributes?.[layer.objectIdField];
+				const hoverHandle = featureLayerView.highlight(graphic, { name: 'hover' });
+				this.areaSelectionInteractionStore.setHoveredArea(objectIdField, hoverHandle);
+			} catch (error) {
+				console.error('Error in pointer-move handler:', error);
+				this.clearHoverHighlight();
+			}
+		});
+	}
 
-// 			if (
-// 				areaSelectionStore.currentHoveredArea &&
-// 				areaSelectionStore.currentHoveredArea.id === objectIdField
-// 			) {
-// 				return;
-// 			}
+	/**
+	 * Set up the click event handler for area selection
+	 * @param view - The MapView to attach the handler to
+	 */
+	private setupClickHandler(view: MapView): void {
+		this.clickHandle = view.on('click', async (event) => {
+			const { results } = await view.hitTest(event);
+			const result = results[0];
 
-// 			try {
-// 				const layerView = await view.whenLayerView(layer);
+			if (!result) {
+				return;
+			}
 
-// 				if (areaSelectionStore.selectionViewState.featureLayerView !== layerView) {
-// 					areaSelectionStore.setSelectedLayerView(layerView);
-// 				}
+			const graphic = (result as __esri.GraphicHit).graphic;
+			const layer = graphic.layer as __esri.FeatureLayer;
 
-// 				this.clearHoverHighlight();
+			if (
+				!graphic ||
+				!layer ||
+				!this.isLayerInteractable(layer.title as string) ||
+				graphic.attributes?.[layer.objectIdField] === undefined
+			) {
+				return;
+			}
 
-// 				const featureLayerView = layerView as __esri.FeatureLayerView;
-// 				if (!featureLayerView) {
-// 					console.warn('LayerView is not a FeatureLayerView');
-// 					return;
-// 				}
+			const objectId = graphic.attributes?.[layer.objectIdField];
 
-// 				if (!this.pointerInsideMap) {
-// 					return;
-// 				}
+			try {
+				const layerView = await view.whenLayerView(layer);
+				const featureLayerView = layerView as __esri.FeatureLayerView;
 
-// 				const hoverHandle = featureLayerView.highlight(graphic, { name: 'hover' });
-// 				areaSelectionStore.setHoveredArea(objectIdField, hoverHandle);
-// 			} catch (error) {
-// 				console.error('Error in pointer-move handler:', error);
-// 				this.clearHoverHighlight();
-// 			}
-// 		});
-// 	}
+				if (!featureLayerView) {
+					console.warn('Layer is not a FeatureLayerView');
+					return;
+				}
 
-// 	/**
-// 	 * Set up the click event handler for area selection
-// 	 * @param view - The MapView to attach the handler to
-// 	 */
-// 	private setupClickHandler(view: MapView): void {
-// 		this.clickHandle = view.on('click', async (event) => {
-// 			const { results } = await view.hitTest(event);
-// 			const result = results[0];
+				// Update the selected layer view if needed
+				if (this.areaSelectionInteractionStore.selectionViewState.layerView !== layerView) {
+					this.areaSelectionInteractionStore.setSelectedLayerView(layerView);
+				}
 
-// 			if (!result) {
-// 				return;
-// 			}
+				// Check if this area is already selected
+				const existingHandle: __esri.Handle | undefined =
+					this.areaSelectionInteractionStore.selectionViewState.areaHandles.get(objectId);
 
-// 			const graphic = (result as __esri.GraphicHit).graphic;
-// 			const layer = graphic.layer as __esri.FeatureLayer;
+				if (existingHandle) {
+					this.areaSelectionInteractionStore.removeSelectedArea(objectId);
+				} else {
+					const handle = featureLayerView.highlight(graphic, { name: 'selected' });
+					this.areaSelectionInteractionStore.addSelectedArea(objectId, handle);
+				}
+			} catch (error) {
+				console.error('Error in click handler:', error);
+			}
+		});
+	}
 
-// 			if (
-// 				!graphic ||
-// 				!layer ||
-// 				!this.isLayerInteractable(layer.id as string) ||
-// 				graphic.attributes?.[layer.objectIdField] === undefined
-// 			) {
-// 				return;
-// 			}
+	/**
+	 * Set up the pointer-leave event handler for area selection
+	 * @param view - The MapView to attach the handler to
+	 */
+	private setupLeaveHandler(view: MapView): void {
+		this.leaveHandle = view.on('pointer-leave', () => {
+			this.pointerInsideMap = false;
+			this.clearHoverHighlight();
+		});
+	}
 
-// 			const objectId = graphic.attributes?.[layer.objectIdField];
+	/**
+	 * Set up the pointer-enter event handler
+	 * @param view - The MapView to attach the handler to
+	 */
+	private setupEnterHandler(view: MapView): void {
+		this.enterHandle = view.on('pointer-enter', () => {
+			this.pointerInsideMap = true;
+		});
+	}
 
-// 			try {
-// 				const layerView = await view.whenLayerView(layer);
-// 				const featureLayerView = layerView as __esri.FeatureLayerView;
+	/**
+	 * Check if a layer is interactable based on its name
+	 * @param layerName - The name of the layer to check
+	 * @returns True if the layer is interactable, false otherwise
+	 */
+	private isLayerInteractable(layerName: string): boolean {
+		return this.interactableLayers.has(layerName);
+	}
 
-// 				if (!featureLayerView) {
-// 					console.warn('Layer is not a FeatureLayerView');
-// 					return;
-// 				}
+	/**
+	 * Clear the current hover highlight
+	 */
+	private clearHoverHighlight(): void {
+		if (this.areaSelectionInteractionStore.currentHoveredArea) {
+			this.areaSelectionInteractionStore.clearHoveredArea();
+		}
+	}
 
-// 				// Update the selected layer view if needed
-// 				if (areaSelectionStore.selectionViewState.featureLayerView !== layerView) {
-// 					areaSelectionStore.setSelectedLayerView(layerView);
-// 				}
+	/**
+	 * Clean up event handlers and resources
+	 */
+	public cleanup(): void {
+		if (this.pointerMoveHandle) {
+			this.pointerMoveHandle.remove();
+			this.pointerMoveHandle = null;
+		}
 
-// 				// Check if this area is already selected
-// 				const handleInfos: HighlightAreaInfo[] =
-// 					areaSelectionStore.selectionViewState.areaInfos || [];
-// 				const existingHandle: HighlightAreaInfo | undefined = handleInfos.find(
-// 					(info) => info.id === objectId
-// 				);
+		if (this.clickHandle) {
+			this.clickHandle.remove();
+			this.clickHandle = null;
+		}
 
-// 				if (existingHandle) {
-// 					areaSelectionStore.removeSelectedArea(existingHandle.id);
-// 				} else {
-// 					const handle = featureLayerView.highlight(graphic, { name: 'selected' });
-// 					areaSelectionStore.addSelectedArea(objectId, handle);
-// 				}
-// 			} catch (error) {
-// 				console.error('Error in click handler:', error);
-// 			}
-// 		});
-// 	}
+		if (this.leaveHandle) {
+			this.leaveHandle.remove();
+			this.leaveHandle = null;
+		}
 
-// 	/**
-// 	 * Set up the pointer-leave event handler for area selection
-// 	 * @param view - The MapView to attach the handler to
-// 	 */
-// 	private setupLeaveHandler(view: MapView): void {
-// 		this.leaveHandle = view.on('pointer-leave', () => {
-// 			this.pointerInsideMap = false;
-// 			this.clearHoverHighlight();
-// 		});
-// 	}
+		if (this.enterHandle) {
+			this.enterHandle.remove();
+			this.enterHandle = null;
+		}
 
-// 	/**
-// 	 * Set up the pointer-enter event handler
-// 	 * @param view - The MapView to attach the handler to
-// 	 */
-// 	private setupEnterHandler(view: MapView): void {
-// 		this.enterHandle = view.on('pointer-enter', () => {
-// 			this.pointerInsideMap = true;
-// 		});
-// 	}
+		this.clearHoverHighlight();
+		this.pointerInsideMap = true;
+		this.interactableLayers = new SvelteSet();
 
-// 	/**
-// 	 * Check if a layer is interactable based on its name
-// 	 * @param layerName - The name of the layer to check
-// 	 * @returns True if the layer is interactable, false otherwise
-// 	 */
-// 	private isLayerInteractable(layerName: string): boolean {
-// 		return this.interactableLayers.has(layerName);
-// 	}
+		console.log('[map-interaction-store] cleaned up');
+	}
 
-// 	/**
-// 	 * Clear the current hover highlight
-// 	 */
-// 	private clearHoverHighlight(): void {
-// 		if (areaSelectionStore.currentHoveredArea) {
-// 			areaSelectionStore.clearHoveredArea();
-// 		}
-// 	}
-
-// 	/**
-// 	 * Clean up event handlers and resources
-// 	 */
-// 	public cleanup(): void {
-// 		if (this.pointerMoveHandle) {
-// 			this.pointerMoveHandle.remove();
-// 			this.pointerMoveHandle = null;
-// 		}
-
-// 		if (this.clickHandle) {
-// 			this.clickHandle.remove();
-// 			this.clickHandle = null;
-// 		}
-
-// 		if (this.leaveHandle) {
-// 			this.leaveHandle.remove();
-// 			this.leaveHandle = null;
-// 		}
-
-// 		if (this.enterHandle) {
-// 			this.enterHandle.remove();
-// 			this.enterHandle = null;
-// 		}
-
-// 		this.clearHoverHighlight();
-// 		this.isInitialized = false;
-// 		this.mapView = null;
-// 		this.pointerInsideMap = true;
-// 		this.interactableLayers = new Set();
-
-// 		console.log('[map-interaction-store] cleaned up');
-// 	}
-
-// 	/**
-// 	 * Get the current MapView instance
-// 	 */
-// 	public get currentMapView(): MapView | null {
-// 		return this.mapView;
-// 	}
-
-// 	/**
-// 	 * Check if the store is initialized with a MapView
-// 	 */
-// 	public get initialized(): boolean {
-// 		return this.isInitialized;
-// 	}
-// }
-
-// export const mapInteractionStore = new MapInteractionStore();
+	/**
+	 * Get the current MapView instance
+	 */
+	public get currentMapView(): MapView | null {
+		return this.mapView;
+	}
+}

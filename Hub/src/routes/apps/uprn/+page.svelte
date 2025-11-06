@@ -6,7 +6,7 @@
 	import ExportMenuFooter from '$lib/components/common/services/uprn2/export-menu/export-menu-footer.svelte';
 	import ExportMenu from '$lib/components/common/services/uprn2/export-menu/export-menu.svelte';
 	import FieldSelectionMenu from '$lib/components/common/services/uprn2/field-selection-menu/field-selection-menu.svelte';
-	import AreaSelectionTreeview2 from '$lib/components/common/services/uprn2/tree-view/area-selection/tree-view2.svelte';
+	import AreaSelectionTreeview2 from '$lib/components/common/services/uprn2/tree-view/area-selection/tree-view.svelte';
 	import DataSelectionTreeview from '$lib/components/common/services/uprn2/tree-view/data-selection/tree-view.svelte';
 	import UprnMapView2 from '$lib/components/common/services/uprn2/uprn-map-view/uprn-map-view2.svelte';
 	import UprnTabBarContent from '$lib/components/common/services/uprn2/uprn-tab-bar/uprn-tab-bar-content.svelte';
@@ -15,7 +15,7 @@
 	import * as SidebarLayout from '$lib/components/common/sidebar-layout/index.js';
 	import { SidebarPosition } from '$lib/components/common/sidebar/sidebar-position.js';
 	import { Toaster } from '$lib/components/ui/sonner';
-	import { AreaSelectionStore2 } from '$lib/stores/services/uprn2/area-selection-store2.svelte';
+	import { AreaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
 	import { AreaSelectionInteractionStore } from '$lib/stores/services/uprn2/area-selection-interaction-store.svelte';
 	import FieldFilterMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
 	import { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store';
@@ -25,7 +25,7 @@
 	import { getAppConfigAsync } from '$lib/utils/app-config-provider.js';
 	import { onDestroy, onMount } from 'svelte';
 	import TabBarTriggers from './tabBarTriggers.json';
-	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
+	import { DataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
 	import type { AiUprnChatbotEndpoints, UprnDownloadEndpoints } from '$lib/types/uprn';
 	import { UprnDownloadService } from '$lib/services/uprn-download-service';
 	import { AiUprnChatbotService } from '$lib/services/ai-uprn-chatbot-service';
@@ -34,6 +34,7 @@
 	import CollapsibleWindow from '$lib/components/common/collapsible-window/collapsible-window.svelte';
 	import { base } from '$app/paths';
 	import { LayerViewProvider } from '$lib/services/layer-view-provider';
+	import { SelectionTrackingStore } from '$lib/stores/services/uprn2/selection-tracking-store.svelte';
 
 	let areaSelectionTreeview: DataSelectionTreeview | undefined = undefined;
 	let dataSelectionTreeview: DataSelectionTreeview | undefined = undefined;
@@ -43,8 +44,12 @@
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
 
 	let currentTab: string = $state('define-areas');
-	let areaSelectionStore: AreaSelectionStore2 = $state(new AreaSelectionStore2());
+	let dataSelectionStore: DataSelectionStore = $state(new DataSelectionStore());
+	let areaSelectionStore: AreaSelectionStore = $state(new AreaSelectionStore());
 	let areaSelectionInteractionStore: AreaSelectionInteractionStore | null = $state(null);
+	let selectionTrackingStore: SelectionTrackingStore = $state(
+		new SelectionTrackingStore(areaSelectionStore, dataSelectionStore)
+	);
 
 	let mapView: __esri.MapView | null = $state(null);
 	let dataSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
@@ -144,6 +149,8 @@
 
 		const appConfig: AppConfig = await getAppConfigAsync();
 
+		await selectionTrackingStore.loadSelections();
+
 		const [{ default: MapView }] = await Promise.all([import('@arcgis/core/views/MapView')]);
 		mapView = new MapView();
 
@@ -221,7 +228,7 @@
 </script>
 
 <Toaster />
-<FieldSelectionMenu {fieldFilterMenuStore} {fieldsToHide} />
+<FieldSelectionMenu {dataSelectionStore} {fieldFilterMenuStore} {fieldsToHide} />
 {#if areaSelectionInteractionStore}
 	<AreaSelectionHoverCard {areaSelectionInteractionStore} />
 	<AreaSelectionToast {areaSelectionInteractionStore} />
@@ -260,6 +267,7 @@
 							<DataSelectionTreeview
 								bind:this={dataSelectionTreeview}
 								webMap={webMapStore.data!}
+								{dataSelectionStore}
 								layerViewProvider={uprnMapView?.getLayerViewProvider()!}
 								treeviewConfigStore={dataSelectionTreeviewConfig!}
 								{customRendererService}
@@ -271,10 +279,11 @@
 
 				<div hidden={currentTab !== 'export'}>
 					<UprnTabBarContent>
-						{#if areaSelectionInteractionStore}
+						{#if areaSelectionInteractionStore && webMapStore.isLoaded}
 							<ExportMenu
 								{webMapStore}
 								{areaSelectionInteractionStore}
+								{dataSelectionStore}
 								dataSelectionTreeviewConfig={dataSelectionTreeviewConfig!}
 								{fieldFilterMenuStore}
 							/>
@@ -305,6 +314,7 @@
 							onExportSuccess={switchToDownloadsTab}
 							clearSelections={clearAllSelections}
 							{areaSelectionInteractionStore}
+							{dataSelectionStore}
 						/>
 					{/if}
 				</div>

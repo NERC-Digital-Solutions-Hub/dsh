@@ -1,11 +1,13 @@
-import type { DataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
+import type {
+	DataSelectionSnapshot,
+	DataSelectionStore
+} from '$lib/stores/services/uprn2/data-selection-store.svelte';
 import {
 	SelectionState,
 	TreeNode,
 	TreeFieldNode,
 	TreeLayerNode
 } from '$lib/components/common/services/uprn2/tree-view/types';
-import type { DataSelection } from '$lib/types/uprn';
 import { SvelteSet } from 'svelte/reactivity';
 import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store';
 
@@ -87,7 +89,7 @@ export class TreeviewSelectionController {
 				return SelectionState.Inactive;
 			}
 
-			return selection.fields.has(node.field.name)
+			return selection.selectedFieldIds.has(node.field.name)
 				? SelectionState.Active
 				: SelectionState.Inactive;
 		}
@@ -122,7 +124,7 @@ export class TreeviewSelectionController {
 		switch (state) {
 			case SelectionState.Active:
 				if (!selection && !this.isGroupLayer(node)) {
-					selection = this.createAndAddDataSelection(node.id, node.layer);
+					selection = this.createAndAddDataSelection(node.id);
 				}
 
 				for (const child of node.children || []) {
@@ -156,21 +158,29 @@ export class TreeviewSelectionController {
 		switch (state) {
 			case SelectionState.Active:
 				if (!selection) {
-					selection = this.createAndAddDataSelection(node.featureLayer.id, node.featureLayer);
+					selection = this.createAndAddDataSelection(node.featureLayer.id);
 				}
 
-				selection.fields.add(node.field.name);
+				this.#dataSelectionStore.addOrUpdateSelection(node.featureLayer.id, [
+					...selection.selectedFieldIds,
+					node.field.name
+				]);
 				break;
-			case SelectionState.Inactive:
+			case SelectionState.Inactive: {
 				if (!selection) {
 					break;
 				}
 
-				selection.fields.delete(node.field.name);
-				if (selection.fields.size === 0) {
+				const updatedFieldIds = new SvelteSet<string>(selection.selectedFieldIds);
+				updatedFieldIds.delete(node.field.name);
+				this.#dataSelectionStore.addOrUpdateSelection(node.featureLayer.id, [...updatedFieldIds]);
+
+				// selection.selectedFieldIds.delete(node.field.name);
+				if (updatedFieldIds.size === 0) {
 					this.#dataSelectionStore.removeSelection(selection.layerId);
 				}
 				break;
+			}
 		}
 	}
 
@@ -241,17 +251,12 @@ export class TreeviewSelectionController {
 	 * created object is returned for immediate use.
 	 *
 	 * @param id - The layer id to use for the DataSelection.layerId.
-	 * @param layer - The layer to associate with the DataSelection.
 	 * @returns The newly created DataSelection.
 	 */
-	private createAndAddDataSelection(
-		id: string,
-		layer: __esri.Layer | __esri.Sublayer
-	): DataSelection {
-		const selection: DataSelection = {
+	private createAndAddDataSelection(id: string): DataSelectionSnapshot {
+		const selection: DataSelectionSnapshot = {
 			layerId: id,
-			layer: layer,
-			fields: new SvelteSet()
+			selectedFieldIds: new SvelteSet<string>()
 		};
 
 		this.#dataSelectionStore.addSelection(selection);

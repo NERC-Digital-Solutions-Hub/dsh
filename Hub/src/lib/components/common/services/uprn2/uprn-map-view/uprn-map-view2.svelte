@@ -3,7 +3,7 @@
 	import { browser } from '$app/environment';
 	import { LayerViewProvider } from '$lib/services/layer-view-provider';
 	import type { AreaSelectionInteractionStore } from '$lib/stores/services/uprn2/area-selection-interaction-store.svelte';
-	import { MapInteractionStore2 } from '$lib/stores/services/uprn2/map-interaction-store2.svelte';
+	import { MapInteractionStore } from '$lib/stores/services/uprn2/map-interaction-store.svelte';
 	import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 	import type Map from '@arcgis/core/Map';
 	import type MapView from '@arcgis/core/views/MapView';
@@ -26,7 +26,7 @@
 
 	const { webMap, mapView, areaSelectionInteractionStore, interactableLayers }: Props = $props();
 
-	let mapInteractionStore: MapInteractionStore2 | null = $state(null);
+	let mapInteractionStore: MapInteractionStore | null = $state(null);
 	let mapContainer: HTMLDivElement | null = null;
 
 	const fallbackBasemap = 'streets-vector';
@@ -111,6 +111,9 @@
 			mapView.popupEnabled = false;
 			mapView.map = webMap;
 			console.log('[uprn-map-view] MapView updated with new webMap');
+
+			await areaSelectionInteractionStore.refreshLayerView();
+			await areaSelectionInteractionStore.refreshAreas();
 		} catch (error) {
 			console.error('Error updating MapView with new webMap:', error);
 		}
@@ -136,6 +139,8 @@
 			mapView.container = mapContainer;
 			mapView.popupEnabled = false;
 			mapView.map = webMap ?? undefined;
+
+			mapView.ui.move('zoom', 'top-right');
 			await mapView.when();
 
 			console.log('[uprn-map-view] Map loaded successfully');
@@ -179,7 +184,7 @@
 			return;
 		}
 
-		mapInteractionStore = new MapInteractionStore2(
+		mapInteractionStore = new MapInteractionStore(
 			mapView,
 			areaSelectionInteractionStore,
 			interactableLayers

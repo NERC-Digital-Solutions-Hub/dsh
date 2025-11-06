@@ -3,17 +3,18 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import * as Command from '$lib/components/ui/command/index.js';
-	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
+	import type { DataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
 	import FieldFilterMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
 	import { X } from '@lucide/svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 
 	export type Props = {
+		dataSelectionStore: DataSelectionStore;
 		fieldFilterMenuStore: FieldFilterMenuStore;
 		fieldsToHide: Set<string>;
 	};
 
-	const { fieldFilterMenuStore, fieldsToHide }: Props = $props();
+	const { dataSelectionStore, fieldFilterMenuStore, fieldsToHide }: Props = $props();
 
 	let activeFeatureLayer: __esri.FeatureLayer | null = $state<__esri.FeatureLayer | null>(null);
 	let localSelectedFields: SvelteSet<string> = $state(new SvelteSet<string>());
@@ -46,9 +47,9 @@
 
 		activeFeatureLayer = activeLayer;
 		const existingDataSelection = dataSelectionStore.getSelection(activeLayer.id);
-		if (existingDataSelection?.fields) {
+		if (existingDataSelection?.selectedFieldIds) {
 			// Copy existing selection
-			localSelectedFields = new SvelteSet([...existingDataSelection.fields]);
+			localSelectedFields = new SvelteSet([...existingDataSelection.selectedFieldIds]);
 		} else {
 			// Start with empty selection
 			localSelectedFields = new SvelteSet<string>();
@@ -78,8 +79,11 @@
 		}
 
 		// Initialize fields if null
-		if (targetDataSelection.fields === undefined || targetDataSelection.fields === null) {
-			targetDataSelection.fields = new SvelteSet<string>();
+		if (
+			targetDataSelection.selectedFieldIds === undefined ||
+			targetDataSelection.selectedFieldIds === null
+		) {
+			targetDataSelection.selectedFieldIds = new SvelteSet<string>();
 		}
 
 		if (localSelectedFields.size === 0) {
@@ -88,9 +92,9 @@
 		}
 
 		// Clear existing selection and add all local selections
-		targetDataSelection.fields.clear();
+		targetDataSelection.selectedFieldIds.clear();
 		localSelectedFields.forEach((fieldName) => {
-			targetDataSelection.fields?.add(fieldName);
+			targetDataSelection.selectedFieldIds?.add(fieldName);
 		});
 	}
 

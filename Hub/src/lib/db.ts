@@ -1,3 +1,5 @@
+import type { AreaSelectionStoreSnapshot } from '$lib/stores/services/uprn2/area-selection-store.svelte';
+import type { DataSelectionSnapshot } from '$lib/stores/services/uprn2/data-selection-store.svelte';
 import {
 	DownloadStatus,
 	type AreaSelectionInfo,
@@ -7,17 +9,16 @@ import {
 import Dexie, { type Table } from 'dexie';
 
 export interface DbUprnSelection {
-	id?: number;
-	areas: DbUprnAreaSelectionInfo;
+	id: string;
+	areas: DbUprnAreaSelectionInfo | null;
 	data: DbUprnDataSelectionInfo[];
-	createdAt: number;
 }
 
-export interface DbUprnAreaSelectionInfo extends AreaSelectionInfo {
+export interface DbUprnAreaSelectionInfo extends AreaSelectionStoreSnapshot {
 	id?: number;
 }
 
-export interface DbUprnDataSelectionInfo extends DataSelectionInfo {
+export interface DbUprnDataSelectionInfo extends DataSelectionSnapshot {
 	id?: number;
 }
 
@@ -26,8 +27,10 @@ export interface DbUserDownload extends DownloadEntry {
 	createdAt: number;
 }
 
+export const UPRN_SELECTION_ID = 'current';
+
 class AppDB extends Dexie {
-	uprnSelections!: Table<DbUprnSelection, number>;
+	uprnSelections!: Table<DbUprnSelection, string>;
 	areaSelections!: Table<DbUprnAreaSelectionInfo, number>;
 	dataSelections!: Table<DbUprnDataSelectionInfo, number>;
 	userDownloads!: Table<DbUserDownload, number>;
@@ -37,28 +40,49 @@ class AppDB extends Dexie {
 
 		// Version 1 schema
 		this.version(1).stores({
-			uprnSelections: '++id, createdAt',
+			uprnSelections: '&id',
 			areaSelections: '++id, layerId, *areaIds',
 			dataSelections: '++id, layerId, *fields',
 			userDownloads: '++id, &localId, createdAt'
+		});
+
+		this.on('populate', async (tx) => {
+			console.log('[AppDB] Populating database with initial data');
+			if (await tx.table<DbUprnSelection>('uprnSelections').get(UPRN_SELECTION_ID)) {
+				console.log('[AppDB] Initial UPRN selection already exists');
+				return; // already exists
+			}
+
+			await tx.table<DbUprnSelection>('uprnSelections').add({
+				id: 'current',
+				areas: null,
+				data: []
+			});
+
+			console.log('[AppDB] Initial UPRN selection created');
 		});
 	}
 }
 
 export const db = new AppDB();
 
-export const addSelection = async (selection: DbUprnSelection) =>
-	await db.uprnSelections.add(selection);
+export const getSelection = async (): Promise<DbUprnSelection> => {
+	return (await db.uprnSelections.get(UPRN_SELECTION_ID))!;
+};
 
-export const getSelections = async () =>
-	await db.uprnSelections.orderBy('createdAt').reverse().toArray();
+export const updateSelection = async (patch: Partial<DbUprnSelection>) => {
+	const current = await getSelection();
+	console.log('[db] Updating UPRN selection with patch:', patch, 'current:', current);
+	await db.uprnSelections.update(UPRN_SELECTION_ID, patch); // updates only given props
+};
 
-export const updateSelection = async (id: number, patch: Partial<DbUprnSelection>) =>
-	await db.uprnSelections.update(id, patch);
-
-export const deleteSelection = async (id: number) => await db.uprnSelections.delete(id);
-
-export const clearSelections = async () => await db.uprnSelections.clear();
+export const clearSelections = async () => {
+	await db.uprnSelections.put({
+		id: UPRN_SELECTION_ID,
+		areas: null,
+		data: []
+	});
+};
 
 export const addUserDownload = async (
 	localId: string,

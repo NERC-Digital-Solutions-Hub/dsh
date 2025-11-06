@@ -1,7 +1,7 @@
 import type { LayerViewProvider } from '$lib/services/layer-view-provider';
-import type { AreaSelectionStore2 } from '$lib/stores/services/uprn2/area-selection-store2.svelte';
+import type { AreaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
 import FeatureLayerView from '@arcgis/core/views/layers/FeatureLayerView';
-import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+import { SvelteMap } from 'svelte/reactivity';
 
 export type AreaSelectionFieldInfo = {
 	layerName: string;
@@ -26,7 +26,7 @@ export class AreaSelectionInteractionStore {
 	/**
 	 * The area selection store.
 	 */
-	private areaSelectionStore: AreaSelectionStore2;
+	private areaSelectionStore: AreaSelectionStore;
 
 	/**
 	 * Provider for getting LayerViews.
@@ -66,60 +66,74 @@ export class AreaSelectionInteractionStore {
 	 */
 	private cachedNames = new SvelteMap<string, Map<number, string>>();
 
-	constructor(areaSelectionStore: AreaSelectionStore2, layerViewProvider: LayerViewProvider) {
+	constructor(areaSelectionStore: AreaSelectionStore, layerViewProvider: LayerViewProvider) {
 		this.areaSelectionStore = areaSelectionStore;
 		this.layerViewProvider = layerViewProvider;
 
 		$effect.root(() => {
 			$effect(() => {
-				if (!this.areaSelectionStore.layerId) {
-					this.resetSelectedLayerView();
-					return;
-				}
-
-				if (this.selectionViewState.layerView?.layer?.id === this.areaSelectionStore.layerId) {
-					return;
-				}
-
-				const layerView = this.layerViewProvider.getLayerViewById(this.areaSelectionStore.layerId);
-				if (!layerView) {
-					return;
-				}
-
-				this.setSelectedLayerView(layerView as unknown as FeatureLayerView);
+				this.refreshLayerView();
 			});
 
 			$effect(() => {
-				this.areaSelectionStore.selectedAreaIds.forEach((id) => {
-					if (this.selectionViewState.areaHandles.has(id)) {
-						return; // Already handled
-					}
-
-					const handle = this.selectionViewState.layerView?.highlight(id);
-					if (handle) {
-						this.addSelectedArea(id, handle);
-					}
-				});
-
-				if (
-					this.selectionViewState.areaHandles.size === this.areaSelectionStore.selectedAreaIds.size
-				) {
-					return; // All areas are already handled
-				}
-
-				// Remove any areas that are no longer selected
-				const currentIds = new SvelteSet(this.selectionViewState.areaHandles.keys());
-				this.areaSelectionStore.selectedAreaIds.forEach((id) => {
-					if (!currentIds.has(id)) {
-						this.removeSelectedArea(id);
-					}
-				});
+				this.refreshAreas();
 			});
 		});
 	}
 
+	async refreshLayerView(): Promise<void> {
+		if (!this.areaSelectionStore.layerId && this.selectionViewState.layerView !== null) {
+			this.resetSelectedLayerView();
+			return;
+		}
+
+		if (this.selectionViewState.layerView?.layer?.id === this.areaSelectionStore.layerId) {
+			return;
+		}
+
+		if (!this.areaSelectionStore.layerId) {
+			return;
+		}
+
+		const layerView = await this.layerViewProvider.getLayerViewById(
+			this.areaSelectionStore.layerId
+		);
+		if (!layerView) {
+			return;
+		}
+
+		this.setSelectedLayerView(layerView as unknown as FeatureLayerView);
+	}
+
+	async refreshAreas(): Promise<void> {
+		const layerView = this.selectionViewState.layerView;
+		if (!layerView) {
+			this.resetSelectedAreas();
+			return;
+		}
+
+		const selected = this.areaSelectionStore.selectedAreaIds; 
+		const handles = this.selectionViewState.areaHandles; 
+
+		for (const id of handles.keys()) {
+			if (!selected.has(id)) {
+				this.removeSelectedArea(id);
+			}
+		}
+
+		for (const id of selected) {
+			if (handles.has(id)) {
+				continue;
+			}
+
+			const handle = layerView.highlight(id, { name: 'selected' });
+			if (handle) {
+				this.addSelectedArea(id, handle);
+			}
+		}
+	}
+
 	setFieldInfos(fieldInfos: AreaSelectionFieldInfo[]): void {
-		console.log('[area-selection-interaction-store] setting field infos:', fieldInfos);
 		this.fieldInfos = fieldInfos;
 	}
 
@@ -179,6 +193,7 @@ export class AreaSelectionInteractionStore {
 		this.lastAddedArea = areaInfo;
 
 		this.selectionViewState.areaHandles.set(id, handle);
+		this.areaSelectionStore.addSelectedArea(id);
 	}
 
 	removeSelectedArea(id: number): void {
@@ -197,6 +212,7 @@ export class AreaSelectionInteractionStore {
 
 		removedHandle.remove();
 		this.selectionViewState.areaHandles.delete(id);
+		this.areaSelectionStore.removeSelectedArea(id);
 	}
 
 	async getAreaNamesById(ids: number[]): Promise<string[]> {

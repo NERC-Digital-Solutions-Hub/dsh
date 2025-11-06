@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
 	import { downloadsStore } from '$lib/stores/services/uprn2/downloads-store.svelte';
 	import { toast } from 'svelte-sonner';
 	import {
@@ -9,17 +8,18 @@
 		type AreaSelectionInfo,
 		type DataSelectionInfo
 	} from '$lib/types/uprn';
-	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 	import ClearSelectionsButton from '$lib/components/common/services/uprn2/clear-selections-button/cl/clear-selections-button.svelte';
 	import type { AreaSelectionInteractionStore } from '$lib/stores/services/uprn2/area-selection-interaction-store.svelte';
+	import { DataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
 
 	type Props = {
 		onExportSuccess?: () => void;
 		clearSelections: () => void;
 		areaSelectionInteractionStore: AreaSelectionInteractionStore;
+		dataSelectionStore: DataSelectionStore;
 	};
 
-	const { onExportSuccess, clearSelections, areaSelectionInteractionStore }: Props = $props();
+	const { onExportSuccess, clearSelections, areaSelectionInteractionStore, dataSelectionStore }: Props = $props();
 
 	// TODO: Add onExport function prop to handle export completion externally
 
@@ -58,7 +58,6 @@
 
 			const areaSelection: AreaSelectionInfo = {
 				layerId: areaSelectionInteractionStore.selectionViewState.layerView?.layer.id || '',
-				layerIndex: areaSelectionInteractionStore.selectionViewState.layerView?.layer.layerId || 0,
 				areaFieldInfos: areaFieldInfos
 			};
 
@@ -67,8 +66,7 @@
 				.map((selection) => {
 					return {
 						layerId: selection.layerId,
-						layerIndex: selection.layer instanceof FeatureLayer ? selection.layer.layerId! : -1,
-						fields: Array.from(selection.fields)
+						fields: Array.from(selection.selectedFieldIds)
 					};
 				});
 

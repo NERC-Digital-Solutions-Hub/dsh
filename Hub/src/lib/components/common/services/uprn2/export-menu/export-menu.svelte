@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Button from '$lib/components/ui/button/button.svelte';
-	import { dataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
 	import FilterFieldMenuStore from '$lib/stores/services/uprn2/field-filter-menu-store.svelte';
 	import { WebMapStore } from '$lib/stores/services/uprn2/web-map-store.svelte';
 	import FilterButton from '../tree-view/data-selection/filter-button.svelte';
@@ -10,10 +9,12 @@
 		AreaFieldHandleInfo,
 		AreaSelectionInteractionStore
 	} from '$lib/stores/services/uprn2/area-selection-interaction-store.svelte';
+	import type { DataSelectionStore } from '$lib/stores/services/uprn2/data-selection-store.svelte';
 
 	export type Props = {
 		webMapStore: WebMapStore;
 		areaSelectionInteractionStore: AreaSelectionInteractionStore;
+		dataSelectionStore: DataSelectionStore;
 		dataSelectionTreeviewConfig: TreeviewConfigStore;
 		fieldFilterMenuStore: FilterFieldMenuStore;
 	};
@@ -21,6 +22,7 @@
 	const {
 		webMapStore,
 		areaSelectionInteractionStore,
+		dataSelectionStore,
 		dataSelectionTreeviewConfig,
 		fieldFilterMenuStore
 	}: Props = $props();
@@ -121,9 +123,9 @@
 		const dataSelection = dataSelectionStore.getSelection(layerId);
 		if (
 			!dataSelection ||
-			!dataSelection.fields ||
-			dataSelection.fields.size === 0 ||
-			dataSelection.fields.size ===
+			!dataSelection.selectedFieldIds ||
+			dataSelection.selectedFieldIds.size === 0 ||
+			dataSelection.selectedFieldIds.size ===
 				(webMapStore.dataLookup.get(layerId) as __esri.FeatureLayer)?.fields?.length
 		) {
 			return false;
@@ -171,7 +173,7 @@
 	{#if dataSelectionStore.getAllSelections().length > 0}
 		<ul>
 			{#each dataSelectionStore.getAllSelections() as data}
-				<SelectionEntryCard title={data.layer.title ?? ''}>
+				<SelectionEntryCard title={webMapStore.dataLookup.get(data.layerId)?.title ?? ''}>
 					{#if dataSelectionTreeviewConfig?.getItemConfig(data.layerId)?.showFields}
 						<FilterButton
 							layerId={data.layerId}
