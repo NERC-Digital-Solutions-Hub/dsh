@@ -71,7 +71,11 @@ export const getSelection = async (): Promise<DbUprnSelection> => {
 };
 
 export const updateSelection = async (patch: Partial<DbUprnSelection>) => {
-	const current = await getSelection();
+	let current = await getSelection();
+	if (!current) {
+		current = { id: UPRN_SELECTION_ID, areas: null, data: [] };
+		await db.uprnSelections.add(current);
+	}
 	console.log('[db] Updating UPRN selection with patch:', patch, 'current:', current);
 	await db.uprnSelections.update(UPRN_SELECTION_ID, patch); // updates only given props
 };
