@@ -36,7 +36,7 @@ class AppDB extends Dexie {
 	userDownloads!: Table<DbUserDownload, number>;
 
 	constructor() {
-		super('app-db');
+		super('app-db2');
 
 		// Version 2 schema
 		this.version(2).stores({
