@@ -71,19 +71,25 @@
 				<div class="font-medium">Chat</div>
 				<div class="flex gap-1">
 					{#if isOpened}
-						<Button class="size-7" onclick={onToggleMaximise}>
+						<Button
+							class="size-6 border-1 bg-background hover:bg-accent focus-visible:border-ring"
+							onclick={onToggleMaximise}
+						>
 							{#if isMaximised}
-								<Minimize />
+								<Minimize class="text-primary" />
 							{:else}
-								<Maximize />
+								<Maximize class="text-primary" />
 							{/if}
 						</Button>
 					{/if}
-					<Button class="size-7" onclick={onToggleCollapse}>
+					<Button
+						class="size-6 border-1 bg-background hover:bg-accent focus-visible:border-ring"
+						onclick={onToggleCollapse}
+					>
 						{#if !isOpened}
-							<ChevronUp />
+							<ChevronUp class="text-primary" />
 						{:else}
-							<ChevronDown />
+							<ChevronDown class="text-primary" />
 						{/if}
 					</Button>
 				</div>

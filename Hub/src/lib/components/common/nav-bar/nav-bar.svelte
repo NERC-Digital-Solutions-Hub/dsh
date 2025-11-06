@@ -23,11 +23,29 @@
 				</NavigationMenu.Link>
 			</NavigationMenu.Item>
 			<NavigationMenu.Item>
-				<NavigationMenu.Link>
-					{#snippet child()}
-						<a href={`${base}/catalogue`} class={navigationMenuTriggerStyle()}>Catalogue</a>
-					{/snippet}
-				</NavigationMenu.Link>
+				<NavigationMenu.Trigger>Catalogues</NavigationMenu.Trigger>
+				<NavigationMenu.Content>
+					<ul class="grid w-[300px] gap-4 p-2">
+						<li>
+							<NavigationMenu.Link href="#">
+								<a href={`${base}/catalogues/full-text-search`}>
+									<div class="font-medium">Full-Text Search</div>
+									<div class="text-muted-foreground">
+										Explore our data using a traditional approach to search.
+									</div>
+								</a>
+							</NavigationMenu.Link>
+							<NavigationMenu.Link href="#">
+								<a href={`${base}/catalogues/ai`}>
+									<div class="font-medium">AI</div>
+									<div class="text-muted-foreground">
+										Explore our data using AI-powered search and discovery tools.
+									</div>
+								</a>
+							</NavigationMenu.Link>
+						</li>
+					</ul>
+				</NavigationMenu.Content>
 			</NavigationMenu.Item>
 			<NavigationMenu.Item>
 				<NavigationMenu.Trigger>Apps</NavigationMenu.Trigger>
@@ -59,6 +77,11 @@
 									</div>
 								</a>
 							</NavigationMenu.Link>
+							<NavigationMenu.Link href="#">
+								<a href={`${base}/apps`}>
+									<div class="font-medium">View All...</div>
+								</a>
+							</NavigationMenu.Link>
 						</li>
 					</ul>
 				</NavigationMenu.Content>
@@ -73,7 +96,7 @@
 			<NavigationMenu.Item>
 				<NavigationMenu.Link>
 					{#snippet child()}
-						<a href={`${base}/labs`} class={navigationMenuTriggerStyle()}>Labs</a>
+						<a href={`${base}/research`} class={navigationMenuTriggerStyle()}>Research</a>
 					{/snippet}
 				</NavigationMenu.Link>
 			</NavigationMenu.Item>

@@ -1,5 +1,5 @@
-<h1>Labs</h1>
-<p>This is the Labs page.</p>
+<h1>Research</h1>
+<p>This is the research page.</p>
 <!-- <video controls width="640" height="360">
 	<source
 		src="https://github.com/NERC-Digital-Solutions-Hub/dsh-content/raw/refs/heads/main/videos/llm/func-call/llm-func-call-poc.mp4"
