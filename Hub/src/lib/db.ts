@@ -38,8 +38,8 @@ class AppDB extends Dexie {
 	constructor() {
 		super('app-db');
 
-		// Version 1 schema
-		this.version(1).stores({
+		// Version 2 schema
+		this.version(2).stores({
 			uprnSelections: '&id',
 			areaSelections: '++id, layerId, *areaIds',
 			dataSelections: '++id, layerId, *fields',
@@ -47,9 +47,9 @@ class AppDB extends Dexie {
 		});
 
 		this.on('populate', async (tx) => {
-			console.log('[AppDB] Populating database with initial data');
+			console.log('[db] Populating database with initial data');
 			if (await tx.table<DbUprnSelection>('uprnSelections').get(UPRN_SELECTION_ID)) {
-				console.log('[AppDB] Initial UPRN selection already exists');
+				console.log('[db] Initial UPRN selection already exists');
 				return; // already exists
 			}
 
@@ -59,7 +59,7 @@ class AppDB extends Dexie {
 				data: []
 			});
 
-			console.log('[AppDB] Initial UPRN selection created');
+			console.log('[db] Initial UPRN selection created');
 		});
 	}
 }
