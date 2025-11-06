@@ -1,1 +1,0 @@
-import{f as o,a as p}from"../chunks/coOZIrlZ.js";import"../chunks/IkZAx_0-.js";import{A as r}from"../chunks/Cv6wsIHX.js";var e=o("<h1>Health</h1> <p>This is the Health page.</p>",1);function f(a){var t=e();r(2),p(a,t)}export{f as component};
