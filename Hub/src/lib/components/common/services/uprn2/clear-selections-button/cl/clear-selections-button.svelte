@@ -13,9 +13,9 @@
 
 <Button
 	onclick={() => clear()}
-	variant="destructive"
-	class={cn('size-7', buttonClass)}
+	variant="ghost"
+	class={cn('size-7 border-1 border-destructive', buttonClass)}
 	title="Clear all selections"
 >
-	<Trash />
+	<Trash class="text-destructive" />
 </Button>

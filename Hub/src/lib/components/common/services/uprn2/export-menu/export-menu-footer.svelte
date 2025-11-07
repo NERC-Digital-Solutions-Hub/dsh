@@ -19,7 +19,12 @@
 		dataSelectionStore: DataSelectionStore;
 	};
 
-	const { onExportSuccess, clearSelections, areaSelectionInteractionStore, dataSelectionStore }: Props = $props();
+	const {
+		onExportSuccess,
+		clearSelections,
+		areaSelectionInteractionStore,
+		dataSelectionStore
+	}: Props = $props();
 
 	// TODO: Add onExport function prop to handle export completion externally
 
