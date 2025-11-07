@@ -5,7 +5,7 @@
 </script>
 
 <nav>
-	<a href="/" class="brand">
+	<a href="{base}/" class="brand">
 		<img
 			src={`${base}/dsh-logo.png`}
 			alt="NERC Digital Solutions Hub"
@@ -15,13 +15,7 @@
 	</a>
 	<NavigationMenu.Root viewport={false} class="menu-item-container z-20">
 		<NavigationMenu.List>
-			<NavigationMenu.Item>
-				<NavigationMenu.Link>
-					{#snippet child()}
-						<a href="{base}/" class={navigationMenuTriggerStyle()}>Home</a>
-					{/snippet}
-				</NavigationMenu.Link>
-			</NavigationMenu.Item>
+			<NavigationMenu.Item></NavigationMenu.Item>
 			<NavigationMenu.Item>
 				<NavigationMenu.Trigger>Catalogues</NavigationMenu.Trigger>
 				<NavigationMenu.Content>
