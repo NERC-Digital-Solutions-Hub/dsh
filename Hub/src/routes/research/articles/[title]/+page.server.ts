@@ -10,8 +10,7 @@ export const load: PageServerLoad = async ({ params, fetch, setHeaders }) => {
 	const contentConfig = await getContentConfig(fetch);
 
 	const mdPath = `${params.title}.md`;
-	const url = `https://github.com/${contentConfig.content.organisation}/${contentConfig.content.repo}/raw/refs/heads/dev/${contentConfig.content.relativePath}/${contentConfig.content.research.dir}/${contentConfig.content.research.articles}/${mdPath}`;
-	console.log('Fetching markdown from URL:', url);
+	const url = `https://github.com/${contentConfig.content.organisation}/${contentConfig.content.repo}/raw/refs/heads/dev/${contentConfig.content.relativePath}/${contentConfig.content.research.dir}/${contentConfig.content.research.articles.dir}/${mdPath}`;
 	return await markdownToHtml(url, fetch, setHeaders);
 };
 

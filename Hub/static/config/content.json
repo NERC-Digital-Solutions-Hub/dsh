@@ -6,7 +6,10 @@
         "research": {
             "dir": "research",
             "main": "main.md",
-            "articles": "articles"
+            "articles": {
+                "dir": "articles",
+                "index": "index.txt"
+            }
         }
     }
 }

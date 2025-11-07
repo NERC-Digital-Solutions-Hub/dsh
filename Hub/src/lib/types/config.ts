@@ -16,7 +16,10 @@ export type ContentConfig = {
 		research: {
 			dir: string;
 			main: string;
-			articles: string;
+			articles: {
+				dir: string;
+				index: string;
+			};
 		};
 	};
 };
