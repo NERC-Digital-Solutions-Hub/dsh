@@ -1,40 +1,85 @@
-<h1>Research</h1>
-<p>This is the research page.</p>
-<!-- <video controls width="640" height="360">
-	<source
-		src="https://github.com/NERC-Digital-Solutions-Hub/dsh-content/raw/refs/heads/main/videos/llm/func-call/llm-func-call-poc.mp4"
-		type="video/mp4"
-	/>
-	Your browser does not support the video tag.
-</video> -->
-<video controls width="640" height="360">
-	<source
-		src="https://github.com/NERC-Digital-Solutions-Hub/dsh-content-videos/raw/refs/heads/dev/videos/llm/func-call/llm-func-call-poc-filter-by-area.mp4"
-		type="video/mp4"
-	/>
-	Your browser does not support the video tag.
-</video>
+<!-- src/routes/articles/[slug]/+page.svelte -->
+<script lang="ts">
+	import { base } from '$app/paths';
+	import ArticlePreviewCard from '$lib/components/common/research/article-preview-card/article-preview-card.svelte';
+	export let data: { html: string; frontmatter: any; articleMetadata: any[] };
 
-<video controls width="640" height="360">
-	<source
-		src="https://github.com/NERC-Digital-Solutions-Hub/dsh-content-videos/raw/refs/heads/dev/videos/llm/func-call/llm-func-call-poc-pollutants-filter-download.mp4"
-		type="video/mp4"
-	/>
-	Your browser does not support the video tag.
-</video>
+	function getLink(source: string) {
+		return `${base}/research/articles/${source.split('./')[1].replace('.md', '')}`;
+	}
+</script>
 
-<video controls width="640" height="360">
-	<source
-		src="https://github.com/NERC-Digital-Solutions-Hub/dsh-content-videos/raw/refs/heads/dev/videos/llm/func-call/llm-func-call-poc-pollutants-filter.mp4"
-		type="video/mp4"
-	/>
-	Your browser does not support the video tag.
-</video>
+<div>
+	<div class="article-container">
+		<div class="article-wrapper">
+			<article class="prose prose-lg max-w-none">
+				{@html data.html}
+			</article>
+		</div>
+	</div>
+</div>
 
-<video controls width="640" height="360">
-	<source
-		src="https://github.com/NERC-Digital-Solutions-Hub/dsh-content-videos/raw/refs/heads/dev/videos/llm/func-call/llm-func-call-poc.mp4"
-		type="video/mp4"
-	/>
-	Your browser does not support the video tag.
-</video>
+<div class="cards-container">
+	<div class="cards-grid">
+		{#each data.articleMetadata as metadata}
+			<ArticlePreviewCard
+				title={metadata.title}
+				description={metadata.description}
+				date={metadata.date}
+				link={getLink(metadata.source)}
+			/>
+		{/each}
+	</div>
+</div>
+
+<style>
+	.article-container {
+		width: 100%;
+		height: 100%;
+		display: flex;
+		justify-content: center;
+		padding: 1rem 1rem;
+	}
+
+	.article-wrapper {
+		width: 100%;
+		max-width: 48rem; /* 768px */
+		display: flex;
+		justify-content: center;
+	}
+
+	.cards-container {
+		width: 100%;
+		padding: 1rem 1rem 2rem;
+	}
+
+	.cards-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1.5rem;
+		max-width: 1400px;
+		margin: 0 auto;
+	}
+
+	/* Responsive adjustments */
+	@media (min-width: 640px) {
+		.cards-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	@media (min-width: 1024px) {
+		.article-wrapper {
+			max-width: 56rem; /* 896px - wider on desktop */
+		}
+
+		.cards-container {
+			padding: 1.5rem 2rem 3rem;
+		}
+
+		.cards-grid {
+			grid-template-columns: repeat(3, 1fr);
+			gap: 2rem;
+		}
+	}
+</style>

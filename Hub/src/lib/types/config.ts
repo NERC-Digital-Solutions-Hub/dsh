@@ -8,6 +8,19 @@ export type AppConfig = {
 	serviceUprn2Config: ServiceUprn2Config;
 };
 
+export type ContentConfig = {
+	content: {
+		organisation: string;
+		repo: string;
+		relativePath: string;
+		research: {
+			dir: string;
+			main: string;
+			articles: string;
+		};
+	};
+};
+
 export type CatalogueConfig = {
 	catalogueApiUrl: string;
 };

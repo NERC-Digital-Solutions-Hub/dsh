@@ -13,7 +13,7 @@ export const baseNodeStyles = 'mb-1 cursor-pointer rounded-md border border-bord
  * Adds transform and shadow effects on hover.
  */
 export const enhancedHoverStyles =
-	'transform-gpu transition-all duration-150 ease-out hover:border-border/50 hover:bg-gray-100 hover:shadow-sm';
+	'transition-all duration-150 hover:border-border/50 hover:bg-gray-100 hover:shadow-sm';
 
 /**
  * Simple hover effect that only changes background color.
