@@ -20,7 +20,9 @@ export const load: PageServerLoad = async ({ params, fetch, setHeaders }) => {
 		params.title
 	);
 	if (!metadata) {
-		throw new Error(`Article metadata not found for slug: ${params.title}`);
+		console.warn('[+page.server.ts] Article metadata not found for slug:', params.title);
+		return;
+		//throw new Error(`Article metadata not found for slug: ${params.title}`);
 	}
 
 	const mdPath = `${metadata.path}/${metadata.source.split('./')[1]}`;

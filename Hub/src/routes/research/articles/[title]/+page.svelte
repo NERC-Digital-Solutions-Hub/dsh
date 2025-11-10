@@ -4,9 +4,9 @@
 </script>
 
 <svelte:head>
-	<title>{data.frontmatter.title ?? 'Article'}</title>
-	{#if data.frontmatter.description}
-		<meta name="description" content={data.frontmatter.description} />
+	<title>{data?.frontmatter?.title ?? 'Article'}</title>
+	{#if data?.frontmatter?.description}
+		<meta name="description" content={data?.frontmatter?.description} />
 	{/if}
 </svelte:head>
 
