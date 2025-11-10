@@ -1,0 +1,1 @@
+import{r as t}from"./D6KPPgz5.js";import{e as i}from"./D4q3WNNc.js";import{n as s,v as l}from"./BVp01coW.js";function p({level:r,class:n,...a},o){const e=c(r);return s(`h${e}`,{...a,"aria-level":String(e),class:l(i.heading,n),role:"heading"},o)}function c(r){return t(Math.ceil(r),1,6)}export{p as e};
