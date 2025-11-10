@@ -2,10 +2,12 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import ArticlePreviewCard from '$lib/components/common/research/article-preview-card/article-preview-card.svelte';
-	export let data: { html: string; frontmatter: any; articleMetadata: any[] };
+	import type { ArticleMetadata } from '$lib/types/article';
+	export let data: { html: string; frontmatter: any; articleMetadata: ArticleMetadata[] };
 
-	function getLink(source: string) {
-		return `${base}/research/articles/${source.split('./')[1].replace('.md', '')}`;
+	function getLink(metadata: ArticleMetadata) {
+		console.log('Generating link for metadata:', `${base}/research/articles/${metadata.path}`);
+		return `${base}/research/articles/${metadata.path}`;
 	}
 </script>
 
@@ -26,7 +28,7 @@
 				title={metadata.title}
 				description={metadata.description}
 				date={metadata.date}
-				link={getLink(metadata.source)}
+				link={getLink(metadata)}
 			/>
 		{/each}
 	</div>
