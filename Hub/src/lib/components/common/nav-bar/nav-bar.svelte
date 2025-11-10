@@ -80,6 +80,13 @@
 					</ul>
 				</NavigationMenu.Content>
 			</NavigationMenu.Item>
+			<NavigationMenu.Item>
+				<NavigationMenu.Link>
+					{#snippet child()}
+						<a href={`${base}/maps`} class={navigationMenuTriggerStyle()}>Maps</a>
+					{/snippet}
+				</NavigationMenu.Link>
+			</NavigationMenu.Item>
 			<!-- <NavigationMenu.Item>
 				<NavigationMenu.Link>
 					{#snippet child()}
