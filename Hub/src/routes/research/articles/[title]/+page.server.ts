@@ -15,12 +15,10 @@ export const load: PageServerLoad = async ({ params, fetch, setHeaders }) => {
 	const indexUrl = `https://github.com/${contentConfig.content.organisation}/${contentConfig.content.repo}/raw/refs/heads/dev/${contentConfig.content.relativePath}/${contentConfig.content.research.dir}/${contentConfig.content.research.articles.dir}/${contentConfig.content.research.articles.index}`;
 	await researchArticleIndexer.initialize(baseUrl, indexUrl);
 
-	console.log('[+page.server.ts] Looking up metadata for slug:', params.title);
 	const metadata: ArticleMetadata | undefined = researchArticleIndexer.getMetadataBySlug(
 		params.title
 	);
 	if (!metadata) {
-		console.warn('[+page.server.ts] Article metadata not found for slug:', params.title);
 		return;
 		//throw new Error(`Article metadata not found for slug: ${params.title}`);
 	}
@@ -28,7 +26,6 @@ export const load: PageServerLoad = async ({ params, fetch, setHeaders }) => {
 	const mdPath = `${metadata.path}/${metadata.source.split('./')[1]}`;
 	const url = `https://github.com/${contentConfig.content.organisation}/${contentConfig.content.repo}/raw/refs/heads/dev/${contentConfig.content.relativePath}/${contentConfig.content.research.dir}/${contentConfig.content.research.articles.dir}/${mdPath}`;
 
-	console.log('[+page.server.ts] Fetching markdown from URL:', url);
 	return await markdownToHtml(url, fetch, setHeaders);
 };
 

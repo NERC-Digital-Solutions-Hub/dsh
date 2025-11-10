@@ -3,7 +3,6 @@ import type { PageServerLoad } from './$types';
 import { markdownToHtml } from '$lib/utils/markdown-to-html';
 import type { ContentConfig } from '$lib/types/config';
 import { base } from '$app/paths';
-import type { ArticleMetadata } from '$lib/types/article';
 import { researchArticleIndexer } from '$lib/services/research-article-indexer';
 
 let contentConfig: ContentConfig | null = null;

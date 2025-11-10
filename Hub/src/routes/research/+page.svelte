@@ -6,7 +6,6 @@
 	export let data: { html: string; frontmatter: any; articleMetadata: ArticleMetadata[] };
 
 	function getLink(metadata: ArticleMetadata) {
-		console.log('Generating link for metadata:', `${base}/research/articles/${metadata.path}`);
 		return `${base}/research/articles/${metadata.path}`;
 	}
 </script>

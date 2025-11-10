@@ -55,7 +55,7 @@ export async function markdownToHtml(url: string, fetch: Fetch, setHeaders: any)
 	}
 
 	if (etag) {
-		setHeaders({ 'Cache-Control': 's-maxage=300, stale-while-revalidate=86400' });
+		setHeaders({ 'Cache-Control': 's-maxage=300, stale-while-revalidate=600' });
 	}
 
 	return { html, frontmatter };
