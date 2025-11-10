@@ -18,6 +18,7 @@ export const load: PageServerLoad = async ({ params, fetch, setHeaders }) => {
 	const metadata: ArticleMetadata | undefined = researchArticleIndexer.getMetadataBySlug(
 		params.title
 	);
+	
 	if (!metadata) {
 		return;
 		//throw new Error(`Article metadata not found for slug: ${params.title}`);

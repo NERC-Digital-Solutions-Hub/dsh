@@ -4,5 +4,6 @@ export type ArticleMetadata = {
 	date: string;
 	tags: string[];
 	source: string;
-    path: string;
+	path: string;
+	hidden: boolean;
 };

@@ -22,13 +22,15 @@
 
 <div class="cards-container">
 	<div class="cards-grid">
-		{#each data.articleMetadata as metadata}
-			<ArticlePreviewCard
-				title={metadata.title}
-				description={metadata.description}
-				date={metadata.date}
-				link={getLink(metadata)}
-			/>
+		{#each data.articleMetadata.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) as metadata}
+			{#if !metadata.hidden}
+				<ArticlePreviewCard
+					title={metadata.title}
+					description={metadata.description}
+					date={metadata.date}
+					link={getLink(metadata)}
+				/>
+			{/if}
 		{/each}
 	</div>
 </div>
