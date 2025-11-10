@@ -8,6 +8,7 @@ import rehypeRaw from 'rehype-raw';
 import rehypeSlug from 'rehype-slug';
 import rehypeExternalLinks from 'rehype-external-links';
 import rehypeStringify from 'rehype-stringify';
+import rehypeMermaid from 'rehype-mermaid';
 import matter from 'gray-matter';
 import { rehypeLinksToVideo } from '$lib/utils/rehype-plugins/links-to-video';
 import { rehypeLinksToImage } from '$lib/utils/rehype-plugins/links-to-image';
@@ -37,6 +38,7 @@ export async function markdownToHtml(url: string, fetch: Fetch, setHeaders: any)
 		.use(remarkFrontmatter, ['yaml'])
 		.use(remarkRehype, { allowDangerousHtml: true })
 		.use(rehypeRaw) // Parse raw HTML nodes into proper HTML elements
+		.use(rehypeMermaid, { strategy: 'pre-mermaid' })
 		.use(rehypeSlug)
 		.use(rehypeLinksToImage, { baseUrl })
 		.use(rehypeLinksToVideo)

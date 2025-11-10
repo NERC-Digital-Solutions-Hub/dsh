@@ -1,6 +1,14 @@
 <!-- src/routes/articles/[slug]/+page.svelte -->
 <script lang="ts">
+	import mermaid from 'mermaid';
+	import { onMount } from 'svelte';
+
 	export let data: { html: string; frontmatter: any };
+
+	onMount(() => {
+		mermaid.initialize({ startOnLoad: true });
+		mermaid.run();
+	});
 </script>
 
 <svelte:head>
