@@ -14,7 +14,12 @@
 </script>
 
 <a href={link}>
-	<Card.Root class={cn('transition-all duration-200 hover:bg-gray-100 hover:shadow-sm', className)}>
+	<Card.Root
+		class={cn(
+			'bg-gray-100 transition-all duration-200 hover:bg-background hover:shadow-sm',
+			className
+		)}
+	>
 		<Card.Header>
 			<Card.Title>{title}</Card.Title>
 			<p class="text-sm text-gray-500">{date}</p>
