@@ -1,0 +1,1 @@
+import{g as r}from"./d-qa2CfZ.js";import{n}from"./BrUWsYPy.js";import{n as o}from"./B65gQcu6.js";class m extends n{constructor(t){super({...t,constraint:new r(t.targetPoint)})}get hints(){return[new o(this.targetPoint,this.isDraped,this.domain)]}}export{m as r};
