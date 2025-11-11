@@ -27,6 +27,7 @@
 		minSize?: string;
 		originalSize?: string;
 		position?: SidebarPositionType;
+		hideToggleButton?: boolean;
 		openIcon?: typeof Menu;
 	};
 
@@ -37,6 +38,7 @@
 		minSize,
 		originalSize,
 		position = SidebarPosition.LEFT,
+		hideToggleButton = false,
 		openIcon = Menu
 	}: Props = $props();
 
@@ -215,36 +217,38 @@
 </script>
 
 <!-- Toggle button that moves with sidebar -->
-<Button
-	onclick={onToggle}
-	variant="default"
-	size="icon"
-	class="fixed z-2 -ml-1 inline-flex size-7 
+{#if !hideToggleButton}
+	<Button
+		onclick={onToggle}
+		variant="default"
+		size="icon"
+		class="fixed z-2 -ml-1 inline-flex size-7 
 	shrink-0 items-center justify-center gap-2 overflow-hidden rounded-md bg-background text-sm
 	font-medium whitespace-nowrap shadow-none outline-hidden transition-all select-none hover:bg-accent focus-visible:border-ring 
 	focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 {!isResizing
-		? 'transition-all duration-300'
-		: ''}"
-	style="{toInlineStyles(buttonPosition())}; pointer-events: auto; {isResizing
-		? 'transition: none !important;'
-		: ''}"
-	aria-label={isOpen ? 'Close sidebar' : 'Open sidebar'}
-	aria-expanded={isOpen}
->
-	<!--aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive 
+			? 'transition-all duration-300'
+			: ''}"
+		style="{toInlineStyles(buttonPosition())}; pointer-events: auto; {isResizing
+			? 'transition: none !important;'
+			: ''}"
+		aria-label={isOpen ? 'Close sidebar' : 'Open sidebar'}
+		aria-expanded={isOpen}
+	>
+		<!--aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive 
 	focus-visible:border-ring focus-visible:ring-ring/50 relative inline-flex shrink-0 items-center 
 	justify-center gap-2 overflow-hidden rounded-md text-sm font-medium whitespace-nowrap outline-hidden 
 	transition-all select-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 
 	[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:bg-accent 
 	hover:text-accent-foreground dark:hover:bg-accent/50 size-7 -ml-1 -->
-	{#if isOpen}
-		{@const Icon = closeIcon()}
-		<Icon class="h-6 w-6 text-primary" />
-	{:else}
-		{@const OpenIcon = openIcon}
-		<OpenIcon class="h-6 w-6 text-primary" />
-	{/if}
-</Button>
+		{#if isOpen}
+			{@const Icon = closeIcon()}
+			<Icon class="h-6 w-6 text-primary" />
+		{:else}
+			{@const OpenIcon = openIcon}
+			<OpenIcon class="h-6 w-6 text-primary" />
+		{/if}
+	</Button>
+{/if}
 
 <!-- Sidebar wrapper for clipping -->
 <div

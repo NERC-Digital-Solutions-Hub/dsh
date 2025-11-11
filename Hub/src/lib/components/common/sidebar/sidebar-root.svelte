@@ -30,6 +30,7 @@
 		openIcon?: typeof Menu;
 		sidebarContent?: Snippet;
 		mainContent?: Snippet;
+		hideToggleButton?: boolean;
 	};
 
 	const {
@@ -40,7 +41,8 @@
 		minSize,
 		openIcon,
 		sidebarContent,
-		mainContent
+		mainContent,
+		hideToggleButton = false
 	}: Props = $props();
 
 	// Determine if we need column layout (for top/bottom positions)
@@ -50,7 +52,7 @@
 </script>
 
 <div class="sidebar-layout" class:vertical={isVertical}>
-	<Sidebar {isOpen} {onToggle} {position} {originalSize} {minSize} {openIcon}>
+	<Sidebar {isOpen} {onToggle} {position} {originalSize} {minSize} {openIcon} {hideToggleButton}>
 		{#if sidebarContent}
 			{@render sidebarContent()}
 		{/if}
