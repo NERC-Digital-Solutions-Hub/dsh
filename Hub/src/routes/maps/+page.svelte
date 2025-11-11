@@ -22,7 +22,7 @@
 	const webMapsCommand: MapCommand = {
 		id: 'show-web-maps',
 		name: 'Show available web maps',
-		description: 'Fetch and display the latest catalogue web maps.',
+		description: 'Fetch and display our web maps.',
 		group: 'Maps',
 		shortcut: ['Ctrl', 'M'],
 		execute: async () => {
@@ -34,6 +34,17 @@
 		props: () => ({
 			mapView
 		})
+	};
+
+	const layersCommand: MapCommand = {
+		id: 'show-layers',
+		name: 'Show available layers',
+		description: 'Fetch and display our layers.',
+		group: 'Maps',
+		shortcut: ['Ctrl', 'L'],
+		execute: async () => {},
+		component: null!,
+		props: null!
 	};
 
 	onMount(async () => {
@@ -69,7 +80,7 @@
 </script>
 
 <div bind:this={commandSearchElement}>
-	<CommandSearch commands={[webMapsCommand]} />
+	<CommandSearch commands={[webMapsCommand, layersCommand]} />
 </div>
 
 {#if activeCommandId === 'show-web-maps'}
