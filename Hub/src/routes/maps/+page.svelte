@@ -11,6 +11,7 @@
 
 	import { Car } from 'lucide-svelte';
 	import AddWebMap from '$lib/components/common/maps/add-web-map.svelte';
+	import { base } from '$app/paths';
 
 	let mapView: __esri.MapView | null = $state(null);
 	let commandSearchElement: HTMLElement | null = $state(null);
@@ -26,7 +27,7 @@
 		group: 'Maps',
 		shortcut: ['Ctrl', 'M'],
 		execute: async () => {
-			await useFetchWebMaps.fetchWebMaps('/maps-web-map.json');
+			await useFetchWebMaps.fetchWebMaps(`${base}/maps-web-map.json`);
 			activeCommandId = 'show-web-maps';
 			isSidebarOpen = true;
 		},
