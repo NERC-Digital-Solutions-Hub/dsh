@@ -15,7 +15,7 @@
 	let activeCommandId = $state<string | null>(null);
 	let isSidebarOpen = $state(false);
 
-	let mapsWebMapJsonPath: string | null = $state(null);
+	let mapsWebMapJsonPath: string | null = null;
 
 	const webMapsCommand: MapCommand = {
 		id: 'add-web-map',
