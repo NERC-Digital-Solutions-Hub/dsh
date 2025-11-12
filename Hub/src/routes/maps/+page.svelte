@@ -44,6 +44,10 @@
 	};
 
 	onMount(async () => {
+		const tPath1 = asset(`/maps-web-map.json`);
+		const tPath2 = asset(`/`);
+		console.log('[page/maps] Asset path test:', tPath1, tPath2);
+
 		const [{ default: MapView }] = await Promise.all([import('@arcgis/core/views/MapView')]);
 		mapView = new MapView({
 			map: {
