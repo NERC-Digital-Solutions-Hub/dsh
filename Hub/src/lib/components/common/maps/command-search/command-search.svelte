@@ -4,14 +4,10 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
-	import UseFetchWebMaps from '$lib/hooks/use-fetch-web-maps.svelte';
-	import type { MapCommand } from '$lib/types/maps';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
-	import { CommandIcon } from 'lucide-svelte';
-
-	type PanelConfig = {
-		props?: Record<string, unknown>;
-	};
+	import type { MapCommand, MapCommandRuntime, MapCommandSurface } from '$lib/types/maps';
+	import CommandReturnButton from './command-return-button.svelte';
 
 	type Props = {
 		commands?: MapCommand[];
@@ -26,11 +22,22 @@
 	}: Props = $props();
 
 	let activeCommand = $state<MapCommand | null>(null);
+	let activeRuntime = $state<MapCommandRuntime | null>(null);
+	let inputSurface = $state<MapCommandSurface | null>(null);
+	let contentSurface = $state<MapCommandSurface | null>(null);
 	let pendingCommandId = $state<string | null>(null);
 	let commandError = $state<Error | null>(null);
 
 	let inputValue = $state('');
 	let isOpen = $state(false);
+	let commandInputPlaceholder = $state(placeholder);
+	let activeInputHandler = $state<((value: string) => void) | null>(null);
+	let suppressNextInputHandler = false;
+	let inputRef = $state<HTMLInputElement | null>(null);
+	let preserveActiveCommandOnClose = false;
+	let containerRef: HTMLDivElement | null = null;
+
+	let activeSessionCleanup: (() => void) | null = null;
 
 	const registry = $derived.by(() => {
 		const deduped = new Map<string, MapCommand>();
@@ -59,63 +66,310 @@
 		return groups;
 	});
 
+	function setInputValueInternal(value: string, suppressHandler = false) {
+		if (suppressHandler) {
+			suppressNextInputHandler = true;
+		}
+		inputValue = value;
+	}
+
+	function resetInputControlState() {
+		activeInputHandler = null;
+		commandInputPlaceholder = placeholder;
+		suppressNextInputHandler = false;
+	}
+
+	$effect(() => {
+		const handler = activeInputHandler;
+		if (!handler) {
+			return;
+		}
+
+		if (suppressNextInputHandler) {
+			suppressNextInputHandler = false;
+			return;
+		}
+
+		handler(inputValue);
+	});
+
+	$effect(() => {
+		if (!activeCommand) {
+			commandInputPlaceholder = placeholder;
+		}
+	});
+
+	function teardownActiveSession() {
+		if (activeSessionCleanup) {
+			try {
+				activeSessionCleanup();
+			} catch (error) {
+				console.error('Failed to dispose command session', error);
+			}
+		}
+
+		activeSessionCleanup = null;
+		inputSurface = null;
+		contentSurface = null;
+		resetInputControlState();
+		activeRuntime = null;
+	}
+
+	function deactivateActiveCommand() {
+		if (!activeCommand) {
+			return;
+		}
+
+		teardownActiveSession();
+		activeCommand = null;
+		commandError = null;
+		pendingCommandId = null;
+		setInputValueInternal('', true);
+		isOpen = true;
+	}
+
+	function blurInput() {
+		inputRef?.blur();
+	}
+
+	function createSurfaceFromCommand(
+		command: MapCommand,
+		runtime: MapCommandRuntime
+	): MapCommandSurface | null {
+		if (!command.component) {
+			return null;
+		}
+
+		const propsFactory = command.props;
+		if (!propsFactory) {
+			return { component: command.component };
+		}
+
+		return {
+			component: command.component,
+			props: () => propsFactory(runtime)
+		};
+	}
+
+	function initializeSession(command: MapCommand, runtime: MapCommandRuntime) {
+		const session = command.createSession?.(runtime);
+
+		if (session) {
+			activeSessionCleanup = session.dispose ?? null;
+
+			if (Object.prototype.hasOwnProperty.call(session, 'input')) {
+				inputSurface = session.input ?? null;
+			} else {
+				inputSurface = null;
+			}
+
+			if (Object.prototype.hasOwnProperty.call(session, 'content')) {
+				contentSurface = session.content ?? null;
+			} else {
+				contentSurface = createSurfaceFromCommand(command, runtime);
+			}
+
+			return;
+		}
+
+		activeSessionCleanup = null;
+		inputSurface = null;
+		contentSurface = createSurfaceFromCommand(command, runtime);
+	}
+
+	function createRuntime(command: MapCommand): MapCommandRuntime {
+		const commandId = command.id;
+
+		return {
+			deactivate: () => {
+				if (!activeCommand || activeCommand.id !== commandId) {
+					return;
+				}
+				deactivateActiveCommand();
+			},
+			isActive: (commandIdOverride?: string) => {
+				if (!activeCommand || activeCommand.id !== commandId) {
+					return false;
+				}
+				return commandIdOverride ? activeCommand.id === commandIdOverride : true;
+			},
+			setIsOpen: (open: boolean, options?: { preserveActive?: boolean }) => {
+				if (!activeCommand || activeCommand.id !== commandId) {
+					return;
+				}
+
+				if (open) {
+					preserveActiveCommandOnClose = false;
+					isOpen = true;
+					return;
+				}
+
+				const preserveActive = options?.preserveActive ?? true;
+				closePanel(preserveActive);
+			},
+			setInputSurface: (surface) => {
+				if (!activeCommand || activeCommand.id !== commandId) {
+					return;
+				}
+				inputSurface = surface;
+			},
+			setContentSurface: (surface) => {
+				if (!activeCommand || activeCommand.id !== commandId) {
+					return;
+				}
+				contentSurface = surface;
+			},
+			getInputValue: () => inputValue,
+			setInputValue: (value) => {
+				if (!activeCommand || activeCommand.id !== commandId) {
+					return;
+				}
+				setInputValueInternal(value, true);
+			},
+			setInputHandler: (handler) => {
+				if (!activeCommand || activeCommand.id !== commandId) {
+					return;
+				}
+				activeInputHandler = handler;
+				if (!handler) {
+					suppressNextInputHandler = false;
+					return;
+				}
+				handler(inputValue);
+			},
+			setPlaceholder: (value) => {
+				if (!activeCommand || activeCommand.id !== commandId) {
+					return;
+				}
+				commandInputPlaceholder = value;
+			},
+			resetPlaceholder: () => {
+				if (!activeCommand || activeCommand.id !== commandId) {
+					return;
+				}
+				commandInputPlaceholder = placeholder;
+			}
+		};
+	}
+
+	function resolveSurfaceProps(surface: MapCommandSurface | null): Record<string, unknown> {
+		const runtime = activeRuntime;
+
+		if (!surface) {
+			return runtime ? { runtime } : {};
+		}
+
+		if (!runtime) {
+			return {};
+		}
+
+		const { props } = surface;
+
+		if (!props) {
+			return { runtime };
+		}
+
+		const resolved = typeof props === 'function' ? props(runtime) : props;
+		return {
+			...resolved,
+			runtime
+		};
+	}
+
 	function getCommandValue(command: MapCommand) {
 		return `${command.name} ${command.description ?? ''}`.trim();
 	}
 
 	async function runCommand(command: MapCommand) {
-		pendingCommandId = command.id;
+		if (activeCommand?.id === command.id) {
+			deactivateActiveCommand();
+			return;
+		}
+
+		teardownActiveSession();
 		commandError = null;
+		pendingCommandId = command.id;
+		isOpen = true;
+
+		// Focus the input when activating a command
+		if (inputRef) {
+			inputRef.focus();
+		}
+
+		const runtime = createRuntime(command);
+		activeRuntime = runtime;
 		activeCommand = command;
 
+		initializeSession(command, runtime);
+
 		try {
-			await command.execute();
+			await command.execute(runtime);
 		} catch (error) {
 			commandError = error instanceof Error ? error : new Error('Failed to execute the command.');
 		} finally {
 			pendingCommandId = null;
-			inputValue = '';
+			setInputValueInternal('', true);
 		}
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
-		// Toggle command palette with Ctrl+P or Cmd+P
-		if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'p') {
+		const key = event.key.toLowerCase();
+		const isCommandShortcut = event.metaKey || event.ctrlKey;
+
+		if (isCommandShortcut && key === 'p') {
 			event.preventDefault();
-			isOpen = !isOpen;
-			return;
-		}
-
-		// Close on Escape
-		if (event.key === 'Escape' && isOpen) {
-			event.preventDefault();
-			isOpen = false;
-			return;
-		}
-
-		// Check for command shortcuts
-		for (const command of registry) {
-			if (command.shortcut) {
-				const shortcutString = command.shortcut.join(' ').toLowerCase();
-				const pressedKeys = [];
-				if (event.metaKey) pressedKeys.push('⌘');
-				if (event.ctrlKey) pressedKeys.push('Ctrl');
-				if (event.altKey) pressedKeys.push('Alt');
-				if (event.shiftKey) pressedKeys.push('Shift');
-				pressedKeys.push(event.key.length === 1 ? event.key.toUpperCase() : event.key);
-				const pressedString = pressedKeys.join(' ').toLowerCase();
-
-				if (pressedString === shortcutString.toLowerCase()) {
-					event.preventDefault();
-					runCommand(command);
-					if (!isOpen) {
-						isOpen = true;
-					} else {
-						isOpen = false;
-					}
-					break;
-				}
+			if (activeCommand) {
+				deactivateActiveCommand();
+				return;
 			}
+			// Focus input and let the focus handler open the panel
+			if (inputRef) {
+				inputRef.focus();
+			}
+			return;
+		}
+
+		if (key === 'escape') {
+			if (activeCommand) {
+				event.preventDefault();
+				deactivateActiveCommand();
+				blurInput();
+				return;
+			}
+
+			if (isOpen) {
+				event.preventDefault();
+				isOpen = false;
+				blurInput();
+			}
+			return;
+		}
+
+		if (activeCommand) {
+			return;
+		}
+
+		for (const command of registry) {
+			if (!command.shortcut) {
+				continue;
+			}
+
+			const shortcutString = command.shortcut.join(' ').toLowerCase();
+			const pressedKeys = [];
+			if (event.metaKey) pressedKeys.push('⌘');
+			if (event.ctrlKey) pressedKeys.push('Ctrl');
+			if (event.altKey) pressedKeys.push('Alt');
+			if (event.shiftKey) pressedKeys.push('Shift');
+			pressedKeys.push(event.key.length === 1 ? event.key.toUpperCase() : event.key);
+			const pressedString = pressedKeys.join(' ').toLowerCase();
+
+			if (pressedString !== shortcutString.toLowerCase()) {
+				continue;
+			}
+
+			event.preventDefault();
+			runCommand(command);
+			break;
 		}
 	}
 
@@ -123,11 +377,27 @@
 		isOpen = true;
 	}
 
-	function handleInputBlur() {
-		// Delay closing to allow clicks on items
-		setTimeout(() => {
-			isOpen = false;
-		}, 200);
+	function closePanel(preserveActive = false) {
+		preserveActiveCommandOnClose = preserveActive;
+		isOpen = false;
+	}
+
+	function handlePointerDown(event: PointerEvent) {
+		const container = containerRef;
+		if (!container) {
+			return;
+		}
+
+		const target = event.target as Node | null;
+		if (target && container.contains(target)) {
+			return;
+		}
+
+		if (!isOpen) {
+			return;
+		}
+
+		closePanel(Boolean(activeCommand));
 	}
 
 	$effect(() => {
@@ -135,64 +405,102 @@
 			return;
 		}
 
+		setInputValueInternal('', true);
+
+		if (!activeCommand) {
+			preserveActiveCommandOnClose = false;
+			return;
+		}
+
+		if (preserveActiveCommandOnClose) {
+			preserveActiveCommandOnClose = false;
+			return;
+		}
+
+		teardownActiveSession();
 		activeCommand = null;
-		inputValue = '';
+		commandError = null;
 	});
 </script>
 
 <svelte:document onkeydown={handleKeydown} />
+<svelte:window onpointerdown={handlePointerDown} />
 
-<div class="space-y-4">
-	<Command.Root
-		class="bg-transparent [&_[data-slot=command-input-wrapper]]:rounded-md [&_[data-slot=command-input-wrapper]]:bg-background"
-	>
+<div class="space-y-4" bind:this={containerRef}>
+	<Command.Root>
 		<CommandInputAlt
-			{placeholder}
+			placeholder={activeCommand
+				? (activeCommand.inputPlaceholder ?? commandInputPlaceholder)
+				: commandInputPlaceholder}
 			bind:value={inputValue}
-			onfocus={handleInputFocus}
-			onblur={handleInputBlur}
+			bind:ref={inputRef}
+			onfocus={() => handleInputFocus()}
+			icon={activeCommand ? CommandReturnButton : undefined}
+			iconProps={activeCommand
+				? {
+						onPress: deactivateActiveCommand,
+						disabled: pendingCommandId === activeCommand.id
+					}
+				: undefined}
+			commandId={activeCommand?.id}
 		/>
 		{#if isOpen}
-			<Card.Root class="mt-3 pt-2 pb-0.5">
+			{#if !activeCommand}
 				<ScrollArea>
-					{#if !activeCommand}
-						<Card.Content class="pt-0 pr-2 pb-1 pl-2">
-							<Command.List class="max-h-60 bg-transparent">
-								<Command.Empty>{emptyMessage}</Command.Empty>
+					<Command.List>
+						<Command.Empty>{emptyMessage}</Command.Empty>
 
-								{#each Array.from(groupedCommands.entries()) as [groupName, commands]}
-									<Command.Group heading={groupName ?? undefined}>
-										{#each commands as command (command.id)}
-											<Command.Item
-												value={getCommandValue(command)}
-												onclick={() => runCommand(command)}
-											>
-												<div class="flex flex-col gap-0.5">
-													<span class="text-sm leading-tight font-medium">{command.name}</span>
-													{#if command.description}
-														<span class="text-xs text-muted-foreground">{command.description}</span>
-													{/if}
-												</div>
-												{#if pendingCommandId === command.id}
-													<Spinner class="ml-auto size-4 text-muted-foreground" />
-												{:else if command.shortcut?.length}
-													<Command.Shortcut>
-														{command.shortcut?.join(' + ')}
-													</Command.Shortcut>
-												{/if}
-											</Command.Item>
-										{/each}
-									</Command.Group>
-								{/each}
-							</Command.List>
-						</Card.Content>
-					{:else if activeCommand.props}
-						<activeCommand.component {...activeCommand.props()} />
-					{:else}
-						<activeCommand.component />
-					{/if}
+						{#each Array.from(groupedCommands.entries()) as [groupName, commands]}
+							{#each commands as command (command.id)}
+								<Command.Item value={getCommandValue(command)} onclick={() => runCommand(command)}>
+									<div class="flex flex-col gap-0.5">
+										<span class="text-sm leading-tight font-medium">{command.name}</span>
+										{#if command.description}
+											<span class="text-xs text-muted-foreground">{command.description}</span>
+										{/if}
+									</div>
+									{#if pendingCommandId === command.id}
+										<Spinner class="ml-auto size-4 text-muted-foreground" />
+									{:else if command.shortcut?.length}
+										<Command.Shortcut>
+											{command.shortcut?.join(' + ')}
+										</Command.Shortcut>
+									{/if}
+								</Command.Item>
+							{/each}
+						{/each}
+					</Command.List>
 				</ScrollArea>
-			</Card.Root>
+			{:else}
+				{#if inputSurface}
+					{@const InputComponent = inputSurface.component}
+					<div class="px-4 pb-3">
+						<InputComponent {...resolveSurfaceProps(inputSurface)} />
+					</div>
+				{/if}
+
+				{#if commandError}
+					<div class="px-4 pb-3">
+						<Alert.Root variant="destructive">
+							<Alert.Title>{activeCommand.name} failed</Alert.Title>
+							<Alert.Description>{commandError.message}</Alert.Description>
+						</Alert.Root>
+					</div>
+				{/if}
+
+				<ScrollArea>
+					<div class="pr-2 pb-2 pl-2">
+						{#if contentSurface}
+							{@const ContentComponent = contentSurface.component}
+							<ContentComponent {...resolveSurfaceProps(contentSurface)} />
+						{:else}
+							<Card.Content class="px-0">
+								<p class="text-sm text-muted-foreground">No panel registered for this command.</p>
+							</Card.Content>
+						{/if}
+					</div>
+				</ScrollArea>
+			{/if}
 		{/if}
 	</Command.Root>
 </div>

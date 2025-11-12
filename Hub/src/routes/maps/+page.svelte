@@ -4,14 +4,9 @@
 	import { onMount } from 'svelte';
 	import CommandSearch from '$lib/components/common/maps/command-search/command-search.svelte';
 	import type { MapCommand } from '$lib/types/maps';
-	import * as Sidebar from '$lib/components/common/sidebar/index.js';
 	import * as SidebarLayout from '$lib/components/common/sidebar-layout/index.js';
-	import * as ScrollArea from '$lib/components/ui/scroll-area';
-	import * as Card from '$lib/components/ui/card/index.js';
-
-	import { Car } from 'lucide-svelte';
 	import AddWebMap from '$lib/components/common/maps/add-web-map.svelte';
-	import { base } from '$app/paths';
+	import { asset } from '$app/paths';
 
 	let mapView: __esri.MapView | null = $state(null);
 	let commandSearchElement: HTMLElement | null = $state(null);
@@ -21,31 +16,31 @@
 	let isSidebarOpen = $state(false);
 
 	const webMapsCommand: MapCommand = {
-		id: 'show-web-maps',
-		name: 'Show available web maps',
+		id: 'add-web-map',
+		name: 'Add web map',
 		description: 'Fetch and display our web maps.',
 		group: 'Maps',
 		shortcut: ['Ctrl', 'M'],
-		execute: async () => {
-			await useFetchWebMaps.fetchWebMaps(`${base}/maps-web-map.json`);
+		inputPlaceholder: 'Search web maps...',
+		execute: async (_runtime) => {
+			await useFetchWebMaps.fetchWebMaps(asset(`/maps-web-map.json`));
 			activeCommandId = 'show-web-maps';
 			isSidebarOpen = true;
 		},
-		component: AddWebMap,
-		props: () => ({
-			mapView
+		component: AddWebMap as any,
+		props: (_runtime) => ({
+			mapView,
+			inputPlaceholder: webMapsCommand.inputPlaceholder
 		})
 	};
 
 	const layersCommand: MapCommand = {
-		id: 'show-layers',
-		name: 'Show available layers',
+		id: 'add-layer',
+		name: 'Add layers',
 		description: 'Fetch and display our layers.',
 		group: 'Maps',
 		shortcut: ['Ctrl', 'L'],
-		execute: async () => {},
-		component: null!,
-		props: null!
+		execute: async (_runtime) => {}
 	};
 
 	onMount(async () => {
@@ -66,6 +61,15 @@
 		});
 
 		mapView.ui.add(layerList, {
+			position: 'top-left'
+		});
+
+		const [{ default: Legend }] = await Promise.all([import('@arcgis/core/widgets/Legend')]);
+		const legend = new Legend({
+			view: mapView
+		});
+
+		mapView.ui.add(legend, {
 			position: 'top-right'
 		});
 	});
@@ -74,20 +78,15 @@
 	$effect(() => {
 		if (mapView && commandSearchElement) {
 			mapView.ui.add(commandSearchElement, {
-				position: 'top-left'
+				position: 'manual'
 			});
 		}
 	});
 </script>
 
-<div bind:this={commandSearchElement}>
+<div bind:this={commandSearchElement} class="command-search-wrapper">
 	<CommandSearch commands={[webMapsCommand, layersCommand]} />
 </div>
-
-{#if activeCommandId === 'show-web-maps'}
-	{console.log('Web maps command is active')}
-	<SidebarLayout.Content></SidebarLayout.Content>
-{/if}
 
 {#if mapView}
 	<section class="map-layout">
@@ -96,6 +95,14 @@
 {/if}
 
 <style>
+	.command-search-wrapper {
+		position: absolute;
+		top: 12px;
+		left: 50%;
+		transform: translateX(-50%);
+		z-index: 1;
+	}
+
 	.map-layout {
 		display: flex;
 		flex-direction: column;

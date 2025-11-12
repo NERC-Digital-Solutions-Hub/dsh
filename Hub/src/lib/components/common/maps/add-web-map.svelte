@@ -1,25 +1,105 @@
 <script lang="ts">
 	import * as Command from '$lib/components/ui/command/index.js';
 	import UseFetchWebMaps from '$lib/hooks/use-fetch-web-maps.svelte';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import esriConfig from '@arcgis/core/config.js';
 	import * as urlUtils from '@arcgis/core/core/urlUtils.js';
-	import Button from '$lib/components/ui/button/button.svelte';
-	import CommandItem from '$lib/components/ui/command/command-item.svelte';
 	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
+	import type { MapCommandRuntime } from '$lib/types/maps';
+	import * as reactiveUtils from '@arcgis/core/core/reactiveUtils.js';
 
 	type Props = {
-		mapView: __esri.MapView;
+		mapView: __esri.MapView | null;
+		inputPlaceholder?: string;
+		runtime?: MapCommandRuntime | null;
 	};
 
-	const { mapView }: Props = $props();
-
+	const { mapView, inputPlaceholder, runtime = null }: Props = $props();
 	const useFetchWebMaps = new UseFetchWebMaps();
 	let loadingMapId = $state<string | null>(null);
 	let errorMessage = $state<string | null>(null);
+	let query = $state('');
+
+	const filteredMaps = $derived.by(() => {
+		const results = useFetchWebMaps.response?.results ?? [];
+		const normalizedQuery = query.trim().toLowerCase();
+
+		if (!normalizedQuery) {
+			return results;
+		}
+
+		return results.filter((map) => {
+			const title = typeof map?.title === 'string' ? map.title.toLowerCase() : '';
+			const description = typeof map?.description === 'string' ? map.description.toLowerCase() : '';
+			return title.includes(normalizedQuery) || description.includes(normalizedQuery);
+		});
+	});
 
 	onMount(async () => {
 		await useFetchWebMaps.fetchWebMaps('/maps-web-map.json');
+	});
+
+	// Track the runtime attachment so we only register handlers when it changes.
+	let registeredRuntime: MapCommandRuntime | null = null;
+	let detachRuntime: (() => void) | null = null;
+	let lastPlaceholder = inputPlaceholder ?? 'Search...';
+
+	$effect(() => {
+		const currentRuntime = runtime;
+		const placeholderText = inputPlaceholder ?? 'Search...';
+
+		if (!currentRuntime) {
+			detachRuntime?.();
+			detachRuntime = null;
+			registeredRuntime = null;
+			query = '';
+			lastPlaceholder = placeholderText;
+			return;
+		}
+
+		if (currentRuntime === registeredRuntime) {
+			if (placeholderText !== lastPlaceholder) {
+				currentRuntime.setPlaceholder(placeholderText);
+				lastPlaceholder = placeholderText;
+			}
+			return;
+		}
+
+		detachRuntime?.();
+		detachRuntime = null;
+		registeredRuntime = null;
+		lastPlaceholder = placeholderText;
+
+		const handleInput = (value: string) => {
+			query = value;
+		};
+
+		currentRuntime.setPlaceholder(placeholderText);
+		currentRuntime.setInputHandler(handleInput);
+		const initialValue = currentRuntime.getInputValue();
+		query = initialValue;
+		if (initialValue) {
+			currentRuntime.setInputValue('');
+			query = '';
+		}
+
+		detachRuntime = () => {
+			currentRuntime.setInputHandler(null);
+			currentRuntime.resetPlaceholder();
+			currentRuntime.setInputValue('');
+			if (registeredRuntime === currentRuntime) {
+				registeredRuntime = null;
+			}
+			query = '';
+		};
+
+		registeredRuntime = currentRuntime;
+	});
+
+	onDestroy(() => {
+		detachRuntime?.();
+		detachRuntime = null;
+		registeredRuntime = null;
 	});
 
 	async function setWebMap(itemId: string) {
@@ -57,7 +137,6 @@
 				}
 			});
 
-			console.log('Loading web map...');
 			// Load the web map to get its initial viewpoint
 			await webMap.load();
 			console.log('Web map loaded successfully');
@@ -67,8 +146,16 @@
 			console.log('Web map applied to MapView');
 
 			// Wait for the view to update
-			await mapView.when();
+			await reactiveUtils.whenOnce(() => mapView.ready);
 			console.log('MapView updated with new web map');
+
+			const targetGeometry = webMap.initialViewProperties?.viewpoint?.targetGeometry;
+			if (targetGeometry) {
+				await mapView.goTo(targetGeometry);
+				console.log('MapView navigated to web map initial viewpoint');
+			}
+
+			runtime?.setIsOpen(false);
 		} catch (error) {
 			console.error('Error loading web map:', error);
 			errorMessage = error instanceof Error ? error.message : 'Failed to load web map';
@@ -85,62 +172,35 @@
 		</div>
 	{/if}
 
-	<!-- {#each useFetchWebMaps.response?.results as map (map.id)}
-		<Button
-			class={`map-button relative mt-2 flex w-full cursor-default flex-col gap-1 rounded-sm bg-gray-100 px-3 py-2 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground${map.description ? ' map-button-with-description' : ''}`}
-			onclick={() => setWebMap(map.id)}
-			disabled={loadingMapId !== null}
-		>
-			{#if loadingMapId === map.id}
-				<div class="flex items-center gap-2">
-					<Spinner class="size-4" />
-					<span class="title-text w-full font-medium text-foreground">
-						Loading {map.title ?? 'Untitled web map'}...
-					</span>
-				</div>
-			{:else}
-				<span class="title-text w-full font-medium text-foreground">
-					{map.title ?? 'Untitled web map'}
-				</span>
-				{#if map.description}
-					<span class="description-text w-full text-xs text-gray-500">
-						{map.description}
-					</span>
-				{/if}
-			{/if}
-		</Button>
-	{/each} -->
-	<Command.Root>
-		<Command.Input placeholder="Search web maps..." />
-		<Command.List>
-			<Command.Empty>No results found.</Command.Empty>
-			<Command.Group heading="Web Map(s)">
-				{#each useFetchWebMaps.response?.results as map (map.id)}
-					<Command.Item onclick={() => setWebMap(map.id)}>
-						{#if loadingMapId === map.id}
-							<div class="flex items-center gap-2">
-								<Spinner class="size-4" />
-								<span class="title-text w-full font-medium text-foreground">
-									Loading {map.title ?? 'Untitled web map'}...
+	<Command.List>
+		{#if filteredMaps.length === 0}
+			<Command.Empty>No web maps match your search.</Command.Empty>
+		{:else}
+			{#each filteredMaps as map (map.id)}
+				<Command.Item onclick={() => setWebMap(map.id)}>
+					{#if loadingMapId === map.id}
+						<div class="flex items-center gap-2">
+							<Spinner class="size-4" />
+							<span class="title-text w-full font-medium text-foreground">
+								Loading {map.title ?? 'Untitled web map'}...
+							</span>
+						</div>
+					{:else}
+						<div class="flex w-full min-w-0 flex-col gap-0.5">
+							<span class="title-text font-medium text-foreground">
+								{map.title ?? 'Untitled web map'}
+							</span>
+							{#if map.description}
+								<span class="description-text text-xs text-gray-500">
+									{map.description}
 								</span>
-							</div>
-						{:else}
-							<div class="flex w-full min-w-0 flex-col gap-0.5">
-								<span class="title-text font-medium text-foreground">
-									{map.title ?? 'Untitled web map'}
-								</span>
-								{#if map.description}
-									<span class="description-text text-xs text-gray-500">
-										{map.description}
-									</span>
-								{/if}
-							</div>
-						{/if}
-					</Command.Item>
-				{/each}
-			</Command.Group>
-		</Command.List>
-	</Command.Root>
+							{/if}
+						</div>
+					{/if}
+				</Command.Item>
+			{/each}
+		{/if}
+	</Command.List>
 </div>
 
 <style>
