@@ -15,6 +15,8 @@
 	let activeCommandId = $state<string | null>(null);
 	let isSidebarOpen = $state(false);
 
+	let mapsWebMapJsonPath: string | null = $state(null);
+
 	const webMapsCommand: MapCommand = {
 		id: 'add-web-map',
 		name: 'Add web map',
@@ -23,7 +25,7 @@
 		shortcut: ['Ctrl', 'M'],
 		inputPlaceholder: 'Search web maps...',
 		execute: async (_runtime) => {
-			await useFetchWebMaps.fetchWebMaps(asset(`/maps-web-map.json`));
+			await useFetchWebMaps.fetchWebMaps(mapsWebMapJsonPath ?? '/maps-web-map.json');
 			activeCommandId = 'show-web-maps';
 			isSidebarOpen = true;
 		},
@@ -44,9 +46,7 @@
 	};
 
 	onMount(async () => {
-		const tPath1 = asset(`/maps-web-map.json`);
-		const tPath2 = asset(`/`);
-		console.log('[page/maps] Asset path test:', tPath1, tPath2);
+		mapsWebMapJsonPath = asset(`/maps-web-map.json`);
 
 		const [{ default: MapView }] = await Promise.all([import('@arcgis/core/views/MapView')]);
 		mapView = new MapView({
