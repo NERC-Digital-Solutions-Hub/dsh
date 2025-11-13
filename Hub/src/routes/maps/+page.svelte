@@ -20,6 +20,7 @@
 
 	onMount(async () => {
 		mapsWebMapJsonPath = asset(`/maps-web-map.json`);
+		console.log('Maps WebMap JSON Path:', mapsWebMapJsonPath);
 
 		const [{ default: MapView }] = await Promise.all([import('@arcgis/core/views/MapView')]);
 		mapView = new MapView({
@@ -90,7 +91,13 @@
 			shortcut: ['Ctrl', 'M'],
 			inputPlaceholder: 'Search web maps...',
 			execute: async (_runtime) => {
-				await useFetchWebMaps.fetchWebMaps(mapsWebMapJsonPath ?? '/maps-web-map.json');
+				if (!mapsWebMapJsonPath) {
+					console.error('[add-web-map-command] mapsWebMapJsonPath is not defined');
+					return;
+				}
+
+				console.log('[add-web-map-command] Fetching web maps from:', mapsWebMapJsonPath);
+				await useFetchWebMaps.fetchWebMaps(mapsWebMapJsonPath);
 				activeCommandId = 'show-web-maps';
 			},
 			component: AddWebMap as any,
