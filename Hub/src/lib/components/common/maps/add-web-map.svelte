@@ -130,7 +130,7 @@
 			console.log('Adding proxy rule for portal traffic');
 			addProxyRule({
 				urlPrefix: 'https://nercdsh.dev.azure.manchester.ac.uk',
-				proxyUrl: `/dsh/proxy/Java/proxy.jsp`
+				proxyUrl: `${base}/proxy/Java/proxy.jsp`
 			});
 
 			const [{ default: WebMap }] = await Promise.all([import('@arcgis/core/WebMap')]);
