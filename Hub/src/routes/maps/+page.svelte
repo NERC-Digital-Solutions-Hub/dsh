@@ -135,7 +135,7 @@
 	/>
 {/if}
 
-<arcgis-layer-list> </arcgis-layer-list>
+<!-- <arcgis-layer-list> </arcgis-layer-list> -->
 
 {#if mapView}
 	<div class="map-layout">
