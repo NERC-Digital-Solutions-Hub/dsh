@@ -7,6 +7,7 @@
 	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
 	import type { MapCommandRuntime } from '$lib/types/maps';
 	import * as reactiveUtils from '@arcgis/core/core/reactiveUtils.js';
+	import { asset } from '$app/paths';
 
 	type Props = {
 		mapView: __esri.MapView | null;
@@ -36,7 +37,8 @@
 	});
 
 	onMount(async () => {
-		await useFetchWebMaps.fetchWebMaps('/maps-web-map.json');
+		const path: string = asset(`/maps-web-map.json`);
+		await useFetchWebMaps.fetchWebMaps(path);
 	});
 
 	// Track the runtime attachment so we only register handlers when it changes.

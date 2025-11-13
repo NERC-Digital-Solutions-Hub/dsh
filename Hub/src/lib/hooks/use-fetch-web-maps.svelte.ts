@@ -10,6 +10,8 @@ export default class UseFetchWebMaps {
 		this.#error = null;
 
 		try {
+
+			console.log('[useFetchWebMaps] Fetching web maps from URL:', url);
 			const response: Response = await fetch(url);
 			if (!response.ok) {
 				throw new Error(`Failed to fetch web maps: ${response.status} ${response.statusText}`);
