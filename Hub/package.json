@@ -57,6 +57,7 @@
 		"vitest-browser-svelte": "^0.1.0"
 	},
 	"dependencies": {
+		"@arcgis/map-components": "^4.34.9",
 		"@esri/calcite-ui-icons": "^4.3.0",
 		"dexie": "^4.2.1",
 		"gray-matter": "^4.0.3",

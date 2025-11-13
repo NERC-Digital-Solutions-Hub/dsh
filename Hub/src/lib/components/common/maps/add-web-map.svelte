@@ -7,7 +7,8 @@
 	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
 	import type { MapCommandRuntime } from '$lib/types/maps';
 	import * as reactiveUtils from '@arcgis/core/core/reactiveUtils.js';
-	import { asset } from '$app/paths';
+	import { asset, base } from '$app/paths';
+	import { browser } from '$app/environment';
 
 	type Props = {
 		mapView: __esri.MapView | null;
@@ -105,6 +106,10 @@
 	});
 
 	async function setWebMap(itemId: string) {
+		if (!browser) {
+			return;
+		}
+
 		if (!mapView) {
 			console.error('MapView is not initialized');
 			errorMessage = 'MapView is not ready. Please wait and try again.';
@@ -117,8 +122,6 @@
 		try {
 			console.log(`Loading web map with ID: ${itemId}`);
 
-			const [{ default: WebMap }] = await Promise.all([import('@arcgis/core/WebMap')]);
-
 			const portalUrl = `https://nercdsh.dev.azure.manchester.ac.uk/portal`;
 			esriConfig.portalUrl = portalUrl as string;
 			console.log('Portal URL configured:', esriConfig.portalUrl);
@@ -127,9 +130,10 @@
 			console.log('Adding proxy rule for portal traffic');
 			addProxyRule({
 				urlPrefix: 'https://nercdsh.dev.azure.manchester.ac.uk',
-				proxyUrl: '/proxy/Java/proxy.jsp'
+				proxyUrl: `${base}/proxy/Java/proxy.jsp`
 			});
 
+			const [{ default: WebMap }] = await Promise.all([import('@arcgis/core/WebMap')]);
 			const webMap = new WebMap({
 				portalItem: {
 					id: itemId,
@@ -144,6 +148,7 @@
 			console.log('Web map loaded successfully');
 
 			// Set the map on the MapView
+			console.log('Applying web map to MapView', mapView.ui);
 			mapView.map = webMap;
 			console.log('Web map applied to MapView');
 
@@ -153,6 +158,7 @@
 
 			const targetGeometry = webMap.initialViewProperties?.viewpoint?.targetGeometry;
 			if (targetGeometry) {
+				console.log('Navigating to web map initial viewpoint');
 				await mapView.goTo(targetGeometry);
 				console.log('MapView navigated to web map initial viewpoint');
 			}

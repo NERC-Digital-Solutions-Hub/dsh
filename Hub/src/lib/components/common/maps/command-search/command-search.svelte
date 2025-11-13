@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
 	import * as Command from '$lib/components/ui/command/index.js';
 	import CommandInputAlt from '$lib/components/ui/command/command-input-alt.svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -9,7 +8,7 @@
 	import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
 	import type { MapCommand, MapCommandRuntime, MapCommandSurface } from '$lib/types/maps';
 	import CommandReturnButton from './command-return-button.svelte';
-	import { cn } from '$lib/utils.js';
+	import { cn } from '$lib/utils';
 
 	type Props = {
 		ref?: HTMLElement | null;
@@ -427,33 +426,12 @@
 		activeCommand = null;
 		commandError = null;
 	});
-
-	$effect(() => {
-		ref = containerRef;
-	});
-
-	onDestroy(() => {
-		// Ensure any session-specific state is released when the component unmounts
-		teardownActiveSession();
-		activeCommand = null;
-		commandError = null;
-		pendingCommandId = null;
-		activeRuntime = null;
-		inputSurface = null;
-		contentSurface = null;
-		activeSessionCleanup = null;
-		preserveActiveCommandOnClose = false;
-		isOpen = false;
-		setInputValueInternal('', true);
-		inputRef = null;
-		containerRef = null;
-		ref = null;
-	});
 </script>
 
-<svelte:document onpointerdown={handlePointerDown} onkeydown={handleKeydown} />
+<svelte:document onkeydown={handleKeydown} />
+<svelte:window onpointerdown={handlePointerDown} />
 
-<div class={cn('space-y-4', className)} bind:this={containerRef}>
+<div class={cn('space-y-4', className)} bind:this={containerRef} bind:this={ref}>
 	<Command.Root>
 		<CommandInputAlt
 			placeholder={activeCommand

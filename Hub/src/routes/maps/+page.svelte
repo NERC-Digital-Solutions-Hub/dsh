@@ -6,9 +6,11 @@
 	import type { MapCommand } from '$lib/types/maps';
 	import AddWebMap from '$lib/components/common/maps/add-web-map.svelte';
 	import { asset } from '$app/paths';
+	import { browser } from '$app/environment';
 
 	let mapView: __esri.MapView | null = $state(null);
 	let commandSearchElement: HTMLElement | null = $state(null);
+	let commandSearchAdded: boolean = $state(false);
 
 	let activeCommandId = $state<string | null>(null);
 
@@ -16,13 +18,22 @@
 	let layersCommand: MapCommand | null = $state(null);
 
 	onMount(async () => {
+		if (!browser) {
+			return;
+		}
+
+		await mountArcGisComponents();
+
 		const [{ default: MapView }] = await Promise.all([import('@arcgis/core/views/MapView')]);
 		mapView = new MapView({
 			map: {
-				basemap: 'streets-vector'
+				basemap: 'gray'
 			},
 			zoom: 15,
-			center: [-90.1928, 38.6226] // longitude, latitude
+			center: [-2.231774828836059, 53.46531847221502], // longitude, latitude
+			background: {
+				color: [207, 211, 212]
+			}
 		});
 
 		mapView.ui.move('zoom', 'bottom-right');
@@ -49,9 +60,18 @@
 		layersCommand = createAddLayersCommand();
 	});
 
+	async function mountArcGisComponents() {
+		if (!browser) {
+			return;
+		}
+
+		await import('@arcgis/map-components/components/arcgis-layer-list');
+		await import('@arcgis/map-components/components/arcgis-map');
+	}
+
 	// Add the search bar to the map UI when both are ready
 	$effect(() => {
-		if (!mapView || !commandSearchElement) {
+		if (commandSearchAdded || !mapView || !commandSearchElement) {
 			return;
 		}
 
@@ -62,9 +82,7 @@
 			position: 'manual'
 		});
 
-		return () => {
-			view.ui.remove(element);
-		};
+		commandSearchAdded = true;
 	});
 
 	onDestroy(() => {
@@ -117,11 +135,13 @@
 	/>
 {/if}
 
-<div class="map-layout">
-	{#if mapView}
+<arcgis-layer-list> </arcgis-layer-list>
+
+{#if mapView}
+	<div class="map-layout">
 		<MapView {mapView} />
-	{/if}
-</div>
+	</div>
+{/if}
 
 <style>
 	.map-layout {
