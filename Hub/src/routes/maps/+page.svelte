@@ -1,10 +1,9 @@
 <script lang="ts">
 	import MapView from '$lib/components/common/maps/map-view.svelte';
 	import UseFetchWebMaps from '$lib/hooks/use-fetch-web-maps.svelte';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import CommandSearch from '$lib/components/common/maps/command-search/command-search.svelte';
 	import type { MapCommand } from '$lib/types/maps';
-	import * as SidebarLayout from '$lib/components/common/sidebar-layout/index.js';
 	import AddWebMap from '$lib/components/common/maps/add-web-map.svelte';
 	import { asset } from '$app/paths';
 
@@ -13,37 +12,11 @@
 	let useFetchWebMaps = new UseFetchWebMaps();
 
 	let activeCommandId = $state<string | null>(null);
-	let isSidebarOpen = $state(false);
 
 	let mapsWebMapJsonPath: string | null = null;
 
-	const webMapsCommand: MapCommand = {
-		id: 'add-web-map',
-		name: 'Add web map',
-		description: 'Fetch and display our web maps.',
-		group: 'Maps',
-		shortcut: ['Ctrl', 'M'],
-		inputPlaceholder: 'Search web maps...',
-		execute: async (_runtime) => {
-			await useFetchWebMaps.fetchWebMaps(mapsWebMapJsonPath ?? '/maps-web-map.json');
-			activeCommandId = 'show-web-maps';
-			isSidebarOpen = true;
-		},
-		component: AddWebMap as any,
-		props: (_runtime) => ({
-			mapView,
-			inputPlaceholder: webMapsCommand.inputPlaceholder
-		})
-	};
-
-	const layersCommand: MapCommand = {
-		id: 'add-layer',
-		name: 'Add layers',
-		description: 'Fetch and display our layers.',
-		group: 'Maps',
-		shortcut: ['Ctrl', 'L'],
-		execute: async (_runtime) => {}
-	};
+	let webMapsCommand: MapCommand | null = $state(null);
+	let layersCommand: MapCommand | null = $state(null);
 
 	onMount(async () => {
 		mapsWebMapJsonPath = asset(`/maps-web-map.json`);
@@ -76,37 +49,87 @@
 		mapView.ui.add(legend, {
 			position: 'top-right'
 		});
+
+		webMapsCommand = createAddWebMapsCommand();
+		layersCommand = createAddLayersCommand();
 	});
 
 	// Add the search bar to the map UI when both are ready
 	$effect(() => {
-		if (mapView && commandSearchElement) {
-			mapView.ui.add(commandSearchElement, {
-				position: 'manual'
-			});
+		if (!mapView || !commandSearchElement) {
+			return;
+		}
+
+		const view = mapView;
+		const element = commandSearchElement;
+
+		view.ui.add(element, {
+			position: 'manual'
+		});
+
+		return () => {
+			view.ui.remove(element);
+		};
+	});
+
+	onDestroy(() => {
+		webMapsCommand = null;
+		layersCommand = null;
+
+		if (mapView) {
+			mapView.destroy();
 		}
 	});
-</script>
 
-<div bind:this={commandSearchElement} class="command-search-wrapper">
-	<CommandSearch commands={[webMapsCommand, layersCommand]} />
-</div>
+	function createAddWebMapsCommand(): MapCommand {
+		const command: MapCommand = {
+			id: 'add-web-map',
+			name: 'Add web map',
+			description: 'Fetch and display our web maps.',
+			group: 'Maps',
+			shortcut: ['Ctrl', 'M'],
+			inputPlaceholder: 'Search web maps...',
+			execute: async (_runtime) => {
+				await useFetchWebMaps.fetchWebMaps(mapsWebMapJsonPath ?? '/maps-web-map.json');
+				activeCommandId = 'show-web-maps';
+			},
+			component: AddWebMap as any,
+			props: (_runtime) => ({
+				mapView,
+				inputPlaceholder: command.inputPlaceholder
+			})
+		};
 
-{#if mapView}
-	<section class="map-layout">
-		<MapView {mapView} />
-	</section>
-{/if}
-
-<style>
-	.command-search-wrapper {
-		position: absolute;
-		top: 12px;
-		left: 50%;
-		transform: translateX(-50%);
-		z-index: 1;
+		return command;
 	}
 
+	function createAddLayersCommand(): MapCommand {
+		return {
+			id: 'add-layer',
+			name: 'Add layers',
+			description: 'Fetch and display our layers.',
+			group: 'Maps',
+			shortcut: ['Ctrl', 'L'],
+			execute: async (_runtime) => {}
+		};
+	}
+</script>
+
+{#if webMapsCommand && layersCommand}
+	<CommandSearch
+		bind:ref={commandSearchElement}
+		class="position-absolute top-3 left-1/2 z-1 -translate-x-1/2 transform"
+		commands={[webMapsCommand, layersCommand]}
+	/>
+{/if}
+
+<div class="map-layout">
+	{#if mapView}
+		<MapView {mapView} />
+	{/if}
+</div>
+
+<style>
 	.map-layout {
 		display: flex;
 		flex-direction: column;
@@ -114,16 +137,5 @@
 		width: 100%;
 		min-height: 0;
 		position: relative;
-	}
-
-	.map-layout :global(.map-sidebar) {
-		flex: 0 0 auto;
-		width: 100%;
-	}
-
-	.map-layout :global(.view) {
-		flex: 1 1 auto;
-		height: 100%;
-		min-height: 0;
 	}
 </style>

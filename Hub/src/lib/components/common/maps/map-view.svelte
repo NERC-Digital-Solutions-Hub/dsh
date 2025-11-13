@@ -1,8 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { browser } from '$app/environment';
-
-	export const ssr = false;
+	import { onDestroy, onMount } from 'svelte';
 
 	type Props = {
 		mapView: __esri.MapView;
@@ -11,29 +8,23 @@
 	const { mapView }: Props = $props();
 
 	let mapContainer: HTMLDivElement | null = $state(null);
-	let isMapLoaded = $state(false);
 
-	$effect(() => {
-		if (!mapView) {
-			return;
-		}
+	onMount(() => {
+		mapView.container = mapContainer;
+	});
 
-		if (isMapLoaded) {
-			return;
+	onDestroy(() => {
+		console.log('Destroying MapView in MapView component');
+		if (mapView) {
+			mapView.container = null; // detach from this DOM node
 		}
-
-		if (mapContainer) {
-			mapView.container = mapContainer;
-		}
-        
-		isMapLoaded = true;
 	});
 </script>
 
-<div class="view" bind:this={mapContainer}></div>
+<div class="map-view" bind:this={mapContainer}></div>
 
 <style>
-	.view {
+	.map-view {
 		min-width: 800px;
 		width: 100%;
 		height: 100%;
