@@ -126,12 +126,12 @@
 			esriConfig.portalUrl = portalUrl as string;
 			console.log('Portal URL configured:', esriConfig.portalUrl);
 
-			const { addProxyRule } = urlUtils;
-			console.log('Adding proxy rule for portal traffic');
-			addProxyRule({
-				urlPrefix: 'https://nercdsh.dev.azure.manchester.ac.uk',
-				proxyUrl: `${base}/proxy/Java/proxy.jsp`
-			});
+			// const { addProxyRule } = urlUtils;
+			// console.log('Adding proxy rule for portal traffic');
+			// addProxyRule({
+			// 	urlPrefix: 'https://nercdsh.dev.azure.manchester.ac.uk',
+			// 	proxyUrl: `${base}/proxy/Java/proxy.jsp`
+			// });
 
 			const [{ default: WebMap }] = await Promise.all([import('@arcgis/core/WebMap')]);
 			const webMap = new WebMap({
