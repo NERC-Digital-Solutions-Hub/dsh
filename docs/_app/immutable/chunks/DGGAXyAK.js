@@ -1,1 +1,0 @@
-import{H as i}from"./_KzNjohN.js";import{a as n}from"./B_FG-dg6.js";class o extends n{constructor(t,r,s){super(r,s),this.point=t}equals(t){return t instanceof o&&i(this.point,t.point)}}export{o as n};
