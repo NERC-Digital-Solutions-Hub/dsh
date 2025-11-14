@@ -45,7 +45,7 @@
 		}
 
 		const organisation: MapsOrganisationConfig | null =
-			commandSearchContext.get(MapsConfig)?.organisations[1];
+			commandSearchContext.get(MapsConfig)?.organisations[0];
 		if (!organisation) {
 			console.warn('No organisation configuration found in MapsConfig');
 			return;
@@ -160,7 +160,7 @@
 			// });
 
 			const organisation: MapsOrganisationConfig | null =
-				commandSearchContext.get(MapsConfig)?.organisations[1];
+				commandSearchContext.get(MapsConfig)?.organisations[0];
 			if (!organisation) {
 				console.warn('No organisation configuration found in MapsConfig');
 				return;
