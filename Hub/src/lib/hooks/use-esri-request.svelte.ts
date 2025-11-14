@@ -16,11 +16,9 @@ export default class UseEsriRequest {
 
 		try {
 			// TODO: TEMP
-			const response = await esriRequest(url, { ...options, responseType: 'json' });
-			const response2 = JSON.parse(temp);
-			response.data.results = [...response.data.results, ...response2.results];
+			//const response = await esriRequest(url, { ...options, responseType: 'json' });
 			//this.#data = response.data;
-			this.#data = response.data;
+			this.#data = JSON.parse(temp);
 		} catch (e) {
 			this.#error = e as Error;
 		} finally {
