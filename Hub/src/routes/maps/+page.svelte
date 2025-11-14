@@ -1,5 +1,4 @@
 <script lang="ts">
-	import MapView from '$lib/components/common/maps/map-view.svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import CommandSearch from '$lib/components/common/maps/command-search/command-search.svelte';
 	import type { MapCommand } from '$lib/types/maps';
@@ -31,9 +30,6 @@
 
 		await mountArcGisComponents();
 
-		mapView = arcgisMapComponent?.view as __esri.MapView;
-		mapView.ui.move('zoom', 'bottom-right');
-
 		webMapsCommand = createAddWebMapsCommand();
 		layersCommand = createAddLayersCommand();
 		organisationsCommand = createAddOrganisationsCommand();
@@ -51,7 +47,13 @@
 		return instance;
 	}
 
-	function handleViewReady() {}
+	function handleViewReady() {
+		if (!arcgisMapComponent) {
+			return;
+		}
+
+		mapView = arcgisMapComponent.view as __esri.MapView;
+	}
 
 	async function mountArcGisComponents() {
 		if (!browser) {
@@ -67,10 +69,6 @@
 		webMapsCommand = null;
 		layersCommand = null;
 		organisationsCommand = null;
-
-		if (mapView) {
-			mapView.destroy();
-		}
 	});
 
 	function createAddWebMapsCommand(): MapCommand {

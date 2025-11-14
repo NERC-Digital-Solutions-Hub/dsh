@@ -4,7 +4,6 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
 	import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
 	import type { MapCommand, MapCommandRuntime, MapCommandSurface } from '$lib/types/maps';
 	import CommandReturnButton from './command-return-button.svelte';

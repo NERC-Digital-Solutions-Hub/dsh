@@ -1,13 +1,8 @@
 <script lang="ts">
 	import * as Command from '$lib/components/ui/command/index.js';
-	import UseFetchJson from '$lib/hooks/use-fetch-json.svelte';
 	import { onDestroy, onMount } from 'svelte';
-	import esriConfig from '@arcgis/core/config.js';
-	import * as urlUtils from '@arcgis/core/core/urlUtils.js';
 	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
-	import type { MapCommandRuntime, MapsOrganisationConfig } from '$lib/types/maps';
-	import * as reactiveUtils from '@arcgis/core/core/reactiveUtils.js';
-	import { asset, base } from '$app/paths';
+	import type { MapCommandRuntime, MapsOrganisationConfig, WebMapMetadata } from '$lib/types/maps';
 	import { browser } from '$app/environment';
 	import type { CommandSearchContext } from '$lib/services/command-search/command-search-context';
 	import { MapsConfig } from '$lib/models/maps-config';
@@ -26,6 +21,8 @@
 	let errorMessage = $state<string | null>(null);
 	let query = $state('');
 
+	let webMapMetadata: WebMapMetadata[] = $state([]);
+
 	const filteredMaps = $derived.by(() => {
 		console.log('Filtering web maps with data:', useEsriRequest.data);
 		const results = useEsriRequest.data?.results ?? [];
@@ -40,6 +37,8 @@
 			const description = typeof map?.description === 'string' ? map.description.toLowerCase() : '';
 			return title.includes(normalizedQuery) || description.includes(normalizedQuery);
 		});
+
+
 	});
 
 	onMount(async () => {
@@ -48,13 +47,11 @@
 		}
 
 		const organisation: MapsOrganisationConfig | null =
-			commandSearchContext.get(MapsConfig)?.organisations[1];
+			commandSearchContext.get(MapsConfig)?.organisations[0];
 		if (!organisation) {
 			console.warn('No organisation configuration found in MapsConfig');
 			return;
 		}
-
-		console.log('Organisation configuration found:', organisation);
 
 		await useEsriRequest.load(organisation.portalUrl + organisation.endpoint, {
 			query: {
@@ -63,17 +60,14 @@
 				f: 'json'
 			}
 		});
-		console.log('Portal query result:', useEsriRequest.data);
 
-		const webMapMetadata = useEsriRequest.data?.results.map((item: any) => ({
+		webMapMetadata = useEsriRequest.data?.results.map((item: any) => ({
 			id: item.id,
 			title: item.title,
 			description: item.description,
 			owner: item.owner,
 			tags: item.tags
 		}));
-
-		console.log('Web map metadata extracted:', webMapMetadata);
 	});
 
 	// Track the runtime attachment so we only register handlers when it changes.
@@ -168,13 +162,13 @@
 			// });
 
 			const organisation: MapsOrganisationConfig | null =
-				commandSearchContext.get(MapsConfig)?.organisations[1];
+				commandSearchContext.get(MapsConfig)?.organisations[0];
 			if (!organisation) {
 				console.warn('No organisation configuration found in MapsConfig');
 				return;
 			}
 
-			const [{ default: WebMap }] = await Promise.all([import('@arcgis/core/WebMap')]);
+			const { default: WebMap } = await import('@arcgis/core/WebMap');
 			const webMap = new WebMap({
 				portalItem: {
 					id: itemId,
@@ -194,6 +188,7 @@
 			console.log('Web map applied to MapView');
 
 			// Wait for the view to update
+			const reactiveUtils = await import('@arcgis/core/core/reactiveUtils.js');
 			await reactiveUtils.whenOnce(() => mapView.ready);
 			console.log('MapView updated with new web map');
 
