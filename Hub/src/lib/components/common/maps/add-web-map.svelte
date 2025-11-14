@@ -37,8 +37,6 @@
 			const description = typeof map?.description === 'string' ? map.description.toLowerCase() : '';
 			return title.includes(normalizedQuery) || description.includes(normalizedQuery);
 		});
-
-
 	});
 
 	onMount(async () => {
@@ -47,7 +45,7 @@
 		}
 
 		const organisation: MapsOrganisationConfig | null =
-			commandSearchContext.get(MapsConfig)?.organisations[0];
+			commandSearchContext.get(MapsConfig)?.organisations[1];
 		if (!organisation) {
 			console.warn('No organisation configuration found in MapsConfig');
 			return;
@@ -162,7 +160,7 @@
 			// });
 
 			const organisation: MapsOrganisationConfig | null =
-				commandSearchContext.get(MapsConfig)?.organisations[0];
+				commandSearchContext.get(MapsConfig)?.organisations[1];
 			if (!organisation) {
 				console.warn('No organisation configuration found in MapsConfig');
 				return;
