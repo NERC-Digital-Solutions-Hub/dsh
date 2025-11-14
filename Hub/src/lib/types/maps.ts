@@ -1,5 +1,22 @@
 import type { Component } from 'svelte';
 
+export type MapsConfig = {
+	organisations: MapsOrganisationConfig[];
+};
+
+export type MapsOrganisationConfig = {
+	name: string;
+	portalUrl: string;
+	endpoint: string;
+};
+
+export type WebMapMetadata = {
+	id: string;
+	title: string;
+	description?: string;
+	owner?: string;
+	tags?: string[];
+}
 export type MapCommandSurfaceProps =
 	| Record<string, unknown>
 	| ((runtime: MapCommandRuntime) => Record<string, unknown>);

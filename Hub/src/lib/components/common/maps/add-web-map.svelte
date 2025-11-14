@@ -1,36 +1,41 @@
 <script lang="ts">
 	import * as Command from '$lib/components/ui/command/index.js';
-	import UseFetchWebMaps from '$lib/hooks/use-fetch-web-maps.svelte';
+	import UseFetchJson from '$lib/hooks/use-fetch-json.svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import esriConfig from '@arcgis/core/config.js';
 	import * as urlUtils from '@arcgis/core/core/urlUtils.js';
 	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
-	import type { MapCommandRuntime } from '$lib/types/maps';
+	import type { MapCommandRuntime, MapsOrganisationConfig } from '$lib/types/maps';
 	import * as reactiveUtils from '@arcgis/core/core/reactiveUtils.js';
 	import { asset, base } from '$app/paths';
 	import { browser } from '$app/environment';
+	import type { CommandSearchContext } from '$lib/services/command-search/command-search-context';
+	import { MapsConfig } from '$lib/models/maps-config';
+	import UseEsriRequest from '$lib/hooks/use-esri-request.svelte';
 
 	type Props = {
+		commandSearchContext: CommandSearchContext;
 		mapView: __esri.MapView | null;
 		inputPlaceholder?: string;
 		runtime?: MapCommandRuntime | null;
 	};
 
-	const { mapView, inputPlaceholder, runtime = null }: Props = $props();
-	const useFetchWebMaps = new UseFetchWebMaps();
+	const { commandSearchContext, mapView, inputPlaceholder, runtime = null }: Props = $props();
+	const useEsriRequest = new UseEsriRequest();
 	let loadingMapId = $state<string | null>(null);
 	let errorMessage = $state<string | null>(null);
 	let query = $state('');
 
 	const filteredMaps = $derived.by(() => {
-		const results = useFetchWebMaps.response?.results ?? [];
+		console.log('Filtering web maps with data:', useEsriRequest.data);
+		const results = useEsriRequest.data?.results ?? [];
 		const normalizedQuery = query.trim().toLowerCase();
 
 		if (!normalizedQuery) {
 			return results;
 		}
 
-		return results.filter((map) => {
+		return results.filter((map: any) => {
 			const title = typeof map?.title === 'string' ? map.title.toLowerCase() : '';
 			const description = typeof map?.description === 'string' ? map.description.toLowerCase() : '';
 			return title.includes(normalizedQuery) || description.includes(normalizedQuery);
@@ -38,8 +43,37 @@
 	});
 
 	onMount(async () => {
-		const path: string = asset(`/maps-web-map.json`);
-		await useFetchWebMaps.fetchWebMaps(path);
+		if (!browser) {
+			return;
+		}
+
+		const organisation: MapsOrganisationConfig | null =
+			commandSearchContext.get(MapsConfig)?.organisations[1];
+		if (!organisation) {
+			console.warn('No organisation configuration found in MapsConfig');
+			return;
+		}
+
+		console.log('Organisation configuration found:', organisation);
+
+		await useEsriRequest.load(organisation.portalUrl + organisation.endpoint, {
+			query: {
+				q: 'type:"Web Map"',
+				num: 100,
+				f: 'json'
+			}
+		});
+		console.log('Portal query result:', useEsriRequest.data);
+
+		const webMapMetadata = useEsriRequest.data?.results.map((item: any) => ({
+			id: item.id,
+			title: item.title,
+			description: item.description,
+			owner: item.owner,
+			tags: item.tags
+		}));
+
+		console.log('Web map metadata extracted:', webMapMetadata);
 	});
 
 	// Track the runtime attachment so we only register handlers when it changes.
@@ -122,9 +156,9 @@
 		try {
 			console.log(`Loading web map with ID: ${itemId}`);
 
-			const portalUrl = `https://nercdsh.dev.azure.manchester.ac.uk/portal`;
-			esriConfig.portalUrl = portalUrl as string;
-			console.log('Portal URL configured:', esriConfig.portalUrl);
+			// const portalUrl = `https://nercdsh.dev.azure.manchester.ac.uk/portal`;
+			// esriConfig.portalUrl = portalUrl as string;
+			// console.log('Portal URL configured:', esriConfig.portalUrl);
 
 			// const { addProxyRule } = urlUtils;
 			// console.log('Adding proxy rule for portal traffic');
@@ -133,12 +167,19 @@
 			// 	proxyUrl: `${base}/proxy/Java/proxy.jsp`
 			// });
 
+			const organisation: MapsOrganisationConfig | null =
+				commandSearchContext.get(MapsConfig)?.organisations[1];
+			if (!organisation) {
+				console.warn('No organisation configuration found in MapsConfig');
+				return;
+			}
+
 			const [{ default: WebMap }] = await Promise.all([import('@arcgis/core/WebMap')]);
 			const webMap = new WebMap({
 				portalItem: {
 					id: itemId,
 					portal: {
-						url: portalUrl
+						url: organisation.portalUrl
 					}
 				}
 			});

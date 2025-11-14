@@ -1,0 +1,14 @@
+{
+    "organisations": [
+        {
+            "name": "NERC Digital Solutions Hub",
+            "portalUrl": "https://base.sandbox.digital-solutions.uk/portal",
+            "endpoint": "/sharing/rest/search"
+        },
+        {
+            "name": "University of Manchester",
+            "portalUrl": "https://uomanchester.maps.arcgis.com",
+            "endpoint": "/sharing/rest/content/groups/9acfe04db57040b4890c352c21e01fa9/search"
+        }
+    ]
+}
