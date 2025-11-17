@@ -1,0 +1,1 @@
+import{j as w}from"./Aa_nm3Tf.js";function a(t,o,n){let i,e;return o===void 0?(e=t,i=[void 0]):typeof o!="string"?(e=t,i=[void 0],n=o):(e=o,i=Array.isArray(t)?t:[t]),(c,p)=>{const f=c.constructor.prototype;for(const s of i){const r=w(c,s,e);r.write&&typeof r.write=="object"||(r.write={}),n&&(r.write.target=n),r.write.writer=f[p]}}}export{a as r};

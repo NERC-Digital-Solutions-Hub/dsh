@@ -1,1 +1,0 @@
-import{O as n}from"./e8yrlcGX.js";import{fromGeometryToGXGeometry as a,getSpatialReference as m}from"./b5TNykBw.js";function f(t,c={}){const{unit:o}=c;let e=a(t).calculateLength2D();const r=m(t);return e&&o&&r&&(e=n(e,r,o)),e}export{f as execute};

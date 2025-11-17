@@ -1,0 +1,1 @@
+import{O as n}from"./DsdqSOQR.js";import{fromGeometryToGXGeometry as a,getSpatialReference as m}from"./BviBlhgR.js";function f(t,c={}){const{unit:o}=c;let e=a(t).calculateLength2D();const r=m(t);return e&&o&&r&&(e=n(e,r,o)),e}export{f as execute};

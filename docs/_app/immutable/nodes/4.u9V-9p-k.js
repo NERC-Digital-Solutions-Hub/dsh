@@ -1,0 +1,1 @@
+import"../chunks/DsnmJJEf.js";import"../chunks/69_IOA4Y.js";import{f as e,a}from"../chunks/BvFYs0_V.js";import{s as o}from"../chunks/DjQ7DCT_.js";var m=e('<iframe width="100%" height="100%" style="border: none;" title="External site"></iframe>');function n(r){var t=m();o(t,"src","https://www.climatejust.org.uk/map.html"),a(r,t)}export{n as component};

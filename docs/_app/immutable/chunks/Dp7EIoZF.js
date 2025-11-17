@@ -1,0 +1,1 @@
+import{o as r,m as f}from"./Aa_nm3Tf.js";function w(n,a={}){const e=n instanceof r?n:new r(n,a),{alwaysWriteDefaults:l,default:o,ignoreUnknown:i=!0,name:s,nonNullable:u,readOnly:t=!1}=a;return f({type:i?e.apiValues:String,json:{type:e.jsonValues,default:o,name:s,read:!t&&{reader:e.read},write:{writer:e.write,alwaysWriteDefaults:l}},nonNullable:u,readOnly:t})}export{w as r};
