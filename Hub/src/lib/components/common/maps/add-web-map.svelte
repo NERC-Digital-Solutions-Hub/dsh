@@ -57,6 +57,12 @@
 		try {
 			// Fetch from the API endpoint instead of directly from portal
 			const response = await fetch(`${base}/api/maps?id=${activeOrgId}`);
+			console.log(
+				'Fetched web maps response:',
+				response,
+				'url',
+				`${base}/api/maps?id=${activeOrgId}`
+			);
 
 			if (!response.ok) {
 				throw new Error(`Failed to fetch maps: ${response.status} ${response.statusText}`);
@@ -66,7 +72,7 @@
 
 			// Filter for Web Maps and map to metadata
 			webMapMetadata = (data.results ?? [])
-				.filter((item: any) => item.type === 'Web Map')
+				.filter((item: any) => item.type.toLowerCase() === 'web map')
 				.map((item: any) => ({
 					id: item.id,
 					title: item.title,

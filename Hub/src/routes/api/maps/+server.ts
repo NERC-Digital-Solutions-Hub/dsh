@@ -21,6 +21,7 @@ export const GET: RequestHandler = async ({ url, fetch }) => {
 
 	try {
 		// Try to fetch existing file from static directory
+		console.log('Fetching map data from:', asset(`/api/maps/${id}.json`), 'id', id);
 		const fileUrl = asset(`/api/maps/${id}.json`);
 		const fileResponse = await fetch(fileUrl);
 
@@ -33,63 +34,19 @@ export const GET: RequestHandler = async ({ url, fetch }) => {
 				(Array.isArray(data.results) && data.results.length === 0) ||
 				Object.keys(data).length === 0
 			) {
-				// Fetch and populate
-				const fetchedData = await fetchAndSaveMapData(id, fetch);
-				return json(fetchedData);
+				throw new Error('Empty data');
 			}
 
 			return json(data);
 		} else {
 			// File doesn't exist, fetch and create it
-			const fetchedData = await fetchAndSaveMapData(id, fetch);
-			return json(fetchedData);
+			throw new Error('No data');
 		}
 	} catch (err) {
 		console.error('Error loading map data:', err);
 		throw error(500, 'Failed to load map configuration');
 	}
 };
-
-async function fetchAndSaveMapData(id: string, fetch: typeof global.fetch) {
-	if (!mapsConfig) {
-		throw error(500, 'Maps configuration not loaded');
-	}
-
-	// Find the organisation config by id
-	const orgConfig = mapsConfig.organisations.find((org) => org.id === id);
-
-	if (!orgConfig) {
-		throw error(404, `Organisation configuration '${id}' not found`);
-	}
-
-	try {
-		// Build the query URL
-		const queryUrl = new URL(orgConfig.endpoint, orgConfig.portalUrl);
-		queryUrl.searchParams.set('f', 'json');
-		queryUrl.searchParams.set('num', '100');
-
-		// Add any additional query params from config
-		if (orgConfig.queryParams) {
-			Object.entries(orgConfig.queryParams).forEach(([key, value]) => {
-				queryUrl.searchParams.set(key, value);
-			});
-		}
-
-		// Fetch from the portal
-		const response = await fetch(queryUrl.toString());
-
-		if (!response.ok) {
-			throw error(response.status, `Failed to fetch from portal: ${response.statusText}`);
-		}
-
-		const data = await response.json();
-
-		return data;
-	} catch (err) {
-		console.error('Error fetching map data:', err);
-		throw error(500, 'Failed to fetch map data from portal');
-	}
-}
 
 async function getMapsConfig(fetch: typeof global.fetch): Promise<MapsConfig> {
 	const response = await fetch(asset('/config/maps/config.json'));

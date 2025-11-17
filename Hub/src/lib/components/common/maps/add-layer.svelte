@@ -12,6 +12,7 @@
 	import { Check } from '@lucide/svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+	import { base } from '$app/paths';
 
 	type Props = {
 		commandSearchContext: CommandSearchContext;
@@ -74,29 +75,47 @@
 		const endpoint: string = organisationService.getActiveOrganisationEndpoint();
 
 		const LAYER_TYPES = ['Feature Layer', 'Feature Service', 'Map Service', 'Image Service'];
-		const layerQuery = `type:(${LAYER_TYPES.map((type) => `"${type}"`).join(' OR ')})`;
-		const queryParams = organisationService.getActiveOrganisationQueryParams();
+		const response = await fetch(`${base}/api/maps?id=${activeOrgId}`);
 
-		const formattedQueryParams = Object.entries(queryParams)
-			.map(([key, value]) => `${key}:"${value}"`)
-			.join(' AND ');
+		if (!response.ok) {
+			throw new Error(`Failed to fetch maps: ${response.status} ${response.statusText}`);
+		}
 
-		await useEsriRequest.load(portalUrl + endpoint, {
-			query: {
-				q: `${layerQuery}` + (formattedQueryParams ? ` AND ${formattedQueryParams}` : ''),
-				num: 100,
-				f: 'json'
-			}
-		});
+		const data = await response.json();
 
-		layers = (useEsriRequest.data?.results ?? []).map((item: any) => ({
-			id: item.id,
-			title: item.title,
-			description: cleanHtmlText(item.description),
-			owner: item.owner,
-			type: item.type,
-			spatialReferenceWkid: item.spatialReference?.wkid ?? item.spatialReference?.latestWkid
-		}));
+		// Filter for Web Maps and map to metadata
+		layers = (data.results ?? [])
+			.filter((item: any) => LAYER_TYPES.includes(item.type))
+			.map((item: any) => ({
+				id: item.id,
+				title: item.title,
+				description: cleanHtmlText(item.description),
+				owner: item.owner,
+				tags: item.tags
+			}));
+		// const layerQuery = `type:(${LAYER_TYPES.map((type) => `"${type}"`).join(' OR ')})`;
+		// const queryParams = organisationService.getActiveOrganisationQueryParams();
+
+		// const formattedQueryParams = Object.entries(queryParams)
+		// 	.map(([key, value]) => `${key}:"${value}"`)
+		// 	.join(' AND ');
+
+		// await useEsriRequest.load(portalUrl + endpoint, {
+		// 	query: {
+		// 		q: `${layerQuery}` + (formattedQueryParams ? ` AND ${formattedQueryParams}` : ''),
+		// 		num: 100,
+		// 		f: 'json'
+		// 	}
+		// });
+
+		// layers = (useEsriRequest.data?.results ?? []).map((item: any) => ({
+		// 	id: item.id,
+		// 	title: item.title,
+		// 	description: cleanHtmlText(item.description),
+		// 	owner: item.owner,
+		// 	type: item.type,
+		// 	spatialReferenceWkid: item.spatialReference?.wkid ?? item.spatialReference?.latestWkid
+		// }));
 
 		layerSummariesById.clear();
 		for (const layerSummary of layers) {
