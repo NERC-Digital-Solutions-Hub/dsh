@@ -5,9 +5,15 @@ export type MapsConfig = {
 };
 
 export type MapsOrganisationConfig = {
+	id: string;
 	name: string;
 	portalUrl: string;
 	endpoint: string;
+	queryParams: OrganisationQueryParams;
+};
+
+export type OrganisationQueryParams = {
+	orgid: string;
 };
 
 export type WebMapMetadata = {
@@ -16,7 +22,7 @@ export type WebMapMetadata = {
 	description?: string;
 	owner?: string;
 	tags?: string[];
-}
+};
 export type MapCommandSurfaceProps =
 	| Record<string, unknown>
 	| ((runtime: MapCommandRuntime) => Record<string, unknown>);
@@ -32,6 +38,15 @@ export type MapCommandSession = {
 	dispose?: () => void;
 };
 
+export type MapCommandRuntimeInputBindingOptions = {
+	onInput: (value: string) => void;
+	placeholder?: string;
+	resetValueOnAttach?: boolean;
+	resetValueOnDetach?: boolean;
+	replayInitialValue?: boolean;
+	onDetach?: () => void;
+};
+
 export interface MapCommandRuntime {
 	deactivate: () => void;
 	isActive: (commandId?: string) => boolean;
@@ -43,6 +58,7 @@ export interface MapCommandRuntime {
 	setInputHandler: (handler: ((nextValue: string) => void) | null) => void;
 	setPlaceholder: (value: string) => void;
 	resetPlaceholder: () => void;
+	attachInputBinding: (options: MapCommandRuntimeInputBindingOptions) => () => void;
 }
 
 export interface MapCommand {

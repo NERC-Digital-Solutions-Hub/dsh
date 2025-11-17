@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Command from '$lib/components/ui/command/index.js';
 	import CommandInputAlt from '$lib/components/ui/command/command-input-alt.svelte';
+	import CommandVariableContainer from '$lib/components/ui/command/command-variable-container.svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import Spinner from '$lib/components/ui/spinner/spinner.svelte';
@@ -8,10 +9,22 @@
 	import type { MapCommand, MapCommandRuntime, MapCommandSurface } from '$lib/types/maps';
 	import CommandReturnButton from './command-return-button.svelte';
 	import { cn } from '$lib/utils';
+	import type { CommandSearchContext } from '$lib/services/command-search/command-search-context';
+	import type { GlobalVariableService } from '$lib/services/command-search/global-variable-service.ts';
+	import { onMount } from 'svelte';
+
+	type ClassType<T> = abstract new (...args: any[]) => T;
+
+	type ActiveGlobalVariable = {
+		displayName: string;
+		id: string;
+		classType: ClassType<GlobalVariableService>;
+	};
 
 	type Props = {
 		ref?: HTMLElement | null;
 		class?: string;
+		commandSearchContext: CommandSearchContext;
 		commands?: MapCommand[];
 		placeholder?: string;
 		emptyMessage?: string;
@@ -20,6 +33,7 @@
 	let {
 		ref = $bindable<HTMLElement | null>(null),
 		class: className,
+		commandSearchContext,
 		commands: providedCommands = [],
 		placeholder = 'Search commands...',
 		emptyMessage = 'No commands found.'
@@ -32,6 +46,8 @@
 	let pendingCommandId = $state<string | null>(null);
 	let commandError = $state<Error | null>(null);
 
+	let activeGlobalVariables: ActiveGlobalVariable[] = $state([]);
+
 	let inputValue = $state('');
 	let isOpen = $state(false);
 	let commandInputPlaceholder = $state(placeholder);
@@ -42,6 +58,18 @@
 	let containerRef: HTMLDivElement | null = null;
 
 	let activeSessionCleanup: (() => void) | null = null;
+
+	type RuntimeInputBindingState = {
+		id: number;
+		commandId: string;
+		onInput: (value: string) => void;
+		onDetach?: () => void;
+		placeholderOverridden: boolean;
+		resetValueOnDetach: boolean;
+	};
+
+	let runtimeInputBindingSeed = 0;
+	let runtimeInputBindingState: RuntimeInputBindingState | null = null;
 
 	const registry = $derived.by(() => {
 		const deduped = new Map<string, MapCommand>();
@@ -63,11 +91,11 @@
 			}
 		}
 
-		for (const [, commands] of groups) {
-			commands.sort((a, b) => a.name.localeCompare(b.name));
-		}
-
 		return groups;
+	});
+
+	onMount(() => {
+		refreshActiveGlobalVariables();
 	});
 
 	function setInputValueInternal(value: string, suppressHandler = false) {
@@ -77,7 +105,40 @@
 		inputValue = value;
 	}
 
+	// Central cleanup for any runtime that hooked into the shared command input.
+	function clearRuntimeInputBinding(
+		target: RuntimeInputBindingState | null = null,
+		options?: { skipReset?: boolean; forceReset?: boolean }
+	) {
+		if (!runtimeInputBindingState) {
+			return;
+		}
+
+		if (target && runtimeInputBindingState !== target) {
+			return;
+		}
+
+		activeInputHandler = null;
+
+		if (runtimeInputBindingState.placeholderOverridden) {
+			commandInputPlaceholder = placeholder;
+		}
+
+		const shouldReset =
+			options?.forceReset ??
+			(options?.skipReset ? false : runtimeInputBindingState.resetValueOnDetach);
+
+		if (shouldReset) {
+			setInputValueInternal('', true);
+			runtimeInputBindingState.onInput('');
+		}
+
+		runtimeInputBindingState.onDetach?.();
+		runtimeInputBindingState = null;
+	}
+
 	function resetInputControlState() {
+		clearRuntimeInputBinding(null, { forceReset: true });
 		activeInputHandler = null;
 		commandInputPlaceholder = placeholder;
 		suppressNextInputHandler = false;
@@ -130,6 +191,17 @@
 		pendingCommandId = null;
 		setInputValueInternal('', true);
 		isOpen = true;
+	}
+
+	function handleGlobalVariableClose(variable: ActiveGlobalVariable) {
+		try {
+			const service = commandSearchContext.get(variable.classType);
+			service.clear();
+		} catch (error) {
+			console.error('Failed to clear global variable', error);
+		} finally {
+			refreshActiveGlobalVariables();
+		}
 	}
 
 	function blurInput() {
@@ -190,6 +262,7 @@
 					return;
 				}
 				deactivateActiveCommand();
+				refreshActiveGlobalVariables();
 			},
 			isActive: (commandIdOverride?: string) => {
 				if (!activeCommand || activeCommand.id !== commandId) {
@@ -234,6 +307,7 @@
 				if (!activeCommand || activeCommand.id !== commandId) {
 					return;
 				}
+				clearRuntimeInputBinding(null, { skipReset: true });
 				activeInputHandler = handler;
 				if (!handler) {
 					suppressNextInputHandler = false;
@@ -252,6 +326,52 @@
 					return;
 				}
 				commandInputPlaceholder = placeholder;
+			},
+			attachInputBinding: (options) => {
+				if (!activeCommand || activeCommand.id !== commandId) {
+					return () => {};
+				}
+
+				clearRuntimeInputBinding(null, { skipReset: true });
+
+				const placeholderValue =
+					options.placeholder ?? activeCommand.inputPlaceholder ?? placeholder;
+
+				const bindingState: RuntimeInputBindingState = {
+					id: ++runtimeInputBindingSeed,
+					commandId,
+					onInput: options.onInput,
+					onDetach: options.onDetach,
+					placeholderOverridden: Boolean(placeholderValue),
+					resetValueOnDetach: options.resetValueOnDetach ?? true
+				};
+
+				runtimeInputBindingState = bindingState;
+
+				if (bindingState.placeholderOverridden && placeholderValue) {
+					commandInputPlaceholder = placeholderValue;
+				}
+
+				activeInputHandler = (value) => {
+					if (!runtimeInputBindingState || runtimeInputBindingState.id !== bindingState.id) {
+						return;
+					}
+					options.onInput(value);
+				};
+
+				const resetOnAttach = options.resetValueOnAttach ?? true;
+				const replayInitialValue = options.replayInitialValue ?? !resetOnAttach;
+
+				if (resetOnAttach) {
+					setInputValueInternal('', true);
+					options.onInput('');
+				} else if (replayInitialValue) {
+					options.onInput(inputValue);
+				}
+
+				return () => {
+					clearRuntimeInputBinding(bindingState);
+				};
 			}
 		};
 	}
@@ -313,6 +433,7 @@
 		} finally {
 			pendingCommandId = null;
 			setInputValueInternal('', true);
+			refreshActiveGlobalVariables();
 		}
 	}
 
@@ -425,6 +546,31 @@
 		activeCommand = null;
 		commandError = null;
 	});
+
+	/**
+	 * Refresh the list of active global variables from the command search context
+	 */
+	function refreshActiveGlobalVariables() {
+		if (!commandSearchContext) {
+			activeGlobalVariables = [];
+			return;
+		}
+
+		const globals = commandSearchContext.getGlobalVariables();
+		const nextVariables: ActiveGlobalVariable[] = [];
+		for (const service of globals) {
+			const id = service.getId();
+			if (!id) {
+				continue;
+			}
+			nextVariables.push({
+				displayName: service.displayName,
+				id,
+				classType: service.constructor as ClassType<GlobalVariableService>
+			});
+		}
+		activeGlobalVariables = nextVariables;
+	}
 </script>
 
 <svelte:document onkeydown={handleKeydown} />
@@ -447,8 +593,21 @@
 					}
 				: undefined}
 			commandId={activeCommand?.id}
+			onCommandClose={activeCommand ? deactivateActiveCommand : null}
 		/>
 		{#if isOpen}
+			{#if activeGlobalVariables.length}
+				<div class="flex flex-wrap gap-2 px-2 py-0.5">
+					{#each activeGlobalVariables as globalVar (globalVar.id)}
+						<CommandVariableContainer
+							value={`${globalVar.displayName}: ${globalVar.id}`}
+							title={`${globalVar.displayName}: ${globalVar.id}`}
+							onClose={() => handleGlobalVariableClose(globalVar)}
+						/>
+					{/each}
+				</div>
+				<!-- <div class="h-px bg-border"></div> -->
+			{/if}
 			{#if !activeCommand}
 				<ScrollArea>
 					<Command.List>

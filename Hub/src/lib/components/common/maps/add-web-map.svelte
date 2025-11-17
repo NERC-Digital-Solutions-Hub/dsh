@@ -7,6 +7,8 @@
 	import type { CommandSearchContext } from '$lib/services/command-search/command-search-context';
 	import { MapsConfig } from '$lib/models/maps-config';
 	import UseEsriRequest from '$lib/hooks/use-esri-request.svelte';
+	import { OrganisationCommandService } from '$lib/services/command-search/organisation-command-service';
+	import { cleanHtmlText } from '$lib/utils/decode-html';
 
 	type Props = {
 		commandSearchContext: CommandSearchContext;
@@ -24,17 +26,17 @@
 	let webMapMetadata: WebMapMetadata[] = $state([]);
 
 	const filteredMaps = $derived.by(() => {
-		console.log('Filtering web maps with data:', useEsriRequest.data);
-		const results = useEsriRequest.data?.results ?? [];
+		const results = webMapMetadata;
+		console.log('Filtering web maps with data:', results);
 		const normalizedQuery = query.trim().toLowerCase();
 
 		if (!normalizedQuery) {
 			return results;
 		}
 
-		return results.filter((map: any) => {
-			const title = typeof map?.title === 'string' ? map.title.toLowerCase() : '';
-			const description = typeof map?.description === 'string' ? map.description.toLowerCase() : '';
+		return results.filter((map) => {
+			const title = map?.title?.toLowerCase() ?? '';
+			const description = map?.description?.toLowerCase() ?? '';
 			return title.includes(normalizedQuery) || description.includes(normalizedQuery);
 		});
 	});
@@ -44,91 +46,82 @@
 			return;
 		}
 
-		const organisation: MapsOrganisationConfig | null =
-			commandSearchContext.get(MapsConfig)?.organisations[0];
-		if (!organisation) {
-			console.warn('No organisation configuration found in MapsConfig');
+		const organisationService = commandSearchContext.get(OrganisationCommandService);
+		const activeOrgId = organisationService.getActiveOrganisationId();
+		if (!activeOrgId) {
+			console.warn('No active organisation selected in OrganisationCommandService');
 			return;
 		}
 
-		await useEsriRequest.load(organisation.portalUrl + organisation.endpoint, {
+		const portalUrl: string = organisationService.getActiveOrganisationPortalUrl();
+		const endpoint: string = organisationService.getActiveOrganisationEndpoint();
+
+		const queryParams = organisationService.getActiveOrganisationQueryParams();
+
+		const formattedQueryParams = Object.entries(queryParams)
+			.map(([key, value]) => `${key}:"${value}"`)
+			.join(' AND ');
+
+		await useEsriRequest.load(portalUrl + endpoint, {
 			query: {
-				q: 'type:"Web Map"',
+				q: `type:"Web Map"` + (formattedQueryParams ? ` AND ${formattedQueryParams}` : ''),
 				num: 100,
 				f: 'json'
 			}
 		});
 
-		webMapMetadata = useEsriRequest.data?.results.map((item: any) => ({
+		webMapMetadata = (useEsriRequest.data?.results ?? []).map((item: any) => ({
 			id: item.id,
 			title: item.title,
-			description: item.description,
+			description: cleanHtmlText(item.description),
 			owner: item.owner,
 			tags: item.tags
 		}));
 	});
 
-	// Track the runtime attachment so we only register handlers when it changes.
-	let registeredRuntime: MapCommandRuntime | null = null;
-	let detachRuntime: (() => void) | null = null;
-	let lastPlaceholder = inputPlaceholder ?? 'Search...';
+	let detachRuntimeInput: (() => void) | null = null;
+	let attachedRuntime: MapCommandRuntime | null = null;
+	let attachedPlaceholder = inputPlaceholder ?? 'Search...';
 
 	$effect(() => {
 		const currentRuntime = runtime;
 		const placeholderText = inputPlaceholder ?? 'Search...';
 
 		if (!currentRuntime) {
-			detachRuntime?.();
-			detachRuntime = null;
-			registeredRuntime = null;
+			detachRuntimeInput?.();
+			detachRuntimeInput = null;
+			attachedRuntime = null;
+			attachedPlaceholder = placeholderText;
 			query = '';
-			lastPlaceholder = placeholderText;
 			return;
 		}
 
-		if (currentRuntime === registeredRuntime) {
-			if (placeholderText !== lastPlaceholder) {
+		if (currentRuntime === attachedRuntime) {
+			if (placeholderText !== attachedPlaceholder) {
 				currentRuntime.setPlaceholder(placeholderText);
-				lastPlaceholder = placeholderText;
+				attachedPlaceholder = placeholderText;
 			}
 			return;
 		}
 
-		detachRuntime?.();
-		detachRuntime = null;
-		registeredRuntime = null;
-		lastPlaceholder = placeholderText;
+		detachRuntimeInput?.();
+		detachRuntimeInput = null;
+		attachedPlaceholder = placeholderText;
 
-		const handleInput = (value: string) => {
-			query = value;
-		};
-
-		currentRuntime.setPlaceholder(placeholderText);
-		currentRuntime.setInputHandler(handleInput);
-		const initialValue = currentRuntime.getInputValue();
-		query = initialValue;
-		if (initialValue) {
-			currentRuntime.setInputValue('');
-			query = '';
-		}
-
-		detachRuntime = () => {
-			currentRuntime.setInputHandler(null);
-			currentRuntime.resetPlaceholder();
-			currentRuntime.setInputValue('');
-			if (registeredRuntime === currentRuntime) {
-				registeredRuntime = null;
+		detachRuntimeInput = currentRuntime.attachInputBinding({
+			placeholder: placeholderText,
+			onInput: (value) => {
+				query = value;
 			}
-			query = '';
-		};
+		});
 
-		registeredRuntime = currentRuntime;
+		attachedRuntime = currentRuntime;
 	});
 
 	onDestroy(() => {
-		detachRuntime?.();
-		detachRuntime = null;
-		registeredRuntime = null;
+		detachRuntimeInput?.();
+		detachRuntimeInput = null;
+		attachedRuntime = null;
 	});
 
 	async function setWebMap(itemId: string) {
@@ -159,19 +152,21 @@
 			// 	proxyUrl: `${base}/proxy/Java/proxy.jsp`
 			// });
 
-			const organisation: MapsOrganisationConfig | null =
-				commandSearchContext.get(MapsConfig)?.organisations[0];
-			if (!organisation) {
-				console.warn('No organisation configuration found in MapsConfig');
+			const organisationService = commandSearchContext.get(OrganisationCommandService);
+			const activeOrgId = organisationService.getActiveOrganisationId();
+			if (!activeOrgId) {
+				console.warn('No active organisation selected in OrganisationCommandService');
 				return;
 			}
+
+			const portalUrl: string = organisationService.getActiveOrganisationPortalUrl();
 
 			const { default: WebMap } = await import('@arcgis/core/WebMap');
 			const webMap = new WebMap({
 				portalItem: {
 					id: itemId,
 					portal: {
-						url: organisation.portalUrl
+						url: portalUrl
 					}
 				}
 			});
@@ -188,6 +183,7 @@
 			// Wait for the view to update
 			const reactiveUtils = await import('@arcgis/core/core/reactiveUtils.js');
 			await reactiveUtils.whenOnce(() => mapView.ready);
+
 			console.log('MapView updated with new web map');
 
 			const targetGeometry = webMap.initialViewProperties?.viewpoint?.targetGeometry;
@@ -229,11 +225,11 @@
 						</div>
 					{:else}
 						<div class="flex w-full min-w-0 flex-col gap-0.5">
-							<span class="title-text font-medium text-foreground">
+							<span class="title-text font-medium text-foreground" title={map.title}>
 								{map.title ?? 'Untitled web map'}
 							</span>
 							{#if map.description}
-								<span class="description-text text-xs text-gray-500">
+								<span class="description-text text-xs text-gray-500" title={map.description}>
 									{map.description}
 								</span>
 							{/if}

@@ -5,6 +5,7 @@
 	import { browser } from '$app/environment';
 	import type { CommandSearchContext } from '$lib/services/command-search/command-search-context';
 	import { MapsConfig } from '$lib/models/maps-config';
+	import { OrganisationCommandService } from '$lib/services/command-search/organisation-command-service';
 
 	type Props = {
 		commandSearchContext: CommandSearchContext;
@@ -32,68 +33,62 @@
 		organisations = contextOrganisations;
 	});
 
-	// Track the runtime attachment so we only register handlers when it changes.
-	let registeredRuntime: MapCommandRuntime | null = null;
-	let detachRuntime: (() => void) | null = null;
-	let lastPlaceholder = inputPlaceholder ?? 'Search...';
+	let detachRuntimeInput: (() => void) | null = null;
+	let attachedRuntime: MapCommandRuntime | null = null;
+	let attachedPlaceholder = inputPlaceholder ?? 'Search...';
 
 	$effect(() => {
 		const currentRuntime = runtime;
 		const placeholderText = inputPlaceholder ?? 'Search...';
 
 		if (!currentRuntime) {
-			detachRuntime?.();
-			detachRuntime = null;
-			registeredRuntime = null;
+			detachRuntimeInput?.();
+			detachRuntimeInput = null;
+			attachedRuntime = null;
+			attachedPlaceholder = placeholderText;
 			query = '';
-			lastPlaceholder = placeholderText;
 			return;
 		}
 
-		if (currentRuntime === registeredRuntime) {
-			if (placeholderText !== lastPlaceholder) {
+		if (currentRuntime === attachedRuntime) {
+			if (placeholderText !== attachedPlaceholder) {
 				currentRuntime.setPlaceholder(placeholderText);
-				lastPlaceholder = placeholderText;
+				attachedPlaceholder = placeholderText;
 			}
 			return;
 		}
 
-		detachRuntime?.();
-		detachRuntime = null;
-		registeredRuntime = null;
-		lastPlaceholder = placeholderText;
+		detachRuntimeInput?.();
+		detachRuntimeInput = null;
+		attachedPlaceholder = placeholderText;
 
-		const handleInput = (value: string) => {
-			query = value;
-		};
-
-		currentRuntime.setPlaceholder(placeholderText);
-		currentRuntime.setInputHandler(handleInput);
-		const initialValue = currentRuntime.getInputValue();
-		query = initialValue;
-		if (initialValue) {
-			currentRuntime.setInputValue('');
-			query = '';
-		}
-
-		detachRuntime = () => {
-			currentRuntime.setInputHandler(null);
-			currentRuntime.resetPlaceholder();
-			currentRuntime.setInputValue('');
-			if (registeredRuntime === currentRuntime) {
-				registeredRuntime = null;
+		detachRuntimeInput = currentRuntime.attachInputBinding({
+			placeholder: placeholderText,
+			onInput: (value) => {
+				query = value;
 			}
-			query = '';
-		};
+		});
 
-		registeredRuntime = currentRuntime;
+		attachedRuntime = currentRuntime;
 	});
 
 	onDestroy(() => {
-		detachRuntime?.();
-		detachRuntime = null;
-		registeredRuntime = null;
+		detachRuntimeInput?.();
+		detachRuntimeInput = null;
+		attachedRuntime = null;
 	});
+
+	function onOrganisationSelect(organisationId: string) {
+		const organisationSelection: OrganisationCommandService = commandSearchContext.get(
+			OrganisationCommandService
+		);
+
+		organisationSelection.setActiveOrganisation(organisationId);
+
+		if (runtime) {
+			runtime.deactivate();
+		}
+	}
 </script>
 
 <div class="item-container">
@@ -102,7 +97,7 @@
 			<Command.Empty>No organisations match your search.</Command.Empty>
 		{:else}
 			{#each organisations as organisation (organisation.name)}
-				<Command.Item onclick={() => {}}>
+				<Command.Item onclick={() => onOrganisationSelect(organisation.id)}>
 					<div class="flex w-full min-w-0 flex-col gap-0.5">
 						<span class="title-text font-medium text-foreground">
 							{organisation.name ?? 'Untitled organisation'}
@@ -122,28 +117,11 @@
 		margin-right: 0.75rem;
 	}
 
-	.error-message {
-		padding: 0.75rem;
-		margin-bottom: 0.5rem;
-		background-color: #fee;
-		border-radius: 0.375rem;
-		border: 1px solid #fcc;
-	}
-
 	.title-text {
 		display: block;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		width: 100%;
-	}
-
-	.description-text {
-		display: block;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		width: 100%;
-		line-height: 1.2;
 	}
 </style>

@@ -15,10 +15,11 @@ export default class UseEsriRequest {
 		this.#error = null;
 
 		try {
+			const response = await esriRequest(url, { ...options, responseType: 'json' });
+			console.log('Esri Request Response:', response, response.data.url);
+			this.#data = response.data;
 			// TODO: TEMP
-			//const response = await esriRequest(url, { ...options, responseType: 'json' });
-			//this.#data = response.data;
-			this.#data = JSON.parse(temp);
+			//this.#data = JSON.parse(temp);
 		} catch (e) {
 			this.#error = e as Error;
 		} finally {

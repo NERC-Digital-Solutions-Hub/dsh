@@ -1,3 +1,5 @@
+import { GlobalVariableService } from '$lib/services/command-search/global-variable-service.ts';
+
 type ClassType<T> = abstract new (...args: any[]) => T;
 
 /**
@@ -6,9 +8,14 @@ type ClassType<T> = abstract new (...args: any[]) => T;
  */
 export class CommandSearchContext {
 	private services = new Map<ClassType<any>, any>();
+	private globalVariables = new Map<ClassType<any>, any>();
 
 	add<T>(token: ClassType<T>, instance: T): void {
 		this.services.set(token, instance);
+
+		if (instance instanceof GlobalVariableService) {
+			this.globalVariables.set(token, instance);
+		}
 	}
 
 	get<T>(token: ClassType<T>): T {
@@ -21,5 +28,9 @@ export class CommandSearchContext {
 
 	has<T>(token: ClassType<T>): boolean {
 		return this.services.has(token);
+	}
+
+	getGlobalVariables(): GlobalVariableService[] {
+		return Array.from(this.globalVariables.values());
 	}
 }

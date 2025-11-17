@@ -3,11 +3,13 @@
 	import { cn } from '$lib/utils.js';
 	import { CommandIcon } from 'lucide-svelte';
 	import type { Component } from 'svelte';
+	import CommandVariableContainer from '$lib/components/ui/command/command-variable-container.svelte';
 
 	type Props = {
 		icon?: Component;
 		iconProps?: Record<string, unknown>;
 		commandId?: string;
+		onCommandClose?: (() => void) | null;
 	} & CommandPrimitive.InputProps;
 
 	let {
@@ -17,6 +19,7 @@
 		icon,
 		iconProps = {},
 		commandId,
+		onCommandClose = null,
 		...restProps
 	}: Props = $props();
 </script>
@@ -34,12 +37,7 @@
 	</span>
 
 	{#if commandId}
-		<span
-			class="m-0 ml-[-5px] inline-flex max-w-[10rem] items-center overflow-hidden rounded border border-border px-1 py-0.5 text-xs font-medium text-ellipsis whitespace-nowrap text-muted-foreground"
-			title={commandId}
-		>
-			{commandId}
-		</span>
+		<CommandVariableContainer value={commandId} title={commandId} onClose={onCommandClose} />
 		<span aria-hidden="true" class="h-5 w-px bg-border"></span>
 	{/if}
 
