@@ -69,6 +69,17 @@
 
 		if (arcgisLayerListComponent) {
 			arcgisLayerListComponent.view = mapView;
+			arcgisLayerListComponent.listItemCreatedFunction = (event: any) => {
+				const { item } = event;
+
+				// Exclude group layers, otherwise the legend will be displayed twice
+				if (item.layer.type != 'group') {
+					item.panel = {
+						content: 'legend',
+						open: true
+					};
+				}
+			};
 		}
 	}
 
@@ -166,22 +177,7 @@
 <Sidebar.Root {isOpen} onToggle={() => (isOpen = !isOpen)}>
 	{#snippet sidebarContent()}
 		<ScrollArea class="h-full">
-			<arcgis-layer-list
-				bind:this={arcgisLayerListComponent}
-				class="mx-2 min-h-20"
-				listItemCreatedFunction={(event: any) => {
-					const { item } = event;
-
-					// Exclude group layers, otherwise the legend will be displayed twice
-					if (item.layer.type != 'group') {
-						item.panel = {
-							content: 'legend',
-							open: true
-						};
-					}
-				}}
-			>
-				<arcgis-legend></arcgis-legend>
+			<arcgis-layer-list bind:this={arcgisLayerListComponent} class="mx-2 min-h-20">
 			</arcgis-layer-list>
 		</ScrollArea>
 	{/snippet}
