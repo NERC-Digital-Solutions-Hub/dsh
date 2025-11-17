@@ -56,6 +56,12 @@
 
 		try {
 			// Fetch from the API endpoint instead of directly from portal
+			console.log(
+				'Fetching web maps for organisation ID:',
+				activeOrgId,
+				'url',
+				`${base}/api/maps?id=${activeOrgId}`
+			);
 			const response = await fetch(`${base}/api/maps?id=${activeOrgId}`);
 			console.log(
 				'Fetched web maps response:',
