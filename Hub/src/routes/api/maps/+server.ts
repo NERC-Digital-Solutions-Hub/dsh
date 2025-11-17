@@ -4,7 +4,7 @@ import { MapsConfig } from '$lib/models/maps-config';
 import { dev } from '$app/environment';
 import { writeFile, mkdir } from 'fs/promises';
 import { join, dirname } from 'path';
-import { base } from '$app/paths';
+import { asset, base } from '$app/paths';
 
 let mapsConfig: MapsConfig | null = null;
 
@@ -21,7 +21,7 @@ export const GET: RequestHandler = async ({ url, fetch }) => {
 
 	try {
 		// Try to fetch existing file from static directory
-		const fileUrl = `${base}/api/maps/${id}.json`;
+		const fileUrl = asset(`/api/maps/${id}.json`);
 		const fileResponse = await fetch(fileUrl);
 
 		if (fileResponse.ok) {
@@ -92,7 +92,7 @@ async function fetchAndSaveMapData(id: string, fetch: typeof global.fetch) {
 }
 
 async function getMapsConfig(fetch: typeof global.fetch): Promise<MapsConfig> {
-	const response = await fetch(`${base}/config/maps/config.json`);
+	const response = await fetch(asset('/config/maps/config.json'));
 
 	if (!response.ok) {
 		throw error(500, `Failed to load maps config: ${response.status}`);
