@@ -9,6 +9,9 @@
 	import { OrganisationCommandService } from '$lib/services/command-search/organisation-command-service';
 	import { cleanHtmlText } from '$lib/utils/decode-html';
 	import { form } from '$app/server';
+	import { Check } from '@lucide/svelte';
+	import { SvelteMap } from 'svelte/reactivity';
+	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 
 	type Props = {
 		commandSearchContext: CommandSearchContext;
@@ -22,6 +25,7 @@
 	let loadingLayerId = $state<string | null>(null);
 	let errorMessage = $state<string | null>(null);
 	let query = $state('');
+	let addedLayers = $state<SvelteMap<string, __esri.Layer>>(new SvelteMap());
 
 	type PortalLayerSummary = {
 		id: string;
@@ -145,6 +149,38 @@
 		attachedRuntime = null;
 	});
 
+	async function toggleLayer(itemId: string) {
+		// Check if layer is already added
+		if (addedLayers.has(itemId)) {
+			removeLayerFromMap(itemId);
+		} else {
+			await addLayerToMap(itemId);
+		}
+	}
+
+	function removeLayerFromMap(itemId: string) {
+		const layer = addedLayers.get(itemId);
+		if (!layer || !mapView || !mapView.map) {
+			return;
+		}
+
+		mapView.map.remove(layer);
+		addedLayers.delete(itemId);
+		addedLayers = addedLayers; // Trigger reactivity
+		console.log(`Layer removed from the map: ${itemId}`);
+	}
+
+	function isLayerAdded(itemId: string): boolean {
+		for (const layer of mapView?.map?.allLayers ?? []) {
+			if (layer.portalItem?.id === itemId) {
+				return true;
+				console.log(`Layer found on the map: ${itemId}`);
+			}
+		}
+
+		return false;
+	}
+
 	async function addLayerToMap(itemId: string) {
 		if (!browser) {
 			return;
@@ -198,6 +234,8 @@
 			const targetSpatialReference = await resolveTargetSpatialReference(layer, itemId);
 			await ensureViewSpatialReference(targetSpatialReference);
 			mapView.map.add(layer);
+			addedLayers.set(itemId, layer);
+			addedLayers = addedLayers; // Trigger reactivity
 			console.log('Layer added to the map');
 
 			try {
@@ -208,8 +246,6 @@
 			} catch (viewError) {
 				console.warn('Layer view not ready for navigation', viewError);
 			}
-
-			runtime?.setIsOpen(false);
 		} catch (error) {
 			console.error('Error loading layer:', error);
 			errorMessage = error instanceof Error ? error.message : 'Failed to add layer';
@@ -316,54 +352,70 @@
 </script>
 
 <div class="item-container">
-	{#if errorMessage}
+	{#if useEsriRequest.error}
 		<div class="error-message">
-			<p class="text-sm text-red-600">{errorMessage}</p>
+			<p class="text-sm text-red-600">
+				{useEsriRequest.error.message}. {useEsriRequest.error?.details?.httpStatus === 0
+					? 'Reason: CORS Error. See console for more information.'
+					: ''}
+			</p>
 		</div>
+	{:else if useEsriRequest.isLoading}
+		<div class="flex items-center justify-center p-4">
+			<Spinner class="size-5" />
+		</div>
+	{:else}
+		<Command.List>
+			{#if filteredLayers.length === 0}
+				<Command.Empty>No layers match your search.</Command.Empty>
+			{:else}
+				{#each filteredLayers as layer (layer.id)}
+					<Command.Item
+						onclick={() => toggleLayer(layer.id)}
+						class={addedLayers.has(layer.id) ? 'layer-selected' : ''}
+					>
+						{#if loadingLayerId === layer.id}
+							<div class="flex items-center gap-2">
+								<Spinner class="size-4" />
+								<span class="title-text w-full font-medium text-foreground">
+									Loading {layer.title ?? 'Untitled layer'}...
+								</span>
+							</div>
+						{:else}
+							{#if isLayerAdded(layer.id)}
+								<div class="flex items-center gap-2">
+									<Check />
+								</div>
+							{/if}
+							<div class="flex w-full min-w-0 flex-col gap-0.5">
+								<span class="title-text font-medium text-foreground" title={layer.title}>
+									{layer.title ?? 'Untitled layer'}
+								</span>
+								{#if layer.description}
+									<span class="description-text text-xs text-gray-500" title={layer.description}>
+										{layer.description}
+									</span>
+								{/if}
+								{#if layer.type}
+									<span class="text-[11px] text-muted-foreground">
+										{layer.type ?? ''}
+									</span>
+								{/if}
+								{#if layer.spatialReferenceWkid}
+									<span class="text-[11px] text-muted-foreground">
+										WKID {layer.spatialReferenceWkid}
+										{#if SPATIAL_REFERENCE_BASEMAP_OVERRIDES[layer.spatialReferenceWkid]}
+											{' '}(auto aligns view)
+										{/if}
+									</span>
+								{/if}
+							</div>
+						{/if}
+					</Command.Item>
+				{/each}
+			{/if}
+		</Command.List>
 	{/if}
-
-	<Command.List>
-		{#if filteredLayers.length === 0}
-			<Command.Empty>No layers match your search.</Command.Empty>
-		{:else}
-			{#each filteredLayers as layer (layer.id)}
-				<Command.Item onclick={() => addLayerToMap(layer.id)}>
-					{#if loadingLayerId === layer.id}
-						<div class="flex items-center gap-2">
-							<Spinner class="size-4" />
-							<span class="title-text w-full font-medium text-foreground">
-								Loading {layer.title ?? 'Untitled layer'}...
-							</span>
-						</div>
-					{:else}
-						<div class="flex w-full min-w-0 flex-col gap-0.5">
-							<span class="title-text font-medium text-foreground" title={layer.title}>
-								{layer.title ?? 'Untitled layer'}
-							</span>
-							{#if layer.description}
-								<span class="description-text text-xs text-gray-500" title={layer.description}>
-									{layer.description}
-								</span>
-							{/if}
-							{#if layer.type}
-								<span class="text-[11px] text-muted-foreground">
-									{layer.type ?? ''}
-								</span>
-							{/if}
-							{#if layer.spatialReferenceWkid}
-								<span class="text-[11px] text-muted-foreground">
-									WKID {layer.spatialReferenceWkid}
-									{#if SPATIAL_REFERENCE_BASEMAP_OVERRIDES[layer.spatialReferenceWkid]}
-										{' '}(auto aligns view)
-									{/if}
-								</span>
-							{/if}
-						</div>
-					{/if}
-				</Command.Item>
-			{/each}
-		{/if}
-	</Command.List>
 </div>
 
 <style>

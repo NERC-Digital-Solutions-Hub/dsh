@@ -62,21 +62,26 @@
 			.map(([key, value]) => `${key}:"${value}"`)
 			.join(' AND ');
 
-		await useEsriRequest.load(portalUrl + endpoint, {
-			query: {
-				q: `type:"Web Map"` + (formattedQueryParams ? ` AND ${formattedQueryParams}` : ''),
-				num: 100,
-				f: 'json'
-			}
-		});
+		try {
+			await useEsriRequest.load(portalUrl + endpoint, {
+				query: {
+					q: `type:"Web Map"` + (formattedQueryParams ? ` AND ${formattedQueryParams}` : ''),
+					num: 100,
+					f: 'json'
+				}
+			});
 
-		webMapMetadata = (useEsriRequest.data?.results ?? []).map((item: any) => ({
-			id: item.id,
-			title: item.title,
-			description: cleanHtmlText(item.description),
-			owner: item.owner,
-			tags: item.tags
-		}));
+			webMapMetadata = (useEsriRequest.data?.results ?? []).map((item: any) => ({
+				id: item.id,
+				title: item.title,
+				description: cleanHtmlText(item.description),
+				owner: item.owner,
+				tags: item.tags
+			}));
+		} catch (error) {
+			console.error('Error fetching web maps:', error);
+			errorMessage = error instanceof Error ? error.message : 'Failed to fetch web maps';
+		}
 	});
 
 	let detachRuntimeInput: (() => void) | null = null;
@@ -204,41 +209,49 @@
 </script>
 
 <div class="item-container">
-	{#if errorMessage}
+	{#if useEsriRequest.error}
 		<div class="error-message">
-			<p class="text-sm text-red-600">{errorMessage}</p>
+			<p class="text-sm text-red-600">
+				{useEsriRequest.error.message}. {useEsriRequest.error?.details?.httpStatus === 0
+					? 'Reason: CORS Error. See console for more information.'
+					: ''}
+			</p>
 		</div>
-	{/if}
-
-	<Command.List>
-		{#if filteredMaps.length === 0}
-			<Command.Empty>No web maps match your search.</Command.Empty>
-		{:else}
-			{#each filteredMaps as map (map.id)}
-				<Command.Item onclick={() => setWebMap(map.id)}>
-					{#if loadingMapId === map.id}
-						<div class="flex items-center gap-2">
-							<Spinner class="size-4" />
-							<span class="title-text w-full font-medium text-foreground">
-								Loading {map.title ?? 'Untitled web map'}...
-							</span>
-						</div>
-					{:else}
-						<div class="flex w-full min-w-0 flex-col gap-0.5">
-							<span class="title-text font-medium text-foreground" title={map.title}>
-								{map.title ?? 'Untitled web map'}
-							</span>
-							{#if map.description}
-								<span class="description-text text-xs text-gray-500" title={map.description}>
-									{map.description}
+	{:else if useEsriRequest.isLoading}
+		<div class="flex items-center justify-center p-4">
+			<Spinner class="size-5" />
+		</div>
+	{:else}
+		<Command.List>
+			{#if filteredMaps.length === 0}
+				<Command.Empty>No web maps match your search.</Command.Empty>
+			{:else}
+				{#each filteredMaps as map (map.id)}
+					<Command.Item onclick={() => setWebMap(map.id)}>
+						{#if loadingMapId === map.id}
+							<div class="flex items-center gap-2">
+								<Spinner class="size-4" />
+								<span class="title-text w-full font-medium text-foreground">
+									Loading {map.title ?? 'Untitled web map'}...
 								</span>
-							{/if}
-						</div>
-					{/if}
-				</Command.Item>
-			{/each}
-		{/if}
-	</Command.List>
+							</div>
+						{:else}
+							<div class="flex w-full min-w-0 flex-col gap-0.5">
+								<span class="title-text font-medium text-foreground" title={map.title}>
+									{map.title ?? 'Untitled web map'}
+								</span>
+								{#if map.description}
+									<span class="description-text text-xs text-gray-500" title={map.description}>
+										{map.description}
+									</span>
+								{/if}
+							</div>
+						{/if}
+					</Command.Item>
+				{/each}
+			{/if}
+		</Command.List>
+	{/if}
 </div>
 
 <style>

@@ -12,6 +12,7 @@
 	import AddLayer from '$lib/components/common/maps/add-layer.svelte';
 	import * as Sidebar from '$lib/components/common/sidebar/index.js';
 	import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
+	import { ScrollArea } from '$lib/components/ui/scroll-area';
 
 	const commandSearchContext = new CommandSearchContext();
 
@@ -151,8 +152,9 @@
 			description: 'Clear all layers and reset the map view.',
 			shortcut: ['Ctrl', 'C'],
 			execute: async (_runtime) => {
-				if (mapView) {
-					mapView.map?.layers.removeAll();
+				if (mapView && mapView.map) {
+					mapView.map.layers.removeAll();
+					mapView.map.basemap = 'gray';
 				}
 
 				_runtime.deactivate();
@@ -163,20 +165,25 @@
 
 <Sidebar.Root {isOpen} onToggle={() => (isOpen = !isOpen)}>
 	{#snippet sidebarContent()}
-		<arcgis-layer-list
-			bind:this={arcgisLayerListComponent}
-			listItemCreatedFunction={(event: any) => {
-				const { item } = event;
+		<ScrollArea class="h-full">
+			<arcgis-layer-list
+				bind:this={arcgisLayerListComponent}
+				class="mx-2 min-h-20"
+				listItemCreatedFunction={(event: any) => {
+					const { item } = event;
 
-				// Exclude group layers, otherwise the legend will be displayed twice
-				if (item.layer.type != 'group') {
-					item.panel = {
-						content: 'legend',
-						open: true
-					};
-				}
-			}}
-		></arcgis-layer-list>
+					// Exclude group layers, otherwise the legend will be displayed twice
+					if (item.layer.type != 'group') {
+						item.panel = {
+							content: 'legend',
+							open: true
+						};
+					}
+				}}
+			>
+				<arcgis-legend></arcgis-legend>
+			</arcgis-layer-list>
+		</ScrollArea>
 	{/snippet}
 
 	{#snippet mainContent()}
@@ -199,7 +206,6 @@
 				</div>
 			{/if}
 			<!-- <arcgis-layer-list position="top-left"></arcgis-layer-list> -->
-			<!-- <arcgis-legend position="top-right"></arcgis-legend> -->
 		</arcgis-map>
 	{/snippet}
 </Sidebar.Root>
