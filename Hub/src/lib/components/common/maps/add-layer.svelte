@@ -12,7 +12,7 @@
 	import { Check } from '@lucide/svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-	import { base } from '$app/paths';
+	import { asset, base } from '$app/paths';
 
 	type Props = {
 		commandSearchContext: CommandSearchContext;
