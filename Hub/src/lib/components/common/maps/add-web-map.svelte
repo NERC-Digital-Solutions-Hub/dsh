@@ -9,7 +9,7 @@
 	import UseEsriRequest from '$lib/hooks/use-esri-request.svelte';
 	import { OrganisationCommandService } from '$lib/services/command-search/organisation-command-service';
 	import { cleanHtmlText } from '$lib/utils/decode-html';
-	import { base } from '$app/paths';
+	import { asset, base } from '$app/paths';
 
 	type Props = {
 		commandSearchContext: CommandSearchContext;
@@ -55,21 +55,7 @@
 		}
 
 		try {
-			// Fetch from the API endpoint instead of directly from portal
-			console.log(
-				'Fetching web maps for organisation ID:',
-				activeOrgId,
-				'url',
-				`${base}/api/maps?id=${activeOrgId}`
-			);
-			const response = await fetch(`${base}/api/maps?id=${activeOrgId}`);
-			console.log(
-				'Fetched web maps response:',
-				response,
-				'url',
-				`${base}/api/maps?id=${activeOrgId}`
-			);
-
+			const response = await fetch(asset(`/api/maps/${activeOrgId}.json`));
 			if (!response.ok) {
 				throw new Error(`Failed to fetch maps: ${response.status} ${response.statusText}`);
 			}

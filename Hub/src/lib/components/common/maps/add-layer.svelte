@@ -75,8 +75,7 @@
 		const endpoint: string = organisationService.getActiveOrganisationEndpoint();
 
 		const LAYER_TYPES = ['Feature Layer', 'Feature Service', 'Map Service', 'Image Service'];
-		const response = await fetch(`${base}/api/maps?id=${activeOrgId}`);
-
+		const response = await fetch(asset(`/api/maps/${activeOrgId}.json`));
 		if (!response.ok) {
 			throw new Error(`Failed to fetch maps: ${response.status} ${response.statusText}`);
 		}
