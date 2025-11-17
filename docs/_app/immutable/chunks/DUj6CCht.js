@@ -1,1 +1,0 @@
-import{s as o}from"./B92kdZ15.js";import"./C_HvrvL1.js";import{h as c}from"./Bydm6Fc4.js";const e=new c;function a(n,r){return e.accelerateGeometry(n,r,1)}function p(n,r,t){return e.execute(n,r,t,null)}function l(n,r,t,u){const s=e.executeMany(new o(n),new o([r]),t,null,u);return Array.from(s)}function w(){return e.supportsCurves()}export{p as o,w as s,a as t,l as u};

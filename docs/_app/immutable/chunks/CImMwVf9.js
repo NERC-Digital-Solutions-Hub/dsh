@@ -1,0 +1,1 @@
+import{H as u}from"./BUsxo-Ec.js";import{f as c,u as n,s as e}from"./B934cuUn.js";import{p as $}from"./D3rYkNBu.js";async function l(r,o,a){const t=c(r),i={...o.toJSON(),f:"json"},s=n({...t.query,...i}),f=e(s,{...a,method:"post"}),m=`${t.path}/circuits/alter`,{data:p}=await u(m,f);return $.fromJSON(p)}export{l as alterCircuit};
