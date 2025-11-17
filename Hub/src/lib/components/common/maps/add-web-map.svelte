@@ -53,31 +53,26 @@
 			return;
 		}
 
-		const portalUrl: string = organisationService.getActiveOrganisationPortalUrl();
-		const endpoint: string = organisationService.getActiveOrganisationEndpoint();
-
-		const queryParams = organisationService.getActiveOrganisationQueryParams();
-
-		const formattedQueryParams = Object.entries(queryParams)
-			.map(([key, value]) => `${key}:"${value}"`)
-			.join(' AND ');
-
 		try {
-			await useEsriRequest.load(portalUrl + endpoint, {
-				query: {
-					q: `type:"Web Map"` + (formattedQueryParams ? ` AND ${formattedQueryParams}` : ''),
-					num: 100,
-					f: 'json'
-				}
-			});
+			// Fetch from the API endpoint instead of directly from portal
+			const response = await fetch(`/api/maps?id=${activeOrgId}`);
 
-			webMapMetadata = (useEsriRequest.data?.results ?? []).map((item: any) => ({
-				id: item.id,
-				title: item.title,
-				description: cleanHtmlText(item.description),
-				owner: item.owner,
-				tags: item.tags
-			}));
+			if (!response.ok) {
+				throw new Error(`Failed to fetch maps: ${response.status} ${response.statusText}`);
+			}
+
+			const data = await response.json();
+
+			// Filter for Web Maps and map to metadata
+			webMapMetadata = (data.results ?? [])
+				.filter((item: any) => item.type === 'Web Map')
+				.map((item: any) => ({
+					id: item.id,
+					title: item.title,
+					description: cleanHtmlText(item.description),
+					owner: item.owner,
+					tags: item.tags
+				}));
 		} catch (error) {
 			console.error('Error fetching web maps:', error);
 			errorMessage = error instanceof Error ? error.message : 'Failed to fetch web maps';
