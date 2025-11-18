@@ -11,16 +11,19 @@
 	import { asset, base } from '$app/paths';
 	import { SvelteMap } from 'svelte/reactivity';
 	import { CircleX } from 'lucide-svelte';
+	import { MapViewService } from '$lib/services/command-search/map-view-service';
 
 	type Props = {
 		commandSearchContext: CommandSearchContext;
-		mapView: __esri.MapView | null;
 		inputPlaceholder?: string;
 		runtime?: MapCommandRuntime | null;
 	};
 
-	const { commandSearchContext, mapView, inputPlaceholder, runtime = null }: Props = $props();
+	const { commandSearchContext, inputPlaceholder, runtime = null }: Props = $props();
 	const useEsriRequest = new UseEsriRequest();
+
+	let mapView: __esri.MapView | null = $state(null);
+
 	let loadingMapId = $state<string | null>(null);
 	let mapIdError = $state<SvelteMap<string, Error | null>>(new SvelteMap());
 	let query = $state('');
@@ -47,6 +50,8 @@
 		if (!browser) {
 			return;
 		}
+
+		mapView = commandSearchContext.get(MapViewService).mapView;
 
 		const organisationService = commandSearchContext.get(OrganisationCommandService);
 		const activeOrgId = organisationService.getActiveOrganisationId();

@@ -257,6 +257,7 @@
 		const commandId = command.id;
 
 		return {
+			getContext: () => commandSearchContext,
 			deactivate: () => {
 				if (!activeCommand || activeCommand.id !== commandId) {
 					return;

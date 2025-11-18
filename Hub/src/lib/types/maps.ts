@@ -1,3 +1,4 @@
+import type { CommandSearchContext } from '$lib/services/command-search/command-search-context';
 import type { Component } from 'svelte';
 
 export type MapsConfig = {
@@ -48,6 +49,7 @@ export type MapCommandRuntimeInputBindingOptions = {
 };
 
 export interface MapCommandRuntime {
+	getContext: () => CommandSearchContext;
 	deactivate: () => void;
 	isActive: (commandId?: string) => boolean;
 	setInputSurface: (surface: MapCommandSurface | null) => void;

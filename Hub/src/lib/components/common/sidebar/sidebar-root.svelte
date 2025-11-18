@@ -23,7 +23,7 @@
 
 	type Props = {
 		isOpen: boolean;
-		onToggle: () => void;
+		onToggle?: () => void;
 		position?: SidebarPositionType;
 		originalSize?: string;
 		minSize?: string;
@@ -35,7 +35,7 @@
 
 	const {
 		isOpen,
-		onToggle,
+		onToggle = () => {},
 		position = SidebarPosition.LEFT,
 		originalSize,
 		minSize,
@@ -69,7 +69,7 @@
 	.sidebar-layout {
 		display: flex;
 		flex-direction: row;
-		height: 100vh;
+		height: 100%;
 		width: 100%;
 		overflow: hidden;
 	}

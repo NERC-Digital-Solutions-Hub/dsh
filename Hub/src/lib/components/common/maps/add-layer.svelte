@@ -13,16 +13,19 @@
 	import { SvelteMap } from 'svelte/reactivity';
 	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 	import { asset, base } from '$app/paths';
+	import { MapViewService } from '$lib/services/command-search/map-view-service';
 
 	type Props = {
 		commandSearchContext: CommandSearchContext;
-		mapView: __esri.MapView | null;
 		inputPlaceholder?: string;
 		runtime?: MapCommandRuntime | null;
 	};
 
-	const { commandSearchContext, mapView, inputPlaceholder, runtime = null }: Props = $props();
+	const { commandSearchContext, inputPlaceholder, runtime = null }: Props = $props();
 	const useEsriRequest = new UseEsriRequest();
+
+	let mapView: __esri.MapView | null = $state(null);
+
 	let loadingLayerId = $state<string | null>(null);
 	let layerIdError = $state<SvelteMap<string, Error | null>>(new SvelteMap());
 	let query = $state('');
@@ -63,6 +66,8 @@
 		if (!browser) {
 			return;
 		}
+
+		mapView = commandSearchContext.get(MapViewService).mapView;
 
 		const organisationService = commandSearchContext.get(OrganisationCommandService);
 		const activeOrgId = organisationService.getActiveOrganisationId();

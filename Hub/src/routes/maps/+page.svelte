@@ -1,18 +1,22 @@
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte';
+	import { onMount } from 'svelte';
 	import CommandSearch from '$lib/components/common/maps/command-search/command-search.svelte';
 	import type { MapCommand } from '$lib/types/maps';
-	import AddWebMap from '$lib/components/common/maps/add-web-map.svelte';
-	import AddOrganisation from '$lib/components/common/maps/add-organisation.svelte';
 	import { asset } from '$app/paths';
 	import { browser } from '$app/environment';
 	import { CommandSearchContext } from '$lib/services/command-search/command-search-context';
 	import { MapsConfig } from '$lib/models/maps-config';
 	import { OrganisationCommandService } from '$lib/services/command-search/organisation-command-service';
-	import AddLayer from '$lib/components/common/maps/add-layer.svelte';
 	import * as Sidebar from '$lib/components/common/sidebar/index.js';
-	import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import { MapViewService } from '$lib/services/command-search/map-view-service';
+	import { getCommand } from '$lib/services/command-search/command-registry';
+
+	// import commands
+	import '$lib/services/command-search/commands/add-web-map';
+	import '$lib/services/command-search/commands/add-layer';
+	import '$lib/services/command-search/commands/add-organisation';
+	import '$lib/services/command-search/commands/clear-map';
 
 	const commandSearchContext = new CommandSearchContext();
 
@@ -22,12 +26,9 @@
 	let arcgisMapComponent: HTMLArcgisMapElement | null = $state(null);
 	let arcgisLayerListComponent: HTMLArcgisLayerListElement | null = $state(null);
 
-	let webMapsCommand: MapCommand | null = $state(null);
-	let layersCommand: MapCommand | null = $state(null);
-	let organisationsCommand: MapCommand | null = $state(null);
-	let clearMapCommand: MapCommand | null = $state(null);
-
 	let isOpen: boolean = $state(false);
+
+	let commands: MapCommand[] = $state([]);
 
 	onMount(async () => {
 		if (!browser) {
@@ -42,10 +43,12 @@
 
 		await mountArcGisComponents();
 
-		webMapsCommand = createAddWebMapsCommand();
-		layersCommand = createAddLayersCommand();
-		organisationsCommand = createAddOrganisationsCommand();
-		clearMapCommand = createClearMapCommand();
+		commands = [
+			getCommand('add-web-map')!,
+			getCommand('add-layer')!,
+			getCommand('add-organisation')!,
+			getCommand('clear-map')!
+		];
 	});
 
 	async function getMapsConfig(): Promise<MapsConfig> {
@@ -66,6 +69,7 @@
 		}
 
 		mapView = arcgisMapComponent.view as __esri.MapView;
+		commandSearchContext.add(MapViewService, new MapViewService(mapView));
 
 		const backgroundColour = '#cfd3d4' as unknown as __esri.Color;
 		arcgisMapComponent.background = { color: backgroundColour };
@@ -95,86 +99,6 @@
 		await import('@arcgis/map-components/components/arcgis-legend');
 		await import('@arcgis/map-components/components/arcgis-map');
 	}
-
-	onDestroy(() => {
-		webMapsCommand = null;
-		layersCommand = null;
-		organisationsCommand = null;
-		clearMapCommand = null;
-	});
-
-	function createAddWebMapsCommand(): MapCommand {
-		const command: MapCommand = {
-			id: 'add-web-map',
-			name: 'Add web map',
-			description: 'Fetch and display web maps.',
-			group: 'Maps',
-			shortcut: ['Ctrl', 'M'],
-			inputPlaceholder: 'Search web maps...',
-			execute: async (_runtime) => {},
-			component: AddWebMap as any,
-			props: (_runtime) => ({
-				commandSearchContext,
-				mapView,
-				inputPlaceholder: command.inputPlaceholder
-			})
-		};
-
-		return command;
-	}
-
-	function createAddLayersCommand(): MapCommand {
-		const command: MapCommand = {
-			id: 'add-layer',
-			name: 'Add layers',
-			description: 'Fetch and display layers.',
-			group: 'Maps',
-			shortcut: ['Ctrl', 'L'],
-			execute: async (_runtime) => {},
-			component: AddLayer as any,
-			props: (_runtime) => ({
-				commandSearchContext,
-				mapView,
-				inputPlaceholder: command.inputPlaceholder
-			})
-		};
-
-		return command;
-	}
-
-	function createAddOrganisationsCommand(): MapCommand {
-		return {
-			id: 'add-organisation',
-			name: 'Add organisation',
-			description: 'Find and add an organisation to filter items by.',
-			group: 'Maps',
-			shortcut: ['Ctrl', 'O'],
-			inputPlaceholder: 'Search organisations...',
-			component: AddOrganisation as any,
-			execute: async (_runtime) => {},
-			props: (_runtime) => ({
-				commandSearchContext,
-				inputPlaceholder: 'Search organisations...'
-			})
-		};
-	}
-
-	function createClearMapCommand(): MapCommand {
-		return {
-			id: 'clear-map',
-			name: 'Clear map',
-			description: 'Clear all layers and reset the map view.',
-			shortcut: ['Ctrl', 'C'],
-			execute: async (_runtime) => {
-				if (mapView && mapView.map) {
-					mapView.map.layers.removeAll();
-					mapView.map.basemap = 'gray';
-				}
-
-				_runtime.deactivate();
-			}
-		};
-	}
 </script>
 
 <Sidebar.Root {isOpen} onToggle={() => (isOpen = !isOpen)}>
@@ -194,17 +118,16 @@
 			zoom="15"
 			onarcgisViewReadyChange={handleViewReady}
 		>
-			{#if webMapsCommand && layersCommand && organisationsCommand && clearMapCommand}
+			{#if commands.length > 0}
 				<div id="search-slot" class="absolute top-3 left-1/2 z-10 -translate-x-1/2">
 					<CommandSearch
 						bind:ref={commandSearchElement}
 						class="w-full max-w-md"
 						{commandSearchContext}
-						commands={[organisationsCommand, webMapsCommand, layersCommand, clearMapCommand]}
+						{commands}
 					/>
 				</div>
 			{/if}
-			<!-- <arcgis-layer-list position="top-left"></arcgis-layer-list> -->
 		</arcgis-map>
 	{/snippet}
 </Sidebar.Root>

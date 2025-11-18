@@ -87,13 +87,15 @@
 					{/snippet}
 				</NavigationMenu.Link>
 			</NavigationMenu.Item>
-			<!-- <NavigationMenu.Item>
+			<NavigationMenu.Item>
 				<NavigationMenu.Link>
 					{#snippet child()}
-						<a href={`${base}/usecases`} class={navigationMenuTriggerStyle()}>Use Cases</a>
+						<a href={`${base}/usecases/placeholder`} class={navigationMenuTriggerStyle()}
+							>Use Case</a
+						>
 					{/snippet}
 				</NavigationMenu.Link>
-			</NavigationMenu.Item> -->
+			</NavigationMenu.Item>
 			<NavigationMenu.Item>
 				<NavigationMenu.Link>
 					{#snippet child()}
