@@ -67,6 +67,9 @@
 
 		mapView = arcgisMapComponent.view as __esri.MapView;
 
+		const backgroundColour = '#cfd3d4' as unknown as __esri.Color;
+		arcgisMapComponent.background = { color: backgroundColour };
+
 		if (arcgisLayerListComponent) {
 			arcgisLayerListComponent.view = mapView;
 			arcgisLayerListComponent.listItemCreatedFunction = (event: any) => {

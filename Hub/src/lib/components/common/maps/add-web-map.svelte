@@ -5,11 +5,12 @@
 	import type { MapCommandRuntime, MapsOrganisationConfig, WebMapMetadata } from '$lib/types/maps';
 	import { browser } from '$app/environment';
 	import type { CommandSearchContext } from '$lib/services/command-search/command-search-context';
-	import { MapsConfig } from '$lib/models/maps-config';
 	import UseEsriRequest from '$lib/hooks/use-esri-request.svelte';
 	import { OrganisationCommandService } from '$lib/services/command-search/organisation-command-service';
 	import { cleanHtmlText } from '$lib/utils/decode-html';
 	import { asset, base } from '$app/paths';
+	import { SvelteMap } from 'svelte/reactivity';
+	import { CircleX } from 'lucide-svelte';
 
 	type Props = {
 		commandSearchContext: CommandSearchContext;
@@ -21,7 +22,7 @@
 	const { commandSearchContext, mapView, inputPlaceholder, runtime = null }: Props = $props();
 	const useEsriRequest = new UseEsriRequest();
 	let loadingMapId = $state<string | null>(null);
-	let errorMessage = $state<string | null>(null);
+	let mapIdError = $state<SvelteMap<string, Error | null>>(new SvelteMap());
 	let query = $state('');
 
 	let webMapMetadata: WebMapMetadata[] = $state([]);
@@ -74,7 +75,6 @@
 				}));
 		} catch (error) {
 			console.error('Error fetching web maps:', error);
-			errorMessage = error instanceof Error ? error.message : 'Failed to fetch web maps';
 		}
 	});
 
@@ -130,12 +130,12 @@
 
 		if (!mapView) {
 			console.error('MapView is not initialized');
-			errorMessage = 'MapView is not ready. Please wait and try again.';
+			mapIdError.set(itemId, new Error('MapView is not ready. Please wait and try again.'));
 			return;
 		}
 
 		loadingMapId = itemId;
-		errorMessage = null;
+		mapIdError.delete(itemId);
 
 		try {
 			console.log(`Loading web map with ID: ${itemId}`);
@@ -195,7 +195,8 @@
 			runtime?.setIsOpen(false);
 		} catch (error) {
 			console.error('Error loading web map:', error);
-			errorMessage = error instanceof Error ? error.message : 'Failed to load web map';
+			mapIdError.set(itemId, error);
+			loadingMapId = null;
 		} finally {
 			loadingMapId = null;
 		}
@@ -222,6 +223,7 @@
 			{:else}
 				{#each filteredMaps as map (map.id)}
 					<Command.Item onclick={() => setWebMap(map.id)}>
+						{@const error = mapIdError.get(map.id)}
 						{#if loadingMapId === map.id}
 							<div class="flex items-center gap-2">
 								<Spinner class="size-4" />
@@ -238,6 +240,17 @@
 									<span class="description-text text-xs text-gray-500" title={map.description}>
 										{map.description}
 									</span>
+								{/if}
+								{#if error}
+									{@const errorMessage = `${error.message}. ${
+										(error as any).details?.error?.details?.httpStatus === 0
+											? 'Reason: CORS Error. See console for more information.'
+											: ''
+									}`}
+									<div class="error-message" title={errorMessage}>
+										<CircleX class="error-icon" size={16} />
+										<p class="text-sm text-red-600">{errorMessage}</p>
+									</div>
 								{/if}
 							</div>
 						{/if}
@@ -257,11 +270,28 @@
 	}
 
 	.error-message {
-		padding: 0.75rem;
-		margin-bottom: 0.5rem;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.25rem;
 		background-color: #fee;
 		border-radius: 0.375rem;
 		border: 1px solid #fcc;
+		width: 100%;
+	}
+
+	.error-message :global(svg) {
+		flex-shrink: 0;
+		color: #dc2626;
+	}
+
+	.error-message p {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		width: 100%;
+		flex: 1;
+		min-width: 0;
 	}
 
 	:global(.map-button) {

@@ -9,7 +9,7 @@
 	import { OrganisationCommandService } from '$lib/services/command-search/organisation-command-service';
 	import { cleanHtmlText } from '$lib/utils/decode-html';
 	import { form } from '$app/server';
-	import { Check } from '@lucide/svelte';
+	import { Check, CircleX } from 'lucide-svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 	import { asset, base } from '$app/paths';
@@ -24,7 +24,7 @@
 	const { commandSearchContext, mapView, inputPlaceholder, runtime = null }: Props = $props();
 	const useEsriRequest = new UseEsriRequest();
 	let loadingLayerId = $state<string | null>(null);
-	let errorMessage = $state<string | null>(null);
+	let layerIdError = $state<SvelteMap<string, Error | null>>(new SvelteMap());
 	let query = $state('');
 	let addedLayers = $state<SvelteMap<string, __esri.Layer>>(new SvelteMap());
 
@@ -206,12 +206,12 @@
 
 		if (!mapView || !mapView.map) {
 			console.error('Map or MapView is not initialized');
-			errorMessage = 'Map is not ready. Please wait and try again.';
+			layerIdError.set(itemId, new Error('Map is not ready. Please wait and try again.'));
 			return;
 		}
 
 		loadingLayerId = itemId;
-		errorMessage = null;
+		layerIdError.delete(itemId);
 
 		try {
 			console.log(`Loading layer with portal item ID: ${itemId}`);
@@ -266,7 +266,8 @@
 			}
 		} catch (error) {
 			console.error('Error loading layer:', error);
-			errorMessage = error instanceof Error ? error.message : 'Failed to add layer';
+			layerIdError.set(itemId, error as Error);
+			loadingLayerId = null;
 		} finally {
 			loadingLayerId = null;
 		}
@@ -392,6 +393,7 @@
 						onclick={() => toggleLayer(layer.id)}
 						class={addedLayers.has(layer.id) ? 'layer-selected' : ''}
 					>
+						{@const error = layerIdError.get(layer.id)}
 						{#if loadingLayerId === layer.id}
 							<div class="flex items-center gap-2">
 								<Spinner class="size-4" />
@@ -400,7 +402,7 @@
 								</span>
 							</div>
 						{:else}
-							{#if isLayerAdded(layer.id)}
+							{#if addedLayers.has(layer.id)}
 								<div class="flex items-center gap-2">
 									<Check />
 								</div>
@@ -427,6 +429,17 @@
 										{/if}
 									</span>
 								{/if}
+								{#if error}
+									{@const errorMessage = `${error.message}. ${
+										(error as any).details?.error?.details?.httpStatus === 0
+											? 'Reason: CORS Error. See console for more information.'
+											: ''
+									}`}
+									<div class="error-message" title={errorMessage}>
+										<CircleX size={16} />
+										<p class="text-sm text-red-600">{errorMessage}</p>
+									</div>
+								{/if}
 							</div>
 						{/if}
 					</Command.Item>
@@ -445,11 +458,28 @@
 	}
 
 	.error-message {
-		padding: 0.75rem;
-		margin-bottom: 0.5rem;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.25rem;
 		background-color: #fee;
 		border-radius: 0.375rem;
 		border: 1px solid #fcc;
+		width: 100%;
+	}
+
+	.error-message :global(svg) {
+		flex-shrink: 0;
+		color: #dc2626;
+	}
+
+	.error-message p {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		width: 100%;
+		flex: 1;
+		min-width: 0;
 	}
 
 	:global(.map-button) {
