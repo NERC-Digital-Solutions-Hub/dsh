@@ -26,7 +26,7 @@
 	let arcgisMapComponent: HTMLArcgisMapElement | null = $state(null);
 	let arcgisLayerListComponent: HTMLArcgisLayerListElement | null = $state(null);
 
-	let isOpen: boolean = $state(false);
+	let isOpen: boolean = $state(true);
 
 	let commands: MapCommand[] = $state([]);
 
