@@ -186,7 +186,7 @@
 
 			// Wait for the view to update
 			const reactiveUtils = await import('@arcgis/core/core/reactiveUtils.js');
-			await reactiveUtils.whenOnce(() => mapView.ready);
+			await reactiveUtils.whenOnce(() => mapView?.ready);
 
 			console.log('MapView updated with new web map');
 
@@ -200,7 +200,7 @@
 			runtime?.setIsOpen(false);
 		} catch (error) {
 			console.error('Error loading web map:', error);
-			mapIdError.set(itemId, error);
+			mapIdError.set(itemId, error as Error);
 			loadingMapId = null;
 		} finally {
 			loadingMapId = null;
