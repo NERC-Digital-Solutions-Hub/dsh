@@ -1,8 +1,7 @@
 <script lang="ts">
 	import * as Button from '$lib/components/ui/button/index.js';
 	import { MapIcon } from 'lucide-svelte';
-	import { onDestroy, onMount } from 'svelte';
-	import { on } from 'svelte/events';
+	import type { Component } from 'svelte';
 
 	type Props = {
 		options: SidebarButton[];
@@ -11,6 +10,7 @@
 	type SidebarButton = {
 		id: string;
 		label: string;
+		icon: Component;
 	};
 
 	const { options, onToggleItem }: Props = $props();
@@ -39,7 +39,8 @@
 			title={option.label}
 			onclick={() => void handleButtonClick(option.id)}
 		>
-			<MapIcon aria-hidden="true" class="sidebar-icon" />
+			{@const Icon = option.icon}
+			<Icon aria-hidden="true" class="sidebar-icon" />
 		</Button.Root>
 	{/each}
 </div>
@@ -55,17 +56,18 @@
 		justify-content: flex-start;
 		gap: 0.65rem;
 		padding: 1.25rem 0.5rem;
-		background: linear-gradient(180deg, #2c2c2c 0%, #1b1b1b 100%);
-		border-right: 1px solid #3c3c3c;
-		box-shadow: 2px 0 8px rgba(0, 0, 0, 0.4);
+		background-color: var(--sidebar);
+		border-right: 1px solid var(--sidebar-border);
+		box-shadow: 2px 0 8px oklch(0 0 0 / 10%);
 		z-index: 20;
 	}
 
 	:global(.sidebar-button) {
 		width: 2.5rem;
 		height: 2.5rem;
-		color: #c5c5c5;
+		color: var(--sidebar-foreground);
 		background-color: transparent;
+		border: 1px solid var(--sidebar-border);
 		border-radius: 0.6rem;
 		transition:
 			background-color 0.15s ease,
@@ -77,15 +79,15 @@
 
 	:global(.sidebar-button:hover),
 	:global(.sidebar-button:focus-visible) {
-		color: #ffffff;
-		background-color: #333538;
+		color: var(--sidebar-accent-foreground);
+		background-color: var(--sidebar-accent);
 		transform: translateY(-1px);
 	}
 
 	:global(.sidebar-button.active) {
-		color: #ffffff;
-		background-color: var(--primary);
-		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+		color: var(--sidebar-primary-foreground);
+		background-color: var(--sidebar-primary);
+		box-shadow: 0 2px 6px oklch(0 0 0 / 15%);
 	}
 
 	:global(.sidebar-icon) {
@@ -104,9 +106,8 @@
 			padding: 0.5rem 0.75rem;
 			justify-content: center;
 			border-right: none;
-			box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
-			border-bottom: 1px solid #3c3c3c;
-			background: linear-gradient(90deg, #2c2c2c 0%, #1f1f1f 100%);
+			box-shadow: 0 1px 6px oklch(0 0 0 / 15%);
+			border-bottom: 1px solid var(--sidebar-border);
 		}
 	}
 </style>

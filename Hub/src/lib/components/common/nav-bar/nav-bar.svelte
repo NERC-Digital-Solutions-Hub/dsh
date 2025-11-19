@@ -72,6 +72,15 @@
 								</a>
 							</NavigationMenu.Link>
 							<NavigationMenu.Link href="#">
+								<a href={`${base}/apps/ai-where-to-build`}>
+									<div class="font-medium">Where to Build (AI)</div>
+									<div class="text-muted-foreground">
+										Identify potential sites for housing and undertake a site analysis based on your
+										choices - AI powered.
+									</div>
+								</a>
+							</NavigationMenu.Link>
+							<NavigationMenu.Link href="#">
 								<a href={`${base}/apps`}>
 									<div class="font-medium">View All...</div>
 								</a>
@@ -84,15 +93,6 @@
 				<NavigationMenu.Link>
 					{#snippet child()}
 						<a href={`${base}/maps`} class={navigationMenuTriggerStyle()}>Maps</a>
-					{/snippet}
-				</NavigationMenu.Link>
-			</NavigationMenu.Item>
-			<NavigationMenu.Item>
-				<NavigationMenu.Link>
-					{#snippet child()}
-						<a href={`${base}/usecases/placeholder`} class={navigationMenuTriggerStyle()}
-							>Use Case</a
-						>
 					{/snippet}
 				</NavigationMenu.Link>
 			</NavigationMenu.Item>
