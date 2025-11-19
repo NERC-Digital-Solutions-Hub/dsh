@@ -35,7 +35,7 @@
 		class: className,
 		commandSearchContext,
 		commands: providedCommands = [],
-		placeholder = 'Search commands...',
+		placeholder = 'Commands...',
 		emptyMessage = 'No commands found.'
 	}: Props = $props();
 
@@ -506,6 +506,8 @@
 	function closePanel(preserveActive = false) {
 		preserveActiveCommandOnClose = preserveActive;
 		isOpen = false;
+
+		blurInput();
 	}
 
 	function handlePointerDown(event: PointerEvent) {
