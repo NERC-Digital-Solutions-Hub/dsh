@@ -43,7 +43,7 @@
 	}: Props = $props();
 
 	// Constants
-	const RESIZE_HANDLE_SIZE = 8;
+	const RESIZE_HANDLE_SIZE = 6;
 	const DEFAULT_SIZE = '500px';
 	const HEADER_OFFSET = 'var(--header-height, 64px)';
 
@@ -147,41 +147,9 @@
 		return iconMap[position];
 	});
 
-	// Position for resize handle when moved outside wrapper
-	const handlePosition = $derived(() => {
-		if (!isOpen) return {};
-
+	const handleStyles = $derived(() => {
 		const size = `${RESIZE_HANDLE_SIZE}px`;
-		const sidebarOffset = isOpen ? `calc(${currentSize} + ${-RESIZE_HANDLE_SIZE / 2}px)` : '0px';
-
-		const positionMap = {
-			[SidebarPosition.LEFT]: {
-				left: sidebarOffset,
-				top: '0',
-				width: size,
-				height: '100%'
-			},
-			[SidebarPosition.RIGHT]: {
-				right: sidebarOffset,
-				top: '0',
-				width: size,
-				height: '100%'
-			},
-			[SidebarPosition.TOP]: {
-				top: sidebarOffset,
-				left: '0',
-				height: size,
-				width: '100%'
-			},
-			[SidebarPosition.BOTTOM]: {
-				bottom: sidebarOffset,
-				left: '0',
-				height: size,
-				width: '100%'
-			}
-		};
-
-		return positionMap[position];
+		return isHorizontal ? { width: size, height: '100%' } : { height: size, width: '100%' };
 	});
 
 	// Helper to convert object to inline styles
@@ -197,21 +165,24 @@
 	// Calculate transform for sliding animation
 	const sidebarTransform = $derived(() => {
 		if (isOpen) return 'translate(0, 0)';
-
+		const handleSize = `${RESIZE_HANDLE_SIZE}px`;
+		const offset = `calc(${currentSize} + ${handleSize})`;
 		const transformMap = {
-			[SidebarPosition.LEFT]: `translate(-${currentSize}, 0)`,
-			[SidebarPosition.RIGHT]: `translate(${currentSize}, 0)`,
-			[SidebarPosition.TOP]: `translate(0, -${currentSize})`,
-			[SidebarPosition.BOTTOM]: `translate(0, ${currentSize})`
+			[SidebarPosition.LEFT]: `translate(-${offset}, 0)`,
+			[SidebarPosition.RIGHT]: `translate(${offset}, 0)`,
+			[SidebarPosition.TOP]: `translate(0, -${offset})`,
+			[SidebarPosition.BOTTOM]: `translate(0, ${offset})`
 		};
 		return transformMap[position];
 	});
 
 	const wrapperStyles = $derived(() => {
-		const sizeValue = isOpen ? currentSize : '0px';
+		const expandedSize = `${currentSize}`;
+		const sizeValue = isOpen ? expandedSize : '0px';
 		return {
 			[sizeProperty]: sizeValue,
-			order: `${sidebarOrder}`
+			order: `${sidebarOrder}`,
+			transform: sidebarTransform()
 		};
 	});
 </script>
@@ -259,31 +230,24 @@
 	class:duration-300={!isResizing}
 	style={toInlineStyles(wrapperStyles())}
 >
-	<!-- Sidebar -->
-	<aside
-		bind:this={sidebarElement}
-		class="border-r-bg-sidebar-border relative flex border-r-1 bg-sidebar text-sidebar-foreground shadow-lg"
-		class:flex-col={isHorizontal}
-		class:flex-row={!isHorizontal}
-		class:h-full={isHorizontal}
-		class:w-full={!isHorizontal}
-		class:border-r={position === SidebarPosition.LEFT}
-		class:border-l={position === SidebarPosition.RIGHT}
-		class:border-b={position === SidebarPosition.TOP}
-		class:border-t={position === SidebarPosition.BOTTOM}
-		class:border-sidebar-border={true}
-		class:transition-transform={!isResizing}
-		class:duration-300={!isResizing}
-		style="{sizeProperty}: {currentSize}; transform: {sidebarTransform()};"
-	>
-		<div
-			class="flex overflow-hidden"
+	<div class="flex h-full w-full" class:flex-row={isHorizontal} class:flex-col={!isHorizontal}>
+		<!-- Sidebar -->
+		<aside
+			bind:this={sidebarElement}
+			class="border-r-bg-sidebar-border relative flex shrink-0 border-r-1 bg-sidebar text-sidebar-foreground shadow-lg"
 			class:flex-col={isHorizontal}
 			class:flex-row={!isHorizontal}
 			class:h-full={isHorizontal}
 			class:w-full={!isHorizontal}
+			class:border-r={position === SidebarPosition.LEFT}
+			class:border-l={position === SidebarPosition.RIGHT}
+			class:border-b={position === SidebarPosition.TOP}
+			class:border-t={position === SidebarPosition.BOTTOM}
+			class:border-sidebar-border={true}
+			class:transition-transform={!isResizing}
+			class:duration-300={!isResizing}
+			style="{sizeProperty}: {currentSize};"
 		>
-			<!-- Content -->
 			<div
 				class="flex overflow-hidden"
 				class:flex-col={isHorizontal}
@@ -291,24 +255,33 @@
 				class:h-full={isHorizontal}
 				class:w-full={!isHorizontal}
 			>
-				{#if children}
-					{@render children()}
-				{/if}
+				<!-- Content -->
+				<div
+					class="flex overflow-hidden"
+					class:flex-col={isHorizontal}
+					class:flex-row={!isHorizontal}
+					class:h-full={isHorizontal}
+					class:w-full={!isHorizontal}
+				>
+					{#if children}
+						{@render children()}
+					{/if}
+				</div>
 			</div>
-		</div>
-	</aside>
-</div>
+		</aside>
 
-<!-- Resize handle (outside wrapper to avoid clipping) -->
-{#if isOpen}
-	<Button
-		class="fixed z-40 border-0 bg-transparent p-0 ring-0 transition-colors outline-none hover:!bg-primary/50 focus-visible:ring-0 {isHorizontal
-			? 'cursor-ew-resize'
-			: 'cursor-ns-resize'} {!isResizing ? 'transition-all duration-300' : ''}"
-		onmousedown={startResize}
-		aria-label="Resize sidebar by dragging"
-		style="{toInlineStyles(
-			handlePosition()
-		)}; outline: none !important; box-shadow: none !important; border: none !important;"
-	/>
-{/if}
+		<!-- Resize handle -->
+		{#if isOpen}
+			<Button
+				class="z-40 flex shrink-0 items-center justify-center border-0 bg-transparent p-0 shadow-none ring-0 outline-none hover:!bg-primary/50 focus-visible:ring-0 {isHorizontal
+					? '-ml-[6px] cursor-ew-resize'
+					: '-mt-[6px] cursor-ns-resize'} {!isResizing ? 'transition-all duration-300' : ''}"
+				onmousedown={startResize}
+				aria-label="Resize sidebar by dragging"
+				style="{toInlineStyles(
+					handleStyles()
+				)}; outline: none !important; box-shadow: none !important; border: none !important;"
+			/>
+		{/if}
+	</div>
+</div>
