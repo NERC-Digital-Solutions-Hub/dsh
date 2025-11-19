@@ -42,7 +42,7 @@ interface Piece {
  * 2. For each clip layer, gets features intersecting the parcel and clips them
  * 3. Overlays/splits all clipped pieces so overlaps become separate regions
  * 4. Groups by layer combination, unions within each group, and adds to target layer
- * 
+ *
  * @param options - Configuration options for clipping and merging
  * @param options.view - Optional MapView for spatial reference and adding target layer
  * @param options.inputLayer - Layer containing the polygon to be clipped
@@ -92,15 +92,12 @@ import type { default as FeatureLayerType } from '@arcgis/core/layers/FeatureLay
 
 /**
  * Get spatial reference from view or fallback to polygon's spatial reference.
- * 
+ *
  * @param view - Optional MapView
  * @param polygon - The polygon to get spatial reference from
  * @returns The spatial reference to use
  */
-function getSpatialReference(
-	view: MapView | undefined,
-	polygon: Polygon
-): __esri.SpatialReference {
+function getSpatialReference(view: MapView | undefined, polygon: Polygon): __esri.SpatialReference {
 	const sr = view?.spatialReference ?? polygon.spatialReference;
 	if (view && polygon.spatialReference && sr && polygon.spatialReference.wkid !== sr.wkid) {
 		console.warn(
@@ -113,7 +110,7 @@ function getSpatialReference(
 
 /**
  * Collect all clipped pieces from all clip layers in parallel.
- * 
+ *
  * @param clipLayers - Array of layers to clip from
  * @param polygon - The polygon to clip with
  * @param sr - Spatial reference to use
@@ -134,16 +131,12 @@ async function collectAllClippedPieces(
 
 /**
  * Add graphics to target layer and ensure the layer is on the map.
- * 
+ *
  * @param targetLayer - The layer to add graphics to
  * @param graphics - The graphics to add
  * @param view - Optional MapView to add the layer to if not present
  */
-function addGraphicsToLayer(
-	targetLayer: GraphicsLayer,
-	graphics: Graphic[],
-	view?: MapView
-): void {
+function addGraphicsToLayer(targetLayer: GraphicsLayer, graphics: Graphic[], view?: MapView): void {
 	if (view?.map && !view.map.layers.includes(targetLayer)) {
 		view.map.add(targetLayer);
 	}
@@ -152,7 +145,7 @@ function addGraphicsToLayer(
 
 /**
  * Get polygon geometry by ID from a FeatureLayer or GraphicsLayer.
- * 
+ *
  * @param layer - The input layer to query
  * @param polygonId - ID of the polygon to retrieve
  * @param explicitIdField - Optional field name for the ID
@@ -173,13 +166,16 @@ async function getPolygonGeometryById(
 		return getPolygonFromGraphicsLayer(layer as GraphicsLayer, polygonId, explicitIdField);
 	}
 
-	console.warn('getPolygonGeometryById: unsupported layer type:', (layer as unknown as { type: string }).type);
+	console.warn(
+		'getPolygonGeometryById: unsupported layer type:',
+		(layer as unknown as { type: string }).type
+	);
 	return null;
 }
 
 /**
  * Get polygon geometry from a FeatureLayer by ID.
- * 
+ *
  * @param layer - The FeatureLayer to query
  * @param polygonId - ID of the polygon to retrieve
  * @param explicitIdField - Optional field name for the ID
@@ -212,7 +208,7 @@ async function getPolygonFromFeatureLayer(
 
 /**
  * Get polygon geometry from a GraphicsLayer by ID.
- * 
+ *
  * @param layer - The GraphicsLayer to search
  * @param polygonId - ID of the polygon to retrieve
  * @param explicitIdField - Optional field name for the ID
@@ -237,7 +233,7 @@ function getPolygonFromGraphicsLayer(
 
 /**
  * Build a WHERE clause for querying by ID.
- * 
+ *
  * @param fieldName - The field name to query
  * @param polygonId - The ID value to match
  * @returns SQL WHERE clause string
@@ -256,7 +252,7 @@ function buildWhereClause(fieldName: string, polygonId: number | string): string
 /**
  * For a given clip layer, return clipped pieces (Graphics) already intersected
  * with the input polygon. These are in-memory candidates for the overlay step.
- * 
+ *
  * @param layer - The clip layer to process
  * @param polygon - The polygon to clip with
  * @param sr - Spatial reference to use
@@ -270,29 +266,23 @@ async function collectClippedPiecesForLayer(
 	sourceId: number | string
 ): Promise<Graphic[]> {
 	if (layer.type === 'feature') {
-		return collectClippedPiecesFromFeatureLayer(
-			layer as FeatureLayer,
-			polygon,
-			sr,
-			sourceId
-		);
+		return collectClippedPiecesFromFeatureLayer(layer as FeatureLayer, polygon, sr, sourceId);
 	}
 
 	if (layer.type === 'graphics') {
-		return collectClippedPiecesFromGraphicsLayer(
-			layer as GraphicsLayer,
-			polygon,
-			sourceId
-		);
+		return collectClippedPiecesFromGraphicsLayer(layer as GraphicsLayer, polygon, sourceId);
 	}
 
-	console.warn('collectClippedPiecesForLayer: unsupported layer type:', (layer as unknown as { type: string }).type);
+	console.warn(
+		'collectClippedPiecesForLayer: unsupported layer type:',
+		(layer as unknown as { type: string }).type
+	);
 	return [];
 }
 
 /**
  * Collect clipped pieces from a FeatureLayer using spatial query.
- * 
+ *
  * @param layer - The FeatureLayer to query
  * @param polygon - The polygon to clip with
  * @param sr - Spatial reference to use
@@ -330,7 +320,7 @@ async function collectClippedPiecesFromFeatureLayer(
 
 /**
  * Collect clipped pieces from a GraphicsLayer using client-side filtering.
- * 
+ *
  * @param layer - The GraphicsLayer to filter
  * @param polygon - The polygon to clip with
  * @param sourceId - ID of the source polygon
@@ -362,7 +352,7 @@ function collectClippedPiecesFromGraphicsLayer(
 
 /**
  * Create graphics from intersection geometries with layer attributes.
- * 
+ *
  * @param intersections - Array of intersection geometries
  * @param layer - The source layer
  * @param sourceId - ID of the source polygon
@@ -396,7 +386,7 @@ function createGraphicsFromIntersections(
 /**
  * Overlay and group candidates logic that operates on in-memory Graphics
  * and returns final Graphics without touching layers.
- * 
+ *
  * @param candidates - Array of candidate graphics to overlay
  * @param symbolForCombo - Optional symbol factory based on layer combination
  * @returns Array of final merged graphics
@@ -422,7 +412,7 @@ function overlayAndGroupCandidates(
 
 /**
  * Overlay all candidate polygons into non-overlapping pieces.
- * 
+ *
  * @param candidates - Array of graphics to overlay
  * @returns Array of non-overlapping pieces
  */
@@ -438,7 +428,7 @@ function overlayPolygonsIntoPieces(candidates: Graphic[]): Piece[] {
 
 /**
  * Process a single candidate polygon against existing pieces.
- * 
+ *
  * @param candidate - The graphic to process
  * @param pieces - Existing pieces to check against
  * @returns Updated array of pieces
@@ -475,7 +465,7 @@ function processCandidate(candidate: Graphic, pieces: Piece[]): Piece[] {
 
 /**
  * Process the intersection between an existing piece and a new polygon.
- * 
+ *
  * @param piece - The existing piece
  * @param remaining - The remaining geometry of the new polygon
  * @param candidate - The candidate graphic being processed
@@ -537,7 +527,7 @@ type Group = {
 
 /**
  * Group pieces by their layer set.
- * 
+ *
  * @param pieces - Array of pieces to group
  * @returns Map of layer key to group
  */
@@ -568,7 +558,7 @@ function groupPiecesByLayerSet(pieces: Piece[]): Map<string, Group> {
 
 /**
  * Build final merged graphics from groups.
- * 
+ *
  * @param groups - Map of layer key to group
  * @param symbolForCombo - Optional symbol factory
  * @returns Array of merged graphics
@@ -608,7 +598,7 @@ function buildMergedGraphicsFromGroups(
 
 /**
  * Get symbol for a group, using custom factory or default.
- * 
+ *
  * @param key - The combo key
  * @param group - The group data
  * @param symbolForCombo - Optional symbol factory
@@ -638,7 +628,7 @@ function getSymbolForGroup(
 
 /**
  * Build a stable key from all layerIds contributing to a piece.
- * 
+ *
  * @param members - Array of graphics contributing to a piece
  * @returns Object containing the key, layer IDs, and titles
  */
@@ -678,7 +668,7 @@ function getLayerKeyFromMembers(members: Graphic[]): {
 /**
  * Build attributes for a merged polygon representing the union
  * of all regions that share the same layer set.
- * 
+ *
  * @param members - Array of graphics that contribute to the merged polygon
  * @returns Attributes object with merged layer information
  */
@@ -730,7 +720,7 @@ function buildMergedAttributes(members: Graphic[]): Record<string, unknown> {
 
 /**
  * Check if two extents intersect using simple numeric comparison.
- * 
+ *
  * @param a - First extent to check
  * @param b - Second extent to check
  * @returns True if extents intersect, false otherwise
@@ -741,7 +731,7 @@ function extentsIntersect(a: Extent, b: Extent): boolean {
 
 /**
  * Generate stable RGBA color from a string ID.
- * 
+ *
  * @param id - String ID to generate color from
  * @param alpha - Alpha transparency value (default 0.3)
  * @returns RGBA color array
