@@ -112,8 +112,8 @@ export class AreaSelectionInteractionStore {
 			return;
 		}
 
-		const selected = this.areaSelectionStore.selectedAreaIds; 
-		const handles = this.selectionViewState.areaHandles; 
+		const selected = this.areaSelectionStore.selectedAreaIds;
+		const handles = this.selectionViewState.areaHandles;
 
 		for (const id of handles.keys()) {
 			if (!selected.has(id)) {

@@ -77,7 +77,23 @@ export class MapInteractionStore {
 			}
 
 			const { results } = await view.hitTest(event);
-			const result = results[0];
+			const result = results.find((result) => {
+				if (!result) {
+					return false;
+				}
+				const graphic = (result as __esri.GraphicHit)?.graphic;
+				if (!graphic) {
+					return false;
+				}
+				const layer = graphic?.layer as __esri.FeatureLayer;
+				if (!layer) {
+					return false;
+				}
+				return (
+					this.isLayerInteractable(layer.title as string) &&
+					graphic.attributes?.[layer.objectIdField] !== undefined
+				);
+			});
 
 			if (!result) {
 				this.clearHoverHighlight();

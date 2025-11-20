@@ -8,8 +8,10 @@
 	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 	import GroupLayer from '@arcgis/core/layers/GroupLayer.js';
 	import { mergeClippedPolygons } from '$lib/tools/map/merge-clipped-polygons';
+	import { queryPolygonFieldValue } from '$lib/tools/map/query-polygon-field-value';
 	import Graphic from '@arcgis/core/Graphic.js';
 	import { List, Map, Brain } from '@lucide/svelte';
+	import AnalysisTab from '$lib/components/common/usecases/analysis-tab.svelte';
 
 	let mapElement: HTMLArcgisMapElement | null = $state(null);
 	let arcgisLayerListComponent: HTMLArcgisLayerListElement | null = $state(null);
@@ -66,176 +68,7 @@
 			return;
 		}
 
-		const clippedLayer = new GraphicsLayer({
-			title: 'Clipped polygons',
-			listMode: 'show' // so it appears in LayerList if you use one
-		});
-
-		// 1. Create a highlight layer
-		const highlightLayer = new GraphicsLayer({ listMode: 'hide' });
-		mapView.map.add(highlightLayer);
-
-		// 2. Click handler
-		mapView.on('click', async (event) => {
-			if (!mapView) {
-				return;
-			}
-
-			const hit = await mapView.hitTest(event);
-
-			// Only care about polygons from your clippedLayer
-			const result = hit.results.find((r) => r.layer === clippedLayer);
-			if (!result) {
-				highlightLayer.removeAll();
-				return;
-			}
-
-			const g = (result as __esri.GraphicHit).graphic;
-
-			// 3. Update highlight
-			highlightLayer.removeAll();
-			highlightLayer.add(
-				new Graphic({
-					geometry: g.geometry,
-					symbol: {
-						type: 'simple-fill',
-						color: [0, 0, 0, 0], // transparent fill
-						outline: {
-							type: 'simple-line',
-							color: [255, 255, 0, 1], // yellow outline
-							width: 3
-						}
-					}
-				})
-			);
-
-			// 4. Open popup with the clicked graphic
-			mapView.popup?.open({
-				features: [g],
-				location: event.mapPoint
-			});
-		});
 		await mapView.when();
-
-		mapView.map.add(clippedLayer);
-
-		function flattenedLayers(layers: __esri.Layer[]): __esri.Layer[] {
-			const result: __esri.Layer[] = [];
-			for (const layer of layers) {
-				if (layer instanceof GroupLayer) {
-					result.push(...flattenedLayers((layer as __esri.GroupLayer).layers.toArray()));
-				} else if (layer instanceof FeatureLayer) {
-					result.push(layer);
-				}
-			}
-
-			return result;
-		}
-
-		function colorFromId(id: string, alpha = 0.3) {
-			// Simple string hash
-			let hash = 0;
-			for (let i = 0; i < id.length; i++) {
-				hash = id.charCodeAt(i) + ((hash << 5) - hash);
-			}
-
-			// Use hash bits to build RGB values
-			const r = (hash >> 0) & 0xff;
-			const g = (hash >> 8) & 0xff;
-			const b = (hash >> 16) & 0xff;
-
-			return [r, g, b, alpha];
-		}
-
-		const parcelsLayer = mapView.map.findLayerById('19a9760b651-layer-105') as __esri.FeatureLayer;
-		console.log('Parcels Layer:', parcelsLayer.title);
-
-		for (const layer of flattenedLayers(mapView.map.layers.toArray())) {
-			if (!(layer instanceof FeatureLayer)) {
-				console.log(`Skipping non-feature layer: ${layer.title}, type: ${layer.type}`);
-				continue;
-			}
-
-			if (layer.id === parcelsLayer.id) {
-				console.log(`Skipping parcels layer itself: ${layer.title}`);
-				continue;
-			}
-
-			const polygon = await clipPolygon({
-				view: mapView,
-				inputLayer: parcelsLayer,
-				polygonId: 4130,
-				idField: 'OBJECTID',
-				clipLayer: layer,
-				targetLayer: clippedLayer
-			});
-
-			if (!polygon) {
-				console.log(`No polygon clipped for layer: ${layer.title}`);
-				continue;
-			}
-
-			polygon.attributes ??= {};
-			// keep a single title for this polygon
-			polygon.attributes.layerTitle = layer.title;
-			polygon.attributes.layerId = layer.id;
-			// also a list (will be useful when merging)
-			polygon.attributes.layerTitles = [layer.title];
-
-			const id = layer.id;
-			polygon.symbol = {
-				type: 'simple-fill',
-				color: colorFromId(id, 0.3),
-				outline: {
-					color: [255, 0, 0, 1],
-					width: 2
-				}
-			};
-
-			console.log('Clipped Polygon:', polygon);
-		}
-
-		console.log('Merging clipped polygons in layer:', clippedLayer.id);
-		const mergedPolygons = mergeClippedPolygons(clippedLayer);
-		for (const graphic of mergedPolygons) {
-			const key = graphic.attributes.layerTitles.join('; ');
-			graphic.symbol = {
-				type: 'simple-fill',
-				color: colorFromId(key, 0.3),
-				outline: {
-					color: [0, 0, 0, 1],
-					width: 1
-				}
-			};
-
-			graphic.popupTemplate = {
-				title: 'Clipped region',
-				content: [
-					{
-						type: 'custom',
-						creator: (event: __esri.PopupTemplateCreatorEvent) => {
-							const graphic = event.graphic;
-							const titles: string[] = graphic.attributes.layerTitles ?? [];
-
-							const table = document.createElement('table');
-							table.className = 'esri-widget__table';
-
-							const tbody = document.createElement('tbody');
-							titles.forEach((t) => {
-								const tr = document.createElement('tr');
-								const td = document.createElement('td');
-								td.textContent = t;
-								tr.appendChild(td);
-								tbody.appendChild(tr);
-							});
-
-							table.appendChild(tbody);
-							return table;
-						}
-					}
-				]
-			};
-		}
 	}
 
 	function onToggleInnerSidebarItem(id: string, isActive: boolean) {
@@ -257,6 +90,11 @@
 				<div class="basemap-container" hidden={activeWidget !== 'basemap'}>
 					<arcgis-basemap-gallery class="basemap-gallery" view={mapView}></arcgis-basemap-gallery>
 				</div>
+				{#if mapView}
+					<div hidden={activeWidget !== 'analysis'}>
+						<AnalysisTab {mapView} />
+					</div>
+				{/if}
 			</SidebarLayout.Content>
 		{/snippet}
 

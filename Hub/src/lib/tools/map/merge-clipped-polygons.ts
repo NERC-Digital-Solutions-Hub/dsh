@@ -319,8 +319,10 @@ function buildMergedAttributes(members: Graphic[]): Record<string, unknown> {
 
 	const sampleAttrs = members[0].attributes ?? {};
 
+	// Copy base attributes from first member
 	Object.assign(result, sampleAttrs);
 
+	// Preserve some known flags
 	if ('sourceId' in sampleAttrs) {
 		result.sourceId = sampleAttrs.sourceId;
 	}
@@ -328,37 +330,79 @@ function buildMergedAttributes(members: Graphic[]): Record<string, unknown> {
 		result.clipped = sampleAttrs.clipped;
 	}
 
-	const idSet = new Set<string>();
-	const titleSet = new Set<string>();
+	// Map layerId -> { titles: Set<string>, values: Set<string> }
+	const byLayerId = new Map<string, { titles: Set<string>; values: Set<string> }>();
+
+	const addLayerData = (layerId: string, title?: string, values?: string[]) => {
+		if (!layerId) return;
+		let entry = byLayerId.get(layerId);
+		if (!entry) {
+			entry = { titles: new Set<string>(), values: new Set<string>() };
+			byLayerId.set(layerId, entry);
+		}
+		if (title) entry.titles.add(title);
+		if (Array.isArray(values)) {
+			values.forEach((v) => {
+				if (v != null) entry.values.add(String(v));
+			});
+		}
+	};
 
 	for (const g of members) {
 		const attrs = g.attributes ?? {};
-		const id = attrs.layerId as string | undefined;
-		const idArr = attrs.layerIds as string[] | undefined;
-		const lt = attrs.layerTitle as string | undefined;
-		const ltArr = attrs.layerTitles as string[] | undefined;
 
-		if (id) idSet.add(id);
-		if (Array.isArray(idArr)) {
-			idArr.forEach((v) => {
-				if (v) idSet.add(v);
-			});
+		// single-layer info
+		const id = attrs.layerId as string | undefined;
+		const title = attrs.layerTitle as string | undefined;
+		const valArr = attrs.layerValues as string[] | undefined;
+		const singleVal = attrs.value != null ? String(attrs.value) : undefined;
+
+		// multi-layer info (if you’ve already merged before)
+		const idArr = attrs.layerIds as string[] | undefined;
+		const titleArr = attrs.layerTitles as string[] | undefined;
+
+		// prefer explicit array of values; fall back to single value
+		const valuesForThisGraphic: string[] | undefined =
+			Array.isArray(valArr) && valArr.length ? valArr : singleVal ? [singleVal] : undefined;
+
+		// 1) simple case: graphic represents one layer
+		if (id) {
+			addLayerData(id, title, valuesForThisGraphic);
 		}
 
-		if (lt) titleSet.add(lt);
-		if (Array.isArray(ltArr)) {
-			ltArr.forEach((t) => {
-				if (t) titleSet.add(t);
-			});
+		// 2) if graphic already has aggregated layerIds/layerTitles,
+		//    also feed those into the map (no strong link to values though)
+		if (Array.isArray(idArr)) {
+			for (let i = 0; i < idArr.length; i++) {
+				const lid = idArr[i];
+				const ltitle = Array.isArray(titleArr) ? titleArr[i] : undefined;
+				// in this path we don't have per-layer values, just reuse valuesForThisGraphic if you want
+				addLayerData(lid, ltitle, valuesForThisGraphic);
+			}
 		}
 	}
 
-	const ids = Array.from(idSet).sort();
-	const titles = Array.from(titleSet).sort();
+	// Build aligned arrays from the map
+	const layerIds: string[] = [];
+	const layerTitles: string[] = [];
+	const layerValues: string[] = [];
 
-	result.layerIds = ids;
-	result.layerTitles = titles;
-	result.layerTitlesCsv = titles.join(', ');
+	const sortedLayerIds = Array.from(byLayerId.keys()).sort(); // stable order
+
+	for (const layerId of sortedLayerIds) {
+		const entry = byLayerId.get(layerId)!;
+		const titles = Array.from(entry.titles).sort();
+		const values = Array.from(entry.values);
+
+		layerIds.push(layerId);
+		layerTitles.push(titles.join(' / ')); // if somehow multiple titles
+		layerValues.push(values.join(', ')); // all values for that layer
+	}
+
+	result.layerIds = layerIds;
+	result.layerTitles = layerTitles;
+	result.layerValues = layerValues;
+	result.layerTitlesCsv = layerTitles.join(', ');
 
 	return result;
 }

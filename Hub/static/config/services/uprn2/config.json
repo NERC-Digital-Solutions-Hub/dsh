@@ -15,8 +15,9 @@
         "fetchDownloadRoute": "/fetch-download"
     },
     "aiUprnChatbotServiceEndpoints": {
-        "baseUrl": "https://172.166.133.156/uprn-chatbot",
-        "healthRoute": "/healthz",
+        "baseUrl": "http://127.0.0.1:4004",
+        "+baseUrl": "https://172.166.133.156/uprn-chatbot",
+        "healthRoute": "/health",
         "chatRoute": "/chat",
         "chatStreamRoute": "/chat_stream"
     },
