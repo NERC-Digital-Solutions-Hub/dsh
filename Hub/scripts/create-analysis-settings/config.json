@@ -1,0 +1,13 @@
+[
+    {
+        "__name": "OS Open Greenspace",
+        "itemId": "a209840a5b0a4d1face0e711bb5df6d0",
+        "type": "enum",
+        "fieldName": "function_"
+    },
+    {
+        "__name": "Rail Stations England Wales",
+        "itemId": "363cf24f61ed4ffa981862e5d2aee8ba",
+        "type": "weight"
+    }
+]

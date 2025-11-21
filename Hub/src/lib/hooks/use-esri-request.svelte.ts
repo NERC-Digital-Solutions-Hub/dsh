@@ -15,6 +15,7 @@ export default class UseEsriRequest {
 		this.#error = null;
 
 		try {
+			console.log('Esri Request URL:', url, options);
 			const response = await esriRequest(url, { ...options, responseType: 'json' });
 			console.log('Esri Request Response:', response, response.data.url);
 			this.#data = response.data;

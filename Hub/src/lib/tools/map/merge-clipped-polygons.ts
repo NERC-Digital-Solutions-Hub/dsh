@@ -276,32 +276,58 @@ function getLayerKeyFromMembers(members: Graphic[]): {
 } {
 	const idSet = new Set<string>();
 	const titleSet = new Set<string>();
+	const comboTokens = new Set<string>();
 
-	for (const g of members) {
-		const attrs = g.attributes ?? {};
+	for (const graphic of members) {
+		const attrs = graphic.attributes ?? {};
 		const id = attrs.layerId as string | undefined;
+		const title = attrs.layerTitle as string | undefined;
 		const idArr = attrs.layerIds as string[] | undefined;
-		const lt = attrs.layerTitle as string | undefined;
-		const ltArr = attrs.layerTitles as string[] | undefined;
+		const titleArr = attrs.layerTitles as string[] | undefined;
+		const singleVal = attrs.value != null ? String(attrs.value) : undefined;
+		const valArr = attrs.layerValues as string[] | undefined;
+		const bufferDistance = attrs.bufferDistance as number | undefined;
+		const bufferUnit = attrs.bufferUnit as string | undefined;
+		const bufferSuffix =
+			bufferDistance != null && !Number.isNaN(bufferDistance)
+				? `|buffer:${bufferDistance}:${bufferUnit ?? 'sr'}`
+				: '';
 
-		if (id) idSet.add(id);
-		if (Array.isArray(idArr)) {
-			idArr.forEach((v) => {
-				if (v) idSet.add(v);
-			});
+		const addToken = (layerId: string, value: string) => {
+			comboTokens.add(`${layerId}:${value}${bufferSuffix}`);
+		};
+
+		if (id) {
+			idSet.add(id);
+			if (title) titleSet.add(title);
+
+			const valuesForThisLayer: string[] =
+				Array.isArray(valArr) && valArr.length ? valArr : singleVal ? [singleVal] : ['__NOVALUE__'];
+
+			for (const v of valuesForThisLayer) {
+				addToken(id, v);
+			}
 		}
 
-		if (lt) titleSet.add(lt);
-		if (Array.isArray(ltArr)) {
-			ltArr.forEach((t) => {
-				if (t) titleSet.add(t);
-			});
+		if (Array.isArray(idArr)) {
+			for (let i = 0; i < idArr.length; i++) {
+				const lid = idArr[i];
+				if (!lid) continue;
+
+				idSet.add(lid);
+
+				const ltitle = titleArr?.[i];
+				if (ltitle) titleSet.add(ltitle);
+
+				const v = valArr?.[i] ?? singleVal ?? '__NOVALUE__';
+				addToken(lid, v);
+			}
 		}
 	}
 
 	const ids = Array.from(idSet).sort();
 	const titles = Array.from(titleSet).sort();
-	const key = ids.join('|'); // stable combo id for colours
+	const key = Array.from(comboTokens).sort().join('|');
 
 	return { key, ids, titles };
 }
@@ -322,7 +348,6 @@ function buildMergedAttributes(members: Graphic[]): Record<string, unknown> {
 	// Copy base attributes from first member
 	Object.assign(result, sampleAttrs);
 
-	// Preserve some known flags
 	if ('sourceId' in sampleAttrs) {
 		result.sourceId = sampleAttrs.sourceId;
 	}
@@ -330,14 +355,52 @@ function buildMergedAttributes(members: Graphic[]): Record<string, unknown> {
 		result.clipped = sampleAttrs.clipped;
 	}
 
-	// Map layerId -> { titles: Set<string>, values: Set<string> }
-	const byLayerId = new Map<string, { titles: Set<string>; values: Set<string> }>();
+	// ---------- RAW PER-MEMBER TITLES + WEIGHTS ----------
+	const memberLayerTitles: string[] = [];
+	const memberLayerWeights: number[] = [];
 
-	const addLayerData = (layerId: string, title?: string, values?: string[]) => {
+	// ---- buffer aggregation (unchanged) ----
+	type BufferInfo = {
+		distance?: number;
+		unit?: string;
+		weight?: number;
+	};
+
+	const bufferMap = new Map<string, BufferInfo>();
+
+	const addBufferInfo = (attrs: Record<string, unknown>) => {
+		const distance = attrs.bufferDistance as number | undefined;
+		const unit = attrs.bufferUnit as string | undefined;
+		const weight = attrs.weight as number | undefined;
+
+		if (distance == null && unit == null && weight == null) return;
+
+		const key = `${distance ?? ''}|${unit ?? ''}|${weight ?? ''}`;
+		if (!bufferMap.has(key)) {
+			bufferMap.set(key, { distance, unit, weight });
+		}
+	};
+
+	// ---- Map layerId -> { titles, values, weights[] } (grouped view) ----
+	const byLayerId = new Map<
+		string,
+		{ titles: Set<string>; values: Set<string>; weights: number[] }
+	>();
+
+	const addLayerData = (
+		layerId: string,
+		title?: string,
+		values?: string[],
+		weight?: number
+	) => {
 		if (!layerId) return;
 		let entry = byLayerId.get(layerId);
 		if (!entry) {
-			entry = { titles: new Set<string>(), values: new Set<string>() };
+			entry = {
+				titles: new Set<string>(),
+				values: new Set<string>(),
+				weights: []
+			};
 			byLayerId.set(layerId, entry);
 		}
 		if (title) entry.titles.add(title);
@@ -346,10 +409,27 @@ function buildMergedAttributes(members: Graphic[]): Record<string, unknown> {
 				if (v != null) entry.values.add(String(v));
 			});
 		}
+		if (typeof weight === 'number' && !Number.isNaN(weight)) {
+			entry.weights.push(weight);
+		}
 	};
 
 	for (const g of members) {
 		const attrs = g.attributes ?? {};
+
+		// per-graphic weight
+		const memberWeight =
+			typeof attrs.weight === 'number' ? (attrs.weight as number) : undefined;
+		const memberTitle = attrs.layerTitle as string | undefined;
+
+		// ---------- RAW ARRAY: one entry per original graphic ----------
+		if (memberTitle && typeof memberWeight === 'number' && !Number.isNaN(memberWeight)) {
+			memberLayerTitles.push(memberTitle);
+			memberLayerWeights.push(memberWeight);
+		}
+
+		// collect buffer info
+		addBufferInfo(attrs);
 
 		// single-layer info
 		const id = attrs.layerId as string | undefined;
@@ -357,37 +437,35 @@ function buildMergedAttributes(members: Graphic[]): Record<string, unknown> {
 		const valArr = attrs.layerValues as string[] | undefined;
 		const singleVal = attrs.value != null ? String(attrs.value) : undefined;
 
-		// multi-layer info (if you’ve already merged before)
+		// multi-layer info (if already aggregated)
 		const idArr = attrs.layerIds as string[] | undefined;
 		const titleArr = attrs.layerTitles as string[] | undefined;
 
-		// prefer explicit array of values; fall back to single value
 		const valuesForThisGraphic: string[] | undefined =
 			Array.isArray(valArr) && valArr.length ? valArr : singleVal ? [singleVal] : undefined;
 
-		// 1) simple case: graphic represents one layer
+		// 1) simple case: one layer per graphic
 		if (id) {
-			addLayerData(id, title, valuesForThisGraphic);
+			addLayerData(id, title, valuesForThisGraphic, memberWeight);
 		}
 
-		// 2) if graphic already has aggregated layerIds/layerTitles,
-		//    also feed those into the map (no strong link to values though)
+		// 2) aggregated case: many layerIds / titles attached to this graphic
 		if (Array.isArray(idArr)) {
 			for (let i = 0; i < idArr.length; i++) {
 				const lid = idArr[i];
 				const ltitle = Array.isArray(titleArr) ? titleArr[i] : undefined;
-				// in this path we don't have per-layer values, just reuse valuesForThisGraphic if you want
-				addLayerData(lid, ltitle, valuesForThisGraphic);
+				addLayerData(lid, ltitle, valuesForThisGraphic, memberWeight);
 			}
 		}
 	}
 
-	// Build aligned arrays from the map
+	// ---------- Build grouped layer view (unchanged idea) ----------
 	const layerIds: string[] = [];
 	const layerTitles: string[] = [];
 	const layerValues: string[] = [];
+	const layerWeightsGrouped: number[] = []; // e.g. sums or mins per layer
 
-	const sortedLayerIds = Array.from(byLayerId.keys()).sort(); // stable order
+	const sortedLayerIds = Array.from(byLayerId.keys()).sort();
 
 	for (const layerId of sortedLayerIds) {
 		const entry = byLayerId.get(layerId)!;
@@ -395,17 +473,50 @@ function buildMergedAttributes(members: Graphic[]): Record<string, unknown> {
 		const values = Array.from(entry.values);
 
 		layerIds.push(layerId);
-		layerTitles.push(titles.join(' / ')); // if somehow multiple titles
-		layerValues.push(values.join(', ')); // all values for that layer
+		layerTitles.push(titles.join(' / '));
+		layerValues.push(values.join(', '));
+
+		// choose how you want to aggregate per layer; here: min
+		const w =
+			entry.weights.length > 0 ? Math.min(...entry.weights) : 0;
+		layerWeightsGrouped.push(w);
 	}
 
+	// grouped, per-layer view
 	result.layerIds = layerIds;
 	result.layerTitles = layerTitles;
 	result.layerValues = layerValues;
+	result.layerWeights = layerWeightsGrouped;
 	result.layerTitlesCsv = layerTitles.join(', ');
+
+	// raw, per-member view (what you asked for)
+	result.memberLayerTitles = memberLayerTitles;
+	result.memberLayerWeights = memberLayerWeights;
+
+	// aggregated buffer info
+	if (bufferMap.size) {
+		const bufferInfos = Array.from(bufferMap.values());
+		result.bufferInfos = bufferInfos;
+		result.hasBuffer = true;
+
+		if (bufferInfos.length === 1) {
+			const info = bufferInfos[0];
+			if (info.distance != null) result.bufferDistance = info.distance;
+			if (info.unit != null) result.bufferUnit = info.unit;
+			if (info.weight != null) result.weight = info.weight;
+		}
+	} else {
+		delete result.bufferDistance;
+		delete result.bufferUnit;
+		delete result.weight;
+		delete result.bufferInfos;
+		delete result.hasBuffer;
+	}
 
 	return result;
 }
+
+
 
 /**
  * Check if two extents intersect using simple numeric comparison.
