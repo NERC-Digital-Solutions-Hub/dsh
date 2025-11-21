@@ -11,6 +11,7 @@ import {
 	NumericFieldLayerAnalysisSettings,
 	WeightedLayerAnalysisSettings
 } from '$lib/models/apps/ai-where-to-build/layer-analysis-settings';
+import { base } from '$app/paths';
 
 type RawEnumSettings = {
 	__name: string;
@@ -42,7 +43,7 @@ export async function getAiWhereToBuildConfig(): Promise<AiWhereToBuildConfig> {
 		return data;
 	}
 
-	const response = await fetch('/config/services/ai-where-to-build/config.json');
+	const response = await fetch(`${base}/config/services/ai-where-to-build/config.json`);
 	const config = await response.json();
 
 	const layers: LayerAnalysisSettings[] = config.analysisSettings.map((raw: RawLayerSettings) =>
