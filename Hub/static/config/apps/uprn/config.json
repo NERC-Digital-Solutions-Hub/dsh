@@ -1,6 +1,6 @@
 {
     "uprnDownloadServiceEndpoints": {
-        "baseUrl": "http://127.0.0.1:3000",
+        "baseUrl": "https://dshapitest.xyz/uprn-download",
         "healthRoute": "/healthz",
         "requestJobRoute": "/request-job",
         "requestJobStatusesRoute": "/request-job-statuses",
