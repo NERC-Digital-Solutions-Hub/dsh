@@ -1,6 +1,6 @@
 {
     "uprnDownloadServiceEndpoints": {
-        "baseUrl": "https://dshapitest.xyz/uprn-download",
+        "baseUrl": "http://127.0.0.1:3000",
         "healthRoute": "/healthz",
         "requestJobRoute": "/request-job",
         "requestJobStatusesRoute": "/request-job-statuses",
@@ -9,7 +9,8 @@
     },
     "aiUprnChatbotServiceEndpoints": {
         "baseUrl": "https://dshapitest.xyz/uprn-chatbot",
-        "healthRoute": "/health",
+        "+baseUrl": "https://172.166.133.156/uprn-chatbot",
+        "healthRoute": "/healthz",
         "chatRoute": "/chat",
         "chatStreamRoute": "/chat_stream"
     },
