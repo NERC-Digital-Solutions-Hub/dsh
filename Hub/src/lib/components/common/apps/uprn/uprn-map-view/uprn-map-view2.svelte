@@ -180,15 +180,19 @@
 
 	// Effect to update interactable layers when they change
 	$effect(() => {
-		if (!mapView || mapInteractionStore) {
+		if (!mapView) {
 			return;
 		}
 
-		mapInteractionStore = new MapInteractionStore(
-			mapView,
-			areaSelectionInteractionStore,
-			interactableLayers
-		);
+		if (mapInteractionStore) {
+			mapInteractionStore.updateInteractableLayers(interactableLayers);
+		} else {
+			mapInteractionStore = new MapInteractionStore(
+				mapView,
+				areaSelectionInteractionStore,
+				interactableLayers
+			);
+		}
 	});
 
 	/**
@@ -196,6 +200,9 @@
 	 * Destroys the map view and cleans up any associated event listeners.
 	 */
 	function cleanup() {
+		if (mapInteractionStore) {
+			mapInteractionStore.cleanup();
+		}
 		if (mapView) {
 			mapView.destroy();
 		}

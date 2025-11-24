@@ -133,7 +133,6 @@ export class TreeviewStore {
 	}
 
 	clearSelections(): void {
-		this.#checkInitialized();
 		for (const nodeId of this.#visibilityStates.keys()) {
 			this.#visibilityStates.set(nodeId, false);
 			const node = this.#treeNodesLookup.get(nodeId);

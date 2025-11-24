@@ -9,7 +9,7 @@
 	import XCircleIcon from 'lucide-svelte/icons/x-circle';
 	import { toast } from 'svelte-sonner';
 	import { page } from '$app/stores';
-	import type { UprnDownloadService } from '$lib/apps/uprn-download-service';
+	import type { UprnDownloadService } from '$lib/services/uprn-download-service';
 	import type { WebMapStore } from '$lib/stores/apps/uprn/web-map-store.svelte';
 	import {
 		DownloadStatus,
@@ -94,6 +94,8 @@
 					await uprnDownloadService.requestJob(request);
 				if (!response || response.type === JobRequestResponseType.Error) {
 					console.error('[downloads-menu] Failed to submit download request.', response);
+					download.status = DownloadStatus.Failed;
+					downloadsStore.updateDownloadStatus(download);
 					continue;
 				}
 
@@ -114,10 +116,20 @@
 
 		const request: UprnDownloadGetJobStatusesRequest = {
 			jobs: downloads
-				.filter((download) => download.externalId)
+				.filter(
+					(download) =>
+						download.externalId &&
+						download.status !== DownloadStatus.Completed &&
+						download.status !== DownloadStatus.Failed
+				)
 				.map((download) => download.externalId!)
 		};
 
+		if (request.jobs.length === 0) {
+			return;
+		}
+
+		console.log('[downloads-menu] Checking job statuses for downloads:', request);
 		const response: UprnDownloadGetJobStatusesResponse | undefined =
 			(await uprnDownloadService.requestJobStatuses(request)) as
 				| UprnDownloadGetJobStatusesResponse

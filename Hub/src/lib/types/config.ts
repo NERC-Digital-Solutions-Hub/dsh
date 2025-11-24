@@ -1,11 +1,9 @@
-import type { AreaSelectionFieldInfo } from '$lib/stores/apps/uprn/area-selection-store.svelte';
 import type { TreeviewConfig } from '$lib/types/treeview';
 import type { AiUprnChatbotEndpoints, UprnDownloadEndpoints } from '$lib/types/uprn';
 
 export type AppConfig = {
 	catalogueConfig: CatalogueConfig;
-	serviceUprnConfig: ServiceUprnConfig;
-	serviceUprn2Config: ServiceUprn2Config;
+	appsUprnConfig: AppsUprnConfig;
 };
 
 export type ContentConfig = {
@@ -28,26 +26,21 @@ export type CatalogueConfig = {
 	catalogueApiUrl: string;
 };
 
-export type ServiceUprnConfig = {
-	portalUrl?: string | null;
-	portalItemId: string;
-	proxy?: Proxy | null;
-	dataSelectionTreeviewConfig?: TreeviewConfig;
-	areaSelectionTreeviewConfig?: TreeviewConfig;
-	selectionLayersNameFields?: AreaSelectionFieldInfo[];
-	fieldsToHide?: string[];
-};
-
-export type ServiceUprn2Config = {
-	portalUrl?: string | null;
-	portalItemId: string;
-	proxy?: Proxy | null;
+export type AppsUprnConfig = {
 	uprnDownloadServiceEndpoints: UprnDownloadEndpoints;
 	aiUprnChatbotServiceEndpoints: AiUprnChatbotEndpoints;
 	mainSidebarSizes?: SizeConfig[];
-	dataSelectionTreeviewConfig?: TreeviewConfig;
-	areaSelectionTreeviewConfig?: TreeviewConfig;
-	selectionLayersNameFields?: AreaSelectionFieldInfo[];
+	maps: PortalItemConfig[];
+};
+
+export type PortalItemConfig = {
+	title: string;
+	portalUrl?: string | null;
+	portalItemId: string;
+	proxy?: Proxy | null;
+	areaTreeview?: TreeviewConfig;
+	dataTreeview?: TreeviewConfig;
+	selectableLayers?: { layerName: string; nameField: string; codeField: string }[];
 };
 
 export type Proxy = {

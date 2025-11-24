@@ -20,7 +20,7 @@
 	import FieldFilterMenuStore from '$lib/stores/apps/uprn/field-filter-menu-store.svelte';
 	import { TreeviewConfigStore } from '$lib/stores/apps/uprn/treeview-config-store';
 	import { WebMapStore } from '$lib/stores/apps/uprn/web-map-store.svelte';
-	import type { AppConfig, SizeConfig } from '$lib/types/config';
+	import type { AppConfig, PortalItemConfig, SizeConfig } from '$lib/types/config';
 	import type { TreeviewConfig } from '$lib/types/treeview.js';
 	import { getAppConfigAsync } from '$lib/utils/app-config-provider.js';
 	import { onDestroy, onMount } from 'svelte';
@@ -35,6 +35,9 @@
 	import { base } from '$app/paths';
 	import { LayerViewProvider } from '$lib/services/layer-view-provider';
 	import { SelectionTrackingStore } from '$lib/stores/apps/uprn/selection-tracking-store.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import { Settings } from '@lucide/svelte';
+	import SelectMapDialog from '$lib/components/common/apps/uprn/select-map-dialog/select-map-dialog.svelte';
 
 	let areaSelectionTreeview: DataSelectionTreeview | undefined = undefined;
 	let dataSelectionTreeview: DataSelectionTreeview | undefined = undefined;
@@ -42,6 +45,11 @@
 
 	const webMapStore: WebMapStore = $state(new WebMapStore());
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
+
+	// Maps state management
+	let maps: PortalItemConfig[] = $state([]);
+	let currentMapIndex: number = $state(0);
+	let currentMap = $derived(maps[currentMapIndex]);
 
 	let currentTab: string = $state('define-areas');
 	let dataSelectionStore: DataSelectionStore = $state(new DataSelectionStore());
@@ -131,7 +139,24 @@
 		currentTab = 'downloads';
 	}
 
+	function setMapIndex(index: number) {
+		if (index < 0 || index >= maps.length) {
+			console.warn(`[uprn-2/page] Invalid map index: ${index}`);
+			return;
+		}
+
+		clearAllSelections();
+		currentTab = 'define-areas';
+
+		// Reset webmap store to force reload
+		webMapStore.data = null;
+		webMapStore.isLoaded = false;
+
+		currentMapIndex = index;
+	}
+
 	function clearAllSelections() {
+		console.log('[uprn-2/page] Clearing all selections');
 		areaSelectionStore.clearSelectedAreas();
 		dataSelectionStore.clearSelections();
 		areaSelectionTreeview?.clearSelections();
@@ -149,9 +174,16 @@
 
 		const appConfig: AppConfig = await getAppConfigAsync();
 
+		// Initialize maps from configuration
+		maps = appConfig.appsUprnConfig.maps || [];
+		if (maps.length === 0) {
+			console.error('[uprn-2/page] No map configuration found in appConfig');
+			return;
+		}
+
 		await selectionTrackingStore.loadSelections();
 
-		const [{ default: MapView }] = await Promise.all([import('@arcgis/core/views/MapView')]);
+		const { default: MapView } = await import('@arcgis/core/views/MapView');
 		mapView = new MapView();
 
 		areaSelectionInteractionStore = new AreaSelectionInteractionStore(
@@ -159,27 +191,13 @@
 			new LayerViewProvider(mapView)
 		);
 
-		selectionLayers = new Set(
-			(appConfig.serviceUprn2Config.selectionLayersNameFields || []).map((s) => s.layerName)
-		);
-		areaSelectionInteractionStore.setFieldInfos(
-			appConfig.serviceUprn2Config.selectionLayersNameFields || []
-		);
-		mainSidebarSizes = appConfig.serviceUprn2Config.mainSidebarSizes || [];
-
-		dataSelectionTreeviewConfig = new TreeviewConfigStore(
-			appConfig.serviceUprn2Config.dataSelectionTreeviewConfig as TreeviewConfig
-		);
-
-		areaSelectionTreeviewConfig = new TreeviewConfigStore(
-			appConfig.serviceUprn2Config.areaSelectionTreeviewConfig as TreeviewConfig
-		);
+		mainSidebarSizes = appConfig.appsUprnConfig.mainSidebarSizes || [];
 
 		const initServices = async () => {
 			const uprnDownloadServiceEndpoints: UprnDownloadEndpoints | undefined =
-				appConfig.serviceUprn2Config.uprnDownloadServiceEndpoints;
+				appConfig.appsUprnConfig.uprnDownloadServiceEndpoints;
 			const aiUprnChatbotServiceEndpoints: AiUprnChatbotEndpoints | undefined =
-				appConfig.serviceUprn2Config.aiUprnChatbotServiceEndpoints;
+				appConfig.appsUprnConfig.aiUprnChatbotServiceEndpoints;
 			uprnDownloadService = new UprnDownloadService(uprnDownloadServiceEndpoints);
 			aiUprnChatbotService = new AiUprnChatbotService(aiUprnChatbotServiceEndpoints);
 
@@ -195,15 +213,39 @@
 		};
 
 		initServices(); // Do not await to avoid blocking UI
+	});
 
-		fieldsToHide = new Set(
-			appConfig.serviceUprn2Config.dataSelectionTreeviewConfig?.fieldsToHide || []
+	/**
+	 * Effect to reinitialize map-dependent components when currentMapIndex changes.
+	 * This allows for easy switching between different map configurations.
+	 */
+	$effect(() => {
+		if (!currentMap || !mapView || !areaSelectionInteractionStore) {
+			return;
+		}
+
+		console.log(`[uprn-2/page] Loading map ${currentMapIndex + 1} of ${maps.length}`);
+
+		// Update selection layers and field infos
+		selectionLayers = new Set((currentMap.selectableLayers || []).map((s) => s.layerName));
+		areaSelectionInteractionStore.setFieldInfos(currentMap.selectableLayers || []);
+
+		// Update treeview configurations
+		dataSelectionTreeviewConfig = new TreeviewConfigStore(
+			currentMap.dataTreeview as TreeviewConfig
+		);
+		areaSelectionTreeviewConfig = new TreeviewConfigStore(
+			currentMap.areaTreeview as TreeviewConfig
 		);
 
-		await webMapStore.initializeAsync({
-			portalUrl: appConfig.serviceUprn2Config.portalUrl,
-			itemId: appConfig.serviceUprn2Config.portalItemId || '',
-			proxy: appConfig.serviceUprn2Config.proxy
+		// Update fields to hide
+		fieldsToHide = new Set(currentMap.dataTreeview?.fieldsToHide || []);
+
+		// Initialize the web map with new configuration
+		webMapStore.initializeAsync({
+			portalUrl: currentMap.portalUrl,
+			itemId: currentMap.portalItemId || '',
+			proxy: currentMap.proxy
 		});
 	});
 
@@ -243,6 +285,12 @@
 >
 	{#snippet sidebarContent()}
 		<div class="relative flex h-full w-full min-w-0 flex-col overflow-visible">
+			<SelectMapDialog
+				{maps}
+				onSelectMap={setMapIndex}
+				buttonClass="absolute top-0 left-0 z-10 shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0 ml-1 mt-1"
+			/>
+
 			<SidebarLayout.Header>
 				<UprnTabBar value={currentTab} triggers={TabBarTriggers} onValueChange={onTabValueChange} />
 			</SidebarLayout.Header>
@@ -303,10 +351,6 @@
 					</UprnTabBarContent>
 				</div>
 			</SidebarLayout.Content>
-
-			<!-- <div class="fixed pt-1 pl-1">
-				<ClearSelectionsButton clear={clearAllSelections} />
-			</div> -->
 			<SidebarLayout.Footer>
 				<div hidden={currentTab !== 'export'}>
 					{#if areaSelectionInteractionStore}

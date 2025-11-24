@@ -3,9 +3,9 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import Checkbox from '$lib/components/ui/checkbox/checkbox.svelte';
 	import * as Command from '$lib/components/ui/command/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import type { DataSelectionStore } from '$lib/stores/apps/uprn/data-selection-store.svelte';
 	import FieldFilterMenuStore from '$lib/stores/apps/uprn/field-filter-menu-store.svelte';
-	import { X } from '@lucide/svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 
 	export type Props = {
@@ -18,6 +18,9 @@
 
 	let activeFeatureLayer: __esri.FeatureLayer | null = $state<__esri.FeatureLayer | null>(null);
 	let localSelectedFields: SvelteSet<string> = $state(new SvelteSet<string>());
+
+	// Derived state for dialog open/closed
+	let isOpen = $derived(fieldFilterMenuStore.ActiveLayer !== null);
 
 	// Computed state for master checkbox based on local selection
 	let masterCheckboxState = $derived.by(() => {
@@ -57,12 +60,15 @@
 	});
 
 	/**
-	 * Closes the modal and applies any changes to the data store.
+	 * Handles dialog close - applies changes to data store.
+	 * @param open - The new open state of the dialog.
 	 */
-	function closeModal() {
-		// Apply local changes to the data store before closing
-		applyChangesToDataSelectionStore();
-		fieldFilterMenuStore.ActiveLayer = null;
+	function onOpenChange(open: boolean) {
+		if (!open) {
+			// Dialog is closing, apply changes
+			applyChangesToDataSelectionStore();
+			fieldFilterMenuStore.ActiveLayer = null;
+		}
 	}
 
 	/**
@@ -96,18 +102,6 @@
 		localSelectedFields.forEach((fieldName) => {
 			targetDataSelection.selectedFieldIds?.add(fieldName);
 		});
-	}
-
-	/**
-	 * Handles backdrop click to close the modal without saving changes.
-	 * @param event - The mouse event.
-	 */
-	function handleBackdropClick(event: MouseEvent) {
-		// Close modal only if clicking the backdrop, not the card content
-		// Backdrop click cancels changes
-		if (event.target === event.currentTarget) {
-			closeModal();
-		}
 	}
 
 	/**
@@ -171,157 +165,79 @@
 	}
 </script>
 
-{#if activeFeatureLayer}
-	<div
-		class="card-container"
-		onclick={handleBackdropClick}
-		onkeydown={(e) => e.key === 'Escape' && closeModal()}
-		role="dialog"
-		aria-modal="true"
-		tabindex="-1"
-	>
-		<Card.Root class="command-card">
-			<button class="close-button" onclick={closeModal} aria-label="Close">
-				<X size={20} />
-			</button>
-			<Card.Content class="card-content">
-				<Command.Root>
-					<Command.Input placeholder="Search for fields..." />
-					<Command.List>
-						<Command.Empty>No results found.</Command.Empty>
-						<Command.Group heading="Fields">
-							<div class="master-checkbox-container">
-								<Checkbox
-									checked={masterCheckboxState.checked}
-									indeterminate={masterCheckboxState.indeterminate}
-									onCheckedChange={handleMasterCheckboxClick}
-								/>
-								<span class="master-checkbox-label">Select All Fields</span>
-							</div>
-							<Command.Separator />
-							{#each getFieldNamesToShow() as field}
-								<Command.Item class="field-item" onselect={() => toggleFieldSelection(field.name)}>
-									<div class="field-content-wrapper">
-										<Checkbox
-											class="field-checkbox"
-											checked={localSelectedFields?.has(field.name) ?? false}
-											onCheckedChange={() => toggleFieldSelection(field.name)}
-										/>
-										<button
-											class="field-content"
-											onclick={() => toggleFieldSelection(field.name)}
-											tabindex="0"
-										>
-											<div class="field-name-container">
-												<span class="field-name">{field.alias || field.name}</span>
-												{#if field.description}
-													<div class="info-icon-container" title={field.description}>
-														{@html InformationIcon}
-													</div>
-												{/if}
-											</div>
-										</button>
-									</div>
-								</Command.Item>
-							{/each}
-						</Command.Group>
-					</Command.List>
-				</Command.Root>
-			</Card.Content>
-		</Card.Root>
-	</div>
-{/if}
+<Dialog.Root open={isOpen} {onOpenChange}>
+	<Dialog.Content class="flex max-h-[80vh] flex-col sm:max-w-[700px]">
+		<Dialog.Header>
+			<Dialog.Title>Select Fields</Dialog.Title>
+			<Dialog.Description>Choose fields to include in your data selection.</Dialog.Description>
+		</Dialog.Header>
+		<div class="card-content min-h-0 flex-1">
+			<Command.Root>
+				<Command.Input placeholder="Search for fields..." />
+				<Command.List>
+					<Command.Empty>No results found.</Command.Empty>
+					<Command.Group heading="Fields">
+						<div class="master-checkbox-container">
+							<Checkbox
+								checked={masterCheckboxState.checked}
+								indeterminate={masterCheckboxState.indeterminate}
+								onCheckedChange={handleMasterCheckboxClick}
+							/>
+							<span class="master-checkbox-label">Select All Fields</span>
+						</div>
+						<Command.Separator />
+						{#each getFieldNamesToShow() as field}
+							<Command.Item class="field-item" onselect={() => toggleFieldSelection(field.name)}>
+								<div class="field-content-wrapper">
+									<Checkbox
+										class="field-checkbox"
+										checked={localSelectedFields?.has(field.name) ?? false}
+										onCheckedChange={() => toggleFieldSelection(field.name)}
+									/>
+									<button
+										class="field-content"
+										onclick={() => toggleFieldSelection(field.name)}
+										tabindex="0"
+									>
+										<div class="field-name-container">
+											<span class="field-name">{field.alias || field.name}</span>
+											{#if field.description}
+												<div class="info-icon-container" title={field.description}>
+													{@html InformationIcon}
+												</div>
+											{/if}
+										</div>
+									</button>
+								</div>
+							</Command.Item>
+						{/each}
+					</Command.Group>
+				</Command.List>
+			</Command.Root>
+		</div>
+	</Dialog.Content>
+</Dialog.Root>
 
 <style>
-	.card-container {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background-color: rgba(0, 0, 0, 0.5);
-		z-index: 50;
-	}
-
-	:global(.command-card) {
-		width: 700px;
-		height: 500px;
-		max-width: 90vw;
-		max-height: 90vh;
-		position: relative;
-	}
-
-	:global(.card-content) {
-		height: 100%;
-		padding: 1rem;
+	.card-content {
 		display: flex;
 		flex-direction: column;
+		overflow: hidden;
 	}
 
-	/* Force Command component to use full height */
-	:global(.command-card .command-root),
-	:global(.command-card [cmdk-root]) {
-		height: 100% !important;
-		display: flex !important;
-		flex-direction: column !important;
-	}
-
-	/* Make Command.List take remaining space and scroll */
-	:global(.command-card [cmdk-list]),
-	:global(.command-card .command-list) {
-		flex: 1 !important;
-		overflow-y: auto !important;
-		max-height: none !important;
-		height: auto !important;
-	}
-
-	/* Ensure groups don't have height restrictions */
-	:global(.command-card [cmdk-group]),
-	:global(.command-card .command-group) {
-		max-height: none !important;
-		overflow: visible !important;
-	}
-
-	/* Fix Command.Input container */
-	:global(.command-card [cmdk-input-wrapper]),
-	:global(.command-card .command-input-wrapper) {
-		flex-shrink: 0 !important;
-	}
-
-	.close-button {
-		position: absolute;
-		top: 0.75rem;
-		right: 0.75rem;
-		z-index: 10;
+	.card-content :global([cmdk-root]) {
 		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 2rem;
-		height: 2rem;
+		flex-direction: column;
+		height: 100%;
+	}
+
+	.card-content :global([cmdk-list]) {
+		flex: 1;
+		overflow-y: auto;
+	}
+
+	.card-content :global(.field-item) {
 		padding: 0;
-		background: hsl(var(--background));
-		border: 1px solid hsl(var(--border));
-		border-radius: 0.375rem;
-		color: hsl(var(--foreground));
-		cursor: pointer;
-		transition: all 0.2s ease;
-	}
-
-	.close-button:hover {
-		background: hsl(var(--accent));
-		color: hsl(var(--accent-foreground));
-	}
-
-	.close-button:focus {
-		outline: none;
-		box-shadow: 0 0 0 2px hsl(var(--ring));
-	}
-
-	:global(.field-item) {
-		padding: 0 !important;
 	}
 
 	.field-content-wrapper {

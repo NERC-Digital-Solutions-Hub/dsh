@@ -73,6 +73,7 @@ export class DataSelectionStore {
 	 * @param layerId - The id of the layer whose selection should be removed.
 	 */
 	public removeSelection(layerId: string) {
+		console.log(`[data-selection-store] Removing selection for layerId: ${layerId}`);
 		this.dataSelections.delete(layerId);
 	}
 
@@ -99,6 +100,7 @@ export class DataSelectionStore {
 	 * Clear all DataSelections from the store.
 	 */
 	public clearSelections(): void {
+		console.log('[data-selection-store] Clearing all selections');
 		this.dataSelections.clear();
 		console.log('[data-selection-store] selections cleared.');
 	}

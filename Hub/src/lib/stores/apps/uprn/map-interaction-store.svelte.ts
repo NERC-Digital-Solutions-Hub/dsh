@@ -247,6 +247,14 @@ export class MapInteractionStore {
 	}
 
 	/**
+	 * Update the set of interactable layers
+	 * @param layers - The new set of interactable layers
+	 */
+	public updateInteractableLayers(layers: Set<string>): void {
+		this.interactableLayers = layers;
+	}
+
+	/**
 	 * Clean up event handlers and resources
 	 */
 	public cleanup(): void {
