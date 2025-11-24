@@ -44,13 +44,13 @@ export async function getAppConfigAsync(): Promise<AppConfig> {
 		);
 		appConfig.catalogueConfig = catalogueConfig;
 
-		const serviceUprnConfig = await fetch(`${base}/config/services/uprn/config.json`).then((res) =>
+		const serviceUprnConfig = await fetch(`${base}/config/apps/uprn/config.json`).then((res) =>
 			res.json()
 		);
 		appConfig.serviceUprnConfig = serviceUprnConfig;
 
-		const serviceUprn2Config = await fetch(`${base}/config/services/uprn2/config.json`).then(
-			(res) => res.json()
+		const serviceUprn2Config = await fetch(`${base}/config/apps/uprn/config.json`).then((res) =>
+			res.json()
 		);
 		appConfig.serviceUprn2Config = serviceUprn2Config;
 	}

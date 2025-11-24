@@ -1,15 +1,15 @@
 import type {
 	DataSelectionSnapshot,
 	DataSelectionStore
-} from '$lib/stores/services/uprn2/data-selection-store.svelte';
+} from '$lib/stores/apps/uprn/data-selection-store.svelte';
 import {
 	SelectionState,
 	TreeNode,
 	TreeFieldNode,
 	TreeLayerNode
-} from '$lib/components/common/services/uprn2/tree-view/types';
+} from '$lib/components/common/apps/uprn/tree-view/types';
 import { SvelteSet } from 'svelte/reactivity';
-import type { TreeviewConfigStore } from '$lib/stores/services/uprn2/treeview-config-store';
+import type { TreeviewConfigStore } from '$lib/stores/apps/uprn/treeview-config-store';
 
 /**
  * Controller for managing treeview selection state.

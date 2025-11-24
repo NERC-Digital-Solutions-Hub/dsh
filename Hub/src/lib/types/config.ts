@@ -1,4 +1,4 @@
-import type { AreaSelectionFieldInfo } from '$lib/stores/services/uprn2/area-selection-store.svelte';
+import type { AreaSelectionFieldInfo } from '$lib/stores/apps/uprn/area-selection-store.svelte';
 import type { TreeviewConfig } from '$lib/types/treeview';
 import type { AiUprnChatbotEndpoints, UprnDownloadEndpoints } from '$lib/types/uprn';
 

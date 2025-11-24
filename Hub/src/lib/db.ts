@@ -1,5 +1,5 @@
-import type { AreaSelectionStoreSnapshot } from '$lib/stores/services/uprn2/area-selection-store.svelte';
-import type { DataSelectionSnapshot } from '$lib/stores/services/uprn2/data-selection-store.svelte';
+import type { AreaSelectionStoreSnapshot } from '$lib/stores/apps/uprn/area-selection-store.svelte';
+import type { DataSelectionSnapshot } from '$lib/stores/apps/uprn/data-selection-store.svelte';
 import {
 	DownloadStatus,
 	type AreaSelectionInfo,

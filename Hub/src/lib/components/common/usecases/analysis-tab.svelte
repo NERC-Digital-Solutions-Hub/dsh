@@ -2,14 +2,13 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { addGraphicLayer } from '$lib/services/apps/ai-where-to-build/add-graphic-layer';
 	import { LayerViewProvider } from '$lib/services/layer-view-provider';
-	import { AreaSelectionInteractionStore } from '$lib/stores/services/uprn2/area-selection-interaction-store.svelte';
-	import { AreaSelectionStore } from '$lib/stores/services/uprn2/area-selection-store.svelte';
-	import { MapInteractionStore } from '$lib/stores/services/uprn2/map-interaction-store.svelte';
+	import { AreaSelectionInteractionStore } from '$lib/stores/apps/uprn/area-selection-interaction-store.svelte';
+	import { AreaSelectionStore } from '$lib/stores/apps/uprn/area-selection-store.svelte';
+	import { MapInteractionStore } from '$lib/stores/apps/uprn/map-interaction-store.svelte';
 	import { clipPoints } from '$lib/tools/map/clip-points';
 	import { clipPolygon } from '$lib/tools/map/clip-polygon';
 	import { createPolygonBuffer } from '$lib/tools/map/create-polygon-buffer';
 	import { mergeClippedPolygons } from '$lib/tools/map/merge-clipped-polygons';
-	import { queryPolygonFieldValue } from '$lib/tools/map/query-polygon-field-value';
 	import { getUnionPolygonGeometryByIds } from '$lib/tools/map/utils';
 	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 	import GroupLayer from '@arcgis/core/layers/GroupLayer';
@@ -25,7 +24,6 @@
 		type LayerAnalysisSettings,
 		type LayerBufferZone
 	} from '$lib/models/apps/ai-where-to-build/layer-analysis-settings';
-	import { add } from 'dexie';
 
 	type Props = {
 		mapView: __esri.MapView;

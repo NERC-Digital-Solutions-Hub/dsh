@@ -43,7 +43,7 @@ export async function getAiWhereToBuildConfig(): Promise<AiWhereToBuildConfig> {
 		return data;
 	}
 
-	const response = await fetch(`${base}/config/services/ai-where-to-build/config.json`);
+	const response = await fetch(`${base}/config/apps/ai-where-to-build/config.json`);
 	const config = await response.json();
 
 	const layers: LayerAnalysisSettings[] = config.analysisSettings.map((raw: RawLayerSettings) =>
