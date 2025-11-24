@@ -1,1 +1,0 @@
-function t(e){return e.replace(/&deg;/gi,"°").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/&lt;/gi,"<").replace(/&gt;/gi,">")}function n(e){return e&&t(e).replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim()||void 0}export{n as c,t as d};
