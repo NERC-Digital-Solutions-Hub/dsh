@@ -63,6 +63,15 @@
 								</a>
 							</NavigationMenu.Link>
 							<NavigationMenu.Link href="#">
+								<a href={`${base}/apps/health-and-environment`}>
+									<div class="font-medium">Health and Environment</div>
+									<div class="text-muted-foreground">
+										Explore the spatial relationships between a broad set of environmental and
+										health data along with the ability to add your own data for your own use.
+									</div>
+								</a>
+							</NavigationMenu.Link>
+							<NavigationMenu.Link href="#">
 								<a href={`${base}/apps/where-to-build`}>
 									<div class="font-medium">Where to Build</div>
 									<div class="text-muted-foreground">
