@@ -1,3 +1,5 @@
+import { asset } from '$app/paths';
+
 export class ConfigManager<T> {
 	public value = $state<T>();
 	public isLoading = $state(false);
@@ -10,6 +12,11 @@ export class ConfigManager<T> {
 	public async loadFromUrl(url: string): Promise<void> {
 		this.isLoading = true;
 		this.error = null;
+
+		if (url.startsWith('/')) {
+			url = asset(url);
+		}
+		
 		try {
 			const response = await fetch(url);
 			if (!response.ok) {
