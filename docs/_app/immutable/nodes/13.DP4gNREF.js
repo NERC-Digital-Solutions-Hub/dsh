@@ -1,0 +1,1 @@
+import"../chunks/DsnmJJEf.js";import"../chunks/69_IOA4Y.js";import{f as e,a}from"../chunks/Cwt5lIb3.js";import{s as o}from"../chunks/BElPz1eq.js";var i=e('<iframe width="100%" height="100%" style="border: none;" title="External site"></iframe>');function f(t){var r=i();o(r,"src","https://nercdash.dev.urbanobservatory.ac.uk/"),a(t,r)}export{f as component};
