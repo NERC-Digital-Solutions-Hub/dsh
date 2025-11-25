@@ -102,6 +102,7 @@
 			<arcgis-map
 				bind:this={mapElement}
 				class="relative h-full w-full"
+				basemap="light-gray-canvas"
 				item-id="331ba640fe6c4fa5b4c3d025160c2ec5"
 				center="-2.231774828836059,53.46531847221502"
 				zoom="15"
