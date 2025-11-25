@@ -1,0 +1,1 @@
+import"../chunks/DsnmJJEf.js";import"../chunks/69_IOA4Y.js";import{f as e,a}from"../chunks/CcHDQE4Y.js";import{s as o}from"../chunks/B9EOCc4T.js";var i=e('<iframe width="100%" height="100%" style="border: none;" title="External site"></iframe>');function h(r){var t=i();o(t,"src","https://ndsh-uomanchester.hub.arcgis.com/search"),a(r,t)}export{h as component};
