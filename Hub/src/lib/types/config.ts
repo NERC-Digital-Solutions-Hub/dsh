@@ -34,6 +34,7 @@ export type AppsUprnConfig = {
 };
 
 export type PortalItemConfig = {
+	__name?: string;
 	title: string;
 	portalUrl?: string | null;
 	portalItemId: string;

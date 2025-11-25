@@ -1,5 +1,23 @@
 import type { SvelteSet } from 'svelte/reactivity';
 
+export interface UprnConfiguration {
+	uprnDownloadApiConfig: ConfigurationItemInfo;
+	aiUprnChatbotApiConfig: ConfigurationItemInfo;
+	mapsConfig: ConfigurationItemInfo[];
+	mainSidebarSizes?: SidebarSize[];
+}
+
+export interface SidebarSize {
+	breakpoint: number;
+	originalSize: string;
+	minSize: string;
+}
+
+export interface ConfigurationItemInfo {
+	itemType: 'url' | 'file';
+	path: string;
+}
+
 /**
  * A selection of data fields from a specific layer.
  */
@@ -64,6 +82,7 @@ export type DownloadEntry = {
 };
 
 export type UprnDownloadEndpoints = {
+	__name?: string;
 	baseUrl: string;
 	healthRoute: string;
 	requestJobRoute: string;
@@ -157,6 +176,7 @@ export type UprnDownloadGetJobStatusesResult =
 	| UprnDownloadErrorResponse;
 
 export type AiUprnChatbotEndpoints = {
+	__name?: string;
 	baseUrl: string;
 	healthRoute: string;
 	chatRoute: string;

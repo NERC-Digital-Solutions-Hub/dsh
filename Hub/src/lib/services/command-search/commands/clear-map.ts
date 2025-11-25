@@ -12,6 +12,7 @@ const clearMapCommand: MapCommand = {
 		if (mapView && mapView.map) {
 			mapView.map.layers.removeAll();
 			mapView.map.basemap = 'gray';
+			await mapView.map.basemap?.loadAll();
 		}
 
 		_runtime.deactivate();

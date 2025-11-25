@@ -99,6 +99,21 @@
 				</NavigationMenu.Content>
 			</NavigationMenu.Item>
 			<NavigationMenu.Item>
+				<NavigationMenu.Trigger>Realtime</NavigationMenu.Trigger>
+				<NavigationMenu.Content>
+					<ul class="grid w-[300px] gap-4 p-2">
+						<li>
+							<NavigationMenu.Link href="#">
+								<a href={`${base}/realtime/urban-observatory`}>
+									<div class="font-medium">NERC Urban Observatory</div>
+									<div class="text-muted-foreground"></div>
+								</a>
+							</NavigationMenu.Link>
+						</li>
+					</ul>
+				</NavigationMenu.Content>
+			</NavigationMenu.Item>
+			<NavigationMenu.Item>
 				<NavigationMenu.Link>
 					{#snippet child()}
 						<a href={`${base}/maps`} class={navigationMenuTriggerStyle()}>Maps</a>

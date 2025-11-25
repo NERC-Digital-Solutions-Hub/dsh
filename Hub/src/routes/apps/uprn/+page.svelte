@@ -8,7 +8,7 @@
 	import FieldSelectionMenu from '$lib/components/common/apps/uprn/field-selection-menu/field-selection-menu.svelte';
 	import AreaSelectionTreeview2 from '$lib/components/common/apps/uprn/tree-view/area-selection/tree-view.svelte';
 	import DataSelectionTreeview from '$lib/components/common/apps/uprn/tree-view/data-selection/tree-view.svelte';
-	import UprnMapView2 from '$lib/components/common/apps/uprn/uprn-map-view/uprn-map-view2.svelte';
+	import UprnMapView from '$lib/components/common/apps/uprn/uprn-map-view/uprn-map-view.svelte';
 	import UprnTabBarContent from '$lib/components/common/apps/uprn/uprn-tab-bar/uprn-tab-bar-content.svelte';
 	import UprnTabBar from '$lib/components/common/apps/uprn/uprn-tab-bar/uprn-tab-bar.svelte';
 	import * as Sidebar from '$lib/components/common/sidebar/index.js';
@@ -20,13 +20,11 @@
 	import FieldFilterMenuStore from '$lib/stores/apps/uprn/field-filter-menu-store.svelte';
 	import { TreeviewConfigStore } from '$lib/stores/apps/uprn/treeview-config-store';
 	import { WebMapStore } from '$lib/stores/apps/uprn/web-map-store.svelte';
-	import type { AppConfig, PortalItemConfig, SizeConfig } from '$lib/types/config';
+	import type { PortalItemConfig, SizeConfig } from '$lib/types/config';
 	import type { TreeviewConfig } from '$lib/types/treeview.js';
-	import { getAppConfigAsync } from '$lib/utils/app-config-provider.js';
 	import { onDestroy, onMount } from 'svelte';
 	import TabBarTriggers from './tabBarTriggers.json';
 	import { DataSelectionStore } from '$lib/stores/apps/uprn/data-selection-store.svelte';
-	import type { AiUprnChatbotEndpoints, UprnDownloadEndpoints } from '$lib/types/uprn';
 	import { UprnDownloadService } from '$lib/services/uprn-download-service';
 	import { AiUprnChatbotService } from '$lib/services/ai-uprn-chatbot-service';
 	import { clearSelections } from '$lib/db';
@@ -35,19 +33,22 @@
 	import { base } from '$app/paths';
 	import { LayerViewProvider } from '$lib/services/layer-view-provider';
 	import { SelectionTrackingStore } from '$lib/stores/apps/uprn/selection-tracking-store.svelte';
-	import { Button } from '$lib/components/ui/button';
-	import { Settings } from '@lucide/svelte';
-	import SelectMapDialog from '$lib/components/common/apps/uprn/select-map-dialog/select-map-dialog.svelte';
+	import OptionsDialog from '$lib/components/common/apps/uprn/options-dialog/options-dialog.svelte';
+	import { uprnConfigStore } from '$lib/stores/apps/uprn/uprn-store.svelte';
 
 	let areaSelectionTreeview: DataSelectionTreeview | undefined = undefined;
 	let dataSelectionTreeview: DataSelectionTreeview | undefined = undefined;
-	let uprnMapView: UprnMapView2 | undefined = undefined;
+	let uprnMapView: UprnMapView | undefined = undefined;
 
 	const webMapStore: WebMapStore = $state(new WebMapStore());
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
 
 	// Maps state management
-	let maps: PortalItemConfig[] = $state([]);
+	let maps = $derived(
+		uprnConfigStore.instance?.mapsConfig
+			.map((m) => m.value)
+			.filter((v): v is PortalItemConfig => v !== undefined) ?? []
+	);
 	let currentMapIndex: number = $state(0);
 	let currentMap = $derived(maps[currentMapIndex]);
 
@@ -63,8 +64,19 @@
 	let dataSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
 	let areaSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
 	let customRendererService: CustomRendererService | undefined = $state();
-	let uprnDownloadService: UprnDownloadService | undefined = $state();
-	let aiUprnChatbotService: AiUprnChatbotService | undefined = $state();
+
+	let uprnDownloadApi = $derived(
+		uprnConfigStore.instance?.uprnDownloadApiConfig.value
+			? new UprnDownloadService(uprnConfigStore.instance.uprnDownloadApiConfig.value)
+			: undefined
+	);
+
+	let aiUprnChatbotApi = $derived(
+		uprnConfigStore.instance?.uprnChatbotApiConfig.value
+			? new AiUprnChatbotService(uprnConfigStore.instance.uprnChatbotApiConfig.value)
+			: undefined
+	);
+
 	let isUprnDownloadServiceAvailable: boolean = $state(false);
 	let isAiUprnChatbotServiceAvailable: boolean = $state(false);
 	let fieldsToHide: Set<string> = $state(new Set());
@@ -75,7 +87,7 @@
 	let mainSidebarPosition = $state<Sidebar.PositionType>(SidebarPosition.LEFT);
 	let chatSidebarOpen = $state(true);
 	let chatSidebarPosition = $state<Sidebar.PositionType>(SidebarPosition.BOTTOM);
-	let mainSidebarSizes: SizeConfig[] = $state([]);
+	let mainSidebarSizes: SizeConfig[] = $derived(uprnConfigStore.instance?.mainSidebarSizes ?? []);
 	let windowWidth = $state(typeof window !== 'undefined' ? window.innerWidth : 1280);
 
 	// === Derived State for Responsive Sidebar Sizing ===
@@ -83,15 +95,15 @@
 	/**
 	 * Derives the original size (initial size) based on window width and breakpoints.
 	 */
-	let mainSidebarOriginalSize = $derived.by(() =>
-		getMatchingSize(mainSidebarSizes, (config) => config.originalSize)
+	let mainSidebarOriginalSize = $derived.by(
+		() => getMatchingSize(mainSidebarSizes, (config) => config.originalSize) ?? '300px'
 	);
 
 	/**
 	 * Derives the minimum size (for resizing) based on window width and breakpoints.
 	 */
-	let mainSidebarMinSize = $derived.by(() =>
-		getMatchingSize(mainSidebarSizes, (config) => config.minSize)
+	let mainSidebarMinSize = $derived.by(
+		() => getMatchingSize(mainSidebarSizes, (config) => config.minSize) ?? '200px'
 	);
 
 	/**
@@ -172,13 +184,10 @@
 		await customRendererService.init(`${base}/custom-renderers.json`);
 		console.log('[uprn-2/page] CustomRendererService initialized');
 
-		const appConfig: AppConfig = await getAppConfigAsync();
-
-		// Initialize maps from configuration
-		maps = appConfig.appsUprnConfig.maps || [];
-		if (maps.length === 0) {
-			console.error('[uprn-2/page] No map configuration found in appConfig');
-			return;
+		try {
+			await uprnConfigStore.load(`${base}/config/apps/uprn/config.json`);
+		} catch (error) {
+			console.error('[uprn-2/page] Failed to load UPRN config', error);
 		}
 
 		await selectionTrackingStore.loadSelections();
@@ -190,29 +199,30 @@
 			areaSelectionStore,
 			new LayerViewProvider(mapView)
 		);
+	});
 
-		mainSidebarSizes = appConfig.appsUprnConfig.mainSidebarSizes || [];
+	$effect(() => {
+		if (uprnDownloadApi) {
+			uprnDownloadApi.getHealth().then((available) => {
+				isUprnDownloadServiceAvailable = available;
+				if (available) console.log('[uprn-2/page] UPRN Download Service is available');
+				else console.warn('[uprn-2/page] UPRN Download Service is NOT available');
+			});
+		} else {
+			isUprnDownloadServiceAvailable = false;
+		}
+	});
 
-		const initServices = async () => {
-			const uprnDownloadServiceEndpoints: UprnDownloadEndpoints | undefined =
-				appConfig.appsUprnConfig.uprnDownloadServiceEndpoints;
-			const aiUprnChatbotServiceEndpoints: AiUprnChatbotEndpoints | undefined =
-				appConfig.appsUprnConfig.aiUprnChatbotServiceEndpoints;
-			uprnDownloadService = new UprnDownloadService(uprnDownloadServiceEndpoints);
-			aiUprnChatbotService = new AiUprnChatbotService(aiUprnChatbotServiceEndpoints);
-
-			isUprnDownloadServiceAvailable = await uprnDownloadService.getHealth();
-			if (isUprnDownloadServiceAvailable)
-				console.log('[uprn-2/page] UPRN Download Service is available');
-			else console.warn('[uprn-2/page] UPRN Download Service is NOT available');
-
-			isAiUprnChatbotServiceAvailable = await aiUprnChatbotService.getHealth();
-			if (isAiUprnChatbotServiceAvailable)
-				console.log('[uprn-2/page] AI UPRN Chatbot Service is available');
-			else console.warn('[uprn-2/page] AI UPRN Chatbot Service is NOT available');
-		};
-
-		initServices(); // Do not await to avoid blocking UI
+	$effect(() => {
+		if (aiUprnChatbotApi) {
+			aiUprnChatbotApi.getHealth().then((available) => {
+				isAiUprnChatbotServiceAvailable = available;
+				if (available) console.log('[uprn-2/page] AI UPRN Chatbot Service is available');
+				else console.warn('[uprn-2/page] AI UPRN Chatbot Service is NOT available');
+			});
+		} else {
+			isAiUprnChatbotServiceAvailable = false;
+		}
 	});
 
 	/**
@@ -221,6 +231,11 @@
 	 */
 	$effect(() => {
 		if (!currentMap || !mapView || !areaSelectionInteractionStore) {
+			return;
+		}
+
+		// Prevent re-initialization if the map is already loaded and matches the current map
+		if (webMapStore.data?.portalItem?.id === currentMap.portalItemId) {
 			return;
 		}
 
@@ -285,8 +300,7 @@
 >
 	{#snippet sidebarContent()}
 		<div class="relative flex h-full w-full min-w-0 flex-col overflow-visible">
-			<SelectMapDialog
-				{maps}
+			<OptionsDialog
 				onSelectMap={setMapIndex}
 				buttonClass="absolute top-0 left-0 z-10 shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0 ml-1 mt-1"
 			/>
@@ -341,12 +355,12 @@
 
 				<div hidden={currentTab !== 'downloads'}>
 					<UprnTabBarContent>
-						{#if !uprnDownloadService || !isUprnDownloadServiceAvailable}
+						{#if !uprnDownloadApi || !isUprnDownloadServiceAvailable}
 							<p class="p-4 text-center text-sm text-gray-500">
 								Download service is not available.
 							</p>
 						{:else}
-							<DownloadsMenu {webMapStore} {uprnDownloadService} {fieldsToHide} />
+							<DownloadsMenu {webMapStore} uprnDownloadService={uprnDownloadApi} {fieldsToHide} />
 						{/if}
 					</UprnTabBarContent>
 				</div>
@@ -365,12 +379,12 @@
 			</SidebarLayout.Footer>
 
 			<CollapsibleWindow isOpenedOnInit={true}>
-				{#if !aiUprnChatbotService || !isAiUprnChatbotServiceAvailable}
+				{#if !aiUprnChatbotApi || !isAiUprnChatbotServiceAvailable}
 					<p class="p-4 text-center text-sm text-gray-500">
 						AI UPRN Chatbot service is not available.
 					</p>
 				{:else}
-					<UprnChat {aiUprnChatbotService} />
+					<UprnChat aiUprnChatbotService={aiUprnChatbotApi} />
 				{/if}
 			</CollapsibleWindow>
 		</div>
@@ -378,7 +392,7 @@
 
 	{#snippet mainContent()}
 		{#if areaSelectionInteractionStore}
-			<UprnMapView2
+			<UprnMapView
 				bind:this={uprnMapView}
 				webMap={webMapStore.data!}
 				mapView={mapView!}
