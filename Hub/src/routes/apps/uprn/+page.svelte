@@ -301,6 +301,7 @@
 	{#snippet sidebarContent()}
 		<div class="relative flex h-full w-full min-w-0 flex-col overflow-visible">
 			<OptionsDialog
+				{maps}
 				onSelectMap={setMapIndex}
 				buttonClass="absolute top-0 left-0 z-10 shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0 ml-1 mt-1"
 			/>
