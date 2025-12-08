@@ -9,25 +9,26 @@
 
 	type Props = {
 		maps: PortalItemConfig[];
+		currentMapIndex: number;
 		onSelectMap: (mapIndex: number) => void;
 		buttonClass?: string;
 	};
 
-	const { maps, onSelectMap, buttonClass }: Props = $props();
+	const { maps, currentMapIndex, onSelectMap, buttonClass }: Props = $props();
 
-	let currentMapIndex = $state(-1);
+	let currentOptionIndex = $state(currentMapIndex);
 
 	function onOpen() {
-		currentMapIndex = -1;
+		currentOptionIndex = currentMapIndex;
 	}
 
 	function onSubmit() {
-		console.log('Submitting map selection, currentMapIndex:', currentMapIndex);
-		if (currentMapIndex === -1) {
+		console.log('Submitting map selection, currentMapIndex:', currentOptionIndex);
+		if (currentOptionIndex === currentMapIndex) {
 			return; // No map selected
 		}
 
-		onSelectMap(currentMapIndex);
+		onSelectMap(currentOptionIndex);
 	}
 </script>
 
@@ -41,8 +42,8 @@
 			<Dialog.Description>Choose a map from the list below.</Dialog.Description>
 		</Dialog.Header>
 		<RadioGroup.Root
-			value={currentMapIndex.toString()}
-			onValueChange={(value) => (currentMapIndex = parseInt(value))}
+			value={currentOptionIndex.toString()}
+			onValueChange={(value) => (currentOptionIndex = parseInt(value))}
 		>
 			{#each maps as map, index}
 				<div class="flex items-center space-x-2">
