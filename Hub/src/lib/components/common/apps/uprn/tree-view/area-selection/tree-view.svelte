@@ -26,6 +26,7 @@
 	const { webMap, treeviewConfigStore, areaSelectionStore }: Props = $props();
 
 	const treeviewStore = new TreeviewStore();
+	let lastLoadedWebMapId: string | null = $state(null);
 
 	export function clearSelections() {
 		treeviewStore.clearSelections();
@@ -33,15 +34,17 @@
 
 	// Initialize the tree view when webMap changes
 	$effect(() => {
-		if (!webMap || treeviewStore.initialized) {
+		if (!webMap || webMap.portalItem?.id === lastLoadedWebMapId) {
 			return;
 		}
 
+		treeviewStore.clearSelections();
 		treeviewStore.initialize(webMap.layers.toArray(), treeviewConfigStore, null);
+		lastLoadedWebMapId = webMap.portalItem?.id || null;
 	});
 
 	$effect(() => {
-		if (!treeviewStore.initialized) {
+		if (!lastLoadedWebMapId) {
 			return;
 		}
 
@@ -51,7 +54,7 @@
 	});
 
 	$effect(() => {
-		if (!treeviewStore.initialized) {
+		if (!lastLoadedWebMapId) {
 			return;
 		}
 

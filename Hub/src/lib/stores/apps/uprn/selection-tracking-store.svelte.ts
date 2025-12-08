@@ -10,6 +10,11 @@ import { SvelteMap } from 'svelte/reactivity';
  * Store for tracking UPRN selection changes and persisting them to the database.
  */
 export class SelectionTrackingStore {
+	/**
+	 * The portal item ID associated with the current selection.
+	 */
+	public portalItemId: string | null = $state(null);
+
 	#areaSelectionStore: AreaSelectionStore;
 	#dataSelectionStore: DataSelectionStore;
 
@@ -39,12 +44,45 @@ export class SelectionTrackingStore {
 		this.#dataSelectionStore = dataSelectionStore;
 
 		$effect.root(() => {
+			/**
+			 * Effect 1: react to portalItemId changes
+			 * Whenever the map changes to a different portal item, reload its selections.
+			 */
 			$effect(() => {
+				const portalItemId = this.portalItemId;
+				console.log('[selection-tracking-store] portalItemId changed:', portalItemId);
+
+				const async = async () => {
+					if (!portalItemId) {
+						this.#initialLoadComplete = false;
+						return;
+					}
+
+					this.#initialLoadComplete = false;
+					await this.loadSelections(portalItemId);
+				};
+
+				async();
+			});
+
+			/**
+			 * Effect 2: area selection changes for the current portal item
+			 */
+			$effect(() => {
+				const portalItemId = this.portalItemId;
 				console.log('[selection-tracking-store] Detected area selection change');
+
 				const async = async () => {
 					if (!this.#initialLoadComplete) {
 						console.log(
 							'[selection-tracking-store] Initial load not complete, skipping area selection effect'
+						);
+						return;
+					}
+
+					if (!portalItemId) {
+						console.log(
+							'[selection-tracking-store] No portalItemId, skipping area selection persistence'
 						);
 						return;
 					}
@@ -54,28 +92,35 @@ export class SelectionTrackingStore {
 					}
 
 					if (!this.#areaLayerSnapshot.layerId) {
-						await updateSelection({ areas: null });
+						await updateSelection(portalItemId, { areas: null });
 						return;
 					}
 
 					if (!this.#areaLayerSnapshot.selectedAreaIds.size) {
-						await updateSelection({ areas: null });
+						await updateSelection(portalItemId, { areas: null });
 						return;
 					}
 
-					await updateSelection({ areas: this.#areaLayerSnapshot });
+					await updateSelection(portalItemId, { areas: this.#areaLayerSnapshot });
 
 					console.log(
 						'[selection-tracking-store] Area selection updated:',
-						$state.snapshot(this.#areaLayerSnapshot)
+						$state.snapshot(this.#areaLayerSnapshot),
+						'for portalItemId:',
+						portalItemId
 					);
 				};
 
 				async();
 			});
 
+			/**
+			 * Effect 3: data selection changes for the current portal item
+			 */
 			$effect(() => {
+				const portalItemId = this.portalItemId;
 				console.log('[selection-tracking-store] Detected data selection change');
+
 				const async = async () => {
 					if (!this.#initialLoadComplete) {
 						console.log(
@@ -84,17 +129,31 @@ export class SelectionTrackingStore {
 						return;
 					}
 
-					if (!this.#dataSelectionSnapshots || this.#dataSelectionSnapshots.size === 0) {
-						console.log('[selection-tracking-store] No data selections, clearing in database');
-						await updateSelection({ data: [] });
+					if (!portalItemId) {
+						console.log(
+							'[selection-tracking-store] No portalItemId, skipping data selection persistence'
+						);
 						return;
 					}
 
-					await updateSelection({ data: this.#dataSelectionSnapshots.values().toArray() });
+					if (!this.#dataSelectionSnapshots || this.#dataSelectionSnapshots.size === 0) {
+						console.log(
+							'[selection-tracking-store] No data selections, clearing in database for',
+							portalItemId
+						);
+						await updateSelection(portalItemId, { data: [] });
+						return;
+					}
+
+					await updateSelection(portalItemId, {
+						data: this.#dataSelectionSnapshots.values().toArray()
+					});
 
 					console.log(
 						'[selection-tracking-store] Data selection updated:',
-						$state.snapshot(this.#dataSelectionSnapshots)
+						$state.snapshot(this.#dataSelectionSnapshots),
+						'for portalItemId:',
+						portalItemId
 					);
 				};
 
@@ -104,17 +163,31 @@ export class SelectionTrackingStore {
 	}
 
 	/**
-	 * Loads existing selections from the database into the stores.
+	 * Loads existing selections for a given portal item from the database into the stores.
 	 */
-	async loadSelections() {
-		const selection = await getSelection();
-		if (!selection) {
-			console.log('[selection-tracking-store] No existing selection found in database');
+	async loadSelections(portalItemId: string) {
+		if (!portalItemId) {
 			this.#initialLoadComplete = true;
 			return;
 		}
 
-		console.log('[selection-tracking-store] Loaded selection from database:', selection);
+		const selection = await getSelection(portalItemId);
+
+		if (!selection) {
+			console.log(
+				'[selection-tracking-store] No existing selection found in database for',
+				portalItemId
+			);
+			this.#initialLoadComplete = true;
+			return;
+		}
+
+		console.log(
+			'[selection-tracking-store] Loaded selection from database for',
+			portalItemId,
+			':',
+			selection
+		);
 
 		if (selection.areas) {
 			this.#areaSelectionStore.setLayerId(selection.areas.layerId);
@@ -125,6 +198,7 @@ export class SelectionTrackingStore {
 				'layer ID:',
 				this.#areaSelectionStore.layerId
 			);
+
 			this.#areaSelectionStore.addSelectedAreas(Array.from(selection.areas.selectedAreaIds));
 		}
 

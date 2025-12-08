@@ -34,14 +34,14 @@ export type AppsUprnConfig = {
 };
 
 export type PortalItemConfig = {
-	__name?: string;
+	_name?: string;
 	title: string;
 	portalUrl?: string | null;
 	portalItemId: string;
 	proxy?: Proxy | null;
 	areaTreeview?: TreeviewConfig;
 	dataTreeview?: TreeviewConfig;
-	selectableLayers?: { layerName: string; nameField: string; codeField: string }[];
+	selectableLayers?: { _name: string; id: string; nameField: string; codeField: string }[];
 };
 
 export type Proxy = {

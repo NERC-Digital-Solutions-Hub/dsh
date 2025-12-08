@@ -292,62 +292,74 @@
     },
     "selectableLayers": [
         {
-            "layerName": "Built Up Areas (Dec 22) GB",
+            "_name": "Built Up Areas (Dec 22) GB",
+            "id": "9a9d377950bf41399315865509bd8980",
             "nameField": "BUA22NM",
             "codeField": "BUA22CD"
         },
         {
-            "layerName": "Lower layer Super Output Areas (Dec 21) - EW Boundaries Fully Clipped V8",
+            "_name": "Lower layer Super Output Areas (Dec 21) - EW Boundaries Fully Clipped V8",
+            "id": "cbbe6293f9f348479583f11e9aa13cd2",
             "nameField": "LSOA21NM",
             "codeField": "LSOA21CD"
         },
         {
-            "layerName": "Middle layer Super Output Areas (Dec 21) - EW Boundaries Fully Clipped V6",
+            "_name": "Middle layer Super Output Areas (Dec 21) - EW Boundaries Fully Clipped V6",
+            "id": "5ede9db22134421e93e8bc68232abbb7",
             "nameField": "MSOA21NM",
             "codeField": "MSOA21CD"
         },
         {
-            "layerName": "Wards (Dec 23) - UK Boundaries Fully Clipped",
+            "_name": "Wards (Dec 23) - UK Boundaries Fully Clipped",
+            "id": "84f96dbe6c894f528b80c639e0a2b207",
             "nameField": "WD23NM",
             "codeField": "WD23CD"
         },
         {
-            "layerName": "Counties and Unitary Authorities (Dec 23) - UK Boundaries Fully Clipped",
+            "_name": "Counties and Unitary Authorities (Dec 23) - UK Boundaries Fully Clipped",
+            "id": "b5db7e240f6340368a15862f7ddc6f3a",
             "nameField": "CTYUA23NM",
             "codeField": "CTYUA23CD"
         },
         {
-            "layerName": "Upper Tier Local Authorities (Dec 22) - UK Boundaries Fully Clipped",
+            "_name": "Upper Tier Local Authorities (Dec 22) - UK Boundaries Fully Clipped",
+            "id": "861795fad8e4474ebc9b46b5fed8a95e",
             "nameField": "UTLA22NM",
             "codeField": "UTLA22CD"
         },
         {
-            "layerName": "Tiles 1 km",
+            "_name": "Tiles 1 km",
+            "id": "bcf8963020804d39bbc217a3e7514b1c",
             "nameField": "TILENAME",
             "codeField": "TILENAME"
         },
         {
-            "layerName": "Tiles 5 km",
+            "_name": "Tiles 5 km",
+            "id": "379348562728496cac32c6552656096d",
             "nameField": "TILENAME",
             "codeField": "TILENAME"
         },
         {
-            "layerName": "Tiles 10 km",
+            "_name": "Tiles 10 km",
+            "id": "3c3fb65d31654335bf7b083940277e4d",
             "nameField": "TILENAME",
             "codeField": "TILENAME"
         },
         {
-            "layerName": "Tiles 20 km",
+            "_name": "Tiles 20 km",
+            "id": "ede1c16cdc4541429cf662cb354f4235",
             "nameField": "TILENAME",
             "codeField": "TILENAME"
         },
         {
-            "layerName": "Tiles 50 km",
+            "_name": "Tiles 50 km",
+            "id": "7214bb47b187497bbcb6c22e56228315",
             "nameField": "TILENAME",
             "codeField": "TILENAME"
         },
         {
-            "layerName": "Tiles 100 km",
+            "_name": "Tiles 100 km",
+            "id": "388795f5ba2e49e7b54c7372e8b13a93",
             "nameField": "TILENAME",
             "codeField": "TILENAME"
         }

@@ -27,7 +27,7 @@
 	import { DataSelectionStore } from '$lib/stores/apps/uprn/data-selection-store.svelte';
 	import { UprnDownloadService } from '$lib/services/uprn-download-service';
 	import { AiUprnChatbotService } from '$lib/services/ai-uprn-chatbot-service';
-	import { clearSelections } from '$lib/db';
+	import { clearSelections, clearDatabase } from '$lib/db';
 	import { CustomRendererService } from '$lib/services/custom-renderer-service';
 	import CollapsibleWindow from '$lib/components/common/collapsible-window/collapsible-window.svelte';
 	import { base } from '$app/paths';
@@ -158,6 +158,7 @@
 		}
 
 		clearAllSelections();
+
 		currentTab = 'define-areas';
 
 		// Reset webmap store to force reload
@@ -169,17 +170,19 @@
 
 	function clearAllSelections() {
 		console.log('[uprn-2/page] Clearing all selections');
+		areaSelectionStore.setLayerId(null);
 		areaSelectionStore.clearSelectedAreas();
 		dataSelectionStore.clearSelections();
 		areaSelectionTreeview?.clearSelections();
 		dataSelectionTreeview?.clearSelections();
-		clearSelections();
 	}
 
 	/**
 	 * Initializes the application by loading configuration and setting up stores.
 	 */
 	onMount(async () => {
+		//await clearDatabase();
+
 		customRendererService = new CustomRendererService();
 		await customRendererService.init(`${base}/custom-renderers.json`);
 		console.log('[uprn-2/page] CustomRendererService initialized');
@@ -189,8 +192,6 @@
 		} catch (error) {
 			console.error('[uprn-2/page] Failed to load UPRN config', error);
 		}
-
-		await selectionTrackingStore.loadSelections();
 
 		const { default: MapView } = await import('@arcgis/core/views/MapView');
 		mapView = new MapView();
@@ -234,15 +235,12 @@
 			return;
 		}
 
-		// Prevent re-initialization if the map is already loaded and matches the current map
-		if (webMapStore.data?.portalItem?.id === currentMap.portalItemId) {
-			return;
-		}
-
 		console.log(`[uprn-2/page] Loading map ${currentMapIndex + 1} of ${maps.length}`);
 
+		selectionTrackingStore.portalItemId = currentMap.portalItemId || null;
+
 		// Update selection layers and field infos
-		selectionLayers = new Set((currentMap.selectableLayers || []).map((s) => s.layerName));
+		selectionLayers = new Set((currentMap.selectableLayers || []).map((s) => s.id));
 		areaSelectionInteractionStore.setFieldInfos(currentMap.selectableLayers || []);
 
 		// Update treeview configurations
@@ -300,11 +298,11 @@
 >
 	{#snippet sidebarContent()}
 		<div class="relative flex h-full w-full min-w-0 flex-col overflow-visible">
-			<!-- <OptionsDialog
+			<OptionsDialog
 				{maps}
 				onSelectMap={setMapIndex}
 				buttonClass="absolute top-0 left-0 z-10 shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0 ml-1 mt-1"
-			/> -->
+			/>
 
 			<SidebarLayout.Header>
 				<UprnTabBar value={currentTab} triggers={TabBarTriggers} onValueChange={onTabValueChange} />

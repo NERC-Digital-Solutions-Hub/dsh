@@ -42,6 +42,8 @@ export class WebMapStore {
 	public loading: boolean = $state<boolean>(false);
 	public error: string | null = $state<string | null>(null);
 
+	private initialPortalUrl: string | null = null;
+
 	/**
 	 * Initializes the webmap from a portal URL and item ID.
 	 * @param params - The parameters for initializing the webmap.
@@ -77,7 +79,14 @@ export class WebMapStore {
 	 */
 	async configurePortalAsync(portalUrl?: string | null, proxy?: Proxy | null): Promise<void> {
 		if (!portalUrl) {
+			if (this.initialPortalUrl) {
+				esriConfig.portalUrl = this.initialPortalUrl;
+			}
 			return;
+		}
+
+		if (!this.initialPortalUrl) {
+			this.initialPortalUrl = esriConfig.portalUrl;
 		}
 
 		esriConfig.portalUrl = portalUrl as string;
@@ -101,6 +110,9 @@ export class WebMapStore {
 		}
 
 		const portalItem = new PortalItem({
+			portal: {
+				url: esriConfig.portalUrl
+			},
 			id: itemId
 		});
 

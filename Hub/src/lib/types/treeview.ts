@@ -44,7 +44,7 @@ export interface TreeviewConfig {
  */
 export interface TreeviewNodeConfig {
 	/** Optional name for configuration management */
-	__name?: string;
+	_name?: string;
 	/** Unique identifier for the treeview node */
 	id: string;
 	/** Type of the treeview node, e.g., 'group-layer' */

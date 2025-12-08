@@ -67,6 +67,8 @@
 		fieldFilterMenuStore
 	}: Props = $props();
 
+	let lastLoadedWebMapId: string | null = null;
+
 	export function clearSelections() {
 		treeviewStore.clearSelections();
 	}
@@ -83,7 +85,7 @@
 	 * Initializes layer visibility and builds the tree structure.
 	 */
 	$effect(() => {
-		if (!webMap || treeviewStore.initialized) {
+		if (!webMap || webMap.portalItem?.id === lastLoadedWebMapId) {
 			return;
 		}
 
@@ -99,6 +101,8 @@
 				[aliasPathConverter],
 				customRendererService
 			);
+
+			lastLoadedWebMapId = webMap.portalItem?.id || null;
 		};
 
 		initializeWebMap();
