@@ -71,6 +71,9 @@
 					continue;
 				}
 
+				download.status = DownloadStatus.InProgress;
+				downloadsStore.updateDownloadStatus(download);
+
 				const request: UprnDownloadJobRequest = {
 					exports: {
 						areaSelectionLayer: {
@@ -90,19 +93,21 @@
 
 				console.log('[downloads-menu] Submitting download request:', request);
 
-				const response: UprnDownloadJobRequestResponse | undefined =
-					await uprnDownloadService.requestJob(request);
-				if (!response || response.type === JobRequestResponseType.Error) {
-					console.error('[downloads-menu] Failed to submit download request.', response);
+				try {
+					const response = await uprnDownloadService.requestJob(request);
+
+					if (!response || response.type === JobRequestResponseType.Error) {
+						download.status = DownloadStatus.Failed;
+						downloadsStore.updateDownloadStatus(download);
+						continue;
+					}
+
+					download.externalId = response.guid;
+					downloadsStore.updateDownloadStatus(download);
+				} catch (e) {
 					download.status = DownloadStatus.Failed;
 					downloadsStore.updateDownloadStatus(download);
-					continue;
 				}
-
-				download.externalId = response.guid;
-				download.status = DownloadStatus.InProgress;
-
-				downloadsStore.updateDownloadStatus(download);
 			}
 		};
 
