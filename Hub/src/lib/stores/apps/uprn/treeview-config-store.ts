@@ -103,7 +103,10 @@ export class TreeviewConfigStore {
 		}
 	}
 
-	#resolveLayerInheritance(layer: __esri.Layer, parentNodeConfig?: TreeviewNodeConfig): void {
+	#resolveLayerInheritance(
+		layer: __esri.Layer | __esri.Sublayer,
+		parentNodeConfig?: TreeviewNodeConfig
+	): void {
 		const nodeConfig: TreeviewNodeConfig = this.#getOrCreateLayerNodeConfig(
 			layer,
 			parentNodeConfig
@@ -118,7 +121,7 @@ export class TreeviewConfigStore {
 
 			for (const field of featureLayer.fields ?? []) {
 				this.#getOrCreateFieldNodeConfig(
-					this.#getFieldNodeId(layer.id, field.name),
+					this.#getFieldNodeId(featureLayer.id, field.name),
 					field.alias || field.name,
 					nodeConfig
 				);
@@ -132,13 +135,24 @@ export class TreeviewConfigStore {
 				this.#resolveLayerInheritance(sublayer, nodeConfig);
 			}
 		}
+
+		//map image layers can also have sublayers
+		if (layer.type === 'map-image') {
+			const mapImageLayer = layer as __esri.MapImageLayer;
+			for (const sublayer of mapImageLayer.sublayers?.toArray() ?? []) {
+				this.#resolveLayerInheritance(sublayer, nodeConfig);
+			}
+		}
 	}
 
 	#getOrCreateLayerNodeConfig(
-		layer: __esri.Layer,
+		layer: __esri.Layer | __esri.Sublayer,
 		parentNodeConfig?: TreeviewNodeConfig
 	): TreeviewNodeConfig {
-		const nodeConfig: TreeviewNodeConfig = this.#getOrCreateNodeConfig(layer.id, parentNodeConfig);
+		const nodeConfig: TreeviewNodeConfig = this.#getOrCreateNodeConfig(
+			layer.id.toString(),
+			parentNodeConfig
+		);
 
 		if (nodeConfig.type === TreeviewNodeType.None) {
 			nodeConfig.type = getLayerTreeviewItemType(layer);

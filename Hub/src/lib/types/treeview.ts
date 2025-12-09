@@ -80,5 +80,6 @@ export enum TreeviewNodeType {
 	GroupLayer = 'group-layer',
 	FeatureLayer = 'feature-layer',
 	TileLayer = 'tile-layer',
+	MapImageLayer = 'map-image-layer',
 	Field = 'field'
 }

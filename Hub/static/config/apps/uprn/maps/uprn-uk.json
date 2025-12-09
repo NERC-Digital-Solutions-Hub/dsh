@@ -98,7 +98,7 @@
                 "id": "d087a4331e974af081215e1d19140c2f",
                 "visibilityGroupId": "group:main",
                 "visibilityDependencyIds": [
-                    "fe0639d266784e52a650af282be756a3"
+                    "71c9876f8b4546889de4f4a5899b50d6"
                 ],
                 "inheritanceGroupId": "group:main"
             },
@@ -107,7 +107,7 @@
                 "id": "3a4f4fd4f2ac44e7985a6b57c5d33460",
                 "visibilityGroupId": "group:main",
                 "visibilityDependencyIds": [
-                    "9c312305e8404a86af2e2637fcc676dd"
+                    "71c9876f8b4546889de4f4a5899b50d6"
                 ],
                 "inheritanceGroupId": "group:main"
             },

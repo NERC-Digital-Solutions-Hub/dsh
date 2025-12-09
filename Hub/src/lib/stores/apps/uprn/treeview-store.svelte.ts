@@ -509,7 +509,9 @@ export class TreeviewStore {
 			if (layerWithSublayers.sublayers && layerWithSublayers.sublayers.length > 0) {
 				const sublayerCollection =
 					layerWithSublayers.sublayers as __esri.Collection<__esri.Sublayer>;
-				node.children = sublayerCollection.toArray().map(this.#sublayerToNode);
+				node.children = sublayerCollection
+					.toArray()
+					.map((sublayer) => this.#sublayerToNode(sublayer, node));
 			}
 		}
 
@@ -548,12 +550,24 @@ export class TreeviewStore {
 	 * @param subLayer - The sublayer to convert
 	 * @returns The created tree node
 	 */
-	#sublayerToNode(subLayer: __esri.Sublayer): TreeLayerNode {
-		const node = new TreeLayerNode(subLayer.uid, subLayer.title as string, subLayer);
+	#sublayerToNode(subLayer: __esri.Sublayer, parent?: TreeLayerNode): TreeLayerNode {
+		const node = new TreeLayerNode(subLayer.id.toString(), subLayer.title as string, subLayer, [], parent);
 		if (subLayer.sublayers?.length) {
-			node.children = subLayer.sublayers.toArray().map(this.#sublayerToNode);
+			node.children = subLayer.sublayers
+				.toArray()
+				.map((sublayer) => this.#sublayerToNode(sublayer, node));
 		}
 
+		console.log('[TreeviewStore] Created sublayer node:', node.id, node);
+		const nodeConfig: TreeviewNodeConfig | undefined = this.#findTreeviewItemConfig(subLayer.id.toString());
+		console.log('[TreeviewStore] Sublayer node config:', node.id, nodeConfig);
+		subLayer.visible = nodeConfig?.disableVisibilityToggle
+			? subLayer.visible // if disabled, keep layer visibility as is
+			: nodeConfig?.isHidden
+				? false
+				: (nodeConfig?.isVisibleOnInit ?? false);
+		this.#visibilityStates.set(subLayer.id.toString(), subLayer.visible);
+		this.updateDrawState(node, subLayer.visible);
 		return node;
 	}
 
