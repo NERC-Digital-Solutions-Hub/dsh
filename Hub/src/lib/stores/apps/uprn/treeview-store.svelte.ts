@@ -551,22 +551,22 @@ export class TreeviewStore {
 	 * @returns The created tree node
 	 */
 	#sublayerToNode(subLayer: __esri.Sublayer, parent?: TreeLayerNode): TreeLayerNode {
-		const node = new TreeLayerNode(subLayer.id.toString(), subLayer.title as string, subLayer, [], parent);
+		const layerId = subLayer.uid;
+
+		const node = new TreeLayerNode(layerId, subLayer.title as string, subLayer, [], parent);
 		if (subLayer.sublayers?.length) {
 			node.children = subLayer.sublayers
 				.toArray()
 				.map((sublayer) => this.#sublayerToNode(sublayer, node));
 		}
 
-		console.log('[TreeviewStore] Created sublayer node:', node.id, node);
-		const nodeConfig: TreeviewNodeConfig | undefined = this.#findTreeviewItemConfig(subLayer.id.toString());
-		console.log('[TreeviewStore] Sublayer node config:', node.id, nodeConfig);
+		const nodeConfig: TreeviewNodeConfig | undefined = this.#findTreeviewItemConfig(layerId);
 		subLayer.visible = nodeConfig?.disableVisibilityToggle
 			? subLayer.visible // if disabled, keep layer visibility as is
 			: nodeConfig?.isHidden
 				? false
 				: (nodeConfig?.isVisibleOnInit ?? false);
-		this.#visibilityStates.set(subLayer.id.toString(), subLayer.visible);
+		this.#visibilityStates.set(layerId, subLayer.visible);
 		this.updateDrawState(node, subLayer.visible);
 		return node;
 	}

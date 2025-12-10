@@ -6,6 +6,7 @@ import {
 	type VisibilityGroupConfig
 } from '$lib/types/treeview';
 import { getLayerTreeviewItemType } from '$lib/utils/treeview';
+import Sublayer from '@arcgis/core/layers/support/Sublayer';
 
 /**
  * Store class that manages treeview configuration data and provides efficient access to items and visibility groups.
@@ -149,8 +150,10 @@ export class TreeviewConfigStore {
 		layer: __esri.Layer | __esri.Sublayer,
 		parentNodeConfig?: TreeviewNodeConfig
 	): TreeviewNodeConfig {
+		const layerId = layer instanceof Sublayer ? layer.uid : layer.id;
+
 		const nodeConfig: TreeviewNodeConfig = this.#getOrCreateNodeConfig(
-			layer.id.toString(),
+			layerId,
 			parentNodeConfig
 		);
 
