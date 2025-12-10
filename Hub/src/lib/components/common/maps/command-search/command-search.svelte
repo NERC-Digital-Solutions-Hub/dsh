@@ -580,7 +580,7 @@
 <svelte:window onpointerdown={handlePointerDown} />
 
 <div class={cn('space-y-4', className)} bind:this={containerRef} bind:this={ref}>
-	<Command.Root>
+	<Command.Root class="border-1 shadow-md">
 		<CommandInputAlt
 			placeholder={activeCommand
 				? (activeCommand.inputPlaceholder ?? commandInputPlaceholder)

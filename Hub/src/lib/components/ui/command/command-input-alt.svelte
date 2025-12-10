@@ -24,7 +24,7 @@
 	}: Props = $props();
 </script>
 
-<div class="flex h-9 items-center gap-2 border-b pl-2" data-slot="command-input-wrapper">
+<div class="flex h-9 items-center gap-2 pl-2" data-slot="command-input-wrapper">
 	<span
 		class="flex h-full min-w-[1.25rem] shrink-0 items-center justify-center text-muted-foreground"
 	>
