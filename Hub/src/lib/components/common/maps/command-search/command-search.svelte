@@ -71,6 +71,14 @@
 	let runtimeInputBindingSeed = 0;
 	let runtimeInputBindingState: RuntimeInputBindingState | null = null;
 
+	$effect(() => {
+		if (!inputValue) {
+			return;
+		}
+
+		console.log('Input Value Changed:', inputValue);
+	});
+
 	const registry = $derived.by(() => {
 		const deduped = new Map<string, MapCommand>();
 		for (const command of providedCommands) {
@@ -408,7 +416,7 @@
 	}
 
 	function getCommandValue(command: MapCommand) {
-		return `${command.name} ${command.description ?? ''}`.trim();
+		return `${command.name} ${command.id ?? ''}`.trim();
 	}
 
 	async function runCommand(command: MapCommand) {
@@ -584,12 +592,7 @@
 <svelte:document onkeydown={handleKeydown} />
 <svelte:window onpointerdown={handlePointerDown} />
 
-<div
-	class={cn('space-y-4', className)}
-	bind:this={containerRef}
-	bind:this={ref}
-	style:width={!isOpen ? `${currentPlaceholder.length}ch` : '100%'}
->
+<div class={cn('space-y-4', className)} bind:this={containerRef} bind:this={ref}>
 	<Command.Root class="border-1 shadow-md">
 		<CommandInputAlt
 			placeholder={activeCommand
@@ -628,7 +631,7 @@
 
 						{#each Array.from(groupedCommands.entries()) as [groupName, commands]}
 							{#each commands as command (command.id)}
-								<Command.Item value={getCommandValue(command)} onclick={() => runCommand(command)}>
+								<Command.Item value={command.id} onclick={() => runCommand(command)}>
 									<div class="flex flex-col gap-0.5">
 										<span class="text-sm leading-tight font-medium">{command.name}</span>
 										{#if command.description}

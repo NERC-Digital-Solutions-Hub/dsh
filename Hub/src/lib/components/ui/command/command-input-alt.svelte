@@ -22,6 +22,13 @@
 		onCommandClose = null,
 		...restProps
 	}: Props = $props();
+
+	$effect(() => {
+		if (!value) {
+			return;
+		}
+		console.log('Command Input Value Changed:', value);
+	});
 </script>
 
 <div class="flex h-9 items-center gap-2 pl-2" data-slot="command-input-wrapper">
