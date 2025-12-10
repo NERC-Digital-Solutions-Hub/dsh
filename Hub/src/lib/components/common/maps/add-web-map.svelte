@@ -24,6 +24,7 @@
 
 	let mapView: __esri.MapView | null = $state(null);
 
+	let isLoading = $state(false);
 	let loadingMapId = $state<string | null>(null);
 	let mapIdError = $state<SvelteMap<string, Error | null>>(new SvelteMap());
 	let query = $state('');
@@ -60,6 +61,7 @@
 			return;
 		}
 
+		isLoading = true;
 		try {
 			const response = await fetch(asset(`/api/maps/${activeOrgId}.json`));
 			if (!response.ok) {
@@ -80,6 +82,8 @@
 				}));
 		} catch (error) {
 			console.error('Error fetching web maps:', error);
+		} finally {
+			isLoading = false;
 		}
 	});
 
@@ -217,7 +221,7 @@
 					: ''}
 			</p>
 		</div>
-	{:else if useEsriRequest.isLoading}
+	{:else if isLoading}
 		<div class="flex items-center justify-center p-4">
 			<Spinner class="size-5" />
 		</div>
