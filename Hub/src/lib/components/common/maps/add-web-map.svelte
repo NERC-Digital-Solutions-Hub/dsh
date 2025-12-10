@@ -231,7 +231,7 @@
 				<Command.Empty>No web maps match your search.</Command.Empty>
 			{:else}
 				{#each filteredMaps as map (map.id)}
-					<Command.Item onclick={() => setWebMap(map.id)}>
+					<Command.Item value={map.title} onclick={() => setWebMap(map.id)}>
 						{@const error = mapIdError.get(map.id)}
 						{#if loadingMapId === map.id}
 							<div class="flex items-center gap-2">

@@ -631,7 +631,7 @@
 
 						{#each Array.from(groupedCommands.entries()) as [groupName, commands]}
 							{#each commands as command (command.id)}
-								<Command.Item value={command.id} onclick={() => runCommand(command)}>
+								<Command.Item value={getCommandValue(command)} onclick={() => runCommand(command)}>
 									<div class="flex flex-col gap-0.5">
 										<span class="text-sm leading-tight font-medium">{command.name}</span>
 										{#if command.description}

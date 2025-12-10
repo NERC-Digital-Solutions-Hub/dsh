@@ -401,6 +401,7 @@
 			{:else}
 				{#each filteredLayers as layer (layer.id)}
 					<Command.Item
+						value={layer.title}
 						onclick={() => toggleLayer(layer.id)}
 						class={addedLayers.has(layer.id) ? 'layer-selected' : ''}
 					>
