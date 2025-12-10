@@ -35,7 +35,7 @@
 		class: className,
 		commandSearchContext,
 		commands: providedCommands = [],
-		placeholder = 'Commands...',
+		placeholder = 'Commands... (Ctrl+P or Ctrl+/)',
 		emptyMessage = 'No commands found.'
 	}: Props = $props();
 
@@ -93,6 +93,12 @@
 
 		return groups;
 	});
+
+	const currentPlaceholder = $derived(
+		activeCommand
+			? (activeCommand.inputPlaceholder ?? commandInputPlaceholder)
+			: commandInputPlaceholder
+	);
 
 	onMount(() => {
 		refreshActiveGlobalVariables();
@@ -442,7 +448,7 @@
 		const key = event.key.toLowerCase();
 		const isCommandShortcut = event.metaKey || event.ctrlKey;
 
-		if (isCommandShortcut && key === 'p') {
+		if (isCommandShortcut && (key === 'p' || key === '/')) {
 			event.preventDefault();
 			if (activeCommand) {
 				deactivateActiveCommand();
@@ -459,7 +465,6 @@
 			if (activeCommand) {
 				event.preventDefault();
 				deactivateActiveCommand();
-				blurInput();
 				return;
 			}
 
@@ -579,7 +584,12 @@
 <svelte:document onkeydown={handleKeydown} />
 <svelte:window onpointerdown={handlePointerDown} />
 
-<div class={cn('space-y-4', className)} bind:this={containerRef} bind:this={ref}>
+<div
+	class={cn('space-y-4', className)}
+	bind:this={containerRef}
+	bind:this={ref}
+	style:width={!isOpen ? `${currentPlaceholder.length}ch` : '100%'}
+>
 	<Command.Root class="border-1 shadow-md">
 		<CommandInputAlt
 			placeholder={activeCommand

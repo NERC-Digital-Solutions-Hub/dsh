@@ -26,6 +26,7 @@
 
 	let mapView: __esri.MapView | null = $state(null);
 
+	let isLoading = $state(false);
 	let loadingLayerId = $state<string | null>(null);
 	let layerIdError = $state<SvelteMap<string, Error | null>>(new SvelteMap());
 	let query = $state('');
@@ -79,24 +80,29 @@
 		const portalUrl: string = organisationService.getActiveOrganisationPortalUrl();
 		const endpoint: string = organisationService.getActiveOrganisationEndpoint();
 
-		const LAYER_TYPES = ['Feature Layer', 'Feature Service', 'Map Service', 'Image Service'];
-		const response = await fetch(asset(`/api/maps/${activeOrgId}.json`));
-		if (!response.ok) {
-			throw new Error(`Failed to fetch maps: ${response.status} ${response.statusText}`);
+		isLoading = true;
+		try {
+			const LAYER_TYPES = ['Feature Layer', 'Feature Service', 'Map Service', 'Image Service'];
+			const response = await fetch(asset(`/api/maps/${activeOrgId}.json`));
+			if (!response.ok) {
+				throw new Error(`Failed to fetch maps: ${response.status} ${response.statusText}`);
+			}
+
+			const data = await response.json();
+
+			// Filter for Web Maps and map to metadata
+			layers = (data.results ?? [])
+				.filter((item: any) => LAYER_TYPES.includes(item.type))
+				.map((item: any) => ({
+					id: item.id,
+					title: item.title,
+					description: cleanHtmlText(item.description),
+					owner: item.owner,
+					tags: item.tags
+				}));
+		} finally {
+			isLoading = false;
 		}
-
-		const data = await response.json();
-
-		// Filter for Web Maps and map to metadata
-		layers = (data.results ?? [])
-			.filter((item: any) => LAYER_TYPES.includes(item.type))
-			.map((item: any) => ({
-				id: item.id,
-				title: item.title,
-				description: cleanHtmlText(item.description),
-				owner: item.owner,
-				tags: item.tags
-			}));
 		// const layerQuery = `type:(${LAYER_TYPES.map((type) => `"${type}"`).join(' OR ')})`;
 		// const queryParams = organisationService.getActiveOrganisationQueryParams();
 
@@ -384,7 +390,7 @@
 					: ''}
 			</p>
 		</div>
-	{:else if useEsriRequest.isLoading}
+	{:else if isLoading}
 		<div class="flex items-center justify-center p-4">
 			<Spinner class="size-5" />
 		</div>
