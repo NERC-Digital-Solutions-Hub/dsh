@@ -61,9 +61,6 @@
 	/** Whether this node represents a folder (has children). */
 	const isFolder = !!(node.children && node.children.length);
 
-	/** Whether this node has visibility controls (leaf nodes). */
-	const hasVisibility = !isFolder;
-
 	let isInitialised = false;
 
 	/** Reactive state for whether the folder is open. */
@@ -71,6 +68,9 @@
 
 	/** Reactive state for whether the node is checked/visible. */
 	let isChecked = $state<boolean>(false);
+
+	/** Whether this node has visibility controls. */
+	const hasVisibility = $derived(!isFolder || isChecked);
 
 	/** Reactive state for the node's icon. */
 	let icon = $state<string>('');
@@ -80,6 +80,31 @@
 
 	/** Reactive state for filter animation. */
 	let isAnimatingOut = $state(false);
+
+	/** Reactive state for visibility icon. */
+	let showVisibility = $state(false);
+	let isVisibilityAnimatingOut = $state(false);
+
+	$effect(() => {
+		if (!isFolder) {
+			showVisibility = true;
+			return;
+		}
+
+		if (isChecked && !showVisibility) {
+			showVisibility = true;
+			isVisibilityAnimatingOut = true;
+			setTimeout(() => {
+				isVisibilityAnimatingOut = false;
+			}, 50);
+		} else if (!isChecked && showVisibility) {
+			isVisibilityAnimatingOut = true;
+			setTimeout(() => {
+				showVisibility = false;
+				isVisibilityAnimatingOut = false;
+			}, 200);
+		}
+	});
 
 	$effect(() => {
 		if (isInitialised) {
@@ -165,7 +190,7 @@
 		{#if isFolder}
 			<NodeContent {icon} name={node.name} {depth} onclick={handleFolderClick} {isFolder} {isOpen}>
 				{#snippet children()}
-					<div class="flex items-center gap-2">
+					<div class="flex items-center">
 						{#if isDownloadable}
 							<!-- {#if showFilter}
 								<div
@@ -176,14 +201,20 @@
 									<FilterButton layerId={node.id} {onFilterClicked} {hasFiltersApplied} />
 								</div>
 							{/if} -->
-							<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
+							<div class="mr-2">
+								<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
+							</div>
 						{/if}
-						{#if hasVisibility}
-							<VisibilityCheckbox
-								checked={isChecked}
-								indeterminate={getNodeDrawState?.(node.id) === LayerDrawState.Suspended}
-								onCheckedChange={toggleVisible}
-							/>
+						{#if showVisibility}
+							<div class="visibility-wrapper" class:visible={!isVisibilityAnimatingOut}>
+								<div class="visibility-inner">
+									<VisibilityCheckbox
+										checked={isChecked}
+										indeterminate={getNodeDrawState?.(node.id) === LayerDrawState.Suspended}
+										onCheckedChange={toggleVisible}
+									/>
+								</div>
+							</div>
 						{/if}
 					</div>
 				{/snippet}
@@ -191,7 +222,7 @@
 		{:else}
 			<NodeContent {icon} name={node.name} {depth} onclick={handleClick} {isFolder}>
 				{#snippet children()}
-					<div class="flex items-center gap-2">
+					<div class="flex items-center">
 						{#if isDownloadable}
 							<!-- {#if showFilter}
 								<div
@@ -202,7 +233,9 @@
 									<FilterButton layerId={node.id} {onFilterClicked} {hasFiltersApplied} />
 								</div>
 							{/if} -->
-							<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
+							<div class="mr-2">
+								<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
+							</div>
 						{/if}
 						{#if hasVisibility}
 							<VisibilityCheckbox
@@ -239,3 +272,46 @@
 {/snippet}
 
 <NodeAnimation {isOpen} {content} childNodes={isFolder ? node.children : null} {childNode} />
+
+<style>
+	.filter-transition-wrapper {
+		transition:
+			opacity 0.18s ease-in-out,
+			transform 0.18s ease-in-out;
+	}
+
+	.fade-in {
+		opacity: 1;
+		transform: scale(1);
+	}
+
+	.fade-out {
+		opacity: 0;
+		transform: scale(0.95);
+	}
+
+	.visibility-wrapper {
+		display: grid;
+		grid-template-columns: 0fr;
+		transition: grid-template-columns 0.2s ease-out;
+	}
+
+	.visibility-wrapper.visible {
+		grid-template-columns: 1fr;
+	}
+
+	.visibility-inner {
+		overflow: hidden;
+		display: flex;
+		opacity: 0;
+		transform: translateX(10px);
+		transition:
+			opacity 0.4s ease-out,
+			transform 0.2s ease-out;
+	}
+
+	.visibility-wrapper.visible .visibility-inner {
+		opacity: 1;
+		transform: translateX(0);
+	}
+</style>

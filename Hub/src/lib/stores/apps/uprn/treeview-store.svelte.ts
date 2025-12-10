@@ -204,6 +204,15 @@ export class TreeviewStore {
 		}
 
 		this.#updateParentVisibility(node, isVisible);
+
+		if (!isVisible && node.children?.length) {
+			for (const child of node.children) {
+				if (this.getVisibilityState(child.id)) {
+					this.setVisibilityState(child.id, false);
+				}
+			}
+		}
+
 		if (!config || config.isHidden) {
 			return;
 		}
