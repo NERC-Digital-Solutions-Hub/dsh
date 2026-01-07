@@ -1,1 +1,1 @@
-export { default as MapsApp } from '$lib/components/app.svelte';
+export { default as AiWhereToBuildApp } from '$lib/components/app.svelte';

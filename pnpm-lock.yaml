@@ -10,6 +10,9 @@ importers:
 
   hub:
     dependencies:
+      '@dsh/ai-where-to-build':
+        specifier: workspace:*
+        version: link:../packages/ai-where-to-build
       '@dsh/maps-page':
         specifier: workspace:*
         version: link:../packages/maps-page
@@ -64,7 +67,7 @@ importers:
         version: 2.14.4(@internationalized/date@3.10.0)(@sveltejs/kit@2.49.2(@sveltejs/vite-plugin-svelte@6.2.1(svelte@5.45.8)(vite@7.2.7(@types/node@22.19.2)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.45.8)(vite@7.2.7(@types/node@22.19.2)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.45.8)
       chromium-bidi:
         specifier: ^11.0.1
-        version: 11.0.1(devtools-protocol@0.0.1555890)
+        version: 11.0.1(devtools-protocol@0.0.1561482)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -2137,8 +2140,8 @@ packages:
   devlop@1.1.0:
     resolution: {integrity: sha512-RWmIqhcFf1lRYBvNmr7qTNuyCt/7/ns2jbpp1+PalgE/rDQcBT0fioSMUpJ93irlUhC5hrg4cYqe6U+0ImW0rA==}
 
-  devtools-protocol@0.0.1555890:
-    resolution: {integrity: sha512-O4OFGGFYGoPF3wVE88CQXhDKUiuYjLdFC0Ih0gUTANBf3Jb061JDqy+GdInhIciJLZjTwjBw+1iPzhEIA/Jmiw==}
+  devtools-protocol@0.0.1561482:
+    resolution: {integrity: sha512-nSXIMgdQxupOkVN94VPoE01UWJVXPOJ/IkEDQOlDbx3tmGzlKgVd3b54AT1cy8XIb4TQPcYac1nxYntEhiFKAQ==}
 
   dexie@4.2.1:
     resolution: {integrity: sha512-Ckej0NS6jxQ4Po3OrSQBFddayRhTCic2DoCAG5zacOfOVB9P2Q5Xc5uL/nVa7ZVs+HdMnvUPzLFCB/JwpB6Csg==}
@@ -4971,9 +4974,9 @@ snapshots:
     dependencies:
       readdirp: 5.0.0
 
-  chromium-bidi@11.0.1(devtools-protocol@0.0.1555890):
+  chromium-bidi@11.0.1(devtools-protocol@0.0.1561482):
     dependencies:
-      devtools-protocol: 0.0.1555890
+      devtools-protocol: 0.0.1561482
       mitt: 3.0.1
       zod: 3.25.76
 
@@ -5325,7 +5328,7 @@ snapshots:
     dependencies:
       dequal: 2.0.3
 
-  devtools-protocol@0.0.1555890: {}
+  devtools-protocol@0.0.1561482: {}
 
   dexie@4.2.1: {}
 
