@@ -18,7 +18,7 @@
 		runtime?: MapCommandRuntime | null;
 	};
 
-	const { commandSearchContext, inputPlaceholder, runtime = null }: Props = $props();
+	const { commandSearchContext, inputPlaceholder = "Search...", runtime = null }: Props = $props();
 	const useEsriRequest = new UseEsriRequest();
 
 	let mapView: __esri.MapView | null = $state(null);
@@ -88,7 +88,7 @@
 
 	let detachRuntimeInput: (() => void) | null = null;
 	let attachedRuntime: MapCommandRuntime | null = null;
-	let attachedPlaceholder = inputPlaceholder ?? 'Search...';
+	let attachedPlaceholder = inputPlaceholder;
 
 	$effect(() => {
 		const currentRuntime = runtime;

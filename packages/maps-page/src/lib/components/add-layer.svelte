@@ -43,7 +43,7 @@
 	const layerSummariesById = new Map<string, PortalLayerSummary>();
 
 	// We keep the view/basemap stable (typically Web Mercator) and do NOT switch SR.
-	const DESIRED_BASEMAP_ID = 'gray-vector'; // or 'dark-gray-vector'
+	//const DESIRED_BASEMAP_ID = 'gray-vector'; // or 'dark-gray-vector'
 
 	const filteredLayers = $derived.by(() => {
 		const results = layers;
@@ -60,17 +60,17 @@
 	onMount(async () => {
 		if (!browser) return;
 
-		mapView = commandSearchContext.get(MapViewService).mapView;
+		// mapView = commandSearchContext.get(MapViewService).mapView;
 
-		// Force the basemap to gray and keep it stable.
-		try {
-			const { default: Basemap } = await import('@arcgis/core/Basemap');
-			if (mapView?.map) {
-				mapView.map.basemap = await Basemap.fromId(DESIRED_BASEMAP_ID);
-			}
-		} catch (e) {
-			console.warn(`Failed to set basemap "${DESIRED_BASEMAP_ID}"`, e);
-		}
+		// // Force the basemap to gray and keep it stable.
+		// try {
+		// 	const { default: Basemap } = await import('@arcgis/core/Basemap');
+		// 	if (mapView?.map) {
+		// 		mapView.map.basemap = await Basemap.fromId(DESIRED_BASEMAP_ID);
+		// 	}
+		// } catch (e) {
+		// 	console.warn(`Failed to set basemap "${DESIRED_BASEMAP_ID}"`, e);
+		// }
 
 		const organisationService = commandSearchContext.get(OrganisationCommandService);
 		const activeOrgId = organisationService.getActiveOrganisationId();
@@ -171,13 +171,6 @@
 		console.log(`Layer removed from the map: ${itemId}`);
 	}
 
-	function isLayerAdded(itemId: string): boolean {
-		for (const lyr of mapView?.map?.allLayers ?? []) {
-			if (lyr.portalItem?.id === itemId) return true;
-		}
-		return false;
-	}
-
 	// ----------------------------
 	// Layer compatibility helpers
 	// ----------------------------
@@ -247,10 +240,10 @@
 
 		try {
 			// Keep basemap pinned to gray (in case anything else changed it)
-			try {
-				const { default: Basemap } = await import('@arcgis/core/Basemap');
-				mapView.map.basemap = await Basemap.fromId(DESIRED_BASEMAP_ID);
-			} catch {}
+			// try {
+			// 	const { default: Basemap } = await import('@arcgis/core/Basemap');
+			// 	mapView.map.basemap = await Basemap.fromId(DESIRED_BASEMAP_ID);
+			// } catch {}
 
 			const organisationService = commandSearchContext.get(OrganisationCommandService);
 			const portalUrl: string = organisationService.getActiveOrganisationPortalUrl();
@@ -283,7 +276,7 @@
 				!(layer instanceof TileLayer) &&
 				!(layer instanceof VectorTileLayer)
 			) {
-				throw new Error(`Unsupported layer type "${layer.type}" for item ID ${itemId}`);
+				throw new Error(`Currently Unsupported layer type '${layer.type}' We aim to implement support in the future.`);
 			}
 
 			console.log(`Adding layer to the map: ${itemId}`);
@@ -372,9 +365,6 @@
 								{#if layer.spatialReferenceWkid}
 									<span class="text-[11px] text-muted-foreground">
 										WKID {layer.spatialReferenceWkid}
-										{#if SPATIAL_REFERENCE_BASEMAP_OVERRIDES[layer.spatialReferenceWkid]}
-											{' '}(auto aligns view)
-										{/if}
 									</span>
 								{/if}
 								{#if error}
