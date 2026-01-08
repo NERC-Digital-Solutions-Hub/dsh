@@ -15,8 +15,7 @@
 	</a>
 	<NavigationMenu.Root viewport={false} class="menu-item-container z-20">
 		<NavigationMenu.List>
-			<NavigationMenu.Item></NavigationMenu.Item>
-			<NavigationMenu.Item>
+			<NavigationMenu.Item openOnHover={false}>
 				<NavigationMenu.Trigger>Catalogues</NavigationMenu.Trigger>
 				<NavigationMenu.Content>
 					<ul class="grid w-[300px] gap-4 p-2">
@@ -41,7 +40,7 @@
 					</ul>
 				</NavigationMenu.Content>
 			</NavigationMenu.Item>
-			<NavigationMenu.Item>
+			<NavigationMenu.Item openOnHover={false}>
 				<NavigationMenu.Trigger>Apps</NavigationMenu.Trigger>
 				<NavigationMenu.Content>
 					<ul class="grid w-[300px] gap-4 p-2">
@@ -98,7 +97,7 @@
 					</ul>
 				</NavigationMenu.Content>
 			</NavigationMenu.Item>
-			<NavigationMenu.Item>
+			<NavigationMenu.Item openOnHover={false}>
 				<NavigationMenu.Trigger>Realtime</NavigationMenu.Trigger>
 				<NavigationMenu.Content>
 					<ul class="grid w-[300px] gap-4 p-2">
@@ -113,14 +112,14 @@
 					</ul>
 				</NavigationMenu.Content>
 			</NavigationMenu.Item>
-			<NavigationMenu.Item>
+			<NavigationMenu.Item openOnHover={false}>
 				<NavigationMenu.Link>
 					{#snippet child()}
 						<a href={`${base}/maps`} class={navigationMenuTriggerStyle()}>Maps</a>
 					{/snippet}
 				</NavigationMenu.Link>
 			</NavigationMenu.Item>
-			<NavigationMenu.Item>
+			<NavigationMenu.Item openOnHover={false}>
 				<NavigationMenu.Link>
 					{#snippet child()}
 						<a href={`${base}/research`} class={navigationMenuTriggerStyle()}>Research</a>
