@@ -60,7 +60,7 @@
 	onMount(async () => {
 		if (!browser) return;
 
-		// mapView = commandSearchContext.get(MapViewService).mapView;
+		mapView = commandSearchContext.get(MapViewService).mapView;
 
 		// // Force the basemap to gray and keep it stable.
 		// try {
