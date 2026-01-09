@@ -61,13 +61,13 @@
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
 
 	// Maps state management
-	let maps = $derived(
+	let maps: PortalItemConfig[] = $derived(
 		uprnConfigStore.instance?.mapsConfig
 			.map((m) => m.value)
 			.filter((v): v is PortalItemConfig => v !== undefined) ?? []
 	);
 	let currentMapIndex: number = $state(0);
-	let currentMap = $derived(maps[currentMapIndex]);
+	let currentMap: PortalItemConfig = $derived(maps[currentMapIndex]);
 
 	let currentTab: string = $state('define-areas');
 	let dataSelectionStore: DataSelectionStore = $state(new DataSelectionStore());
@@ -103,8 +103,6 @@
 	// === Sidebar State ===
 	let mainSidebarOpen = $state(true);
 	let mainSidebarPosition = $state<Sidebar.PositionType>(SidebarPosition.LEFT);
-	let chatSidebarOpen = $state(true);
-	let chatSidebarPosition = $state<Sidebar.PositionType>(SidebarPosition.BOTTOM);
 	let mainSidebarSizes: SizeConfig[] = $derived(uprnConfigStore.instance?.mainSidebarSizes ?? []);
 	let windowWidth = $state(typeof window !== 'undefined' ? window.innerWidth : 1280);
 
