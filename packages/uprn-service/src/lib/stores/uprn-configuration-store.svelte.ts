@@ -14,12 +14,8 @@ export class UprnConfigurationStore {
 	public mapsConfig = $state<ConfigManager<PortalItemConfig>[]>([]);
 	public mainSidebarSizes = $state<SidebarSize[]>([]);
 
-	constructor(configuration: UprnConfiguration) {
+	async init(configuration: UprnConfiguration) {
 		this.mainSidebarSizes = configuration.mainSidebarSizes ?? [];
-		this.#init(configuration);
-	}
-
-	async #init(configuration: UprnConfiguration) {
 		await Promise.all([
 			this.#loadConfigItem(this.uprnDownloadApiConfig, configuration.uprnDownloadApiConfig),
 			this.#loadConfigItem(this.uprnChatbotApiConfig, configuration.aiUprnChatbotApiConfig),
@@ -37,8 +33,8 @@ export class UprnConfigurationStore {
 
 	async #loadMapsConfig(infos: ConfigurationItemInfo[]) {
 		this.mapsConfig = infos.map(() => new ConfigManager<PortalItemConfig>());
-		await Promise.all(
-			infos.map((info, index) => this.#loadConfigItem(this.mapsConfig[index], info))
-		);
+		for (let i = 0; i < infos.length; i++) {
+			await this.#loadConfigItem(this.mapsConfig[i], infos[i]);
+		}
 	}
 }

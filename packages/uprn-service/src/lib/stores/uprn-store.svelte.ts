@@ -13,7 +13,8 @@ export const uprnConfigStore = {
 			throw new Error(`Failed to load UPRN config from ${url}`);
 		}
 		const config = (await response.json()) as UprnConfiguration;
-		storeInstance = new UprnConfigurationStore(config);
+		storeInstance = new UprnConfigurationStore();
+		await storeInstance.init(config);
 		return storeInstance;
 	}
 };
