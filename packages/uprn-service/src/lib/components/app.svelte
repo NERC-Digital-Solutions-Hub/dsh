@@ -53,9 +53,9 @@
 		}
 	];
 
-	let areaSelectionTreeview: DataSelectionTreeview | undefined = undefined;
-	let dataSelectionTreeview: DataSelectionTreeview | undefined = undefined;
-	let uprnMapView: UprnMapView | undefined = undefined;
+	let areaSelectionTreeview: DataSelectionTreeview | undefined = $state(undefined);
+	let dataSelectionTreeview: DataSelectionTreeview | undefined = $state(undefined);
+	let uprnMapView: UprnMapView | undefined = $state(undefined);
 
 	const webMapStore: WebMapStore = $state(new WebMapStore());
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
@@ -145,13 +145,6 @@
 	 */
 	function toggleMainSidebar() {
 		mainSidebarOpen = !mainSidebarOpen;
-	}
-
-	/**
-	 * Toggles the chat sidebar open/closed state.
-	 */
-	function toggleChatSidebar() {
-		chatSidebarOpen = !chatSidebarOpen;
 	}
 
 	/**
@@ -399,7 +392,7 @@
 
 				<div hidden={currentTab !== 'downloads'}>
 					<UprnTabBarContent>
-						{#if !uprnDownloadApi || !isUprnDownloadServiceAvailable}
+						{#if !uprnDownloadApi || !isUprnDownloadServiceAvailable || !webMapStore.isLoaded}
 							<p class="p-4 text-center text-sm text-gray-500">
 								Download service is not available.
 							</p>
