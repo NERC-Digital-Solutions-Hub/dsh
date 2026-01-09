@@ -105,8 +105,8 @@
 			return;
 		}
 
-		const layer: __esri.Layer | undefined = webMapStore.dataLookup.get(layerId);
-		if (!layer) {
+		const layer: __esri.Layer | __esri.Sublayer | undefined = webMapStore.dataLookup.get(layerId);
+		if (!layer || layer.type === 'sublayer') {
 			console.warn(`[export-menu] Layer with ID ${layerId} not found in web map store.`);
 			return;
 		}
