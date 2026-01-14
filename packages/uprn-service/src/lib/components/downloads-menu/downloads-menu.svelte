@@ -189,9 +189,11 @@
 						break; // still pending
 					case JobStatusType.Processing:
 						download.status = DownloadStatus.InProgress;
+						download.errorMessage = undefined; // Clear any previous error message
 						break;
 					case JobStatusType.Completed:
 						download.status = DownloadStatus.Completed;
+						download.errorMessage = undefined; // Clear any previous error message
 						break;
 					case JobStatusType.Error:
 						download.status = DownloadStatus.Failed;
