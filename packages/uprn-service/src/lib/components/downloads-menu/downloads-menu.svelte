@@ -102,8 +102,10 @@
 
 				if (!response || !response.guid || response.type !== JobRequestResponseType.Success) {
 					download.status = DownloadStatus.Failed;
-					download.errorMessage =
-						response?.message || 'Unknown error occurred while submitting download request.';
+					download.errorMessage = response?.message || 
+						!response ? 'The server did not return a valid response.'
+							: !response.guid ? 'The server responded but returned an invalid GUID.'
+								 : 'The server responded but did not return a successful response.';
 					console.error('[downloads-menu] Download request failed:', response);
 					downloadsStore.updateDownloadStatus(download);
 					continue;
