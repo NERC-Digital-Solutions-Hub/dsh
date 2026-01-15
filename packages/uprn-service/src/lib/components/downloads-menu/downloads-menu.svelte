@@ -197,7 +197,7 @@
 						break;
 					case JobStatusType.Error:
 						download.status = DownloadStatus.Failed;
-						download.errorMessage = job.status.message || 'An error occurred during processing.';
+						download.errorMessage = job.status.message || 'An unknown error occurred during processing on the server.';
 						break;
 					default:
 						console.warn('[downloads-menu] Unknown job status type:', job.status.type);
