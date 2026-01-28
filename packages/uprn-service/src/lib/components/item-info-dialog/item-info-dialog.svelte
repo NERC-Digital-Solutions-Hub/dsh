@@ -74,7 +74,7 @@
 				layerDef = data;
 				layerDescription = layerDef?.description || null;
 				layerCopyright = layerDef?.copyrightText || null;
-				console.log('[ItemInfoDialog] Loaded data:', data, 'for layer:', layer);
+				//console.log('[ItemInfoDialog] Loaded data:', data, 'for layer:', layer);
 			} catch (error) {
 				hasLayerDef = false;
 				console.error('[ItemInfoDialog] Error loading portal item:', error);
@@ -90,14 +90,6 @@
 	});
 </script>
 
-{console.log(
-	'[ItemInfoDialog] Rendering dialog for layer:',
-	layer,
-	'hasLayerDef:',
-	hasLayerDef,
-	'layerDef:',
-	layerDef
-)}
 {#if layer && (hasLayerDef == false || (hasLayerDef == true && layerDef))}
 	<Dialog.Root bind:open={isOpen} onOpenChange={(open) => (isOpen = open)}>
 		<Dialog.Content
