@@ -1,7 +1,9 @@
 <script lang="ts">
 	import * as Tabs from '$lib/components/shadcn/tabs/index.js';
+	import { TabProgress } from '$lib/types/uprn';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import type { Component, Snippet } from 'svelte';
+	import { CircleDashed, CircleDot, CircleCheckBig } from '@lucide/svelte';
 
 	/**
 	 * Definition for a tab trigger.
@@ -25,20 +27,43 @@
 		value?: string;
 		/** Array of trigger definitions for the tabs. */
 		triggers?: TriggerDefinition[];
+		/** Optional mapping of tab values to their progress states. */
+		progressByValue?: Record<string, TabProgress | undefined>;
 		/** Callback function when the tab value changes. */
 		onValueChange?: (value: string) => void;
 		/** Optional children snippet for the tab content. */
 		children?: Snippet;
 	};
 
-	const { value, triggers = [], onValueChange, children }: Props = $props();
+	const { value, triggers = [], progressByValue = {}, onValueChange, children }: Props = $props();
+
+	const triggersWithProgress = $derived.by(() =>
+		triggers.map((t) => ({
+			...t,
+			progress: progressByValue[t.value]
+		}))
+	);
 </script>
 
 <Tabs.Root {value} {onValueChange} class="flex h-full w-full flex-col">
 	<div class="tab-list-wrapper flex-shrink-0">
 		<Tabs.List class="tab-list">
-			{#each triggers as { value, label, seperatorIcon, tooltip }}
-				<Tabs.Trigger {value} class="tab-trigger" title={tooltip}>{label}</Tabs.Trigger>
+			{#each triggersWithProgress as { value, label, seperatorIcon, tooltip, progress }}
+				<Tabs.Trigger {value} class="tab-trigger" title={tooltip}>
+					{@const progressValue = !progress ? TabProgress.NotStarted : progress}
+					{#if progressValue}
+						<span class="text-xs text-muted-foreground">
+							{#if progressValue === TabProgress.NotStarted}
+								<CircleDashed class="inline-block h-4 w-4" />
+							{:else if progressValue === TabProgress.InProgress}
+								<CircleDot class="inline-block h-4 w-4" />
+							{:else if progressValue === TabProgress.Completed}
+								<CircleCheckBig class="inline-block h-4 w-4" />
+							{/if}
+						</span>
+					{/if}
+					{label}
+				</Tabs.Trigger>
 				{#if value !== triggers[triggers.length - 1]?.value}
 					{#if seperatorIcon}
 						{@const SeparatorIcon = seperatorIcon}

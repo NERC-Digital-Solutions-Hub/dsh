@@ -36,6 +36,7 @@
 	import ItemInfoDialog from '$lib/components/item-info-dialog/item-info-dialog.svelte';
 	import { setItemInfoDialogEvents } from '$lib/events/item-info-dialog-events';
 	import { Plus } from '@lucide/svelte';
+	import { TabProgress } from '$lib/types/uprn';
 
 	const tabBarTriggers = [
 		{
@@ -60,6 +61,8 @@
 			tooltip: 'Download your exported data'
 		}
 	];
+
+	let tabProgressByValue = $state<Record<string, TabProgress | undefined>>({});
 
 	let areaSelectionTreeview: DataSelectionTreeview | undefined = $state(undefined);
 	let dataSelectionTreeview: DataSelectionTreeview | undefined = $state(undefined);
@@ -154,6 +157,15 @@
 	 */
 	function toggleMainSidebar() {
 		mainSidebarOpen = !mainSidebarOpen;
+	}
+
+	/**
+	 * Sets the progress state for a specific tab.
+	 * @param tabValue - The value of the tab to update
+	 * @param progress - The new progress state to set
+	 */
+	function setTabProgress(tabValue: string, progress: TabProgress) {
+		tabProgressByValue[tabValue] = progress;
 	}
 
 	/**
@@ -308,6 +320,27 @@
 		});
 	});
 
+	$effect(() => {
+		const anyAreaSelected = areaSelectionStore.selectedAreaIds.size > 0;
+		const anyDataSelected = dataSelectionStore.dataSelections.size > 0;
+
+		setTabProgress(
+			'areas-of-interest',
+			anyAreaSelected ? TabProgress.Completed : TabProgress.NotStarted
+		);
+
+		setTabProgress('select-data', anyDataSelected ? TabProgress.Completed : TabProgress.NotStarted);
+
+		setTabProgress(
+			'export',
+			anyAreaSelected && anyDataSelected
+				? TabProgress.Completed
+				: anyAreaSelected || anyDataSelected
+					? TabProgress.InProgress
+					: TabProgress.NotStarted
+		);
+	});
+
 	/**
 	 * Sets up window resize listener for reactive sidebar sizing.
 	 */
@@ -366,7 +399,12 @@
 			/>
 
 			<SidebarLayout.Header>
-				<UprnTabBar value={currentTab} triggers={tabBarTriggers} onValueChange={onTabValueChange} />
+				<UprnTabBar
+					value={currentTab}
+					triggers={tabBarTriggers}
+					progressByValue={tabProgressByValue}
+					onValueChange={onTabValueChange}
+				/>
 			</SidebarLayout.Header>
 
 			<SidebarLayout.Content>

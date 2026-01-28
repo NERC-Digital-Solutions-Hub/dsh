@@ -196,3 +196,10 @@ export type AiUprnChatbotRequest = {
 export type AiUprnChatbotResponse = {
 	response: string;
 };
+
+/** The progress states for a tab. */
+export enum TabProgress {
+	NotStarted = 'not-started',
+	InProgress = 'in-progress',
+	Completed = 'completed'
+}
