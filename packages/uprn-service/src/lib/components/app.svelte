@@ -35,23 +35,29 @@
 	import { uprnConfigStore } from '$lib/stores/uprn-store.svelte';
 	import ItemInfoDialog from '$lib/components/item-info-dialog/item-info-dialog.svelte';
 	import { setItemInfoDialogEvents } from '$lib/events/item-info-dialog-events';
+	import { Plus } from '@lucide/svelte';
 
 	const tabBarTriggers = [
 		{
 			value: 'areas-of-interest',
-			label: 'Areas of Interest'
+			label: 'Areas of Interest',
+			tooltip: 'Select areas of interest on the map',
+			seperatorIcon: Plus
 		},
 		{
 			value: 'select-data',
-			label: 'Select Data'
+			label: 'Select Data',
+			tooltip: 'Select data layers for export'
 		},
 		{
 			value: 'export',
-			label: 'Export'
+			label: 'Export',
+			tooltip: 'Export selected data confined to selected areas'
 		},
 		{
 			value: 'downloads',
-			label: 'Download'
+			label: 'Download',
+			tooltip: 'Download your exported data'
 		}
 	];
 

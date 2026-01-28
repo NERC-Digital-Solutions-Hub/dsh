@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as Tabs from '$lib/components/shadcn/tabs/index.js';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
-	import type { Snippet } from 'svelte';
+	import type { Component, Snippet } from 'svelte';
 
 	/**
 	 * Definition for a tab trigger.
@@ -11,6 +11,10 @@
 		value: string;
 		/** The label to display for the tab trigger. */
 		label: string;
+		/** Optional tooltip text for the tab trigger. */
+		tooltip?: string;
+		/** Optional separator icon component for the tab triggers. If not provided, the ChevronRightIcon will be used. */
+		seperatorIcon?: Component;
 	};
 
 	/**
@@ -33,10 +37,15 @@
 <Tabs.Root {value} {onValueChange} class="flex h-full w-full flex-col">
 	<div class="tab-list-wrapper flex-shrink-0">
 		<Tabs.List class="tab-list">
-			{#each triggers as { value, label }}
-				<Tabs.Trigger {value} class="tab-trigger">{label}</Tabs.Trigger>
+			{#each triggers as { value, label, seperatorIcon, tooltip }}
+				<Tabs.Trigger {value} class="tab-trigger" title={tooltip}>{label}</Tabs.Trigger>
 				{#if value !== triggers[triggers.length - 1]?.value}
-					<ChevronRightIcon class="separator" />
+					{#if seperatorIcon}
+						{@const SeparatorIcon = seperatorIcon}
+						<SeparatorIcon class="separator" />
+					{:else}
+						<ChevronRightIcon class="separator" />
+					{/if}
 				{/if}
 			{/each}
 		</Tabs.List>
