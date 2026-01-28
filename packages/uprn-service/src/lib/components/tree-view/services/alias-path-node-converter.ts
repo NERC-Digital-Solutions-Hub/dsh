@@ -1,5 +1,5 @@
 import { CustomNodeConverter } from '$lib/components/tree-view/services/custom-node-converter';
-import { TreeFieldNode, TreeLayerNode, TreeNode } from '$lib/components/tree-view/types';
+import { TreeFieldNode, TreeLayerNode, TreeNode } from '$lib/models/treeview';
 import type { TreeviewNodeConfig } from '$lib/types/treeview';
 import { decodeHtmlEntities } from '$lib/utils/decode-html';
 

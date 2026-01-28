@@ -43,7 +43,7 @@ export class UprnDownloadService {
 	public async getHealth(): Promise<boolean> {
 		try {
 			const url = `${this.#endpoints.baseUrl}${this.#endpoints.healthRoute}`;
-			const response = await fetch(url);
+			const response = await fetch(url, { credentials: 'include' });
 
 			if (!response.ok) {
 				throw new Error(`Health check failed: ${response.statusText}`);
@@ -70,6 +70,7 @@ export class UprnDownloadService {
 
 			const response = await fetch(url, {
 				method: 'POST',
+				credentials: 'include',
 				headers: {
 					'Content-Type': 'application/json',
 					Accept: 'application/json'
@@ -123,6 +124,7 @@ export class UprnDownloadService {
 			const url = `${this.#endpoints.baseUrl}${this.#endpoints.requestJobStatusesRoute}`;
 			const response = await fetch(url, {
 				method: 'POST',
+				credentials: 'include',
 				headers: {
 					'Content-Type': 'application/json'
 				},
@@ -150,7 +152,7 @@ export class UprnDownloadService {
 	> {
 		try {
 			const url = `${this.#endpoints.baseUrl}${this.#endpoints.getAreaSelectionLimitsRoute}`;
-			const response = await fetch(url);
+			const response = await fetch(url, { credentials: 'include' });
 
 			if (!response.ok) {
 				throw new Error(`Failed to get selection area limits: ${response.statusText}`);

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Button from '$lib/components/shadcn/button/button.svelte';
 	import FilterFieldMenuStore from '$lib/stores/field-filter-menu-store.svelte';
+	import type { IWebMapService } from '$lib/services/web-map-service';
 	import { WebMapStore } from '$lib/stores/web-map-store.svelte';
 	import FilterButton from '../tree-view/data-selection/filter-button.svelte';
 	import SelectionEntryCard from '$lib/components/selection-entry-card/selection-entry-card.svelte';
@@ -12,7 +13,7 @@
 	import type { DataSelectionStore } from '$lib/stores/data-selection-store.svelte';
 
 	export type Props = {
-		webMapStore: WebMapStore;
+		webMapService: IWebMapService;
 		areaSelectionInteractionStore: AreaSelectionInteractionStore;
 		dataSelectionStore: DataSelectionStore;
 		dataSelectionTreeviewConfig: TreeviewConfigStore;
@@ -20,7 +21,7 @@
 	};
 
 	const {
-		webMapStore,
+		webMapService,
 		areaSelectionInteractionStore,
 		dataSelectionStore,
 		dataSelectionTreeviewConfig,
@@ -105,7 +106,7 @@
 			return;
 		}
 
-		const layer: __esri.Layer | __esri.Sublayer | undefined = webMapStore.dataLookup.get(layerId);
+		const layer: __esri.Layer | __esri.Sublayer | null = webMapService.getLayerById(layerId);
 		if (!layer || layer.type === 'sublayer') {
 			console.warn(`[export-menu] Layer with ID ${layerId} not found in web map store.`);
 			return;
@@ -126,7 +127,7 @@
 			!dataSelection.selectedFieldIds ||
 			dataSelection.selectedFieldIds.size === 0 ||
 			dataSelection.selectedFieldIds.size ===
-				(webMapStore.dataLookup.get(layerId) as __esri.FeatureLayer)?.fields?.length
+				(webMapService.getLayerById(layerId) as __esri.FeatureLayer)?.fields?.length
 		) {
 			return false;
 		}
@@ -173,7 +174,7 @@
 	{#if dataSelectionStore.getAllSelections().length > 0}
 		<ul>
 			{#each dataSelectionStore.getAllSelections() as data}
-				<SelectionEntryCard title={webMapStore.dataLookup.get(data.layerId)?.title ?? ''}>
+				<SelectionEntryCard title={webMapService.getLayerById(data.layerId)?.title ?? ''}>
 					{#if dataSelectionTreeviewConfig?.getItemConfig(data.layerId)?.showFields}
 						<FilterButton
 							layerId={data.layerId}

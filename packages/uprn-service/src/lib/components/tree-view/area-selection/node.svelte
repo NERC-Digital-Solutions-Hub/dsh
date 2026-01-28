@@ -3,7 +3,7 @@
 	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
 	import { getNodeIcon } from '../get-node-icon';
 	import NodeAnimation from '../node-animation.svelte';
-	import { TreeLayerNode, type TreeNode } from '../types.js';
+	import { TreeLayerNode, type TreeNode } from '$lib/models/treeview/index.js';
 	import NodeContent from './node-content.svelte';
 	import Node from './node.svelte';
 

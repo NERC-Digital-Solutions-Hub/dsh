@@ -2,12 +2,7 @@ import type {
 	DataSelectionSnapshot,
 	DataSelectionStore
 } from '$lib/stores/data-selection-store.svelte';
-import {
-	SelectionState,
-	TreeNode,
-	TreeFieldNode,
-	TreeLayerNode
-} from '$lib/components/tree-view/types';
+import { SelectionState, TreeNode, TreeFieldNode, TreeLayerNode } from '$lib/models/treeview';
 import { SvelteSet } from 'svelte/reactivity';
 import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
 

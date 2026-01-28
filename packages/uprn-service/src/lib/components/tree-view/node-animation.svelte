@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { TreeNode } from './types.js';
+	import type { TreeNode } from '../../models/treeview/types.js';
 	import { type Snippet } from 'svelte';
 	import { slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';

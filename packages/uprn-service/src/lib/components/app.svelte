@@ -6,7 +6,7 @@
 	import ExportMenuFooter from '$lib/components/export-menu/export-menu-footer.svelte';
 	import ExportMenu from '$lib/components/export-menu/export-menu.svelte';
 	import FieldSelectionMenu from '$lib/components/field-selection-menu/field-selection-menu.svelte';
-	import AreaSelectionTreeview2 from '$lib/components/tree-view/area-selection/tree-view.svelte';
+	import AreaSelectionTreeview from '$lib/components/tree-view/area-selection/tree-view.svelte';
 	import DataSelectionTreeview from '$lib/components/tree-view/data-selection/tree-view.svelte';
 	import UprnMapView from '$lib/components/uprn-map-view/uprn-map-view.svelte';
 	import UprnTabBarContent from '$lib/components/uprn-tab-bar/uprn-tab-bar-content.svelte';
@@ -33,11 +33,13 @@
 	import { SelectionTrackingStore } from '$lib/stores/selection-tracking-store.svelte';
 	import OptionsDialog from '$lib/components/options-dialog/options-dialog.svelte';
 	import { uprnConfigStore } from '$lib/stores/uprn-store.svelte';
+	import ItemInfoDialog from '$lib/components/item-info-dialog/item-info-dialog.svelte';
+	import { setItemInfoDialogEvents } from '$lib/events/item-info-dialog-events';
 
 	const tabBarTriggers = [
 		{
-			value: 'define-areas',
-			label: 'Define Areas'
+			value: 'areas-of-interest',
+			label: 'Areas of Interest'
 		},
 		{
 			value: 'select-data',
@@ -69,7 +71,7 @@
 	let currentMapIndex: number = $state(0);
 	let currentMap: PortalItemConfig = $derived(maps[currentMapIndex]);
 
-	let currentTab: string = $state('define-areas');
+	let currentTab: string = $state('areas-of-interest');
 	let dataSelectionStore: DataSelectionStore = $state(new DataSelectionStore());
 	let areaSelectionStore: AreaSelectionStore = $state(new AreaSelectionStore());
 	let areaSelectionInteractionStore: AreaSelectionInteractionStore | null = $state(null);
@@ -82,6 +84,9 @@
 	let areaSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
 	let customRendererService = new CustomRendererService();
 	let customRendererServiceReady = $state(false);
+
+	let itemInfoDialogOpen: boolean = $state(false);
+	let itemInfoDialogActiveLayerId: string | null = $state(null);
 
 	let uprnDownloadApi = $derived(
 		uprnConfigStore.instance?.uprnDownloadApiConfig.value
@@ -168,7 +173,7 @@
 
 		clearAllSelections();
 
-		currentTab = 'define-areas';
+		currentTab = 'areas-of-interest';
 
 		// Reset webmap store to force reload
 		webMapStore.data = null;
@@ -315,10 +320,24 @@
 	onDestroy(() => {
 		dataSelectionStore.cleanup();
 	});
+
+	function onOpenInfoDialog(layerId: string) {
+		itemInfoDialogActiveLayerId = layerId;
+		itemInfoDialogOpen = true;
+	}
+
+	setItemInfoDialogEvents({
+		onOpenInfoDialog
+	});
 </script>
 
 <Toaster />
 <FieldSelectionMenu {dataSelectionStore} {fieldFilterMenuStore} {fieldsToHide} />
+<ItemInfoDialog
+	webmapService={webMapStore}
+	bind:isOpen={itemInfoDialogOpen}
+	bind:activeLayerId={itemInfoDialogActiveLayerId}
+/>
 {#if areaSelectionInteractionStore}
 	<AreaSelectionHoverCard {areaSelectionInteractionStore} />
 	<AreaSelectionToast {areaSelectionInteractionStore} />
@@ -345,10 +364,10 @@
 			</SidebarLayout.Header>
 
 			<SidebarLayout.Content>
-				<div hidden={currentTab !== 'define-areas'}>
+				<div hidden={currentTab !== 'areas-of-interest'}>
 					<UprnTabBarContent>
 						{#if webMapStore.isLoaded}
-							<AreaSelectionTreeview2
+							<AreaSelectionTreeview
 								bind:this={areaSelectionTreeview}
 								webMap={webMapStore.data!}
 								treeviewConfigStore={areaSelectionTreeviewConfig!}
@@ -378,7 +397,7 @@
 					<UprnTabBarContent>
 						{#if areaSelectionInteractionStore && webMapStore.isLoaded}
 							<ExportMenu
-								{webMapStore}
+								webMapService={webMapStore}
 								{areaSelectionInteractionStore}
 								{dataSelectionStore}
 								dataSelectionTreeviewConfig={dataSelectionTreeviewConfig!}
@@ -395,7 +414,7 @@
 								Download service is not available.
 							</p>
 						{:else}
-							<DownloadsMenu {webMapStore} uprnDownloadService={uprnDownloadApi} {fieldsToHide} />
+							<DownloadsMenu uprnDownloadService={uprnDownloadApi} {fieldsToHide} />
 						{/if}
 					</UprnTabBarContent>
 				</div>
@@ -413,7 +432,7 @@
 				</div>
 			</SidebarLayout.Footer>
 
-			<CollapsibleWindow isOpenedOnInit={true}>
+			<CollapsibleWindow isOpenedOnInit={true} class="mt-2">
 				{#if !aiUprnChatbotApi || !isAiUprnChatbotServiceAvailable}
 					<p class="p-4 text-center text-sm text-gray-500">
 						AI UPRN Chatbot service is not available.

@@ -5,7 +5,13 @@
 	import FieldFilterMenuStore from '$lib/stores/field-filter-menu-store.svelte';
 	import { TreeviewConfigStore } from '$lib/stores/treeview-config-store.js';
 	import { TreeviewStore } from '$lib/stores/treeview-store.svelte';
-	import { LayerDrawState, SelectionState, TreeLayerNode, type TreeNode } from '../types.js';
+	import {
+		LayerDrawState,
+		SelectionState,
+		TreeLayerNode,
+		type TreeNode
+	} from '$lib/models/treeview/index.js';
+	import { setTreeEvents } from '$lib/events/data-treeview-events.js';
 	import Node from './node.svelte';
 	import { TreeviewSelectionController } from '$lib/controllers/TreeviewSelectionController.js';
 	import type { CustomRendererService } from '$lib/services/custom-renderer-service.js';
@@ -177,6 +183,17 @@
 		// Consider filters applied if not all fields are selected or no fields are selected
 		return selectedFields > 0 && selectedFields !== totalFields;
 	}
+
+	// Set tree event handlers
+	setTreeEvents({
+		onNodeVisibilityChange,
+		onDownloadStateChanged,
+		getDownloadState,
+		onFilterClicked: handleFilterClicked,
+		hasFiltersApplied,
+		getNodeVisibility: (nodeId: string) => treeviewStore.getVisibilityState(nodeId),
+		getNodeDrawState
+	});
 </script>
 
 {#if treeviewStore.initialized}
@@ -186,14 +203,6 @@
 				{treeviewConfigStore}
 				{node}
 				isDownloadable={treeviewConfigStore.getItemConfig(node.id)?.isDownloadable ?? true}
-				onNodeClick={() => {}}
-				{onNodeVisibilityChange}
-				getNodeVisibility={(nodeId) => treeviewStore.getVisibilityState(nodeId)}
-				{onDownloadStateChanged}
-				{getDownloadState}
-				onFilterClicked={handleFilterClicked}
-				{hasFiltersApplied}
-				{getNodeDrawState}
 				depth={0}
 				useLayerTypeIcon={true}
 			/>

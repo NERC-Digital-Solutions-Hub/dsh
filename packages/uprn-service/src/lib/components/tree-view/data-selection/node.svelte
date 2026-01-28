@@ -1,13 +1,22 @@
 <!-- Node.svelte -->
 <script lang="ts">
+	import Button from '$lib/components/shadcn/button/button.svelte';
 	import NodeAnimation from '$lib/components/tree-view/node-animation.svelte';
 	import VisibilityCheckbox from '$lib/components/visibility-checkbox/visibility-checkbox.svelte';
 	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
+	import type { TreeviewNodeConfig } from '$lib/types/treeview.js';
 	import { getNodeIcon } from '../get-node-icon';
-	import { LayerDrawState, SelectionState, TreeLayerNode, type TreeNode } from '../types.js';
+	import {
+		LayerDrawState,
+		SelectionState,
+		TreeLayerNode,
+		type TreeNode
+	} from '$lib/models/treeview/index.js';
+	import { getTreeEvents } from '$lib/events/data-treeview-events';
 	import DownloadButton from './download-button.svelte';
 	import NodeContent from './node-content.svelte';
 	import Node from './node.svelte';
+	import InfoButton from '$lib/components/tree-view/data-selection/info-button.svelte';
 	/**
 	 * Props for the Node component.
 	 */
@@ -18,22 +27,6 @@
 		node: TreeNode;
 		/** Whether the node is downloadable. */
 		isDownloadable?: boolean;
-		/** Callback when node is clicked. */
-		onNodeClick?: (node: TreeNode) => void;
-		/** Callback when node visibility changes. */
-		onNodeVisibilityChange?: (node: TreeNode, visible: boolean) => void;
-		/** Callback when download state changes. */
-		onDownloadStateChanged?: (node: TreeNode, downloadState: SelectionState) => void;
-		/** Function to get current download state. */
-		getDownloadState?: (node: TreeNode) => SelectionState;
-		/** Callback when filter is clicked. */
-		onFilterClicked?: (layerId: string) => void;
-		/** Function to check if filters are applied. */
-		hasFiltersApplied?: (layerId: string) => boolean;
-		/** Function to get current node visibility. */
-		getNodeVisibility?: (nodeId: string) => boolean | undefined;
-		/** Function to get current node draw state. */
-		getNodeDrawState?: (nodeId: string) => LayerDrawState;
 		/** Depth level in the tree. */
 		depth?: number;
 		/** Whether to use layer type specific icons. */
@@ -45,6 +38,12 @@
 		treeviewConfigStore = null,
 		node,
 		isDownloadable,
+		depth = 0,
+		useLayerTypeIcon = false
+	}: Props = $props();
+
+	/** Retrieve tree event callbacks */
+	const {
 		onNodeClick,
 		onNodeVisibilityChange,
 		onDownloadStateChanged,
@@ -52,37 +51,39 @@
 		onFilterClicked,
 		hasFiltersApplied,
 		getNodeVisibility,
-		getNodeDrawState,
-		depth = 0,
-		useLayerTypeIcon = false
-	}: Props = $props();
-
-	/** Whether this node represents a folder (has children). */
-	const isFolder = !!(node.children && node.children.length);
+		getNodeDrawState
+	} = getTreeEvents();
 
 	let isInitialised = false;
 
 	/** Reactive state for whether the folder is open. */
-	let isOpen = $state<boolean>(false);
+	let isOpen: boolean = $state(false);
 
 	/** Reactive state for whether the node is checked/visible. */
-	let isChecked = $state<boolean>(false);
+	let isChecked: boolean = $state(false);
+
+	let nodeConfig: TreeviewNodeConfig | null = $derived(
+		treeviewConfigStore?.getItemConfig(node.id) ?? null
+	);
+
+	/** Whether this node represents a folder (has children). */
+	const isFolder: boolean = $derived(!!(node.children && node.children.length));
 
 	/** Whether this node has visibility controls. */
-	const hasVisibility = $derived(!isFolder || isChecked);
+	const hasVisibility: boolean = $derived(!isFolder || isChecked);
 
 	/** Reactive state for the node's icon. */
-	let icon = $state<string>('');
+	let icon: string = $state('');
 
 	/** Reactive state for whether filter button should be shown. */
-	let showFilter = $state(false);
+	let showFilter: boolean = $state(false);
 
 	/** Reactive state for filter animation. */
-	let isAnimatingOut = $state(false);
+	let isAnimatingOut: boolean = $state(false);
 
 	/** Reactive state for visibility icon. */
-	let showVisibility = $state(false);
-	let isVisibilityAnimatingOut = $state(false);
+	let showVisibility: boolean = $state(false);
+	let isVisibilityAnimatingOut: boolean = $state(false);
 
 	$effect(() => {
 		if (!isFolder) {
@@ -110,7 +111,7 @@
 			return;
 		}
 
-		isOpen = treeviewConfigStore?.getItemConfig(node.id)?.isOpenOnInit ?? false;
+		isOpen = nodeConfig?.isOpenOnInit ?? false;
 		isInitialised = true;
 	});
 
@@ -185,21 +186,15 @@
 </script>
 
 {#snippet content()}
-	{#if !treeviewConfigStore?.getItemConfig(node.id)?.isHidden}
+	{#if !nodeConfig?.isHidden}
 		{#if isFolder}
 			<NodeContent {icon} name={node.name} {depth} onclick={handleFolderClick} {isFolder} {isOpen}>
 				{#snippet children()}
 					<div class="flex items-center">
 						{#if isDownloadable}
-							<!-- {#if showFilter}
-								<div
-									class="filter-transition-wrapper"
-									class:fade-in={!isAnimatingOut}
-									class:fade-out={isAnimatingOut}
-								>
-									<FilterButton layerId={node.id} {onFilterClicked} {hasFiltersApplied} />
-								</div>
-							{/if} -->
+							<div class="mr-2">
+								<InfoButton layerId={node.id} />
+							</div>
 							<div class="mr-2">
 								<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
 							</div>
@@ -223,15 +218,6 @@
 				{#snippet children()}
 					<div class="flex items-center">
 						{#if isDownloadable}
-							<!-- {#if showFilter}
-								<div
-									class="filter-transition-wrapper"
-									class:fade-in={!isAnimatingOut}
-									class:fade-out={isAnimatingOut}
-								>
-									<FilterButton layerId={node.id} {onFilterClicked} {hasFiltersApplied} />
-								</div>
-							{/if} -->
 							<div class="mr-2">
 								<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
 							</div>
@@ -251,19 +237,11 @@
 {/snippet}
 
 {#snippet childNode(node: TreeNode)}
-	{#if isFolder && isOpen && !treeviewConfigStore?.getItemConfig(node.id)?.isHidden}
+	{#if isFolder && isOpen && !nodeConfig?.isHidden}
 		<Node
 			{treeviewConfigStore}
 			{node}
-			isDownloadable={treeviewConfigStore?.getItemConfig(node.id)?.isDownloadable ?? true}
-			{onNodeClick}
-			{onNodeVisibilityChange}
-			{onDownloadStateChanged}
-			{getDownloadState}
-			{onFilterClicked}
-			{hasFiltersApplied}
-			{getNodeVisibility}
-			{getNodeDrawState}
+			isDownloadable={nodeConfig?.isDownloadable ?? true}
 			depth={depth + 1}
 			{useLayerTypeIcon}
 		/>
@@ -273,22 +251,6 @@
 <NodeAnimation {isOpen} {content} childNodes={isFolder ? node.children : null} {childNode} />
 
 <style>
-	.filter-transition-wrapper {
-		transition:
-			opacity 0.18s ease-in-out,
-			transform 0.18s ease-in-out;
-	}
-
-	.fade-in {
-		opacity: 1;
-		transform: scale(1);
-	}
-
-	.fade-out {
-		opacity: 0;
-		transform: scale(0.95);
-	}
-
 	.visibility-wrapper {
 		display: grid;
 		grid-template-columns: 0fr;

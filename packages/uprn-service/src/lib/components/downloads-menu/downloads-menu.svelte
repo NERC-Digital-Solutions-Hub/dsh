@@ -11,7 +11,7 @@
 	import { toast } from 'svelte-sonner';
 	import { page } from '$app/stores';
 	import type { UprnDownloadService } from '$lib/services/uprn-download-service';
-	import type { WebMapStore } from '$lib/stores/web-map-store.svelte';
+	import type { IWebMapService } from '$lib/services/web-map-service';
 	import {
 		DownloadStatus,
 		JobRequestResponseType,
@@ -26,12 +26,11 @@
 	import SelectionEntryCard from '$lib/components/selection-entry-card/selection-entry-card.svelte';
 
 	type Props = {
-		webMapStore: WebMapStore;
 		uprnDownloadService: UprnDownloadService;
 		fieldsToHide?: Set<string>;
 	};
 
-	const { webMapStore, uprnDownloadService, fieldsToHide }: Props = $props();
+	const { uprnDownloadService, fieldsToHide }: Props = $props();
 
 	let copiedUrls = $state<Set<string>>(new Set()); // track which URLs have been recently copied
 	const downloads = $derived.by(() => downloadsStore.getDownloads());
@@ -102,10 +101,12 @@
 
 				if (!response || !response.guid || response.type !== JobRequestResponseType.Success) {
 					download.status = DownloadStatus.Failed;
-					download.errorMessage = response?.message || 
-						!response ? 'The server did not return a valid response.'
-							: !response.guid ? 'The server responded but returned an invalid GUID.'
-								 : 'The server responded but did not return a successful response.';
+					download.errorMessage =
+						response?.message || !response
+							? 'The server did not return a valid response.'
+							: !response.guid
+								? 'The server responded but returned an invalid GUID.'
+								: 'The server responded but did not return a successful response.';
 					console.error('[downloads-menu] Download request failed:', response);
 					downloadsStore.updateDownloadStatus(download);
 					continue;
@@ -197,7 +198,8 @@
 						break;
 					case JobStatusType.Error:
 						download.status = DownloadStatus.Failed;
-						download.errorMessage = job.status.message || 'An unknown error occurred during processing on the server.';
+						download.errorMessage =
+							job.status.message || 'An unknown error occurred during processing on the server.';
 						break;
 					default:
 						console.warn('[downloads-menu] Unknown job status type:', job.status.type);

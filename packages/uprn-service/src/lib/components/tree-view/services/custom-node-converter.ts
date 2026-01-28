@@ -1,4 +1,4 @@
-import type { TreeNode } from '$lib/components/tree-view/types';
+import type { TreeNode } from '$lib/models/treeview';
 import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
 
 /**

@@ -4,7 +4,7 @@
 	import { TreeviewStore } from '$lib/stores/treeview-store.svelte';
 	import { onDestroy } from 'svelte';
 	import Node from './node.svelte';
-	import { TreeLayerNode } from '$lib/components/tree-view/types';
+	import { TreeLayerNode } from '$lib/models/treeview/index.js';
 	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 	import FeatureLayerView from '@arcgis/core/views/layers/FeatureLayerView';
 	import type { AreaSelectionStore } from '$lib/stores/area-selection-store.svelte';

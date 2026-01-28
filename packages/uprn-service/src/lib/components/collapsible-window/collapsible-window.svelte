@@ -3,16 +3,17 @@
 	import * as Card from '$lib/components/shadcn/card/index.js';
 	import Button from '$lib/components/shadcn/button/button.svelte';
 	import { scale } from 'svelte/transition';
+	import { cn } from '$lib/utils.js';
 	import { ChevronDown, ChevronUp, Maximize, Minimize } from '@lucide/svelte';
 
 	type Props = {
 		/** Whether the window is opened on initialisation. */
 		isOpenedOnInit?: boolean;
+		class?: string;
 		children?: Snippet;
 	};
 
-	const { isOpenedOnInit: isOpenedOnInit = false, children }: Props = $props();
-
+	const { isOpenedOnInit: isOpenedOnInit = false, class: className, children }: Props = $props();
 	let isInitialised = $state<boolean>(false);
 	let isOpened = $state<boolean>(false);
 	let isMaximised = $state<boolean>(false);
@@ -65,7 +66,7 @@
 	}
 </script>
 
-<div bind:this={cardElement}>
+<div bind:this={cardElement} class={cn(className)}>
 	<Card.Root class="h-full w-full gap-0 rounded-none py-0 pt-0 pb-0">
 		<Card.Header class="pt-2">
 			<div class="flex w-full items-center justify-between">

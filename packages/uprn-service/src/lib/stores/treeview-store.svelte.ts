@@ -4,7 +4,7 @@ import {
 	TreeLayerNode,
 	TreeFieldNode,
 	LayerDrawState
-} from '$lib/components/tree-view/types.js';
+} from '$lib/models/treeview/index.js';
 import { type TreeviewNodeConfig, type VisibilityGroupConfig } from '$lib/types/treeview.js';
 import { SvelteMap } from 'svelte/reactivity';
 import type { CustomNodeConverter } from '$lib/components/tree-view/services/custom-node-converter';

@@ -50,7 +50,7 @@
 	// State
 	let sidebarElement: HTMLElement;
 	let sidebarSize = $state(0);
-	let currentSize = $state(originalSize ?? DEFAULT_SIZE);
+	let currentSize = $derived(originalSize ?? DEFAULT_SIZE);
 	let isResizing = $state(false);
 	let hasManuallyResized = $state(false);
 

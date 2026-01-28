@@ -5,6 +5,8 @@ import PortalItem from '@arcgis/core/portal/PortalItem';
 import esriConfig from '@arcgis/core/config.js';
 import * as urlUtils from '@arcgis/core/core/urlUtils.js';
 import { getSublayerId } from '$lib/utils/treeview';
+import type { IWebMapService } from '$lib/services/web-map-service.js';
+
 export type WebMapStoreParams = {
 	portalUrl?: string | null;
 	itemId: string;
@@ -19,7 +21,7 @@ export type Proxy = {
 /**
  * Store for managing the webmap.
  */
-export class WebMapStore {
+export class WebMapStore implements IWebMapService {
 	public isLoaded: boolean = $state(false);
 	public data: __esri.WebMap | null = $state<__esri.WebMap | null>(null);
 	public dataLookup: SvelteMap<string, __esri.Layer | __esri.Sublayer> = $derived.by(() => {
@@ -59,7 +61,7 @@ export class WebMapStore {
 	 * Initializes the webmap from a portal URL and item ID.
 	 * @param params - The parameters for initializing the webmap.
 	 */
-	async initializeAsync(params: WebMapStoreParams): Promise<void> {
+	public async initializeAsync(params: WebMapStoreParams): Promise<void> {
 		if (this.data) {
 			return;
 		}
@@ -81,6 +83,15 @@ export class WebMapStore {
 		} finally {
 			this.loading = false;
 		}
+	}
+
+	/**
+	 * Retrieves a layer by its ID.
+	 * @param layerId The layer ID.
+	 * @return The layer or sublayer with the specified ID, or null if not found.
+	 */
+	public getLayerById(layerId: string): __esri.Layer | __esri.Sublayer | null {
+		return this.dataLookup.get(layerId) || null;
 	}
 
 	/**
