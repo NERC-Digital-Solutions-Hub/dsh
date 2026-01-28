@@ -18,9 +18,10 @@
 
 	let { webmapService, isOpen = $bindable(), activeLayerId = $bindable() }: Props = $props();
 
+	let hasLayerDef: boolean | null = $state(null);
 	let layerDef: LayerDef | null = $state(null);
-	let layerDescription: string | null = $derived.by(() => layerDef?.description ?? null);
-	let layerCopyright: string | null = $derived.by(() => layerDef?.copyrightText ?? null);
+	let layerDescription: string | null = $state(null);
+	let layerCopyright: string | null = $state(null);
 
 	const layer: __esri.Layer | __esri.Sublayer | null = $derived.by(() => {
 		return activeLayerId ? webmapService.getLayerById(activeLayerId) || null : null;
@@ -28,13 +29,20 @@
 
 	$effect(() => {
 		if (!isOpen) {
+			hasLayerDef = null;
 			layerDef = null;
 		}
 	});
 
 	$effect(() => {
+		const open = isOpen;
+		if (!open) {
+			return;
+		}
+
 		const localLayer = layer;
 		if (!localLayer || localLayer.type === 'sublayer') {
+			hasLayerDef = false;
 			layerDef = null;
 			return;
 		}
@@ -47,9 +55,11 @@
 		const layerUrl: string | undefined = parsedLayer?.parsedUrl?.path;
 		if (!layerUrl) {
 			console.log('[ItemInfoDialog] No URL found for layer:', layer);
+			hasLayerDef = false;
 			return;
 		}
 
+		hasLayerDef = true;
 		const load = async (url: string) => {
 			try {
 				const { data } = await esriRequest(url, {
@@ -57,12 +67,16 @@
 					responseType: 'json'
 				});
 				if (cancelled) {
+					hasLayerDef = false;
 					return;
 				}
 
 				layerDef = data;
+				layerDescription = layerDef?.description || null;
+				layerCopyright = layerDef?.copyrightText || null;
 				console.log('[ItemInfoDialog] Loaded data:', data, 'for layer:', layer);
 			} catch (error) {
+				hasLayerDef = false;
 				console.error('[ItemInfoDialog] Error loading portal item:', error);
 			}
 		};
@@ -70,12 +84,21 @@
 		load(layerUrl);
 
 		return () => {
+			hasLayerDef = null;
 			cancelled = true;
 		};
 	});
 </script>
 
-{#if layer}
+{console.log(
+	'[ItemInfoDialog] Rendering dialog for layer:',
+	layer,
+	'hasLayerDef:',
+	hasLayerDef,
+	'layerDef:',
+	layerDef
+)}
+{#if layer && (hasLayerDef == false || (hasLayerDef == true && layerDef))}
 	<Dialog.Root bind:open={isOpen} onOpenChange={(open) => (isOpen = open)}>
 		<Dialog.Content
 			class="flex max-h-[80vh] min-h-0 flex-col gap-4 overflow-hidden sm:max-w-[700px]"
