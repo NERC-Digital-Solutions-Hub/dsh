@@ -413,6 +413,7 @@
 								bind:this={areaSelectionTreeview}
 								webMap={webMapStore.data!}
 								treeviewConfigStore={treeviewConfig!}
+								layerViewProvider={uprnMapView?.getLayerViewProvider()!}
 								{areaSelectionStore}
 							/>
 						{/if}

@@ -4,11 +4,12 @@
 	import { TreeviewStore } from '$lib/stores/treeview-store.svelte';
 	import { onDestroy } from 'svelte';
 	import Node from './node.svelte';
-	import { TreeLayerNode } from '$lib/models/treeview/index.js';
+	import { LayerDrawState, TreeLayerNode } from '$lib/models/treeview/index.js';
 	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 	import FeatureLayerView from '@arcgis/core/views/layers/FeatureLayerView';
 	import type { AreaSelectionStore } from '$lib/stores/area-selection-store.svelte';
 	import { TreeviewType } from '$lib/types/treeview';
+	import type { LayerViewProvider } from '$lib/services/layer-view-provider';
 
 	/**
 	 * Props for the TreeView component.
@@ -20,14 +21,26 @@
 		/** Store for tree view config settings. */
 		treeviewConfigStore: TreeviewConfigStore;
 
+		/** Provider for layer views. */
+		layerViewProvider: LayerViewProvider;
+
 		/** Store for area selection management. */
 		areaSelectionStore: AreaSelectionStore;
 	};
 
-	const { webMap, treeviewConfigStore, areaSelectionStore }: Props = $props();
+	const { webMap, treeviewConfigStore, layerViewProvider, areaSelectionStore }: Props = $props();
 
 	const treeviewStore = new TreeviewStore();
 	let lastLoadedWebMapId: string | null = $state(null);
+
+	function getNodeDrawState(nodeId: string): LayerDrawState {
+		console.log(
+			'AREA TREEVIEW: Getting draw state for node:',
+			nodeId,
+			treeviewStore.getNodeDrawState(nodeId)
+		);
+		return treeviewStore.getNodeDrawState(nodeId);
+	}
 
 	export function clearSelections() {
 		treeviewStore.clearSelections();
@@ -40,7 +53,12 @@
 		}
 
 		treeviewStore.clearSelections();
-		treeviewStore.initialize(TreeviewType.Area, webMap.layers.toArray(), treeviewConfigStore, null);
+		treeviewStore.initialize(
+			TreeviewType.Area,
+			webMap.layers.toArray(),
+			treeviewConfigStore,
+			layerViewProvider
+		);
 		lastLoadedWebMapId = webMap.portalItem?.id || null;
 	});
 
@@ -94,6 +112,7 @@
 				onNodeVisibilityChange={(node, visible) =>
 					treeviewStore.setVisibilityState(node.id, visible)}
 				getNodeVisibility={(nodeId) => treeviewStore.getVisibilityState(nodeId)}
+				{getNodeDrawState}
 				depth={0}
 				useLayerTypeIcon={true}
 			/>

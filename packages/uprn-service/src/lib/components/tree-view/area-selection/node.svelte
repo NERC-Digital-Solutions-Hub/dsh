@@ -3,11 +3,12 @@
 	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
 	import { getNodeIcon } from '../get-node-icon';
 	import NodeAnimation from '../node-animation.svelte';
-	import { TreeLayerNode, type TreeNode } from '$lib/models/treeview/index.js';
+	import { LayerDrawState, TreeLayerNode, type TreeNode } from '$lib/models/treeview/index.js';
 	import NodeContent from './node-content.svelte';
 	import Node from './node.svelte';
 	import { TreeviewNodeTypology, type TreeviewNodeConfig } from '$lib/types/treeview';
 	import type { Component } from 'svelte';
+	import VisibilityCheckbox from '$lib/components/visibility-checkbox/visibility-checkbox.svelte';
 
 	/**
 	 * Props for the Node component.
@@ -23,6 +24,8 @@
 		onNodeVisibilityChange?: (node: TreeNode, visible: boolean) => void;
 		/** Function to get current node visibility. */
 		getNodeVisibility?: (nodeId: string) => boolean | undefined;
+		/** Function to get current node draw state. */
+		getNodeDrawState?: (nodeId: string) => LayerDrawState;
 		/** Depth level in the tree. */
 		depth?: number;
 		/** Whether to use layer type specific icons. */
@@ -36,6 +39,7 @@
 		onNodeClick,
 		onNodeVisibilityChange,
 		getNodeVisibility,
+		getNodeDrawState,
 		depth = 0,
 		useLayerTypeIcon = false
 	}: Props = $props();
@@ -58,6 +62,10 @@
 
 	/** Reactive state for the node's icon. */
 	let icon: string | Component = $state('');
+
+	/** Reactive state for visibility icon. */
+	let showVisibility: boolean = $state(false);
+	let isVisibilityAnimatingOut: boolean = $state(false);
 
 	/**
 	 * Checks if any child nodes are visible.
@@ -101,6 +109,27 @@
 			isFolder,
 			isOpen
 		);
+	});
+
+	$effect(() => {
+		if (!isFolder) {
+			showVisibility = true;
+			return;
+		}
+
+		if (isPressed && !showVisibility) {
+			showVisibility = true;
+			isVisibilityAnimatingOut = true;
+			setTimeout(() => {
+				isVisibilityAnimatingOut = false;
+			}, 50);
+		} else if (!isPressed && showVisibility) {
+			isVisibilityAnimatingOut = true;
+			setTimeout(() => {
+				showVisibility = false;
+				isVisibilityAnimatingOut = false;
+			}, 200);
+		}
 	});
 
 	/**
@@ -160,7 +189,23 @@
 				{depth}
 				onclick={handleClick}
 				{isOpen}
-			/>
+			>
+				{#snippet children()}
+					{#if isPressed}
+						<div class="flex items-center">
+							<div class="visibility-wrapper" class:visible={!isVisibilityAnimatingOut}>
+								<div class="visibility-inner">
+									<VisibilityCheckbox
+										disabled={true}
+										checked={true}
+										indeterminate={getNodeDrawState?.(node.id) === LayerDrawState.Suspended}
+									/>
+								</div>
+							</div>
+						</div>
+					{/if}
+				{/snippet}
+			</NodeContent>
 		{/if}
 	{/if}
 {/snippet}
@@ -173,6 +218,7 @@
 			{onNodeClick}
 			{onNodeVisibilityChange}
 			{getNodeVisibility}
+			{getNodeDrawState}
 			depth={depth + 1}
 			{useLayerTypeIcon}
 		/>
@@ -180,3 +226,30 @@
 {/snippet}
 
 <NodeAnimation {isOpen} {content} childNodes={isFolder ? node.children : null} {childNode} />
+
+<style>
+	.visibility-wrapper {
+		display: grid;
+		grid-template-columns: 0fr;
+		transition: grid-template-columns 0.2s ease-out;
+	}
+
+	.visibility-wrapper.visible {
+		grid-template-columns: 1fr;
+	}
+
+	.visibility-inner {
+		overflow: hidden;
+		display: flex;
+		opacity: 0;
+		transform: translateX(10px);
+		transition:
+			opacity 0.4s ease-out,
+			transform 0.2s ease-out;
+	}
+
+	.visibility-wrapper.visible .visibility-inner {
+		opacity: 1;
+		transform: translateX(0);
+	}
+</style>
