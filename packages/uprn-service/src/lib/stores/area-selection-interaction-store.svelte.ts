@@ -208,6 +208,7 @@ export class AreaSelectionInteractionStore {
 			return;
 		}
 
+		console.log(`[area-selection-interaction-store] removing selected area ID ${id}.`);
 		this.lastRemovedArea = { id, handle: removedHandle };
 
 		removedHandle.remove();

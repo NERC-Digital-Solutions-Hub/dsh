@@ -8,6 +8,7 @@
 	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 	import FeatureLayerView from '@arcgis/core/views/layers/FeatureLayerView';
 	import type { AreaSelectionStore } from '$lib/stores/area-selection-store.svelte';
+	import { TreeviewType } from '$lib/types/treeview';
 
 	/**
 	 * Props for the TreeView component.
@@ -39,7 +40,7 @@
 		}
 
 		treeviewStore.clearSelections();
-		treeviewStore.initialize(webMap.layers.toArray(), treeviewConfigStore, null);
+		treeviewStore.initialize(TreeviewType.Area, webMap.layers.toArray(), treeviewConfigStore, null);
 		lastLoadedWebMapId = webMap.portalItem?.id || null;
 	});
 

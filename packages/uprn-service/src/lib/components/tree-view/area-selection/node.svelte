@@ -6,6 +6,8 @@
 	import { TreeLayerNode, type TreeNode } from '$lib/models/treeview/index.js';
 	import NodeContent from './node-content.svelte';
 	import Node from './node.svelte';
+	import { TreeviewNodeTypology, type TreeviewNodeConfig } from '$lib/types/treeview';
+	import type { Component } from 'svelte';
 
 	/**
 	 * Props for the Node component.
@@ -38,11 +40,15 @@
 		useLayerTypeIcon = false
 	}: Props = $props();
 
+	let nodeConfig: TreeviewNodeConfig | null = $derived(
+		treeviewConfigStore?.getItemConfig(node.id) ?? null
+	);
+
 	/** Whether this node represents a folder (has children). */
-	const isFolder = !!(node.children && node.children.length);
+	const isFolder = $derived(!!(node.children && node.children.length));
 
 	/** Whether this node has visibility controls (leaf nodes). */
-	const hasVisibility = !isFolder;
+	const hasVisibility = $derived(!isFolder);
 
 	/** Reactive state for whether the folder is open. */
 	let isOpen = $state(false);
@@ -51,7 +57,7 @@
 	let isPressed = $state<boolean>(false);
 
 	/** Reactive state for the node's icon. */
-	let icon = $state<string>('');
+	let icon: string | Component = $state('');
 
 	/**
 	 * Checks if any child nodes are visible.
@@ -88,7 +94,13 @@
 			isPressed = isVisible !== undefined ? isVisible : node.layer.visible;
 		}
 
-		icon = getNodeIcon(node.layer, useLayerTypeIcon, isFolder, isOpen);
+		icon = getNodeIcon(
+			nodeConfig?.typology ?? TreeviewNodeTypology.Area,
+			node.layer,
+			useLayerTypeIcon,
+			isFolder,
+			isOpen
+		);
 	});
 
 	/**

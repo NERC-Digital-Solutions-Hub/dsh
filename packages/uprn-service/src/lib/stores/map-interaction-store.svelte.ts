@@ -195,6 +195,12 @@ export class MapInteractionStore {
 				const existingHandle: __esri.Handle | undefined =
 					this.areaSelectionInteractionStore.selectionViewState.areaHandles.get(objectId);
 
+				// console.log(
+				// 	'[map-interaction-store] Clicked on objectId:',
+				// 	objectId,
+				// 	'existingHandle:',
+				// 	existingHandle
+				// );
 				if (existingHandle) {
 					this.areaSelectionInteractionStore.removeSelectedArea(objectId);
 				} else {

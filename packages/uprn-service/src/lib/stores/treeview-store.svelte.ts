@@ -5,7 +5,11 @@ import {
 	TreeFieldNode,
 	LayerDrawState
 } from '$lib/models/treeview/index.js';
-import { type TreeviewNodeConfig, type VisibilityGroupConfig } from '$lib/types/treeview.js';
+import {
+	TreeviewType,
+	type TreeviewNodeConfig,
+	type VisibilityGroupConfig
+} from '$lib/types/treeview.js';
 import { SvelteMap } from 'svelte/reactivity';
 import type { CustomNodeConverter } from '$lib/components/tree-view/services/custom-node-converter';
 import type { CustomRendererService } from '$lib/services/custom-renderer-service';
@@ -17,6 +21,8 @@ import { getSublayerId } from '$lib/utils/treeview';
 
 export class TreeviewStore {
 	public initialized: boolean = $state<boolean>(false);
+
+	#treeviewType: TreeviewType | null = null;
 
 	#configStore: TreeviewConfigStore | null = null;
 
@@ -63,6 +69,7 @@ export class TreeviewStore {
 	#customRendererService: CustomRendererService | null = null;
 
 	initialize(
+		treeviewType: TreeviewType,
 		layers: __esri.Layer[],
 		configStore: TreeviewConfigStore,
 		layerViewProvider: LayerViewProvider | null,
@@ -74,6 +81,7 @@ export class TreeviewStore {
 		}
 
 		this.initialized = true;
+		this.#treeviewType = treeviewType;
 
 		if (!configStore) {
 			throw new Error('TreeviewStore requires a valid TreeviewConfigStore to initialize.');
@@ -150,7 +158,7 @@ export class TreeviewStore {
 		const nonHiddenNodes: TreeNode[] = [];
 		for (const node of nodes) {
 			const nodeConfig = this.#findTreeviewItemConfig(node.id);
-			if (nodeConfig && nodeConfig.isHidden) {
+			if (nodeConfig && (nodeConfig.isHidden || nodeConfig.treeviewType !== this.#treeviewType)) {
 				continue;
 			}
 
@@ -199,7 +207,7 @@ export class TreeviewStore {
 			node.featureLayer.displayField = isVisible ? node.field.name : '';
 
 			if (isVisible && this.#customRendererService) {
-				console.log('[TreeviewStore] Applying custom renderer for field:', node.field.name);
+				//console.log('[TreeviewStore] Applying custom renderer for field:', node.field.name);
 				this.#customRendererService.applyCustomRenderer(node.featureLayer, node.field.name);
 			}
 		}
@@ -214,7 +222,7 @@ export class TreeviewStore {
 			}
 		}
 
-		if (!config || config.isHidden) {
+		if (!config || config.isHidden || config.treeviewType !== this.#treeviewType) {
 			return;
 		}
 
@@ -422,9 +430,11 @@ export class TreeviewStore {
 	 * @returns An array of the root tree nodes
 	 */
 	#buildTreeFromLayers(layers: __esri.Layer[]): TreeNode[] {
-		const rootNodes = layers.map((layer) => {
-			return this.#layerToNode(layer, undefined);
-		});
+		const rootNodes = layers
+			.map((layer) => {
+				return this.#layerToNode(layer, undefined);
+			})
+			.filter((n) => n !== null);
 
 		return this.#reverseTreeOrder([...rootNodes]); // reverse the order to match expected display (map layers are typically reverse ordered)
 	}
@@ -469,15 +479,28 @@ export class TreeviewStore {
 	 * @param parent - The parent node, if any
 	 * @returns The created tree node
 	 */
-	#layerToNode(layer: __esri.Layer, parent?: TreeNode): TreeLayerNode {
+	#layerToNode(layer: __esri.Layer, parent?: TreeNode): TreeLayerNode | null {
 		const nodeConfig: TreeviewNodeConfig | undefined = this.#findTreeviewItemConfig(layer.id);
+		if (!this.#shouldIncludeNode(layer.id)) {
+			layer.visible = false;
+			return null;
+		}
+
 		if (nodeConfig && nodeConfig.customConverterId) {
 			if (!this.#customConverters.has(nodeConfig.customConverterId)) {
+				console.log(
+					`[TreeviewStore] (1) ${this.#treeviewType} Custom converter not found: ${nodeConfig.customConverterId}`,
+					this.#customConverters
+				);
 				throw new Error(`Custom converter not found: ${nodeConfig.customConverterId}`);
 			}
 
 			const converter = this.#customConverters.get(nodeConfig.customConverterId);
 			if (!converter) {
+				console.log(
+					`[TreeviewStore] (2) ${this.#treeviewType} Custom converter not found: ${nodeConfig.customConverterId}`,
+					this.#customConverters
+				);
 				throw new Error(`Custom converter not found: ${nodeConfig.customConverterId}`);
 			}
 
@@ -490,6 +513,13 @@ export class TreeviewStore {
 			: nodeConfig?.isHidden
 				? false
 				: (nodeConfig?.isVisibleOnInit ?? false);
+
+		layer.visible = nodeConfig?.treeviewType === this.#treeviewType ? layer.visible : false;
+
+		console.log(
+			`[TreeviewStore] Type: ${this.#treeviewType} - Layer ${nodeConfig?.name}`,
+			nodeConfig
+		);
 
 		this.#visibilityStates.set(layer.id, layer.visible);
 		this.updateDrawState(node, layer.visible);
@@ -508,9 +538,12 @@ export class TreeviewStore {
 
 		if (this.#isGroupLayer(layer)) {
 			const groupLayer = layer as __esri.GroupLayer;
-			node.children = groupLayer.layers.toArray().map((childLayer) => {
-				return this.#layerToNode(childLayer, node);
-			});
+			node.children = groupLayer.layers
+				.toArray()
+				.map((childLayer) => {
+					return this.#layerToNode(childLayer, node);
+				})
+				.filter((n) => n !== null);
 			return node;
 		}
 
@@ -615,6 +648,20 @@ export class TreeviewStore {
 	 */
 	#isFeatureLayer(layer: __esri.Layer | __esri.Sublayer): boolean {
 		return layer.type === 'feature';
+	}
+
+	/**
+	 * Checks if a node should be included in the treeview.
+	 * @param id The ID of the node.
+	 * @returns True if the node should be included.
+	 */
+	#shouldIncludeNode(id: string): boolean {
+		const config = this.#findTreeviewItemConfig(id);
+		if (!config) {
+			return false;
+		}
+
+		return !config.isHidden && config.treeviewType === this.#treeviewType;
 	}
 
 	#checkInitialized(): void {

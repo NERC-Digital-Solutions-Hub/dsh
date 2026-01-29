@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
+	import type { Component, Snippet } from 'svelte';
 	import OpenIndicator from '$lib/components/open-indicator/open-indicator.svelte';
 	import { getNodeStyles } from '../node-content-styles.js';
 	import { Button } from '$lib/components/shadcn/button/index.js';
@@ -9,7 +9,7 @@
 	 */
 	type Props = {
 		/** The icon HTML/SVG to display. */
-		icon: string;
+		icon: string | Component;
 		/** The display name of the node. */
 		name: string;
 		/** The depth level for indentation. */
@@ -49,7 +49,12 @@
 				<OpenIndicator {isOpen} />
 			{/if}
 			<span class="inline-block size-4 shrink-0" aria-hidden="true">
-				{@html icon}
+				{#if typeof icon === 'string'}
+					{@html icon}
+				{:else}
+					{@const Icon = icon}
+					<Icon />
+				{/if}
 			</span>
 		</div>
 

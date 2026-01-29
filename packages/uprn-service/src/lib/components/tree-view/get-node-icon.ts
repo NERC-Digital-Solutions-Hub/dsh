@@ -1,6 +1,9 @@
 import GroupLayerIcon from '$lib/assets/layers-16.svg?raw';
 import FeatureLayerIcon from '$lib/assets/feature-layer-16.svg?raw';
 import TileLayerIcon from '$lib/assets/tile-layer-16.svg?raw';
+import { Folder, FolderOpen, File, Pentagon } from '@lucide/svelte';
+import { TreeviewNodeTypology } from '$lib/types/treeview';
+import type { Component } from 'svelte';
 
 /**
  * SVG path for an open folder icon.
@@ -19,6 +22,7 @@ const FILE_ICON = `<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 
 
 /**
  * Determines the appropriate icon for a tree node based on layer type and state.
+ * @param typography - The typology of the treeview node.
  * @param layer - The ESRI layer or sublayer to get an icon for.
  * @param useLayerTypeIcon - Whether to use layer-specific icons instead of generic folder/file icons.
  * @param isFolder - Whether the node represents a folder (has children).
@@ -26,11 +30,24 @@ const FILE_ICON = `<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 
  * @returns The SVG icon as a string.
  */
 export const getNodeIcon = (
+	typography: TreeviewNodeTypology,
 	layer: __esri.Layer | __esri.Sublayer,
 	useLayerTypeIcon: boolean,
 	isFolder: boolean,
 	isOpen: boolean
-): string => {
+): string | Component => {
+	switch (typography) {
+		case TreeviewNodeTypology.Folder:
+			return isOpen ? FolderOpen : Folder;
+		case TreeviewNodeTypology.DatasetRaster:
+			return TileLayerIcon;
+		case TreeviewNodeTypology.DatasetVector:
+			return FeatureLayerIcon;
+		case TreeviewNodeTypology.Variable:
+			return File;
+		case TreeviewNodeTypology.Area:
+			return Pentagon;
+	}
 	if (useLayerTypeIcon) {
 		return getLayerIcon(layer, isFolder);
 	}

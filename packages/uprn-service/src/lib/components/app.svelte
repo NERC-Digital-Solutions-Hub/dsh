@@ -89,8 +89,7 @@
 	);
 
 	let mapView: __esri.MapView | null = $state(null);
-	let dataSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
-	let areaSelectionTreeviewConfig: TreeviewConfigStore | undefined = $state();
+	let treeviewConfig: TreeviewConfigStore | undefined = $state();
 	let customRendererService = new CustomRendererService();
 	let customRendererServiceReady = $state(false);
 
@@ -228,8 +227,6 @@
 	 * Initializes the application by loading configuration and setting up stores.
 	 */
 	onMount(async () => {
-		//await clearDatabase();
-
 		try {
 			await uprnConfigStore.load(`${base}/config/apps/uprn/config.json`);
 		} catch (error) {
@@ -302,15 +299,16 @@
 		areaSelectionInteractionStore.setFieldInfos(currentMap.selectableLayers || []);
 
 		// Update treeview configurations
-		dataSelectionTreeviewConfig = new TreeviewConfigStore(
-			currentMap.dataTreeview as TreeviewConfig
+		console.log(
+			`[uprn/page] Updating treeview configurations for map`,
+			$state.snapshot(currentMap.treeview)
 		);
-		areaSelectionTreeviewConfig = new TreeviewConfigStore(
-			currentMap.areaTreeview as TreeviewConfig
+		treeviewConfig = new TreeviewConfigStore(
+			$state.snapshot(currentMap.treeview) as TreeviewConfig
 		);
 
 		// Update fields to hide
-		fieldsToHide = new Set(currentMap.dataTreeview?.fieldsToHide || []);
+		fieldsToHide = new Set(currentMap.treeview?.fieldsToHide || []);
 
 		// Initialize the web map with new configuration
 		webMapStore.initializeAsync({
@@ -414,7 +412,7 @@
 							<AreaSelectionTreeview
 								bind:this={areaSelectionTreeview}
 								webMap={webMapStore.data!}
-								treeviewConfigStore={areaSelectionTreeviewConfig!}
+								treeviewConfigStore={treeviewConfig!}
 								{areaSelectionStore}
 							/>
 						{/if}
@@ -429,7 +427,7 @@
 								webMap={webMapStore.data!}
 								{dataSelectionStore}
 								layerViewProvider={uprnMapView?.getLayerViewProvider()!}
-								treeviewConfigStore={dataSelectionTreeviewConfig!}
+								treeviewConfigStore={treeviewConfig!}
 								{customRendererService}
 								{fieldFilterMenuStore}
 							/>
@@ -444,7 +442,7 @@
 								webMapService={webMapStore}
 								{areaSelectionInteractionStore}
 								{dataSelectionStore}
-								dataSelectionTreeviewConfig={dataSelectionTreeviewConfig!}
+								dataSelectionTreeviewConfig={treeviewConfig!}
 								{fieldFilterMenuStore}
 							/>
 						{/if}

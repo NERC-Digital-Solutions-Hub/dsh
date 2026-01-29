@@ -99,6 +99,7 @@
             {
                 "_name": "ClimateJust",
                 "id": "04f93a3332e74e3d9323194473f28965",
+                "typology": "folder",
                 "isOpenOnInit": true,
                 "visibilityGroupId": "group:main",
                 "inheritanceGroupId": "group:main"
@@ -106,12 +107,14 @@
             {
                 "_name": "Noise Levels",
                 "id": "31b78c41c34c4b249c2847ee0b255e79",
+                "typology": "folder",
                 "visibilityGroupId": "group:main",
                 "inheritanceGroupId": "group:main"
             },
             {
                 "_name": "Carbon Storage",
                 "id": "19b02d862f9-layer-275",
+                "typology": "dataset-raster",
                 "visibilityGroupId": "group:main",
                 "visibilityDependencyIds": [
                     "19b02d862f9-layer-275-15"
@@ -121,6 +124,7 @@
             {
                 "_name": "Ellenberg Vegetation Indicators",
                 "id": "19b02dc323e-layer-276",
+                "typology": "dataset-raster",
                 "visibilityGroupId": "group:main",
                 "visibilityDependencyIds": [
                     "19b02dc323e-layer-276-0"
@@ -130,6 +134,7 @@
             {
                 "_name": "UK Air - Modelled Background Pollution",
                 "id": "19b02d3e1ba-layer-273",
+                "typology": "folder",
                 "visibilityGroupId": "group:main",
                 "visibilityDependencyIds": [
                     "19b02eff60d-layer-289"
@@ -139,6 +144,7 @@
             {
                 "_name": "AQREAN Surface Level",
                 "id": "19b03834363-layer-83",
+                "typology": "folder",
                 "visibilityGroupId": "group:main",
                 "visibilityDependencyIds": [
                     "19b03f4cc8f-layer-161"
@@ -148,6 +154,7 @@
             {
                 "_name": "AQREAN Surface Level - Bias Corrected",
                 "id": "19b03f7d947-layer-292",
+                "typology": "folder",
                 "visibilityGroupId": "group:main",
                 "visibilityDependencyIds": [
                     "19b03f7b1ab-layer-229"

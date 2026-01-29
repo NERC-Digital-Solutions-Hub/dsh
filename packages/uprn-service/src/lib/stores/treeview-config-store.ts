@@ -1,6 +1,5 @@
 import {
 	TreeviewNodeType,
-	type InheritanceGroupConfig,
 	type TreeviewConfig,
 	type TreeviewNodeConfig,
 	type VisibilityGroupConfig
@@ -18,18 +17,15 @@ import Sublayer from '@arcgis/core/layers/support/Sublayer';
 export class TreeviewConfigStore {
 	/** Private array storing all treeview node configurations */
 	#configs: TreeviewNodeConfig[] = [];
+
 	/** Private Map for fast O(1) lookup of treeview node configurations by their ID */
 	#configLookup: Map<string, TreeviewNodeConfig> = new Map();
 
 	/** Private array storing all visibility group configurations */
 	#visibilityGroups: VisibilityGroupConfig[] = [];
+
 	/** Private Map for fast O(1) lookup of visibility groups by their ID */
 	#visibilityGroupsLookup: Map<string, VisibilityGroupConfig> = new Map();
-
-	/** Private array storing all inheritance group configurations */
-	#inheritanceGroups: InheritanceGroupConfig[] = [];
-	/** Private Map for fast O(1) lookup of inheritance groups by their ID */
-	#inheritanceGroupsLookup: Map<string, InheritanceGroupConfig> = new Map();
 
 	/** Set of field names to hide from display in the treeview */
 	#fieldsToHide: Set<string> = new Set<string>();
@@ -44,17 +40,13 @@ export class TreeviewConfigStore {
 			throw new Error('TreeviewConfigStore requires a valid configuration object.');
 		}
 
-		this.#configs = config.items ?? [];
+		console.log('[TreeviewConfigStore] Initializing with config:', config);
+		this.#configs = config.layers ?? [];
 		this.#configLookup = new Map(this.#configs.map((item) => [item.id, item]));
 
 		this.#visibilityGroups = config.visibilityGroups ?? [];
 		this.#visibilityGroupsLookup = new Map(
 			this.#visibilityGroups.map((group) => [group.id, group])
-		);
-
-		this.#inheritanceGroups = config.inheritanceGroups ?? [];
-		this.#inheritanceGroupsLookup = new Map(
-			this.#inheritanceGroups.map((group) => [group.id, group])
 		);
 
 		if (config.fieldsToHide) {
@@ -80,16 +72,6 @@ export class TreeviewConfigStore {
 	 */
 	getVisibilityGroupConfig(id: string): VisibilityGroupConfig | undefined {
 		return this.#visibilityGroupsLookup.get(id);
-	}
-
-	/**
-	 * Retrieves the configuration for a specific inheritance group by its ID.
-	 *
-	 * @param id - The unique identifier of the inheritance group to retrieve
-	 * @returns The inheritance group configuration if found, undefined otherwise
-	 */
-	getInheritanceGroupConfig(id: string): InheritanceGroupConfig | undefined {
-		return this.#inheritanceGroupsLookup.get(id);
 	}
 
 	resolveInheritance(layers: __esri.Layer[]): void {
@@ -193,83 +175,92 @@ export class TreeviewConfigStore {
 		parentNodeConfig?: TreeviewNodeConfig
 	): TreeviewNodeConfig {
 		let nodeConfig: TreeviewNodeConfig | undefined = this.getItemConfig(nodeId);
-		const inheritanceGroup: InheritanceGroupConfig | undefined = nodeConfig?.inheritanceGroupId
-			? this.getInheritanceGroupConfig(nodeConfig.inheritanceGroupId)
-			: this.getInheritanceGroupConfig(parentNodeConfig?.inheritanceGroupId ?? '');
+		if (!nodeConfig) {
+			console.log(
+				`[TreeviewConfigStore] Searching parent config for node ID: ${nodeId}`,
+				parentNodeConfig
+			);
+			const config = parentNodeConfig?.children?.find((child) => child.id === nodeId);
+			if (config) {
+				console.log(`[TreeviewConfigStore] Found node ID: ${nodeId} in parent config:`, config);
+			}
+		}
+
+		if (parentNodeConfig?.children) {
+			console.log(
+				`[TreeviewConfigStore] Parent children for node ID: ${nodeId}`,
+				parentNodeConfig.children,
+				'Parent:',
+				parentNodeConfig
+			);
+		}
+
+		nodeConfig ??= parentNodeConfig?.children?.find((child) => child.id === nodeId);
 
 		nodeConfig = {
 			id: nodeId,
+			name: nodeConfig?.name,
 			type: TreeviewNodeType.None,
+			treeviewType: this.#getConfigValue(
+				true,
+				'treeviewType',
+				nodeConfig,
+				parentNodeConfig,
+				undefined
+			),
+			typology: this.#getConfigValue(false, 'typology', nodeConfig, parentNodeConfig, undefined),
 			isDownloadable: this.#getConfigValue(
-				inheritanceGroup,
+				true,
 				'isDownloadable',
 				nodeConfig,
 				parentNodeConfig,
 				true
 			),
 			isVisibleOnInit: this.#getConfigValue(
-				inheritanceGroup,
+				false,
 				'isVisibleOnInit',
 				nodeConfig,
 				parentNodeConfig,
 				false
 			),
-			isHidden: this.#getConfigValue(
-				inheritanceGroup,
-				'isHidden',
-				nodeConfig,
-				parentNodeConfig,
-				false
-			),
+			isHidden: this.#getConfigValue(true, 'isHidden', nodeConfig, parentNodeConfig, false),
 			disableVisibilityToggle: this.#getConfigValue(
-				inheritanceGroup,
+				true,
 				'disableVisibilityToggle',
 				nodeConfig,
 				parentNodeConfig,
 				false
 			),
 			isOpenOnInit: this.#getConfigValue(
-				inheritanceGroup,
+				false,
 				'isOpenOnInit',
 				nodeConfig,
 				parentNodeConfig,
 				false
 			),
-			showFields: this.#getConfigValue(
-				inheritanceGroup,
-				'showFields',
-				nodeConfig,
-				parentNodeConfig,
-				false
-			),
+			showFields: this.#getConfigValue(false, 'showFields', nodeConfig, parentNodeConfig, false),
 			visibilityDependencyIds: this.#getConfigValue(
-				inheritanceGroup,
+				false,
 				'visibilityDependencyIds',
 				nodeConfig,
 				parentNodeConfig,
 				[]
 			),
 			visibilityGroupId: this.#getConfigValue(
-				inheritanceGroup,
+				true,
 				'visibilityGroupId',
 				nodeConfig,
 				parentNodeConfig,
 				undefined
 			),
 			customConverterId: this.#getConfigValue(
-				inheritanceGroup,
+				false,
 				'customConverterId',
 				nodeConfig,
 				parentNodeConfig,
 				undefined
 			),
-			inheritanceGroupId: this.#getConfigValue(
-				inheritanceGroup,
-				'inheritanceGroupId',
-				nodeConfig,
-				parentNodeConfig,
-				undefined
-			)
+			children: nodeConfig?.children ?? []
 		};
 
 		this.#removeItemConfig(nodeConfig); // remove existing config if present
@@ -280,7 +271,7 @@ export class TreeviewConfigStore {
 
 	/* eslint-disable @typescript-eslint/no-explicit-any */
 	#getConfigValue(
-		inheritanceGroup: InheritanceGroupConfig | undefined,
+		inheritProperty: boolean,
 		propertyName: keyof TreeviewNodeConfig,
 		nodeConfig: TreeviewNodeConfig | undefined,
 		parentNodeConfig: TreeviewNodeConfig | undefined,
@@ -292,7 +283,7 @@ export class TreeviewConfigStore {
 			return value;
 		}
 
-		if (inheritanceGroup?.inheritedProperties.includes(propertyName)) {
+		if (inheritProperty) {
 			return parentNodeConfig ? (parentNodeConfig[propertyName] ?? defaultValue) : defaultValue;
 		}
 

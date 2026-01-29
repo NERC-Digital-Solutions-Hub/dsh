@@ -4,7 +4,7 @@
 	import NodeAnimation from '$lib/components/tree-view/node-animation.svelte';
 	import VisibilityCheckbox from '$lib/components/visibility-checkbox/visibility-checkbox.svelte';
 	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
-	import type { TreeviewNodeConfig } from '$lib/types/treeview.js';
+	import { TreeviewNodeTypology, type TreeviewNodeConfig } from '$lib/types/treeview.js';
 	import { getNodeIcon } from '../get-node-icon';
 	import {
 		LayerDrawState,
@@ -17,6 +17,7 @@
 	import NodeContent from './node-content.svelte';
 	import Node from './node.svelte';
 	import InfoButton from '$lib/components/tree-view/data-selection/info-button.svelte';
+	import type { Component } from 'svelte';
 	/**
 	 * Props for the Node component.
 	 */
@@ -48,8 +49,6 @@
 		onNodeVisibilityChange,
 		onDownloadStateChanged,
 		getDownloadState,
-		onFilterClicked,
-		hasFiltersApplied,
 		getNodeVisibility,
 		getNodeDrawState
 	} = getTreeEvents();
@@ -73,7 +72,7 @@
 	const hasVisibility: boolean = $derived(!isFolder || isChecked);
 
 	/** Reactive state for the node's icon. */
-	let icon: string = $state('');
+	let icon: string | Component = $state('');
 
 	/** Reactive state for whether filter button should be shown. */
 	let showFilter: boolean = $state(false);
@@ -126,7 +125,13 @@
 		if (!(node instanceof TreeLayerNode)) {
 			return;
 		}
-		icon = getNodeIcon(node.layer, useLayerTypeIcon, isFolder, isOpen);
+		icon = getNodeIcon(
+			nodeConfig?.typology ?? TreeviewNodeTypology.Variable,
+			node.layer,
+			useLayerTypeIcon,
+			isFolder,
+			isOpen
+		);
 	});
 
 	// Handle filter visibility changes with animation

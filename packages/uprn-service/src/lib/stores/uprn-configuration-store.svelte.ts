@@ -32,9 +32,12 @@ export class UprnConfigurationStore {
 	}
 
 	async #loadMapsConfig(infos: ConfigurationItemInfo[]) {
-		this.mapsConfig = infos.map(() => new ConfigManager<PortalItemConfig>());
+		const mapsConfig = infos.map(() => new ConfigManager<PortalItemConfig>());
 		for (let i = 0; i < infos.length; i++) {
-			await this.#loadConfigItem(this.mapsConfig[i], infos[i]);
+			await this.#loadConfigItem(mapsConfig[i], infos[i]);
 		}
+
+		console.log('Loaded maps config for', mapsConfig.length, 'items', mapsConfig);
+		this.mapsConfig = mapsConfig;
 	}
 }

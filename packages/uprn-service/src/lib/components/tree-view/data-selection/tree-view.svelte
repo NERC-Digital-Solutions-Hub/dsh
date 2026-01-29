@@ -16,6 +16,7 @@
 	import { TreeviewSelectionController } from '$lib/controllers/TreeviewSelectionController.js';
 	import type { CustomRendererService } from '$lib/services/custom-renderer-service.js';
 	import type { LayerViewProvider } from '$lib/services/layer-view-provider.js';
+	import { TreeviewType } from '$lib/types/treeview';
 
 	/**
 	 * Props for the TreeView component.
@@ -78,6 +79,7 @@
 
 			const aliasPathConverter = new AliasPathNodeConverter(treeviewConfigStore);
 			treeviewStore.initialize(
+				TreeviewType.Data,
 				webMap.layers.toArray(),
 				treeviewConfigStore,
 				layerViewProvider,

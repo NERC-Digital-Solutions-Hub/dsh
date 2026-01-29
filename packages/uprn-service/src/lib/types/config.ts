@@ -8,6 +8,18 @@ export type AppsUprnConfig = {
 	maps: PortalItemConfig[];
 };
 
+// export type PortalItemConfig = {
+// 	_name?: string;
+// 	title: string;
+// 	portalUrl?: string | null;
+// 	portalItemId: string;
+// 	proxy?: Proxy | null;
+// 	customRenderers?: string;
+// 	areaTreeview?: TreeviewConfig;
+// 	dataTreeview?: TreeviewConfig;
+// 	selectableLayers?: { _name: string; id: string; nameField: string; codeField: string }[];
+// };
+
 export type PortalItemConfig = {
 	_name?: string;
 	title: string;
@@ -15,8 +27,7 @@ export type PortalItemConfig = {
 	portalItemId: string;
 	proxy?: Proxy | null;
 	customRenderers?: string;
-	areaTreeview?: TreeviewConfig;
-	dataTreeview?: TreeviewConfig;
+	treeview?: TreeviewConfig;
 	selectableLayers?: { _name: string; id: string; nameField: string; codeField: string }[];
 };
 

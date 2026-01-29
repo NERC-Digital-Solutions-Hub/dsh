@@ -1,14 +1,9 @@
 <script lang="ts">
 	import { Toggle } from '$lib/components/shadcn/toggle/index.js';
 	import OpenIndicator from '$lib/components/open-indicator/open-indicator.svelte';
-	import {
-		accentBgStyles,
-		baseNodeStyles,
-		defaultBgStyles,
-		enhancedHoverStyles,
-		fontStyles,
-		toggleSpecificStyles
-	} from '../node-content-styles.js';
+	import { Button } from '$lib/components/shadcn/button/index.js';
+	import { getNodeStyles, accentBgStyles, defaultBgStyles } from '../node-content-styles.js';
+	import type { Component } from 'svelte';
 
 	/**
 	 * Props for the NodeContent component.
@@ -19,7 +14,7 @@
 		/** Whether the node is currently pressed/selected. */
 		pressed: boolean;
 		/** The icon HTML/SVG to display. */
-		icon: string;
+		icon: string | Component;
 		/** The display name of the node. */
 		name: string;
 		/** The depth level for indentation. */
@@ -32,54 +27,65 @@
 		isOpen: boolean;
 	};
 
-	/** Destructured props. */
 	const { isTogglable, pressed, icon, name, depth, onclick, children, isOpen }: Props = $props();
 
 	/** Calculate width to account for indentation. */
-	const widthCalc = `calc(100% - ${depth * 1}rem)`;
+	const widthCalc = $derived(`calc(100% - ${depth * 1}rem)`);
 
-	/** Combined styles for toggle elements. */
-	const toggleStyles = `${baseNodeStyles} ${enhancedHoverStyles} ${toggleSpecificStyles} ${defaultBgStyles} ${fontStyles}`;
-
-	/** Combined styles for button elements. */
-	const buttonStyles = `${baseNodeStyles} ${enhancedHoverStyles} ${fontStyles}`;
+	const baseClass = getNodeStyles({ enhancedHover: true, includeFont: true });
 </script>
 
 {#if isTogglable}
-	<!-- Render as a toggle for selectable nodes -->
 	<Toggle
 		{pressed}
-		class={toggleStyles}
+		class={`${baseClass} w-full h-auto py-2`}
 		variant="outline"
 		style="width: {widthCalc};"
 		onPressedChange={onclick}
 	>
-		<div class="flex w-full !items-center !justify-between gap-2">
-			<div class="pointer-events-none !flex min-w-0 flex-1 !items-center gap-1">
-				<span class="inline-block size-4" aria-hidden="true">
-					{@html icon}
+		<div class="grid w-full grid-cols-[auto_1fr_auto] items-center gap-x-2">
+			<div class="flex items-center gap-1">
+				<span class="inline-block size-4 shrink-0" aria-hidden="true">
+					{#if typeof icon === 'string'}
+						{@html icon}
+					{:else}
+						{@const Icon = icon}
+						<Icon />
+					{/if}
 				</span>
-				<span class="block w-full text-left break-words">{name}</span>
 			</div>
-			{@render children?.()}
+
+			<span class="min-w-0 whitespace-normal break-words text-left leading-snug">{name}</span>
+
+			<div class="justify-self-end">
+				{@render children?.()}
+			</div>
 		</div>
 	</Toggle>
 {:else}
-	<!-- Render as a button for folder nodes -->
-	<button
-		class="{buttonStyles} {pressed ? accentBgStyles : defaultBgStyles}"
+	<Button
+		class={`${baseClass} w-full h-auto py-2 ${pressed ? accentBgStyles : defaultBgStyles}`}
 		style="width: {widthCalc};"
 		{onclick}
 	>
-		<div class="flex w-full items-center justify-between gap-2">
-			<div class="pointer-events-none flex min-w-0 flex-1 items-center gap-1">
+		<div class="grid w-full grid-cols-[auto_1fr_auto] items-center gap-x-2">
+			<div class="flex items-center gap-1">
 				<OpenIndicator {isOpen} />
-				<span class="inline-block size-4" aria-hidden="true">
-					{@html icon}
+				<span class="inline-block size-4 shrink-0" aria-hidden="true">
+					{#if typeof icon === 'string'}
+						{@html icon}
+					{:else}
+						{@const Icon = icon}
+						<Icon />
+					{/if}
 				</span>
-				<span class="block w-full text-left break-words">{name}</span>
 			</div>
-			{@render children?.()}
+
+			<span class="min-w-0 whitespace-normal break-words text-left leading-snug">{name}</span>
+
+			<div class="justify-self-end">
+				{@render children?.()}
+			</div>
 		</div>
-	</button>
+	</Button>
 {/if}
