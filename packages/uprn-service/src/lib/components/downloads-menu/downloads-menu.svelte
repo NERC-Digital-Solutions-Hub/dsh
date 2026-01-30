@@ -9,9 +9,7 @@
 	import XCircleIcon from '@lucide/svelte/icons/x-circle';
 	import RetryIcon from '@lucide/svelte/icons/rotate-ccw';
 	import { toast } from 'svelte-sonner';
-	import { page } from '$app/stores';
 	import type { UprnDownloadService } from '$lib/services/uprn-download-service';
-	import type { IWebMapService } from '$lib/services/web-map-service';
 	import {
 		DownloadStatus,
 		JobRequestResponseType,

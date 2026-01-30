@@ -5,7 +5,7 @@ import PortalItem from '@arcgis/core/portal/PortalItem';
 import esriConfig from '@arcgis/core/config.js';
 import * as urlUtils from '@arcgis/core/core/urlUtils.js';
 import { getSublayerId } from '$lib/utils/treeview';
-import type { IWebMapService } from '$lib/services/web-map-service.js';
+import type { IWebMapService } from '$lib/services/IWebMapService.js';
 
 export type WebMapStoreParams = {
 	portalUrl?: string | null;

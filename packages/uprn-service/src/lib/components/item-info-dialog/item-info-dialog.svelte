@@ -1,8 +1,7 @@
 <script lang="ts">
-	import PortalItem from '@arcgis/core/portal/PortalItem.js';
 	import esriRequest from '@arcgis/core/request.js';
 	import * as Dialog from '$lib/components/shadcn/dialog/index.js';
-	import type { IWebMapService } from '$lib/services/web-map-service';
+	import type { IWebMapService } from '$lib/services/IWebMapService';
 
 	type LayerDef = {
 		name?: string;
