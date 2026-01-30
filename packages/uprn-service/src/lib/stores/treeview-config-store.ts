@@ -86,6 +86,32 @@ export class TreeviewConfigStore {
 		}
 	}
 
+	/**
+	 * Add a new treeview item configuration to the store.
+	 * @param item The node config to add.
+	 */
+	addItemConfig(item: TreeviewNodeConfig): void {
+		if (this.#configLookup.has(item.id)) {
+			throw new Error(`Item with id ${item.id} already exists.`);
+		}
+
+		this.#configs.push(item);
+		this.#configLookup.set(item.id, item);
+	}
+
+	/**
+	 * Remove a treeview item configuration from the store.
+	 * @param item The item to remove from the store.
+	 */
+	removeItemConfig(item: TreeviewNodeConfig): void {
+		if (!this.#configLookup.has(item.id)) {
+			return;
+		}
+
+		this.#configs = this.#configs.filter((config) => config.id !== item.id);
+		this.#configLookup.delete(item.id);
+	}
+
 	#resolveLayerInheritance(
 		layer: __esri.Layer | __esri.Sublayer,
 		parentNodeConfig?: TreeviewNodeConfig
@@ -263,8 +289,8 @@ export class TreeviewConfigStore {
 			children: nodeConfig?.children ?? []
 		};
 
-		this.#removeItemConfig(nodeConfig); // remove existing config if present
-		this.#addItemConfig(nodeConfig);
+		this.removeItemConfig(nodeConfig); // remove existing config if present
+		this.addItemConfig(nodeConfig);
 
 		return nodeConfig;
 	}
@@ -288,24 +314,6 @@ export class TreeviewConfigStore {
 		}
 
 		return defaultValue;
-	}
-
-	#addItemConfig(item: TreeviewNodeConfig): void {
-		if (this.#configLookup.has(item.id)) {
-			throw new Error(`Item with id ${item.id} already exists.`);
-		}
-
-		this.#configs.push(item);
-		this.#configLookup.set(item.id, item);
-	}
-
-	#removeItemConfig(item: TreeviewNodeConfig): void {
-		if (!this.#configLookup.has(item.id)) {
-			return;
-		}
-
-		this.#configs = this.#configs.filter((config) => config.id !== item.id);
-		this.#configLookup.delete(item.id);
 	}
 
 	#getFieldNodeId(layerId: string, fieldName: string): string {

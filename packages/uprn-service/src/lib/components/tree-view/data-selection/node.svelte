@@ -122,14 +122,12 @@
 
 		const isVisible = getNodeVisibility ? getNodeVisibility(node.id) : false;
 		isChecked = isVisible ?? false;
-		if (!(node instanceof TreeLayerNode)) {
-			return;
-		}
+		// if (!(node instanceof TreeLayerNode)) {
+		// 	return;
+		// }
+
 		icon = getNodeIcon(
 			nodeConfig?.typology ?? TreeviewNodeTypology.Variable,
-			node.layer,
-			useLayerTypeIcon,
-			isFolder,
 			isOpen
 		);
 	});

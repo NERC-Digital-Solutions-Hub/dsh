@@ -102,13 +102,7 @@
 			isPressed = isVisible !== undefined ? isVisible : node.layer.visible;
 		}
 
-		icon = getNodeIcon(
-			nodeConfig?.typology ?? TreeviewNodeTypology.Area,
-			node.layer,
-			useLayerTypeIcon,
-			isFolder,
-			isOpen
-		);
+		icon = getNodeIcon(nodeConfig?.typology ?? TreeviewNodeTypology.Area, isOpen);
 	});
 
 	$effect(() => {

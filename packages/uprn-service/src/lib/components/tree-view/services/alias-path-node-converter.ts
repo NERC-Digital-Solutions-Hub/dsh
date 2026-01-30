@@ -1,6 +1,10 @@
 import { CustomNodeConverter } from '$lib/components/tree-view/services/custom-node-converter';
 import { TreeFieldNode, TreeLayerNode, TreeNode } from '$lib/models/treeview';
-import type { TreeviewNodeConfig } from '$lib/types/treeview';
+import {
+	TreeviewNodeType,
+	TreeviewNodeTypology,
+	type TreeviewNodeConfig
+} from '$lib/types/treeview';
 import { decodeHtmlEntities } from '$lib/utils/decode-html';
 
 /**
@@ -107,6 +111,12 @@ export class AliasPathNodeConverter extends CustomNodeConverter {
 			let node = nodePathMap.get(key);
 			if (!node) {
 				node = new TreeNode(key, label, [], currentParent);
+				this.configStore.addItemConfig({
+					id: key,
+					name: label,
+					type: TreeviewNodeType.GroupLayer,
+					typology: TreeviewNodeTypology.Folder
+				});
 				nodePathMap.set(key, node);
 				attachChild(currentParent, node);
 			}
