@@ -16,12 +16,12 @@
 		JobStatusType,
 		type UprnDownloadGetJobStatusesRequest,
 		type UprnDownloadGetJobStatusesResponse,
-		type UprnDownloadJobRequest,
-		type UprnDownloadJobRequestResponse
+		type UprnDownloadJobRequest
 	} from '$lib/types/uprn';
 	import Download from '@lucide/svelte/icons/download';
 	import { onMount } from 'svelte';
 	import SelectionEntryCard from '$lib/components/selection-entry-card/selection-entry-card.svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	type Props = {
 		uprnDownloadService: UprnDownloadService;
@@ -112,7 +112,8 @@
 
 				download.externalId = response.guid;
 				downloadsStore.updateDownloadStatus(download);
-			} catch (e) {
+			} catch (error) {
+				console.error('[downloads-menu] Error submitting download request:', error);
 				download.status = DownloadStatus.Failed;
 				downloadsStore.updateDownloadStatus(download);
 			}
@@ -239,12 +240,12 @@
 	async function copyUrlToClipboard(url: string) {
 		try {
 			await navigator.clipboard.writeText(url);
-			copiedUrls = new Set(copiedUrls).add(url); // Create new Set to trigger reactivity
+			copiedUrls = new SvelteSet(copiedUrls).add(url); // Create new Set to trigger reactivity
 			toast.success('URL copied to clipboard');
 
 			// Reset the icon after 2 seconds
 			setTimeout(() => {
-				const newCopiedUrls = new Set(copiedUrls);
+				const newCopiedUrls = new SvelteSet(copiedUrls);
 				newCopiedUrls.delete(url);
 				copiedUrls = newCopiedUrls; // Assign new Set to trigger reactivity
 			}, 2000);

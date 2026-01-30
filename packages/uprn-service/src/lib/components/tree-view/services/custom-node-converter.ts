@@ -9,7 +9,7 @@ export abstract class CustomNodeConverter {
 	/**
 	 * Unique identifier for this converter type.
 	 */
-	abstract readonly id: string;
+	public abstract readonly id: string;
 
 	/**
 	 * Configuration store for tree view node configurations.
@@ -31,5 +31,5 @@ export abstract class CustomNodeConverter {
 	 * @param parent - The parent node, if any
 	 * @returns The created tree node
 	 */
-	abstract layerToNode(layer: __esri.Layer, parent: TreeNode | null): TreeNode;
+	public abstract layerToNode(layer: __esri.Layer, parent: TreeNode | null): TreeNode;
 }

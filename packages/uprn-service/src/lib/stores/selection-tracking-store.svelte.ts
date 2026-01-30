@@ -165,7 +165,7 @@ export class SelectionTrackingStore {
 	/**
 	 * Loads existing selections for a given portal item from the database into the stores.
 	 */
-	async loadSelections(portalItemId: string) {
+	public async loadSelections(portalItemId: string) {
 		if (!portalItemId) {
 			this.#initialLoadComplete = true;
 			return;

@@ -1,6 +1,5 @@
 <!-- FilterButton.svelte -->
 <script lang="ts">
-	import { Button } from '$lib/components/shadcn/button';
 	import { InfoIcon } from '@lucide/svelte';
 	import { getItemInfoDialogEvents } from '$lib/events/item-info-dialog-events';
 

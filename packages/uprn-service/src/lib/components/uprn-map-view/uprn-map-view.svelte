@@ -4,10 +4,8 @@
 	import { LayerViewProvider } from '$lib/services/layer-view-provider';
 	import type { AreaSelectionInteractionStore } from '$lib/stores/area-selection-interaction-store.svelte';
 	import { MapInteractionStore } from '$lib/stores/map-interaction-store.svelte';
-	import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 	import type Map from '@arcgis/core/Map';
 	import type MapView from '@arcgis/core/views/MapView';
-	import type WebMap from '@arcgis/core/WebMap';
 	import { onDestroy, onMount } from 'svelte';
 
 	/**
@@ -32,8 +30,6 @@
 	const fallbackBasemap = 'streets-vector';
 	let MapContructor: typeof Map;
 	let MapViewContructor: typeof MapView;
-	let WebMapContructor: typeof WebMap;
-	let FeatureLayerContructor: typeof FeatureLayer;
 
 	export function getLayerViewProvider(): LayerViewProvider {
 		if (!mapView) {
@@ -63,20 +59,14 @@
 		if (!MapViewContructor) {
 			const [
 				{ default: Map },
-				{ default: MapView },
-				{ default: WebMap },
-				{ default: FeatureLayer }
+				{ default: MapView }
 			] = await Promise.all([
 				import('@arcgis/core/Map'),
-				import('@arcgis/core/views/MapView'),
-				import('@arcgis/core/WebMap'),
-				import('@arcgis/core/layers/FeatureLayer')
+				import('@arcgis/core/views/MapView')
 			]);
 
 			MapContructor = Map;
 			MapViewContructor = MapView;
-			WebMapContructor = WebMap;
-			FeatureLayerContructor = FeatureLayer;
 		}
 	}
 

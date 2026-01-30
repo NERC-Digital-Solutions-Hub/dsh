@@ -1,6 +1,5 @@
 <!-- Node.svelte -->
 <script lang="ts">
-	import Button from '$lib/components/shadcn/button/button.svelte';
 	import NodeAnimation from '$lib/components/tree-view/node-animation.svelte';
 	import VisibilityCheckbox from '$lib/components/visibility-checkbox/visibility-checkbox.svelte';
 	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';

@@ -2,11 +2,9 @@
 	import * as TreeView from '$lib/components/shadcn/tree-view/index.js';
 	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
 	import { TreeviewStore } from '$lib/stores/treeview-store.svelte';
-	import { onDestroy } from 'svelte';
 	import Node from './node.svelte';
 	import { LayerDrawState, TreeLayerNode } from '$lib/models/treeview/index.js';
 	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-	import FeatureLayerView from '@arcgis/core/views/layers/FeatureLayerView';
 	import type { AreaSelectionStore } from '$lib/stores/area-selection-store.svelte';
 	import { TreeviewType } from '$lib/types/treeview';
 	import type { LayerViewProvider } from '$lib/services/layer-view-provider';

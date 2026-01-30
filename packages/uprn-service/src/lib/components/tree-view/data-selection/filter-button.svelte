@@ -2,8 +2,6 @@
 <script lang="ts">
 	import { Funnel as FilterEnabledIcon } from '@lucide/svelte';
 	import { FunnelX as FilterDisabledIcon } from '@lucide/svelte';
-	import type { Component } from 'svelte';
-	import { Icon } from 'svelte-sonner';
 
 	/**
 	 * Props for the FilterButton component.

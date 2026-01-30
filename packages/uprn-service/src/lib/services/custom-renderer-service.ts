@@ -24,7 +24,7 @@ export class CustomRendererService {
 	#isInitialised: boolean = false;
 	#currentPath: string | null = null;
 
-	async init(path: string) {
+	public async init(path: string) {
 		if (!browser) {
 			console.warn(
 				'[custom-renderer-service] init called in non-browser environment. Skipping initialization.'
@@ -47,7 +47,7 @@ export class CustomRendererService {
 		this.#data = data as CustomRenderers;
 	}
 
-	doesFieldHaveCustomRenderer(featureLayer: FeatureLayer, fieldName: string): boolean {
+	public doesFieldHaveCustomRenderer(featureLayer: FeatureLayer, fieldName: string): boolean {
 		this.#ensureInitialised();
 
 		// Find the feature layer by name
@@ -76,7 +76,7 @@ export class CustomRendererService {
 		return !!customRendererField;
 	}
 
-	getAllFieldsWithCustomRenderers(featureLayer: FeatureLayer): string[] {
+	public getAllFieldsWithCustomRenderers(featureLayer: FeatureLayer): string[] {
 		this.#ensureInitialised();
 
 		// Find the feature layer by name
@@ -107,7 +107,7 @@ export class CustomRendererService {
 		return fieldNames;
 	}
 
-	async applyCustomRenderer(featureLayer: FeatureLayer, fieldName: string) {
+	public async applyCustomRenderer(featureLayer: FeatureLayer, fieldName: string) {
 		this.#ensureInitialised();
 
 		// Find the feature layer by name
@@ -189,7 +189,7 @@ export class CustomRendererService {
 		this.setCustomOutlines(featureLayer, customRenderer.LodsGroupId);
 	}
 
-	async setCustomOutlines(featureLayer: FeatureLayer, lodsGroupId: number) {
+	public async setCustomOutlines(featureLayer: FeatureLayer, lodsGroupId: number) {
 		// Find all LODs for the given group ID, sorted by Lod
 		const lodsResult = this.#data.CustomRenderers_Lods.filter(
 			(lod) => lod.GroupId === lodsGroupId
@@ -218,7 +218,7 @@ export class CustomRendererService {
 		}
 	}
 
-	async getRendererClassBreaks(classBreakGroupId: string): Promise<CustomRendererClassBreak[]> {
+	public async getRendererClassBreaks(classBreakGroupId: string): Promise<CustomRendererClassBreak[]> {
 		const groupId = parseInt(classBreakGroupId, 10);
 
 		// Find all class breaks for the given group ID, sorted by Order
@@ -233,7 +233,7 @@ export class CustomRendererService {
 		return result;
 	}
 
-	async getRendererSymbols(symbolsId: string): Promise<CustomRendererSymbolWithAppearances> {
+	public async getRendererSymbols(symbolsId: string): Promise<CustomRendererSymbolWithAppearances> {
 		const id = parseInt(symbolsId, 10);
 
 		// Find the symbol by ID

@@ -6,7 +6,7 @@ import { TreeNode } from '$lib/models/treeview/tree-node';
  */
 export class TreeLayerNode extends TreeNode {
 	/** The associated ESRI layer or sublayer. */
-	layer: __esri.Layer | __esri.Sublayer;
+	public layer: __esri.Layer | __esri.Sublayer;
 
 	/**
 	 * Creates a new TreeLayerNode.

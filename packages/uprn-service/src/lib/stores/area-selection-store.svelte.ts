@@ -33,7 +33,7 @@ export class AreaSelectionStore {
 	 * Set the layer ID for area selection.
 	 * @param layerId - The ID of the layer
 	 */
-	setLayerId(layerId: string | null): void {
+	public setLayerId(layerId: string | null): void {
 		if (this.layerId === layerId) {
 			return;
 		}
@@ -46,7 +46,7 @@ export class AreaSelectionStore {
 	 * Add an area ID to the selected areas.
 	 * @param areaId - The area ID to add
 	 */
-	addSelectedArea(areaId: number): void {
+	public addSelectedArea(areaId: number): void {
 		this.selectedAreaIds.add(areaId);
 	}
 
@@ -54,7 +54,7 @@ export class AreaSelectionStore {
 	 * Add multiple area IDs to the selected areas.
 	 * @param areaIds - Array of area IDs to add
 	 */
-	addSelectedAreas(areaIds: number[]): void {
+	public addSelectedAreas(areaIds: number[]): void {
 		areaIds.forEach((id) => this.selectedAreaIds.add(id));
 	}
 
@@ -62,14 +62,14 @@ export class AreaSelectionStore {
 	 * Remove an area ID from the selected areas.
 	 * @param areaId - The area ID to remove
 	 */
-	removeSelectedArea(areaId: number): void {
+	public removeSelectedArea(areaId: number): void {
 		this.selectedAreaIds.delete(areaId);
 	}
 
 	/**
 	 * Clear all selected areas.
 	 */
-	clearSelectedAreas(): void {
+	public clearSelectedAreas(): void {
 		this.selectedAreaIds.clear();
 	}
 
@@ -77,7 +77,7 @@ export class AreaSelectionStore {
 	 * Export a snapshot of the state of the AreaSelectionStore.
 	 * @returns The exported snapshot
 	 */
-	exportSnapshot(): AreaSelectionStoreSnapshot {
+	public exportSnapshot(): AreaSelectionStoreSnapshot {
 		return {
 			layerId: this.layerId,
 			selectedAreaIds: new SvelteSet(this.selectedAreaIds)

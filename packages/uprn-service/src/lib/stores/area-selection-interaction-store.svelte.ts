@@ -81,7 +81,7 @@ export class AreaSelectionInteractionStore {
 		});
 	}
 
-	async refreshLayerView(): Promise<void> {
+	public async refreshLayerView(): Promise<void> {
 		if (!this.areaSelectionStore.layerId && this.selectionViewState.layerView !== null) {
 			this.resetSelectedLayerView();
 			return;
@@ -105,7 +105,7 @@ export class AreaSelectionInteractionStore {
 		this.setSelectedLayerView(layerView as unknown as FeatureLayerView);
 	}
 
-	async refreshAreas(): Promise<void> {
+	public async refreshAreas(): Promise<void> {
 		const layerView = this.selectionViewState.layerView;
 		if (!layerView) {
 			this.resetSelectedAreas();
@@ -133,11 +133,11 @@ export class AreaSelectionInteractionStore {
 		}
 	}
 
-	setFieldInfos(fieldInfos: AreaSelectionFieldInfo[]): void {
+	public setFieldInfos(fieldInfos: AreaSelectionFieldInfo[]): void {
 		this.fieldInfos = fieldInfos;
 	}
 
-	setSelectedLayerView(layerView: __esri.FeatureLayerView): void {
+	public setSelectedLayerView(layerView: __esri.FeatureLayerView): void {
 		if (this.selectionViewState?.layerView === layerView) {
 			return;
 		}
@@ -150,7 +150,7 @@ export class AreaSelectionInteractionStore {
 		this.resetSelectedAreas();
 	}
 
-	clearSelectedLayerView(): void {
+	public clearSelectedLayerView(): void {
 		if (this.selectionViewState.layerView === null) {
 			return;
 		}
@@ -159,7 +159,7 @@ export class AreaSelectionInteractionStore {
 		this.selectionViewState.layerView = null;
 	}
 
-	resetSelectedLayerView(): void {
+	public resetSelectedLayerView(): void {
 		this.selectionViewState = {
 			layerView: null,
 			areaHandles: new SvelteMap<number, __esri.Handle>()
@@ -168,7 +168,7 @@ export class AreaSelectionInteractionStore {
 		this.resetSelectedAreas();
 	}
 
-	resetSelectedAreas(): void {
+	public resetSelectedAreas(): void {
 		if (!this.selectionViewState.layerView && this.selectionViewState.areaHandles.size === 0) {
 			return;
 		}
@@ -183,7 +183,7 @@ export class AreaSelectionInteractionStore {
 		this.currentHoveredArea = null;
 	}
 
-	addSelectedArea(id: number, handle: __esri.Handle): void {
+	public addSelectedArea(id: number, handle: __esri.Handle): void {
 		if (!this.selectionViewState) {
 			console.warn('SelectedAreasStore: No feature layer view is set.');
 			return;
@@ -196,7 +196,7 @@ export class AreaSelectionInteractionStore {
 		this.areaSelectionStore.addSelectedArea(id);
 	}
 
-	removeSelectedArea(id: number): void {
+	public removeSelectedArea(id: number): void {
 		if (!this.selectionViewState) {
 			console.warn(`[area-selection-interaction-store] no feature layer view is set.`);
 			return;
@@ -216,7 +216,7 @@ export class AreaSelectionInteractionStore {
 		this.areaSelectionStore.removeSelectedArea(id);
 	}
 
-	async getAreaNamesById(ids: number[]): Promise<string[]> {
+	public async getAreaNamesById(ids: number[]): Promise<string[]> {
 		if (!this.selectionViewState?.layerView) return [];
 
 		const nameField = this.getNameFieldForCurrentLayer();
@@ -268,7 +268,7 @@ export class AreaSelectionInteractionStore {
 		return names.map((n) => n ?? '');
 	}
 
-	async getAreaCodesById(ids: number[]): Promise<string[]> {
+	public async getAreaCodesById(ids: number[]): Promise<string[]> {
 		if (!this.selectionViewState?.layerView) return [];
 
 		const codeField = this.getCodeFieldForCurrentLayer();
@@ -297,7 +297,7 @@ export class AreaSelectionInteractionStore {
 		return codes.map((n) => n ?? '');
 	}
 
-	setHoveredArea(id: number, handle: __esri.Handle): void {
+	public setHoveredArea(id: number, handle: __esri.Handle): void {
 		if (id === this.currentHoveredArea?.id) {
 			return;
 		}
@@ -309,7 +309,7 @@ export class AreaSelectionInteractionStore {
 		this.currentHoveredArea = { id, handle };
 	}
 
-	clearHoveredArea(): void {
+	public clearHoveredArea(): void {
 		if (!this.currentHoveredArea) {
 			return;
 		}
@@ -318,7 +318,7 @@ export class AreaSelectionInteractionStore {
 		this.currentHoveredArea = null;
 	}
 
-	getNameFieldForCurrentLayer(): string | null {
+	public getNameFieldForCurrentLayer(): string | null {
 		if (
 			!this.selectionViewState ||
 			!this.selectionViewState.layerView ||
@@ -342,7 +342,7 @@ export class AreaSelectionInteractionStore {
 		return nameField;
 	}
 
-	getCodeFieldForCurrentLayer(): string | null {
+	public getCodeFieldForCurrentLayer(): string | null {
 		if (
 			!this.selectionViewState ||
 			!this.selectionViewState.layerView ||
@@ -363,7 +363,7 @@ export class AreaSelectionInteractionStore {
 		return codeField;
 	}
 
-	clearSelections(): void {
+	public clearSelections(): void {
 		this.resetSelectedAreas();
 		this.clearHoveredArea();
 		this.lastAddedArea = null;
@@ -372,7 +372,7 @@ export class AreaSelectionInteractionStore {
 		console.log('[area-selection-interaction-store] selections cleared.');
 	}
 
-	cleanup(): void {
+	public cleanup(): void {
 		this.resetSelectedAreas();
 		this.clearHoveredArea();
 		this.lastAddedArea = null;

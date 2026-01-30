@@ -28,10 +28,10 @@ export interface DbUserDownload extends DownloadEntry {
 }
 
 class AppDB extends Dexie {
-	uprnSelections!: Table<DbUprnSelection, string>;
-	areaSelections!: Table<DbUprnAreaSelectionInfo, number>;
-	dataSelections!: Table<DbUprnDataSelectionInfo, number>;
-	userDownloads!: Table<DbUserDownload, number>;
+	public uprnSelections!: Table<DbUprnSelection, string>;
+	public areaSelections!: Table<DbUprnAreaSelectionInfo, number>;
+	public dataSelections!: Table<DbUprnDataSelectionInfo, number>;
+	public userDownloads!: Table<DbUserDownload, number>;
 
 	constructor() {
 		super('uprn-service-db');

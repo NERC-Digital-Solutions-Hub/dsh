@@ -4,13 +4,13 @@
  */
 export class TreeNode {
 	/** Unique identifier for the node. */
-	id: string;
+	public id: string;
 	/** Display name of the node. */
-	name: string;
+	public name: string;
 	/** Child nodes under this node. */
-	children: TreeNode[];
+	public children: TreeNode[];
 	/** Parent node, if any. */
-	parent: TreeNode | null;
+	public parent: TreeNode | null;
 
 	/**
 	 * Creates a new TreeNode.

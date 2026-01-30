@@ -14,7 +14,7 @@ export class UprnConfigurationStore {
 	public mapsConfig = $state<ConfigManager<PortalItemConfig>[]>([]);
 	public mainSidebarSizes = $state<SidebarSize[]>([]);
 
-	async init(configuration: UprnConfiguration) {
+	public async init(configuration: UprnConfiguration) {
 		this.mainSidebarSizes = configuration.mainSidebarSizes ?? [];
 		await Promise.all([
 			this.#loadConfigItem(this.uprnDownloadApiConfig, configuration.uprnDownloadApiConfig),

@@ -2,7 +2,6 @@
 	import type { Snippet } from 'svelte';
 	import * as Card from '$lib/components/shadcn/card/index.js';
 	import Button from '$lib/components/shadcn/button/button.svelte';
-	import { scale } from 'svelte/transition';
 	import { cn } from '$lib/utils.js';
 	import { ChevronDown, ChevronUp, Maximize, Minimize } from '@lucide/svelte';
 

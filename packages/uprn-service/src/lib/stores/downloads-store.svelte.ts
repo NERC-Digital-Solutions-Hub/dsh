@@ -16,13 +16,13 @@ class DownloadsStore {
 		this.#loadDownloads();
 	}
 
-	addDownload(entry: DownloadEntry) {
+	public addDownload(entry: DownloadEntry) {
 		console.log('[downloads-store] Adding download:', entry);
 		this.#downloads.set(entry.localId, entry);
 		addUserDownload(entry.localId, entry.areaSelection, entry.dataSelections);
 	}
 
-	updateDownloadStatus(entry: DownloadEntry) {
+	public updateDownloadStatus(entry: DownloadEntry) {
 		console.log('[downloads-store] Updating download status:', entry);
 		this.#downloads.set(entry.localId, { ...entry });
 		updateUserDownload(
@@ -35,12 +35,12 @@ class DownloadsStore {
 		);
 	}
 
-	removeDownload(localId: string) {
+	public removeDownload(localId: string) {
 		this.#downloads.delete(localId);
 		deleteUserDownload(localId);
 	}
 
-	getDownloads(): DownloadEntry[] {
+	public getDownloads(): DownloadEntry[] {
 		return Array.from(this.#downloads.values());
 	}
 

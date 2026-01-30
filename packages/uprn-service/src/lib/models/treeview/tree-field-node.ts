@@ -7,9 +7,9 @@ import type { TreeNode } from '$lib/models/treeview/tree-node';
  */
 export class TreeFieldNode extends TreeLayerNode {
 	/** The associated feature layer. */
-	featureLayer: __esri.FeatureLayer;
+	public featureLayer: __esri.FeatureLayer;
 	/** The associated field. */
-	field: __esri.Field;
+	public field: __esri.Field;
 
 	/**
 	 * Creates a new TreeFieldNode.

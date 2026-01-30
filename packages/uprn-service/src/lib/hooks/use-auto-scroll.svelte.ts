@@ -29,7 +29,7 @@ export class UseAutoScroll {
 	private lastScrollHeight = 0;
 
 	// This sets everything up once #ref is bound
-	set ref(ref: HTMLElement | undefined) {
+	public set ref(ref: HTMLElement | undefined) {
 		this.#ref = ref;
 
 		if (!this.#ref) return;
@@ -65,23 +65,23 @@ export class UseAutoScroll {
 		observer.observe(this.#ref, { childList: true, subtree: true });
 	}
 
-	get ref() {
+	public get ref() {
 		return this.#ref;
 	}
 
-	get scrollY() {
+	public get scrollY() {
 		return this.#scrollY;
 	}
 
 	/** Checks if the container is scrolled to the bottom */
-	get isAtBottom() {
+	public get isAtBottom() {
 		if (!this.#ref) return true;
 
 		return this.#scrollY + this.#ref.offsetHeight >= this.#ref.scrollHeight;
 	}
 
 	/** Disables auto scrolling until the container is scrolled back to the bottom */
-	disableAutoScroll() {
+	public disableAutoScroll() {
 		if (this.isAtBottom) {
 			this.#userHasScrolled = false;
 		} else {
@@ -90,7 +90,7 @@ export class UseAutoScroll {
 	}
 
 	/** Scrolls the container to the bottom */
-	scrollToBottom(auto = false) {
+	public scrollToBottom(auto = false) {
 		if (!this.#ref) return;
 
 		// don't auto scroll if user has scrolled

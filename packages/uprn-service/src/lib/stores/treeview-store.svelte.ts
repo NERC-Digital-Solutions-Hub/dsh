@@ -68,7 +68,7 @@ export class TreeviewStore {
 	/** Service for custom renderers */
 	#customRendererService: CustomRendererService | null = null;
 
-	initialize(
+	public initialize(
 		treeviewType: TreeviewType,
 		layers: __esri.Layer[],
 		configStore: TreeviewConfigStore,
@@ -109,17 +109,17 @@ export class TreeviewStore {
 		this.#treeNodes = this.#buildTreeFromLayers(layers);
 	}
 
-	getNodeById(id: string): TreeNode | undefined {
+	public getNodeById(id: string): TreeNode | undefined {
 		this.#checkInitialized();
 		return this.#treeNodesLookup.get(id);
 	}
 
-	getNodes(): TreeNode[] {
+	public getNodes(): TreeNode[] {
 		this.#checkInitialized();
 		return this.#treeNodes;
 	}
 
-	getVisibleNodes(): TreeNode[] {
+	public getVisibleNodes(): TreeNode[] {
 		this.#checkInitialized();
 		const visibleNodes: TreeNode[] = [];
 		for (const [nodeId, isVisible] of this.#visibilityStates) {
@@ -136,12 +136,12 @@ export class TreeviewStore {
 		return visibleNodes;
 	}
 
-	getNonHiddenNodes(): TreeNode[] {
+	public getNonHiddenNodes(): TreeNode[] {
 		this.#checkInitialized();
 		return this.#getNonHiddenNodes(this.#treeNodes);
 	}
 
-	clearSelections(): void {
+	public clearSelections(): void {
 		for (const nodeId of this.#visibilityStates.keys()) {
 			this.#visibilityStates.set(nodeId, false);
 			const node = this.#treeNodesLookup.get(nodeId);
@@ -178,12 +178,12 @@ export class TreeviewStore {
 	 * @param nodeId - The ID of the node to check visibility for
 	 * @returns True if the node is visible, otherwise false
 	 */
-	getVisibilityState(nodeId: string): boolean {
+	public getVisibilityState(nodeId: string): boolean {
 		this.#checkInitialized();
 		return this.#visibilityStates.get(nodeId) ?? false;
 	}
 
-	setVisibilityState(nodeId: string, isVisible: boolean): void {
+	public setVisibilityState(nodeId: string, isVisible: boolean): void {
 		this.#checkInitialized();
 		const node = this.#treeNodesLookup.get(nodeId);
 		if (!node) {
@@ -286,7 +286,7 @@ export class TreeviewStore {
 		}
 	}
 
-	async updateDrawState(node: TreeNode, visible: boolean): Promise<void> {
+	public async updateDrawState(node: TreeNode, visible: boolean): Promise<void> {
 		if (!this.#layerViewProvider) {
 			return;
 		}
@@ -327,12 +327,12 @@ export class TreeviewStore {
 		this.#drawStateHandles.set(node.id, handle);
 	}
 
-	getNodeDrawState(nodeId: string): LayerDrawState {
+	public getNodeDrawState(nodeId: string): LayerDrawState {
 		this.#checkInitialized();
 		return this.#drawStates.get(nodeId) ?? LayerDrawState.Hidden;
 	}
 
-	setInitialDrawState(node: TreeNode, layerView: LayerView): void {
+	public setInitialDrawState(node: TreeNode, layerView: LayerView): void {
 		if (!(node instanceof TreeLayerNode) || !(node.layer instanceof Layer)) {
 			return;
 		}
@@ -348,7 +348,7 @@ export class TreeviewStore {
 		}
 	}
 
-	clearDrawStateHandles(): void {
+	public clearDrawStateHandles(): void {
 		for (const handle of this.#drawStateHandles.values()) {
 			handle.remove();
 		}
@@ -356,7 +356,7 @@ export class TreeviewStore {
 		this.#drawStateHandles.clear();
 	}
 
-	cleanup(): void {
+	public cleanup(): void {
 		this.initialized = false;
 		this.#visibilityStates.clear();
 		this.#activeInVisibilityGroup.clear();

@@ -99,7 +99,7 @@ export class WebMapStore implements IWebMapService {
 	 * @param portalUrl - The URL of the portal
 	 * @param proxy - The proxy settings
 	 */
-	async configurePortalAsync(portalUrl?: string | null, proxy?: Proxy | null): Promise<void> {
+	public async configurePortalAsync(portalUrl?: string | null, proxy?: Proxy | null): Promise<void> {
 		if (!portalUrl) {
 			if (this.initialPortalUrl) {
 				esriConfig.portalUrl = this.initialPortalUrl;
@@ -126,7 +126,7 @@ export class WebMapStore implements IWebMapService {
 		});
 	}
 
-	async loadwebmapAsync(itemId: string): Promise<void> {
+	public async loadwebmapAsync(itemId: string): Promise<void> {
 		if (this.data) {
 			return;
 		}
@@ -153,7 +153,7 @@ export class WebMapStore implements IWebMapService {
 	/**
 	 * Clear the current webmap data
 	 */
-	clear(): void {
+	public clear(): void {
 		this.data = null;
 		this.loading = false;
 		this.error = null;
@@ -162,14 +162,14 @@ export class WebMapStore implements IWebMapService {
 	/**
 	 * Reset the error state
 	 */
-	clearError(): void {
+	public clearError(): void {
 		this.error = null;
 	}
 
 	/**
 	 * Get the current webmap instance
 	 */
-	getWebmap(): __esri.WebMap | null {
+	public getWebmap(): __esri.WebMap | null {
 		return this.data;
 	}
 }

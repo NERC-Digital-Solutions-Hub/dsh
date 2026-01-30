@@ -13,10 +13,10 @@ import { decodeHtmlEntities } from '$lib/utils/decode-html';
  */
 export class AliasPathNodeConverter extends CustomNodeConverter {
 	/** @inheritdoc */
-	readonly id = 'aliasPath';
+	public readonly id = 'aliasPath';
 
 	/** @inheritdoc */
-	layerToNode(layer: __esri.Layer, parent: TreeNode | null): TreeNode {
+	public layerToNode(layer: __esri.Layer, parent: TreeNode | null): TreeNode {
 		const node = new TreeLayerNode(layer.id, layer.title as string, layer, [], parent);
 		const nodeConfig: TreeviewNodeConfig | undefined = this.configStore.getItemConfig(layer.id);
 

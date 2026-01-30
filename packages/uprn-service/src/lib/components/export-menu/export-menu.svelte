@@ -2,7 +2,6 @@
 	import Button from '$lib/components/shadcn/button/button.svelte';
 	import FilterFieldMenuStore from '$lib/stores/field-filter-menu-store.svelte';
 	import type { IWebMapService } from '$lib/services/IWebMapService';
-	import { WebMapStore } from '$lib/stores/web-map-store.svelte';
 	import FilterButton from '../tree-view/data-selection/filter-button.svelte';
 	import SelectionEntryCard from '$lib/components/selection-entry-card/selection-entry-card.svelte';
 	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';

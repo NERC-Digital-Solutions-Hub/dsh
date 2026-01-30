@@ -60,7 +60,7 @@ export class TreeviewConfigStore {
 	 * @param id - The unique identifier of the treeview item to retrieve
 	 * @returns The treeview item configuration if found, undefined otherwise
 	 */
-	getItemConfig(id: string): TreeviewNodeConfig | undefined {
+	public getItemConfig(id: string): TreeviewNodeConfig | undefined {
 		return this.#configLookup.get(id);
 	}
 
@@ -70,11 +70,11 @@ export class TreeviewConfigStore {
 	 * @param id - The unique identifier of the visibility group to retrieve
 	 * @returns The visibility group configuration if found, undefined otherwise
 	 */
-	getVisibilityGroupConfig(id: string): VisibilityGroupConfig | undefined {
+	public getVisibilityGroupConfig(id: string): VisibilityGroupConfig | undefined {
 		return this.#visibilityGroupsLookup.get(id);
 	}
 
-	resolveInheritance(layers: __esri.Layer[]): void {
+	public resolveInheritance(layers: __esri.Layer[]): void {
 		if (layers.length === 0 || !this.#configs || this.#configs.length === 0) {
 			return;
 		}
@@ -90,7 +90,7 @@ export class TreeviewConfigStore {
 	 * Add a new treeview item configuration to the store.
 	 * @param item The node config to add.
 	 */
-	addItemConfig(item: TreeviewNodeConfig): void {
+	public addItemConfig(item: TreeviewNodeConfig): void {
 		if (this.#configLookup.has(item.id)) {
 			throw new Error(`Item with id ${item.id} already exists.`);
 		}
@@ -103,7 +103,7 @@ export class TreeviewConfigStore {
 	 * Remove a treeview item configuration from the store.
 	 * @param item The item to remove from the store.
 	 */
-	removeItemConfig(item: TreeviewNodeConfig): void {
+	public removeItemConfig(item: TreeviewNodeConfig): void {
 		if (!this.#configLookup.has(item.id)) {
 			return;
 		}
