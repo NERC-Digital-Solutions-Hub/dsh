@@ -17,6 +17,7 @@
 	import type { CustomRendererService } from '$lib/services/custom-renderer-service.js';
 	import type { LayerViewProvider } from '$lib/services/layer-view-provider.js';
 	import { TreeviewType } from '$lib/types/treeview';
+	import type { ITagDefinitionProvider } from '$lib/services/ITagDefinitionProvider';
 
 	/**
 	 * Props for the TreeView component.
@@ -34,11 +35,17 @@
 		/** Configuration store for tree view settings. */
 		treeviewConfigStore: TreeviewConfigStore;
 
+		/** Optional tag definition provider. */
+		tagDefinitionProvider?: ITagDefinitionProvider;
+
 		/** Service for custom renderers */
 		customRendererService?: CustomRendererService;
 
 		/** Store for managing field filter menus. */
 		fieldFilterMenuStore: FieldFilterMenuStore;
+
+		/** The IDs of currently selected tags to filter by. */
+		selectedTagIds?: Set<string>;
 	};
 
 	/** Destructured props with defaults. */
@@ -47,8 +54,10 @@
 		dataSelectionStore,
 		layerViewProvider,
 		treeviewConfigStore,
+		tagDefinitionProvider,
 		customRendererService,
-		fieldFilterMenuStore
+		fieldFilterMenuStore,
+		selectedTagIds = new Set<string>()
 	}: Props = $props();
 
 	let lastLoadedWebMapId: string | null = null;
@@ -196,17 +205,57 @@
 		getNodeVisibility: (nodeId: string) => treeviewStore.getVisibilityState(nodeId),
 		getNodeDrawState
 	});
+
+	/**
+	 * Checks if a node or any of its descendants match the selected tag filters.
+	 * @param node - The node to check.
+	 * @returns True if the node or any descendant matches the filter criteria.
+	 */
+	function nodeMatchesTagFilter(node: TreeNode): boolean {
+		// If no tags are selected, show all nodes
+		if (selectedTagIds.size === 0) {
+			return true;
+		}
+
+		// Check if this node has any of the selected tags
+		const nodeTags = treeviewConfigStore.getTags(node.id);
+		const hasMatchingTag = nodeTags.some((tagId) => selectedTagIds.has(tagId));
+		if (hasMatchingTag) {
+			return true;
+		}
+
+		// Check if any child matches the filter (for folder nodes)
+		if (node.children?.length) {
+			return node.children.some((child) => nodeMatchesTagFilter(child));
+		}
+
+		return false;
+	}
+
+	/**
+	 * Filtered nodes based on selected tag IDs.
+	 * When no tags are selected, all nodes are shown.
+	 */
+	const filteredNodes = $derived.by(() => {
+		const allNodes = treeviewStore.getNodes();
+		if (selectedTagIds.size === 0) {
+			return allNodes;
+		}
+		return allNodes.filter((node) => nodeMatchesTagFilter(node));
+	});
 </script>
 
 {#if treeviewStore.initialized}
 	<TreeView.Root>
-		{#each treeviewStore.getNodes() as node (node.id)}
+		{#each filteredNodes as node (node.id)}
 			<Node
-				{treeviewConfigStore}
 				{node}
+				{treeviewConfigStore}
+				nodeTagProvider={treeviewConfigStore}
+				{tagDefinitionProvider}
+				{selectedTagIds}
 				isDownloadable={treeviewConfigStore.getItemConfig(node.id)?.isDownloadable ?? true}
 				depth={0}
-				useLayerTypeIcon={true}
 			/>
 		{/each}
 	</TreeView.Root>

@@ -1,3 +1,4 @@
+import type { INodeTagProvider } from '$lib/services/INodeTagProvider';
 import {
 	TreeviewNodeType,
 	type TreeviewConfig,
@@ -8,24 +9,37 @@ import { getLayerTreeviewItemType, getSublayerIdFromParentId } from '$lib/utils/
 import Sublayer from '@arcgis/core/layers/support/Sublayer';
 
 /**
+ * Type representing a tag and its associated count.
+ */
+type TagCount = {
+	/** The tag identifier. */
+	id: string;
+	/** The count associated with the tag. */
+	count: number;
+};
+
+/**
  * Store class that manages treeview configuration data and provides efficient access to items and visibility groups.
  * Uses Map-based lookups for O(1) access time to configuration objects by their IDs.
  *
  * This class encapsulates the configuration data and provides a clean API for accessing
  * treeview items and visibility groups without exposing the internal data structures.
  */
-export class TreeviewConfigStore {
-	/** Private array storing all treeview node configurations */
+export class TreeviewConfigStore implements INodeTagProvider {
+	/** Array storing all treeview node configurations */
 	#configs: TreeviewNodeConfig[] = [];
 
-	/** Private Map for fast O(1) lookup of treeview node configurations by their ID */
+	/** Map for fast O(1) lookup of treeview node configurations by their ID */
 	#configLookup: Map<string, TreeviewNodeConfig> = new Map();
 
-	/** Private array storing all visibility group configurations */
+	/** Array storing all visibility group configurations */
 	#visibilityGroups: VisibilityGroupConfig[] = [];
 
-	/** Private Map for fast O(1) lookup of visibility groups by their ID */
+	/** Map for fast O(1) lookup of visibility groups by their ID */
 	#visibilityGroupsLookup: Map<string, VisibilityGroupConfig> = new Map();
+
+	/** Map for fast O(1) lookup of tags for a node. */
+	#tagsLookup: Map<string, TagCount[]> = new Map();
 
 	/** Set of field names to hide from display in the treeview */
 	#fieldsToHide: Set<string> = new Set<string>();
@@ -50,7 +64,9 @@ export class TreeviewConfigStore {
 		);
 
 		if (config.fieldsToHide) {
-			this.#fieldsToHide = new Set(config.fieldsToHide.map((field) => field.trim().toLowerCase()));
+			this.#fieldsToHide = new Set(
+				config.fieldsToHide.map((field: string) => field.trim().toLowerCase())
+			);
 		}
 	}
 
@@ -75,6 +91,9 @@ export class TreeviewConfigStore {
 	}
 
 	public resolveInheritance(layers: __esri.Layer[]): void {
+		// Tags are immutable after load, so we can safely rebuild the lookup here.
+		this.#tagsLookup.clear();
+
 		if (layers.length === 0 || !this.#configs || this.#configs.length === 0) {
 			return;
 		}
@@ -84,6 +103,25 @@ export class TreeviewConfigStore {
 			const config = this.getItemConfig(layer.id);
 			this.#resolveLayerInheritance(layer, config);
 		}
+
+		// Precompute tag counts for every node based on the actual layer tree.
+		for (const layer of layers) {
+			this.#computeAndStoreTagCounts(layer, undefined, new Set());
+		}
+	}
+
+	/**
+	 * Gets the tags for a specific node by its ID.
+	 * @param nodeId The node ID to get the tags of.
+	 */
+	public getTags(nodeId: string): string[] {
+		const tagCounts = this.#tagsLookup.get(nodeId);
+		if (tagCounts) {
+			return tagCounts.map((t) => t.id);
+		}
+
+		// Fallback (should be rare): return any directly configured tags.
+		return this.getItemConfig(nodeId)?.tags ?? [];
 	}
 
 	/**
@@ -152,6 +190,13 @@ export class TreeviewConfigStore {
 				this.#resolveLayerInheritance(sublayer, nodeConfig);
 			}
 		}
+
+		// Sublayers (e.g. MapImageLayer sublayers) can themselves have nested sublayers.
+		if (layer instanceof Sublayer) {
+			for (const sublayer of layer.sublayers?.toArray() ?? []) {
+				this.#resolveLayerInheritance(sublayer, nodeConfig);
+			}
+		}
 	}
 
 	#getOrCreateLayerNodeConfig(
@@ -207,6 +252,8 @@ export class TreeviewConfigStore {
 			id: nodeId,
 			name: nodeConfig?.name,
 			type: TreeviewNodeType.None,
+			tags: this.#getConfigValue(false, 'tags', nodeConfig, parentNodeConfig, undefined),
+			order: this.#getConfigValue(false, 'order', nodeConfig, parentNodeConfig, undefined),
 			treeviewType: this.#getConfigValue(
 				true,
 				'treeviewType',
@@ -273,6 +320,110 @@ export class TreeviewConfigStore {
 		this.addItemConfig(nodeConfig);
 
 		return nodeConfig;
+	}
+
+	#computeAndStoreTagCounts(
+		layer: __esri.Layer | __esri.Sublayer,
+		parentNodeConfig: TreeviewNodeConfig | undefined,
+		inheritedTags: Set<string>
+	): Map<string, number> {
+		const layerId =
+			layer instanceof Sublayer
+				? getSublayerIdFromParentId(layer, parentNodeConfig?.id ?? '')
+				: layer.id;
+
+		const nodeConfig = this.getItemConfig(layerId);
+		const tagCounts = new Map<string, number>();
+
+		// Children inherit all tags from their ancestors.
+		const effectiveTags = new Set<string>(inheritedTags);
+		for (const tag of this.#getUniqueNormalizedTags(nodeConfig?.tags)) {
+			effectiveTags.add(tag);
+		}
+
+		// Count effective tags for this node.
+		for (const tag of effectiveTags) {
+			tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+		}
+
+		// Feature layers can expose field nodes as children.
+		if (this.#isFeatureLayer(layer) && nodeConfig?.showFields) {
+			const featureLayer = layer as __esri.FeatureLayer;
+			for (const field of featureLayer.fields ?? []) {
+				const fieldNodeId = this.#getFieldNodeId(featureLayer.id, field.name);
+				const fieldConfig = this.getItemConfig(fieldNodeId);
+				const fieldTagCounts = new Map<string, number>();
+
+				// Field nodes inherit tags from the feature layer (and its ancestors).
+				for (const tag of effectiveTags) {
+					fieldTagCounts.set(tag, (fieldTagCounts.get(tag) ?? 0) + 1);
+				}
+
+				for (const tag of this.#getUniqueNormalizedTags(fieldConfig?.tags)) {
+					fieldTagCounts.set(tag, (fieldTagCounts.get(tag) ?? 0) + 1);
+				}
+
+				this.#tagsLookup.set(fieldNodeId, this.#toSortedTagCounts(fieldTagCounts));
+				this.#mergeTagCounts(tagCounts, fieldTagCounts);
+			}
+		}
+
+		// Group layers contain child layers.
+		if (this.#isGroupLayer(layer)) {
+			const groupLayer = layer as __esri.GroupLayer;
+			for (const childLayer of groupLayer.layers.toArray()) {
+				const childCounts = this.#computeAndStoreTagCounts(childLayer, nodeConfig, effectiveTags);
+				this.#mergeTagCounts(tagCounts, childCounts);
+			}
+		}
+
+		// Map image layers contain sublayers.
+		if (layer.type === 'map-image') {
+			const mapImageLayer = layer as __esri.MapImageLayer;
+			for (const sublayer of mapImageLayer.sublayers?.toArray() ?? []) {
+				const childCounts = this.#computeAndStoreTagCounts(sublayer, nodeConfig, effectiveTags);
+				this.#mergeTagCounts(tagCounts, childCounts);
+			}
+		}
+
+		// Sublayers can themselves have nested sublayers.
+		if (layer instanceof Sublayer) {
+			for (const sublayer of layer.sublayers?.toArray() ?? []) {
+				const childCounts = this.#computeAndStoreTagCounts(sublayer, nodeConfig, effectiveTags);
+				this.#mergeTagCounts(tagCounts, childCounts);
+			}
+		}
+
+		this.#tagsLookup.set(layerId, this.#toSortedTagCounts(tagCounts));
+		return tagCounts;
+	}
+
+	#getUniqueNormalizedTags(tags: string[] | undefined): string[] {
+		if (!tags || tags.length === 0) {
+			return [];
+		}
+
+		const unique = new Set<string>();
+		for (const tag of tags) {
+			const normalized = tag.trim();
+			if (!normalized) {
+				continue;
+			}
+			unique.add(normalized);
+		}
+		return [...unique];
+	}
+
+	#mergeTagCounts(target: Map<string, number>, source: Map<string, number>): void {
+		for (const [tag, count] of source) {
+			target.set(tag, (target.get(tag) ?? 0) + count);
+		}
+	}
+
+	#toSortedTagCounts(counts: Map<string, number>): TagCount[] {
+		return [...counts.entries()]
+			.map(([id, count]) => ({ id, count }))
+			.sort((a, b) => (b.count !== a.count ? b.count - a.count : a.id.localeCompare(b.id)));
 	}
 
 	/* eslint-disable @typescript-eslint/no-explicit-any */

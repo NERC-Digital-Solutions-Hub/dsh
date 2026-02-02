@@ -17,29 +17,38 @@
 	import Node from './node.svelte';
 	import InfoButton from '$lib/components/tree-view/data-selection/info-button.svelte';
 	import type { Component } from 'svelte';
+	import type { INodeTagProvider } from '$lib/services/INodeTagProvider';
+	import type { ITagDefinitionProvider } from '$lib/services/ITagDefinitionProvider';
+	import type { TagDefinition } from '$lib/types/config.js';
 	/**
 	 * Props for the Node component.
 	 */
 	type Props = {
 		/** Configuration store for tree view settings. */
-		treeviewConfigStore?: TreeviewConfigStore | null;
+		treeviewConfigStore?: TreeviewConfigStore;
+		/** Optional tag provider for node tags. */
+		nodeTagProvider?: INodeTagProvider;
+		/** Optional tag definition provider. */
+		tagDefinitionProvider?: ITagDefinitionProvider;
 		/** The tree node to render. */
 		node: TreeNode;
 		/** Whether the node is downloadable. */
 		isDownloadable?: boolean;
 		/** Depth level in the tree. */
 		depth?: number;
-		/** Whether to use layer type specific icons. */
-		useLayerTypeIcon?: boolean;
+		/** The IDs of currently selected tags to filter by. */
+		selectedTagIds?: Set<string>;
 	};
 
 	/** Destructured props with defaults. */
 	const {
-		treeviewConfigStore = null,
+		treeviewConfigStore,
+		nodeTagProvider,
+		tagDefinitionProvider,
 		node,
 		isDownloadable,
 		depth = 0,
-		useLayerTypeIcon = false
+		selectedTagIds = new Set<string>()
 	}: Props = $props();
 
 	/** Retrieve tree event callbacks */
@@ -63,6 +72,56 @@
 	let nodeConfig: TreeviewNodeConfig | null = $derived(
 		treeviewConfigStore?.getItemConfig(node.id) ?? null
 	);
+
+	const nodeTagDefinitions: TagDefinition[] = $derived.by(() => {
+		if (!nodeTagProvider || !tagDefinitionProvider) {
+			return [];
+		}
+
+		const tagIds = nodeTagProvider.getTags(node.id);
+		const definitions: TagDefinition[] = [];
+		for (const tagId of tagIds) {
+			definitions.push(tagDefinitionProvider.getTagDefinition(tagId));
+		}
+
+		return definitions;
+	});
+
+	/**
+	 * Checks if a node or any of its descendants match the selected tag filters.
+	 * @param targetNode - The node to check.
+	 * @returns True if the node or any descendant matches the filter criteria.
+	 */
+	function nodeMatchesTagFilter(targetNode: TreeNode): boolean {
+		if (selectedTagIds.size === 0) {
+			return true;
+		}
+
+		const nodeTags = nodeTagProvider?.getTags(targetNode.id) ?? [];
+		const hasMatchingTag = nodeTags.some((tagId) => selectedTagIds.has(tagId));
+		if (hasMatchingTag) {
+			return true;
+		}
+
+		if (targetNode.children?.length) {
+			return targetNode.children.some((child) => nodeMatchesTagFilter(child));
+		}
+
+		return false;
+	}
+
+	/**
+	 * Filtered children based on selected tag IDs.
+	 */
+	const filteredChildren: TreeNode[] = $derived.by(() => {
+		if (!node.children?.length) {
+			return [];
+		}
+		if (selectedTagIds.size === 0) {
+			return node.children;
+		}
+		return node.children.filter((child) => nodeMatchesTagFilter(child));
+	});
 
 	/** Whether this node represents a folder (has children). */
 	const isFolder: boolean = $derived(!!(node.children && node.children.length));
@@ -125,10 +184,7 @@
 		// 	return;
 		// }
 
-		icon = getNodeIcon(
-			nodeConfig?.typology ?? TreeviewNodeTypology.Variable,
-			isOpen
-		);
+		icon = getNodeIcon(nodeConfig?.typology ?? TreeviewNodeTypology.Variable, isOpen);
 	});
 
 	// Handle filter visibility changes with animation
@@ -190,7 +246,15 @@
 {#snippet content()}
 	{#if !nodeConfig?.isHidden}
 		{#if isFolder}
-			<NodeContent {icon} name={node.name} {depth} onclick={handleFolderClick} {isFolder} {isOpen}>
+			<NodeContent
+				{icon}
+				name={node.name}
+				{depth}
+				tagDefinitions={nodeTagDefinitions}
+				onclick={handleFolderClick}
+				{isFolder}
+				{isOpen}
+			>
 				{#snippet children()}
 					<div class="flex items-center">
 						{#if isDownloadable}
@@ -216,7 +280,14 @@
 				{/snippet}
 			</NodeContent>
 		{:else}
-			<NodeContent {icon} name={node.name} {depth} onclick={handleClick} {isFolder}>
+			<NodeContent
+				{icon}
+				name={node.name}
+				{depth}
+				tagDefinitions={nodeTagDefinitions}
+				onclick={handleClick}
+				{isFolder}
+			>
 				{#snippet children()}
 					<div class="flex items-center">
 						{#if isDownloadable}
@@ -242,15 +313,17 @@
 	{#if isFolder && isOpen && !nodeConfig?.isHidden}
 		<Node
 			{treeviewConfigStore}
+			{nodeTagProvider}
+			{tagDefinitionProvider}
 			{node}
+			{selectedTagIds}
 			isDownloadable={nodeConfig?.isDownloadable ?? true}
 			depth={depth + 1}
-			{useLayerTypeIcon}
 		/>
 	{/if}
 {/snippet}
 
-<NodeAnimation {isOpen} {content} childNodes={isFolder ? node.children : null} {childNode} />
+<NodeAnimation {isOpen} {content} childNodes={isFolder ? filteredChildren : null} {childNode} />
 
 <style>
 	.visibility-wrapper {

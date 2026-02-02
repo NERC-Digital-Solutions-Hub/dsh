@@ -9,4 +9,10 @@ export interface ITagDefinitionProvider {
 	 * @param tagId The tag ID to receive the tag definitions for.
 	 */
 	getTagDefinition(tagId: string): TagDefinition;
+
+	/**
+	 * Gets all tag definitions.
+	 * @returns An array of all tag definitions.
+	 */
+	getAllTagDefinitions(): TagDefinition[];
 }

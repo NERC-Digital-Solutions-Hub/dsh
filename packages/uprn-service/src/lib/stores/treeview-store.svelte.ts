@@ -371,8 +371,7 @@ export class TreeviewStore implements INodeTagProvider {
 	/** @inheritdoc */
 	public getTags(nodeId: string): string[] {
 		this.#checkInitialized();
-		const config: TreeviewNodeConfig | undefined = this.#findTreeviewItemConfig(nodeId);
-		return config?.tags ?? [];
+		return this.#configStore?.getTags(nodeId) ?? [];
 	}
 
 	#updateParentVisibility(node: TreeNode, isVisible: boolean): void {
@@ -444,7 +443,38 @@ export class TreeviewStore implements INodeTagProvider {
 			})
 			.filter((n) => n !== null);
 
-		return this.#reverseTreeOrder([...rootNodes]); // reverse the order to match expected display (map layers are typically reverse ordered)
+		const nodes = this.#reverseTreeOrder([...rootNodes]); // reverse the order to match expected display (map layers are typically reverse ordered)
+		this.#applyNodeOrdering(nodes);
+		return nodes;
+	}
+
+	#applyNodeOrdering(nodes: TreeNode[]): void {
+		if (!nodes || nodes.length === 0) {
+			return;
+		}
+
+		// Stable sort: higher order moves up; negative moves down; undefined behaves like 0 and preserves relative order.
+		const decorated = nodes.map((node, index) => {
+			const order = this.#findTreeviewItemConfig(node.id)?.order;
+			return { node, index, order };
+		});
+
+		decorated.sort((a, b) => {
+			const aOrder = a.order ?? 0;
+			const bOrder = b.order ?? 0;
+			if (aOrder !== bOrder) {
+				return bOrder - aOrder;
+			}
+			return a.index - b.index;
+		});
+
+		nodes.splice(0, nodes.length, ...decorated.map((d) => d.node));
+
+		for (const node of nodes) {
+			if (node.children?.length) {
+				this.#applyNodeOrdering(node.children);
+			}
+		}
 	}
 
 	/**

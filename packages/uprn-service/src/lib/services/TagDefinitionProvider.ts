@@ -19,6 +19,21 @@ export class TagDefinitionProvider implements ITagDefinitionProvider {
 
 	/** @inheritdoc */
 	public getTagDefinition(tagId: string): TagDefinition {
-		throw new Error('Method not implemented.');
+		const definition = this.tagDefinitionMap.get(tagId);
+		if (definition) {
+			return definition;
+		}
+
+		console.warn(`[TagDefinitionProvider] Tag definition not found for id: ${tagId}`);
+		return {
+			id: tagId,
+			label: tagId,
+			color: '#9CA3AF'
+		};
+	}
+
+	/** @inheritdoc */
+	public getAllTagDefinitions(): TagDefinition[] {
+		return Array.from(this.tagDefinitionMap.values());
 	}
 }

@@ -10,6 +10,10 @@
         "name": "AQREAN Surface Level - Bias Corrected",
         "treeviewType": "data",
         "typology": "folder",
+        "tags": [
+          "environment",
+          "health"
+        ],
         "visibilityGroupId": "group:main",
         "visibilityDependencyIds": [
           "19b03f7b1ab-layer-229"
@@ -89,6 +93,10 @@
         "name": "AQREAN Surface Level",
         "treeviewType": "data",
         "typology": "folder",
+        "tags": [
+          "environment",
+          "health"
+        ],
         "visibilityGroupId": "group:main",
         "visibilityDependencyIds": [
           "19b03f4cc8f-layer-161"
@@ -301,6 +309,9 @@
         "treeviewType": "data",
         "typology": "dataset-raster",
         "visibilityGroupId": "group:main",
+        "tags": [
+          "environment"
+        ],
         "visibilityDependencyIds": [
           "19b02dc323e-layer-276-0"
         ],
@@ -312,6 +323,9 @@
         "treeviewType": "data",
         "typology": "dataset-raster",
         "visibilityGroupId": "group:main",
+        "tags": [
+          "environment"
+        ],
         "visibilityDependencyIds": [
           "19b02d862f9-layer-275-15"
         ],
@@ -488,6 +502,10 @@
         "name": "UK Air - Modelled Background Pollution",
         "treeviewType": "data",
         "typology": "folder",
+        "tags": [
+          "environment",
+          "health"
+        ],
         "visibilityGroupId": "group:main",
         "visibilityDependencyIds": [
           "19b02eff60d-layer-289"
@@ -607,6 +625,10 @@
             "name": "Urban Areas Required To Undertake Strategic Noise Mapping - Round 3",
             "treeviewType": "data",
             "typology": "dataset-vector",
+            "tags": [
+              "environment",
+              "health"
+            ],
             "visibilityGroupId": "group:main",
             "children": []
           },
@@ -615,6 +637,10 @@
             "name": "Day Time Average Noise Level On Network Rail and HS1 Routes and Populated Rail Sources (7AM to 11PM) - Round 3",
             "treeviewType": "data",
             "typology": "dataset-vector",
+            "tags": [
+              "environment",
+              "health"
+            ],
             "visibilityGroupId": "group:main",
             "children": []
           },
@@ -623,6 +649,10 @@
             "name": "Average 24 Hour Noise Level On Network Rail and HS1 Routes and Populated Rail Sources  - Round 3",
             "treeviewType": "data",
             "typology": "dataset-vector",
+            "tags": [
+              "environment",
+              "health"
+            ],
             "visibilityGroupId": "group:main",
             "children": []
           },
@@ -631,6 +661,10 @@
             "name": "Night Time Average Noise Level On Network Rail and HS1 Routes and Populated Rail Sources (11PM to 7AM) - Round 3",
             "treeviewType": "data",
             "typology": "dataset-vector",
+            "tags": [
+              "environment",
+              "health"
+            ],
             "visibilityGroupId": "group:main",
             "children": []
           },
@@ -639,6 +673,10 @@
             "name": "Day Time Average Noise Level Of Major Traffic Routes and Populated Road Sources (7AM to 11PM) - Round 3",
             "treeviewType": "data",
             "typology": "dataset-vector",
+            "tags": [
+              "environment",
+              "health"
+            ],
             "visibilityGroupId": "group:main",
             "children": []
           },
@@ -647,6 +685,10 @@
             "name": "Average 24 Hour Noise Level Of Major Traffic Routes and Populated Road Sources - Round 3",
             "treeviewType": "data",
             "typology": "dataset-vector",
+            "tags": [
+              "environment",
+              "health"
+            ],
             "visibilityGroupId": "group:main",
             "children": []
           },
@@ -655,6 +697,10 @@
             "name": "Night Time Average Noise Level Of Major Traffic Routes and Populated Road Sources (11PM to 7AM) - Round 3",
             "treeviewType": "data",
             "typology": "dataset-vector",
+            "tags": [
+              "environment",
+              "health"
+            ],
             "visibilityGroupId": "group:main",
             "children": []
           }
@@ -683,6 +729,11 @@
             "name": "ClimateJust - LSOAs (UK) (2011) - Flood Data",
             "treeviewType": "data",
             "typology": "dataset-vector",
+            "tags": [
+              "flooding",
+              "environment",
+              "housing"
+            ],
             "visibilityGroupId": "group:main",
             "showFields": true,
             "customConverterId": "aliasPath",
@@ -736,6 +787,7 @@
         "treeviewType": "area",
         "typology": "folder",
         "visibilityGroupId": "group:area",
+        "order": 1,
         "children": [
           {
             "id": "948081273f1c4a33a7a7a940d6b541e8",
@@ -961,6 +1013,28 @@
       "vulnerabilityduetopropertytenur"
     ]
   },
+  "tagDefinitions": [
+    {
+      "id": "environment",
+      "label": "Environment",
+      "color": "#7EAD80"
+    },
+    {
+      "id": "health",
+      "label": "Health",
+      "color": "#ED745E"
+    },
+    {
+      "id": "housing",
+      "label": "Housing",
+      "color": "#D8B07A"
+    },
+    {
+      "id": "flooding",
+      "label": "Flooding",
+      "color": "#75A6F4"
+    }
+  ],
   "selectableLayers": [
     {
       "_name": "Built Up Areas (Dec 22) GB",

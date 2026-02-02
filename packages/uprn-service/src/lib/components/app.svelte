@@ -8,6 +8,7 @@
 	import FieldSelectionMenu from '$lib/components/field-selection-menu/field-selection-menu.svelte';
 	import AreaSelectionTreeview from '$lib/components/tree-view/area-selection/tree-view.svelte';
 	import DataSelectionTreeview from '$lib/components/tree-view/data-selection/tree-view.svelte';
+	import TreeviewTags from '$lib/components/treeview-tags/treeview-tags.svelte';
 	import UprnMapView from '$lib/components/uprn-map-view/uprn-map-view.svelte';
 	import UprnTabBarContent from '$lib/components/uprn-tab-bar/uprn-tab-bar-content.svelte';
 	import UprnTabBar from '$lib/components/uprn-tab-bar/uprn-tab-bar.svelte';
@@ -39,6 +40,7 @@
 	import { TabProgress } from '$lib/types/uprn';
 	import { TabStateService } from '$lib/services/TabStateService';
 	import { UserStateProvider } from '$lib/services/UserStateProvider';
+	import { TagDefinitionProvider } from '$lib/services/TagDefinitionProvider';
 
 	const tabBarTriggers = [
 		{
@@ -67,12 +69,13 @@
 
 	const tabStateService = new TabStateService('areas-of-interest');
 	let userStateProvider: UserStateProvider | null = $state(null);
+	let tagDefinitionProvider: TagDefinitionProvider | null = $state(null);
 
-	let tabProgressByValue = $state<Record<string, TabProgress | undefined>>({});
+	let tabProgressByValue: Record<string, TabProgress | undefined> = $state({});
 
-	let areaSelectionTreeview: DataSelectionTreeview | undefined = $state(undefined);
-	let dataSelectionTreeview: DataSelectionTreeview | undefined = $state(undefined);
-	let uprnMapView: UprnMapView | undefined = $state(undefined);
+	let areaSelectionTreeview: DataSelectionTreeview | null = $state(null);
+	let dataSelectionTreeview: DataSelectionTreeview | null = $state(null);
+	let uprnMapView: UprnMapView | null = $state(null);
 
 	const webMapStore: WebMapStore = $state(new WebMapStore());
 	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
@@ -96,6 +99,9 @@
 
 	let mapView: __esri.MapView | null = $state(null);
 	let treeviewConfig: TreeviewConfigStore | undefined = $state();
+
+	/** Selected tag IDs for filtering the data selection treeview. */
+	let selectedTagIds: Set<string> = $state(new Set<string>());
 	let customRendererService = new CustomRendererService();
 	let customRendererServiceReady = $state(false);
 
@@ -223,6 +229,7 @@
 		dataSelectionStore.clearSelections();
 		areaSelectionTreeview?.clearSelections();
 		dataSelectionTreeview?.clearSelections();
+		selectedTagIds = new Set<string>();
 	}
 
 	/**
@@ -249,6 +256,8 @@
 			dataSelectionStore,
 			webMapStore
 		);
+
+		tagDefinitionProvider = new TagDefinitionProvider(currentMap.tagDefinitions || []);
 	});
 
 	$effect(() => {
@@ -432,14 +441,21 @@
 				<div hidden={currentTab !== 'select-data'}>
 					<UprnTabBarContent>
 						{#if webMapStore.isLoaded && customRendererServiceReady}
+							<TreeviewTags
+								tagDefinitionProvider={tagDefinitionProvider ?? undefined}
+								class="justify-center"
+								bind:selectedTagIds
+							/>
 							<DataSelectionTreeview
 								bind:this={dataSelectionTreeview}
 								webMap={webMapStore.data!}
 								{dataSelectionStore}
 								layerViewProvider={uprnMapView?.getLayerViewProvider()!}
 								treeviewConfigStore={treeviewConfig!}
+								tagDefinitionProvider={tagDefinitionProvider!}
 								{customRendererService}
 								{fieldFilterMenuStore}
+								{selectedTagIds}
 							/>
 						{/if}
 					</UprnTabBarContent>
