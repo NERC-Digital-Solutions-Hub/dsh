@@ -66,7 +66,7 @@
 				<Badge
 					variant="outline"
 					class={cn(
-						'cursor-pointer select-none border-2 px-2.5 py-1 transition-colors duration-150',
+						'cursor-pointer select-none border-2 px-2.5 py-1 transition-all duration-150 hover:brightness-95 hover:shadow-sm active:brightness-90',
 						selected ? 'text-white' : 'bg-transparent hover:bg-accent/50'
 					)}
 					style={selected
