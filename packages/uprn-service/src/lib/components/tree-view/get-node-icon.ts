@@ -1,6 +1,6 @@
 import FeatureLayerIcon from '$lib/assets/feature-layer-16.svg?raw';
 import TileLayerIcon from '$lib/assets/tile-layer-16.svg?raw';
-import { Folder, FolderOpen, ChartCandlestick, Pentagon } from '@lucide/svelte';
+import { Folder, FolderOpen, ChartCandlestick, Grid2x2PlusIcon } from '@lucide/svelte';
 import { TreeviewNodeTypology } from '$lib/types/treeview';
 import type { Component } from 'svelte';
 
@@ -24,6 +24,6 @@ export const getNodeIcon = (
 		case TreeviewNodeTypology.Variable:
 			return ChartCandlestick;
 		case TreeviewNodeTypology.Area:
-			return Pentagon;
+			return Grid2x2PlusIcon;
 	}
 };
