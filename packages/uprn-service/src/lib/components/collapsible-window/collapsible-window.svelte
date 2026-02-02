@@ -6,7 +6,6 @@
 	import { ChevronDown, ChevronUp, Maximize, Minimize } from '@lucide/svelte';
 
 	type Props = {
-		/** Whether the window is opened on initialisation. */
 		isOpenedOnInit?: boolean;
 		class?: string;
 		children?: Snippet;
@@ -66,7 +65,9 @@
 </script>
 
 <div bind:this={cardElement} class={cn(className)}>
-	<Card.Root class="h-full w-full gap-0 rounded-none py-0 pt-0 pb-0">
+	<Card.Root
+		class="h-full w-full gap-0 rounded-none py-0 pt-0 pb-0 border-0 border-t border-t-border"
+	>
 		<Card.Header class="pt-2">
 			<div class="flex w-full items-center justify-between">
 				<div class="font-medium">Chat</div>
