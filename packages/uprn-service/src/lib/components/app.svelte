@@ -37,6 +37,8 @@
 	import { setItemInfoDialogEvents } from '$lib/events/item-info-dialog-events';
 	import { Plus } from '@lucide/svelte';
 	import { TabProgress } from '$lib/types/uprn';
+	import { TabStateService } from '$lib/services/TabStateService';
+	import { UserStateProvider } from '$lib/services/UserStateProvider';
 
 	const tabBarTriggers = [
 		{
@@ -58,9 +60,13 @@
 		{
 			value: 'downloads',
 			label: 'Download',
-			tooltip: 'Download your exported data'
+			tooltip: 'Download your exported data',
+			hasProgress: false
 		}
 	];
+
+	const tabStateService = new TabStateService('areas-of-interest');
+	let userStateProvider: UserStateProvider | null = $state(null);
 
 	let tabProgressByValue = $state<Record<string, TabProgress | undefined>>({});
 
@@ -173,13 +179,9 @@
 	 */
 	function onTabValueChange(value: string) {
 		currentTab = value;
-	}
-
-	/**
-	 * Switches to the downloads tab, typically called after a successful export.
-	 */
-	function switchToDownloadsTab() {
-		currentTab = 'downloads';
+		tabStateService.setCurrentTab(value);
+		console.log(`[uprn/page] Switched to tab: ${value}`);
+		console.log('[uprn/page] Current user state:', userStateProvider?.getUserState());
 	}
 
 	function setMapIndex(index: number) {
@@ -190,7 +192,7 @@
 
 		clearAllSelections();
 
-		currentTab = 'areas-of-interest';
+		onTabValueChange('areas-of-interest');
 
 		// Reset webmap store to force reload
 		webMapStore.data = null;
@@ -239,6 +241,13 @@
 		areaSelectionInteractionStore = new AreaSelectionInteractionStore(
 			areaSelectionStore,
 			new LayerViewProvider(mapView)
+		);
+
+		userStateProvider = new UserStateProvider(
+			tabStateService,
+			areaSelectionStore,
+			dataSelectionStore,
+			webMapStore
 		);
 	});
 
@@ -466,7 +475,7 @@
 				<div hidden={currentTab !== 'export'}>
 					{#if areaSelectionInteractionStore}
 						<ExportMenuFooter
-							onExportSuccess={switchToDownloadsTab}
+							onExportSuccess={() => onTabValueChange('downloads')}
 							clearSelections={clearAllSelections}
 							{areaSelectionInteractionStore}
 							{dataSelectionStore}
@@ -475,7 +484,7 @@
 				</div>
 			</SidebarLayout.Footer>
 
-			<CollapsibleWindow isOpenedOnInit={true} class="mt-2">
+			<CollapsibleWindow isOpenedOnInit={true} class="mt-0">
 				{#if !aiUprnChatbotApi || !isAiUprnChatbotServiceAvailable}
 					<p class="p-4 text-center text-sm text-gray-500">
 						AI UPRN Chatbot service is not available.

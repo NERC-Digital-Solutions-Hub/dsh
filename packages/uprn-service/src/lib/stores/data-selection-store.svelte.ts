@@ -1,3 +1,5 @@
+import type { IDataSelectionProvider } from '$lib/services/IDataSelectionProvider';
+import type { DataSelectionInfo } from '$lib/types/uprn';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 /**
@@ -18,7 +20,7 @@ export type DataSelectionSnapshot = {
 /**
  * Store for managing the data selected for download.
  */
-export class DataSelectionStore {
+export class DataSelectionStore implements IDataSelectionProvider {
 	public dataSelections = $state<SvelteMap<string, DataSelectionSnapshot>>(new SvelteMap());
 
 	/**
@@ -110,5 +112,14 @@ export class DataSelectionStore {
 	 */
 	public cleanup(): void {
 		this.dataSelections.clear();
+	}
+
+	/** @inheritdoc */
+	public getDataSelections(): DataSelectionInfo[] {
+		const snapshots = this.getAllSelections();
+		return snapshots.map((snapshot) => ({
+			layerId: snapshot.layerId,
+			fields: Array.from(snapshot.selectedFieldIds)
+		}));
 	}
 }

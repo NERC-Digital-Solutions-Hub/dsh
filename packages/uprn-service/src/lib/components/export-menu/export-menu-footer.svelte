@@ -4,8 +4,8 @@
 	import { toast } from 'svelte-sonner';
 	import {
 		DownloadStatus,
-		type AreaFieldInfo,
-		type AreaSelectionInfo,
+		type AreaFieldInfoWithCode,
+		type AreaSelectionInfoWithCode,
 		type DataSelectionInfo
 	} from '$lib/types/uprn';
 	import ClearSelectionsButton from '$lib/components/clear-selections-button/cl/clear-selections-button.svelte';
@@ -73,7 +73,7 @@
 				areaSelectionInteractionStore.selectionViewState.areaHandles.keys().toArray()
 			);
 
-			const areaFieldInfos: AreaFieldInfo[] =
+			const areaFieldInfos: AreaFieldInfoWithCode[] =
 				areaSelectionInteractionStore.selectionViewState.areaHandles
 					.entries()
 					.map(([area, _], index) => {
@@ -84,7 +84,7 @@
 					})
 					.toArray();
 
-			const areaSelection: AreaSelectionInfo = {
+			const areaSelection: AreaSelectionInfoWithCode = {
 				layerId: areaSelectionInteractionStore.selectionViewState.layerView?.layer.id || '',
 				areaFieldInfos: areaFieldInfos
 			};

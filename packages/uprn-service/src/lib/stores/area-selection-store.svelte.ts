@@ -1,3 +1,4 @@
+import type { AreaFieldInfo, AreaSelectionInfo } from '$lib/types/uprn';
 import { SvelteSet } from 'svelte/reactivity';
 
 /**
@@ -82,5 +83,16 @@ export class AreaSelectionStore {
 			layerId: this.layerId,
 			selectedAreaIds: new SvelteSet(this.selectedAreaIds)
 		};
+	}
+
+	/** @inheritdoc */
+	public getAreaSelection(): AreaSelectionInfo | null {
+		const snapshot = this.exportSnapshot();
+		return snapshot.layerId
+			? {
+					layerId: snapshot.layerId,
+					areaFieldInfos: Array.from(snapshot.selectedAreaIds).map((id) => ({ id }))
+				}
+			: null;
 	}
 }

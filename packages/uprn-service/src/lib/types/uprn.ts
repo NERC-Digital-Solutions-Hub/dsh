@@ -36,6 +36,15 @@ export interface AreaSelectionInfo {
 
 export interface AreaFieldInfo {
 	id: number;
+}
+
+export interface AreaSelectionInfoWithCode {
+	layerId: string;
+	areaFieldInfos: AreaFieldInfoWithCode[];
+}
+
+export interface AreaFieldInfoWithCode {
+	id: number;
 	code: string;
 }
 
@@ -78,7 +87,7 @@ export type DownloadEntry = {
 	externalId?: string;
 	status: DownloadStatus;
 	errorMessage?: string;
-	areaSelection: AreaSelectionInfo;
+	areaSelection: AreaSelectionInfoWithCode;
 	dataSelections: DataSelectionInfo[];
 };
 
@@ -203,3 +212,36 @@ export enum TabProgress {
 	InProgress = 'in-progress',
 	Completed = 'completed'
 }
+
+/**
+ * The type of selection - either a layer or a field.
+ */
+export enum SelectionType {
+	/**
+	 * The selection is a layer.
+	 */
+	Layer = 'layer',
+
+	/**
+	 * The selection is a field within a layer.
+	 */
+	Field = 'field'
+}
+
+/**
+ * The selection information for the user state.
+ */
+export type UserStateSelection = {
+	name: string;
+	type: SelectionType;
+	selectedChildren: UserStateSelection[];
+};
+
+/**
+ * The user state information for the UPRN service.
+ */
+export type UserState = {
+	currentTab: string;
+	areaSelection: UserStateSelection | null;
+	dataSelections: UserStateSelection[];
+};

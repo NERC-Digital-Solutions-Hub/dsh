@@ -201,26 +201,6 @@ export class TreeviewConfigStore {
 		parentNodeConfig?: TreeviewNodeConfig
 	): TreeviewNodeConfig {
 		let nodeConfig: TreeviewNodeConfig | undefined = this.getItemConfig(nodeId);
-		if (!nodeConfig) {
-			console.log(
-				`[TreeviewConfigStore] Searching parent config for node ID: ${nodeId}`,
-				parentNodeConfig
-			);
-			const config = parentNodeConfig?.children?.find((child) => child.id === nodeId);
-			if (config) {
-				console.log(`[TreeviewConfigStore] Found node ID: ${nodeId} in parent config:`, config);
-			}
-		}
-
-		if (parentNodeConfig?.children) {
-			console.log(
-				`[TreeviewConfigStore] Parent children for node ID: ${nodeId}`,
-				parentNodeConfig.children,
-				'Parent:',
-				parentNodeConfig
-			);
-		}
-
 		nodeConfig ??= parentNodeConfig?.children?.find((child) => child.id === nodeId);
 
 		nodeConfig = {

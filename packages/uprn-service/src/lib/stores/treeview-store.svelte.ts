@@ -18,8 +18,9 @@ import Layer from '@arcgis/core/layers/Layer';
 import LayerView from '@arcgis/core/views/layers/LayerView';
 import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 import { getSublayerId } from '$lib/utils/treeview';
+import type { INodeTagProvider } from '$lib/services/INodeTagProvider';
 
-export class TreeviewStore {
+export class TreeviewStore implements INodeTagProvider {
 	public initialized: boolean = $state<boolean>(false);
 
 	#treeviewType: TreeviewType | null = null;
@@ -367,6 +368,13 @@ export class TreeviewStore {
 		this.clearDrawStateHandles();
 	}
 
+	/** @inheritdoc */
+	public getTags(nodeId: string): string[] {
+		this.#checkInitialized();
+		const config: TreeviewNodeConfig | undefined = this.#findTreeviewItemConfig(nodeId);
+		return config?.tags ?? [];
+	}
+
 	#updateParentVisibility(node: TreeNode, isVisible: boolean): void {
 		const parentNode = node.parent;
 		if (!parentNode) {
@@ -488,19 +496,11 @@ export class TreeviewStore {
 
 		if (nodeConfig && nodeConfig.customConverterId) {
 			if (!this.#customConverters.has(nodeConfig.customConverterId)) {
-				console.log(
-					`[TreeviewStore] (1) ${this.#treeviewType} Custom converter not found: ${nodeConfig.customConverterId}`,
-					this.#customConverters
-				);
 				throw new Error(`Custom converter not found: ${nodeConfig.customConverterId}`);
 			}
 
 			const converter = this.#customConverters.get(nodeConfig.customConverterId);
 			if (!converter) {
-				console.log(
-					`[TreeviewStore] (2) ${this.#treeviewType} Custom converter not found: ${nodeConfig.customConverterId}`,
-					this.#customConverters
-				);
 				throw new Error(`Custom converter not found: ${nodeConfig.customConverterId}`);
 			}
 
@@ -515,11 +515,6 @@ export class TreeviewStore {
 				: (nodeConfig?.isVisibleOnInit ?? false);
 
 		layer.visible = nodeConfig?.treeviewType === this.#treeviewType ? layer.visible : false;
-
-		console.log(
-			`[TreeviewStore] Type: ${this.#treeviewType} - Layer ${nodeConfig?.name}`,
-			nodeConfig
-		);
 
 		this.#visibilityStates.set(layer.id, layer.visible);
 		this.updateDrawState(node, layer.visible);

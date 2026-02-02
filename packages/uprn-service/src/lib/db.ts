@@ -2,7 +2,7 @@ import type { AreaSelectionStoreSnapshot } from '$lib/stores/area-selection-stor
 import type { DataSelectionSnapshot } from '$lib/stores/data-selection-store.svelte';
 import {
 	DownloadStatus,
-	type AreaSelectionInfo,
+	type AreaSelectionInfoWithCode,
 	type DataSelectionInfo,
 	type DownloadEntry
 } from '$lib/types/uprn';
@@ -82,7 +82,7 @@ export const clearSelections = async (portalItemId: string) => {
 
 export const addUserDownload = async (
 	localId: string,
-	areaSelection: AreaSelectionInfo,
+	areaSelection: AreaSelectionInfoWithCode,
 	dataSelections: DataSelectionInfo[]
 ) =>
 	await db.userDownloads.add({
@@ -98,7 +98,7 @@ export const updateUserDownload = async (
 	externalId?: string,
 	status?: DownloadStatus,
 	errorMessage?: string,
-	areaSelection?: AreaSelectionInfo,
+	areaSelection?: AreaSelectionInfoWithCode,
 	dataSelections?: DataSelectionInfo[]
 ) => {
 	const update: Record<string, any> = {};
