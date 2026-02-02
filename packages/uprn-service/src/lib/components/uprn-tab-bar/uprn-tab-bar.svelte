@@ -58,9 +58,9 @@
 							{#if progressValue === TabProgress.NotStarted}
 								<CircleDashed class="inline-block h-4 w-4" />
 							{:else if progressValue === TabProgress.InProgress}
-								<CircleDot class="inline-block h-4 w-4 text-amber-500" />
+								<CircleDot class="inline-block h-4 w-4 text-amber-600" />
 							{:else if progressValue === TabProgress.Completed}
-								<CircleCheckBig class="inline-block h-4 w-4 text-green-500" />
+								<CircleCheckBig class="inline-block h-4 w-4 text-green-800" />
 							{/if}
 						</span>
 					{/if}
