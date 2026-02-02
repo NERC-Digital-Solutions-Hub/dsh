@@ -57,10 +57,7 @@
 		}
 
 		if (!MapViewContructor) {
-			const [
-				{ default: Map },
-				{ default: MapView }
-			] = await Promise.all([
+			const [{ default: Map }, { default: MapView }] = await Promise.all([
 				import('@arcgis/core/Map'),
 				import('@arcgis/core/views/MapView')
 			]);
