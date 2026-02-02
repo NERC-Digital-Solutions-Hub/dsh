@@ -17,6 +17,8 @@
 		tooltip?: string;
 		/** Optional separator icon component for the tab triggers. If not provided, the ChevronRightIcon will be used. */
 		seperatorIcon?: Component;
+		/** Optional progress state for the tab trigger. */
+		hasProgress?: boolean;
 	};
 
 	/**
@@ -48,17 +50,17 @@
 <Tabs.Root {value} {onValueChange} class="flex h-full w-full flex-col">
 	<div class="tab-list-wrapper flex-shrink-0">
 		<Tabs.List class="tab-list">
-			{#each triggersWithProgress as { value, label, seperatorIcon, tooltip, progress }}
+			{#each triggersWithProgress as { value, label, seperatorIcon, tooltip, progress, hasProgress }}
 				<Tabs.Trigger {value} class="tab-trigger" title={tooltip}>
 					{@const progressValue = !progress ? TabProgress.NotStarted : progress}
-					{#if progressValue}
+					{#if progressValue && (hasProgress == undefined || hasProgress)}
 						<span class="text-xs text-muted-foreground">
 							{#if progressValue === TabProgress.NotStarted}
 								<CircleDashed class="inline-block h-4 w-4" />
 							{:else if progressValue === TabProgress.InProgress}
-								<CircleDot class="inline-block h-4 w-4" />
+								<CircleDot class="inline-block h-4 w-4 text-amber-500" />
 							{:else if progressValue === TabProgress.Completed}
-								<CircleCheckBig class="inline-block h-4 w-4" />
+								<CircleCheckBig class="inline-block h-4 w-4 text-green-500" />
 							{/if}
 						</span>
 					{/if}
