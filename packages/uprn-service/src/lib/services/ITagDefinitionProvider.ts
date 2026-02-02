@@ -1,0 +1,12 @@
+import type { TagDefinition } from '$lib/types/config';
+
+/**
+ * Interface for providing tag definitions associated with specific tag IDs.
+ */
+export interface ITagDefinitionProvider {
+	/**
+	 * Gets the tag definition for a given tag ID.
+	 * @param tagId The tag ID to receive the tag definitions for.
+	 */
+	getTagDefinition(tagId: string): TagDefinition;
+}

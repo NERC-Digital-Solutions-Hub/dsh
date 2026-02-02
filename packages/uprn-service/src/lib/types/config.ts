@@ -28,6 +28,7 @@ export type PortalItemConfig = {
 	proxy?: Proxy | null;
 	customRenderers?: string;
 	treeview?: TreeviewConfig;
+	tagDefinitions?: TagDefinition[];
 	selectableLayers?: { _name: string; id: string; nameField: string; codeField: string }[];
 };
 
@@ -40,4 +41,18 @@ export type SizeConfig = {
 	breakpoint: number;
 	originalSize: string;
 	minSize: string;
+};
+
+/**
+ * Definition for a tag that can be associated with treeview nodes.
+ */
+export type TagDefinition = {
+	/** Unique identifier for the tag */
+	id: string;
+
+	/** Display label for the tag */
+	label: string;
+
+	/** Color associated with the tag for visual representation */
+	color: string;
 };

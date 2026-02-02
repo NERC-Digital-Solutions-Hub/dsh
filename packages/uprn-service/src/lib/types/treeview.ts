@@ -97,20 +97,28 @@ export interface TreeviewConfig {
 export interface TreeviewNodeConfig {
 	/** Unique identifier for the treeview node */
 	id: string;
+
 	/** Optional name for configuration management */
 	name?: string;
+
 	/** Type of the treeview node, e.g., 'group-layer' */
 	type: TreeviewNodeType;
-	/**
-	 * Type of treeview a node belongs to - area selection or data selection.
-	 */
+
+	/** Type of treeview a node belongs to - area selection or data selection. */
 	treeviewType?: TreeviewType;
+
 	/** Typology classification for the treeview node to define its role and characteristics */
 	typology?: TreeviewNodeTypology;
+
+	/** Optional array of tags associated with this node for categorisation or filtering */
+	tags?: string[];
+
 	/** Whether this node can be downloaded by the user. Optional - defaults to false if not specified */
 	isDownloadable?: boolean;
+
 	/** Whether this node is visible on initialisation. Optional - defaults to false if not specified */
 	isVisibleOnInit?: boolean;
+
 	/** Whether this node should be hidden from the user interface AND have its layer visibility set to false. Optional - defaults to false if not specified */
 	isHidden?: boolean;
 
@@ -122,12 +130,16 @@ export interface TreeviewNodeConfig {
 
 	/** Whether fields under this node should be shown in the user interface. Optional - defaults to false if not specified */
 	showFields?: boolean;
+
 	/** Array of node IDs that this node depends on for visibility. Optional - no dependencies if not specified */
 	visibilityDependencyIds?: string[];
+
 	/** ID of the visibility group this node belongs to. Optional - node not part of any group if not specified */
 	visibilityGroupId?: string;
+
 	/** Optional ID of a custom converter to use for this node, if applicable */
 	customConverterId?: string;
+
 	/** The child nodes of this treeview node, allowing for hierarchical structures. */
 	children?: TreeviewNodeConfig[];
 }
