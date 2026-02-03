@@ -305,7 +305,14 @@
         "visibilityDependencyIds": [
           "19b02dc323e-layer-276-0"
         ],
-        "children": []
+        "children": [
+          {
+            "id": "19b02dc323e-layer-276-0",
+            "name": "EVI Raster Cells",
+            "treeviewType": "data",
+            "isHidden": true
+          }
+        ]
       },
       {
         "id": "19b02d862f9-layer-275",
@@ -324,11 +331,7 @@
             "id": "19b02d862f9-layer-275-15",
             "name": 15,
             "treeviewType": "data",
-            "typology": "dataset-raster",
-            "visibilityGroupId": "group:main",
-            "visibilityDependencyIds": [
-              "19b02d862f9-layer-275-15"
-            ],
+            "isHidden": true,
             "children": []
           },
           {
@@ -442,7 +445,7 @@
             "children": []
           },
           {
-            "id": 10,
+            "id": "19b02d862f9-layer-275-10",
             "name": 10,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -453,7 +456,7 @@
             "children": []
           },
           {
-            "id": 11,
+            "id": "19b02d862f9-layer-275-11",
             "name": 11,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -464,7 +467,7 @@
             "children": []
           },
           {
-            "id": 12,
+            "id": "19b02d862f9-layer-275-12",
             "name": 12,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -475,7 +478,7 @@
             "children": []
           },
           {
-            "id": 13,
+            "id": "19b02d862f9-layer-275-13",
             "name": 13,
             "treeviewType": "data",
             "typology": "dataset-raster",
