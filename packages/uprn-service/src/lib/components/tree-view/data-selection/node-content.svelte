@@ -50,7 +50,7 @@
 	{#if tagDefinitions && tagDefinitions.length > 0}
 		<div class="tag-rail-left" aria-hidden="true">
 			{#each tagDefinitions as tagDef (tagDef.id)}
-				<span class="tag-line" style={`background-color: ${tagDef.color};`}></span>
+				<!-- <span class="tag-line" style={`background-color: ${tagDef.color};`}></span> -->
 			{/each}
 		</div>
 	{/if}

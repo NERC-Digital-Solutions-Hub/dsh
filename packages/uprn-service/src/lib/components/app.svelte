@@ -14,6 +14,7 @@
 	import UprnTabBar from '$lib/components/uprn-tab-bar/uprn-tab-bar.svelte';
 	import * as Sidebar from '$lib/components/sidebar/index.js';
 	import * as SidebarLayout from '$lib/components/sidebar-layout/index.js';
+	import * as Card from '$lib/components/shadcn/card/index.js';
 	import { SidebarPosition } from '$lib/components/sidebar/sidebar-position.js';
 	import { Toaster } from '$lib/components/shadcn/sonner';
 	import { AreaSelectionStore } from '$lib/stores/area-selection-store.svelte';
@@ -406,101 +407,107 @@
 	minSize={mainSidebarMinSize}
 >
 	{#snippet sidebarContent()}
-		<div class="relative flex h-full w-full min-w-0 flex-col overflow-visible">
-			<OptionsDialog
-				{maps}
-				{currentMapIndex}
-				onSelectMap={setMapIndex}
-				buttonClass="absolute top-0 left-0 z-10 shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0 ml-1 mt-1"
-			/>
-
-			<SidebarLayout.Header>
-				<UprnTabBar
-					value={currentTab}
-					triggers={tabBarTriggers}
-					progressByValue={tabProgressByValue}
-					onValueChange={onTabValueChange}
+		<div
+			class="relative flex h-full w-full min-w-0 flex-col gap-1 overflow-visible bg-slate-200 pt-1 px-1"
+		>
+			<Card.Root
+				class="relative flex flex-1 flex-col overflow-hidden rounded-md gap-0 py-0 shadow-none"
+			>
+				<OptionsDialog
+					{maps}
+					{currentMapIndex}
+					onSelectMap={setMapIndex}
+					buttonClass="absolute top-0 left-0 z-10 shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0 ml-1 mt-1"
 				/>
-			</SidebarLayout.Header>
 
-			<SidebarLayout.Content>
-				<div hidden={currentTab !== 'areas-of-interest'}>
-					<UprnTabBarContent>
-						{#if webMapStore.isLoaded}
-							<AreaSelectionTreeview
-								bind:this={areaSelectionTreeview}
-								webMap={webMapStore.data!}
-								treeviewConfigStore={treeviewConfig!}
-								layerViewProvider={uprnMapView?.getLayerViewProvider()!}
-								{areaSelectionStore}
-							/>
-						{/if}
-					</UprnTabBarContent>
-				</div>
+				<SidebarLayout.Header>
+					<UprnTabBar
+						value={currentTab}
+						triggers={tabBarTriggers}
+						progressByValue={tabProgressByValue}
+						onValueChange={onTabValueChange}
+					/>
+				</SidebarLayout.Header>
 
-				<div hidden={currentTab !== 'select-data'}>
-					<UprnTabBarContent>
-						{#if webMapStore.isLoaded && customRendererServiceReady}
-							<TreeviewTags
-								tagDefinitionProvider={tagDefinitionProvider ?? undefined}
-								class="justify-center"
-								bind:selectedTagIds
-							/>
-							<DataSelectionTreeview
-								bind:this={dataSelectionTreeview}
-								webMap={webMapStore.data!}
-								{dataSelectionStore}
-								layerViewProvider={uprnMapView?.getLayerViewProvider()!}
-								treeviewConfigStore={treeviewConfig!}
-								tagDefinitionProvider={tagDefinitionProvider!}
-								{customRendererService}
-								{fieldFilterMenuStore}
-								{selectedTagIds}
-							/>
-						{/if}
-					</UprnTabBarContent>
-				</div>
+				<SidebarLayout.Content>
+					<div hidden={currentTab !== 'areas-of-interest'}>
+						<UprnTabBarContent>
+							{#if webMapStore.isLoaded}
+								<AreaSelectionTreeview
+									bind:this={areaSelectionTreeview}
+									webMap={webMapStore.data!}
+									treeviewConfigStore={treeviewConfig!}
+									layerViewProvider={uprnMapView?.getLayerViewProvider()!}
+									{areaSelectionStore}
+								/>
+							{/if}
+						</UprnTabBarContent>
+					</div>
 
-				<div hidden={currentTab !== 'export'}>
-					<UprnTabBarContent>
-						{#if areaSelectionInteractionStore && webMapStore.isLoaded}
-							<ExportMenu
-								webMapService={webMapStore}
+					<div hidden={currentTab !== 'select-data'}>
+						<UprnTabBarContent>
+							{#if webMapStore.isLoaded && customRendererServiceReady}
+								<!-- <TreeviewTags
+									tagDefinitionProvider={tagDefinitionProvider ?? undefined}
+									class="justify-center"
+									bind:selectedTagIds
+								/> -->
+								<DataSelectionTreeview
+									bind:this={dataSelectionTreeview}
+									webMap={webMapStore.data!}
+									{dataSelectionStore}
+									layerViewProvider={uprnMapView?.getLayerViewProvider()!}
+									treeviewConfigStore={treeviewConfig!}
+									tagDefinitionProvider={tagDefinitionProvider!}
+									{customRendererService}
+									{fieldFilterMenuStore}
+									{selectedTagIds}
+								/>
+							{/if}
+						</UprnTabBarContent>
+					</div>
+
+					<div hidden={currentTab !== 'export'}>
+						<UprnTabBarContent>
+							{#if areaSelectionInteractionStore && webMapStore.isLoaded}
+								<ExportMenu
+									webMapService={webMapStore}
+									{areaSelectionInteractionStore}
+									{dataSelectionStore}
+									dataSelectionTreeviewConfig={treeviewConfig!}
+									{fieldFilterMenuStore}
+								/>
+							{/if}
+						</UprnTabBarContent>
+					</div>
+
+					<div hidden={currentTab !== 'downloads'}>
+						<UprnTabBarContent>
+							{#if !uprnDownloadApi || !isUprnDownloadServiceAvailable || !webMapStore.isLoaded}
+								<p class="p-4 text-center text-sm text-gray-500">
+									Download service is not available.
+								</p>
+							{:else}
+								<DownloadsMenu uprnDownloadService={uprnDownloadApi} {fieldsToHide} />
+							{/if}
+						</UprnTabBarContent>
+					</div>
+				</SidebarLayout.Content>
+				<SidebarLayout.Footer>
+					<div hidden={currentTab !== 'export'}>
+						{#if areaSelectionInteractionStore}
+							<ExportMenuFooter
+								onExportSuccess={() => onTabValueChange('downloads')}
+								clearSelections={clearAllSelections}
 								{areaSelectionInteractionStore}
 								{dataSelectionStore}
-								dataSelectionTreeviewConfig={treeviewConfig!}
-								{fieldFilterMenuStore}
 							/>
 						{/if}
-					</UprnTabBarContent>
-				</div>
+					</div>
+				</SidebarLayout.Footer>
+			</Card.Root>
 
-				<div hidden={currentTab !== 'downloads'}>
-					<UprnTabBarContent>
-						{#if !uprnDownloadApi || !isUprnDownloadServiceAvailable || !webMapStore.isLoaded}
-							<p class="p-4 text-center text-sm text-gray-500">
-								Download service is not available.
-							</p>
-						{:else}
-							<DownloadsMenu uprnDownloadService={uprnDownloadApi} {fieldsToHide} />
-						{/if}
-					</UprnTabBarContent>
-				</div>
-			</SidebarLayout.Content>
-			<SidebarLayout.Footer>
-				<div hidden={currentTab !== 'export'}>
-					{#if areaSelectionInteractionStore}
-						<ExportMenuFooter
-							onExportSuccess={() => onTabValueChange('downloads')}
-							clearSelections={clearAllSelections}
-							{areaSelectionInteractionStore}
-							{dataSelectionStore}
-						/>
-					{/if}
-				</div>
-			</SidebarLayout.Footer>
-
-			<CollapsibleWindow isOpenedOnInit={true} class="mt-0">
+			<CollapsibleWindow isOpenedOnInit={true} class="mt-0 shadow-none">
 				{#if !aiUprnChatbotApi || !isAiUprnChatbotServiceAvailable}
 					<p class="p-4 text-center text-sm text-gray-500">
 						AI UPRN Chatbot service is not available.

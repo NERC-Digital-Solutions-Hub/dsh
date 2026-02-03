@@ -4,6 +4,7 @@
 	import { Input } from '$lib/components/shadcn/input';
 	import ScrollArea from '$lib/components/shadcn/scroll-area/scroll-area.svelte';
 	import type { AiUprnChatbotService } from '$lib/services/ai-uprn-chatbot-service';
+	import { cn } from '$lib/utils';
 	import SendIcon from '@lucide/svelte/icons/send';
 
 	// ============================================================================
@@ -16,6 +17,7 @@
 	type Props = {
 		/** The AI chatbot service instance for handling chat interactions */
 		aiUprnChatbotService: AiUprnChatbotService;
+		class?: string;
 	};
 
 	/**
@@ -50,7 +52,7 @@
 	// Component Props
 	// ============================================================================
 
-	const { aiUprnChatbotService }: Props = $props();
+	const { aiUprnChatbotService, class: className }: Props = $props();
 
 	// ============================================================================
 	// State
@@ -251,7 +253,7 @@
 <!-- Chat Container -->
 <!-- ============================================================================ -->
 
-<div class="chat-container h-full w-full border border-border">
+<div class={cn('chat-container h-full w-full border border-border', className)}>
 	<div class="message-wrapper" bind:this={messageWrapper}>
 		<ScrollArea class="h-full w-full" bind:ref={scrollContainer}>
 			<Chat.List>

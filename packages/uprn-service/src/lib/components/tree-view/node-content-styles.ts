@@ -6,7 +6,8 @@
  * Base node styling that all node components share.
  * Provides basic layout and border styling.
  */
-export const baseNodeStyles = 'mb-1 cursor-pointer rounded-md border border-border p-2 text-left';
+export const baseNodeStyles =
+	'mb-1 cursor-pointer rounded-md shadow-none border border-border p-2 text-left';
 
 /**
  * Enhanced hover effects with smooth transitions.

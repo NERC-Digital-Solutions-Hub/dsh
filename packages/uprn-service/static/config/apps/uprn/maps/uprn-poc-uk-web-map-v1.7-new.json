@@ -78,11 +78,6 @@
             "id": "19b03f7b1ab-layer-229",
             "name": "AQREAN Raster Cells (Bias Corrected)",
             "treeviewType": "data",
-            "typology": "dataset-raster",
-            "visibilityGroupId": "group:main",
-            "visibilityDependencyIds": [
-              "19b03f7b1ab-layer-229"
-            ],
             "isHidden": true,
             "children": []
           }
@@ -293,11 +288,6 @@
             "id": "19b03f4cc8f-layer-161",
             "name": "AQREAN Raster Cells",
             "treeviewType": "data",
-            "typology": "dataset-raster",
-            "visibilityGroupId": "group:main",
-            "visibilityDependencyIds": [
-              "19b03f4cc8f-layer-161"
-            ],
             "isHidden": true,
             "children": []
           }
@@ -331,7 +321,7 @@
         ],
         "children": [
           {
-            "id": 15,
+            "id": "19b02d862f9-layer-275-15",
             "name": 15,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -342,7 +332,7 @@
             "children": []
           },
           {
-            "id": 0,
+            "id": "19b02d862f9-layer-275-0",
             "name": 0,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -353,7 +343,7 @@
             "children": []
           },
           {
-            "id": 1,
+            "id": "19b02d862f9-layer-275-1",
             "name": 1,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -364,7 +354,7 @@
             "children": []
           },
           {
-            "id": 2,
+            "id": "19b02d862f9-layer-275-2",
             "name": 2,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -375,7 +365,7 @@
             "children": []
           },
           {
-            "id": 3,
+            "id": "19b02d862f9-layer-275-3",
             "name": 3,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -386,7 +376,7 @@
             "children": []
           },
           {
-            "id": 4,
+            "id": "19b02d862f9-layer-275-4",
             "name": 4,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -397,7 +387,7 @@
             "children": []
           },
           {
-            "id": 5,
+            "id": "19b02d862f9-layer-275-5",
             "name": 5,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -408,7 +398,7 @@
             "children": []
           },
           {
-            "id": 6,
+            "id": "19b02d862f9-layer-275-6",
             "name": 6,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -419,7 +409,7 @@
             "children": []
           },
           {
-            "id": 7,
+            "id": "19b02d862f9-layer-275-7",
             "name": 7,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -430,7 +420,7 @@
             "children": []
           },
           {
-            "id": 8,
+            "id": "19b02d862f9-layer-275-8",
             "name": 8,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -441,7 +431,7 @@
             "children": []
           },
           {
-            "id": 9,
+            "id": "19b02d862f9-layer-275-9",
             "name": 9,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -603,11 +593,6 @@
             "id": "19b02eff60d-layer-289",
             "name": "Modelled Background Pollution Raster Cells",
             "treeviewType": "data",
-            "typology": "dataset-raster",
-            "visibilityGroupId": "group:main",
-            "visibilityDependencyIds": [
-              "19b02eff60d-layer-289"
-            ],
             "isHidden": true,
             "children": []
           }
