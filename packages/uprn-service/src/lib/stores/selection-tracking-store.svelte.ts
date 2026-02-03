@@ -166,11 +166,14 @@ export class SelectionTrackingStore {
 	 * Loads existing selections for a given portal item from the database into the stores.
 	 */
 	public async loadSelections(portalItemId: string) {
+		console.log('[selection-tracking-store] Loading selections for portalItemId:', portalItemId);
 		if (!portalItemId) {
+			console.log('[selection-tracking-store] No portalItemId provided, skipping load');
 			this.#initialLoadComplete = true;
 			return;
 		}
 
+		console.log('[selection-tracking-store] Fetching selection from database for', portalItemId);
 		const selection = await getSelection(portalItemId);
 
 		if (!selection) {

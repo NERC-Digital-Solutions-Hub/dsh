@@ -82,6 +82,9 @@ export class AreaSelectionInteractionStore {
 	}
 
 	public async refreshLayerView(): Promise<void> {
+		console.log(
+			'[area-selection-interaction-store] refreshing layer view for area selection store.'
+		);
 		if (!this.areaSelectionStore.layerId && this.selectionViewState.layerView !== null) {
 			this.resetSelectedLayerView();
 			return;
@@ -99,6 +102,9 @@ export class AreaSelectionInteractionStore {
 			this.areaSelectionStore.layerId
 		);
 		if (!layerView) {
+			console.warn(
+				`[area-selection-interaction-store] no layer view found for layer ID ${this.areaSelectionStore.layerId}.`
+			);
 			return;
 		}
 
