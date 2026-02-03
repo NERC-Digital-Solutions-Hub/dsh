@@ -76,6 +76,7 @@
 						<Button
 							class="size-6 border-1 bg-background hover:bg-accent focus-visible:border-ring"
 							onclick={onToggleMaximise}
+							title={isMaximised ? 'Compact' : 'Expand'}
 						>
 							{#if isMaximised}
 								<Minimize class="text-primary" />
@@ -87,6 +88,7 @@
 					<Button
 						class="size-6 border-1 bg-background hover:bg-accent focus-visible:border-ring"
 						onclick={onToggleCollapse}
+						title={isOpened ? 'Hide' : 'Open'}
 					>
 						{#if !isOpened}
 							<ChevronUp class="text-primary" />
