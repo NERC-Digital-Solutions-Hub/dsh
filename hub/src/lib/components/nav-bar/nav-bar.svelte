@@ -174,22 +174,20 @@
 		align-items: center;
 	}
 
-	.apps-menu__dropdown {
-		/* Keep dropdown usable on short viewports */
+	.apps-menu-dropdown {
 		max-height: calc(100vh - var(--header-height, 64px) - 16px);
 		overflow-y: auto;
 		overflow-x: hidden;
 		overscroll-behavior: contain;
 	}
 
-	@media (max-height: 500px) {
-		/* Compact mode: hide descriptions to reduce menu height */
-		.apps-menu__dropdown {
+	@media (max-height: 640px) {
+		.apps-menu-dropdown {
 			gap: 0.5rem;
 			max-height: calc(100vh - var(--header-height, 64px) - 12px);
 		}
 
-		.apps-menu__description {
+		.apps-menu-description {
 			position: absolute;
 			width: 1px;
 			height: 1px;
@@ -201,10 +199,8 @@
 			border: 0;
 		}
 
-		/* Optional tooltip-like fallback for mouse + keyboard: show the description
-		   for the currently hovered/focused link without permanently expanding the menu. */
-		:global(.apps-menu__link:hover) .apps-menu__description,
-		:global(.apps-menu__link:focus-within) .apps-menu__description {
+		:global(.apps-menu-link:hover) .apps-menu-description,
+		:global(.apps-menu-link:focus-within) .apps-menu-description {
 			position: static;
 			width: auto;
 			height: auto;
@@ -214,14 +210,6 @@
 			clip: auto;
 			white-space: normal;
 			border: 0;
-		}
-	}
-
-	@media (max-height: 600px) {
-		/* Extra squeeze for very small heights */
-		.apps-menu__dropdown {
-			padding: 0.375rem;
-			gap: 0.375rem;
 		}
 	}
 </style>
