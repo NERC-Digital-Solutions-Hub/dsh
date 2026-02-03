@@ -33,7 +33,8 @@
 	import { asset, base } from '$app/paths';
 	import { LayerViewProvider } from '$lib/services/layer-view-provider';
 	import { SelectionTrackingStore } from '$lib/stores/selection-tracking-store.svelte';
-	import OptionsDialog from '$lib/components/options-dialog/options-dialog.svelte';
+	import SettingsDialog from '$lib/components/settings-dialog/settings-dialog.svelte';
+	import ResetDialog from '$lib/components/reset-dialog/reset-dialog.svelte';
 	import { uprnConfigStore } from '$lib/stores/uprn-store.svelte';
 	import ItemInfoDialog from '$lib/components/item-info-dialog/item-info-dialog.svelte';
 	import { setItemInfoDialogEvents } from '$lib/events/item-info-dialog-events';
@@ -108,6 +109,9 @@
 
 	let itemInfoDialogOpen: boolean = $state(false);
 	let itemInfoDialogActiveLayerId: string | null = $state(null);
+	let resetDialogOpen: boolean = $state(false);
+
+	let dataSelectionCount: number = $derived(dataSelectionStore.dataSelections.size);
 
 	let uprnDownloadApi = $derived(
 		uprnConfigStore.instance?.uprnDownloadApiConfig.value
@@ -230,7 +234,12 @@
 		dataSelectionStore.clearSelections();
 		areaSelectionTreeview?.clearSelections();
 		dataSelectionTreeview?.clearSelections();
+		mapView?.graphics.removeAll();
 		selectedTagIds = new Set<string>();
+	}
+
+	function requestClearAllSelections() {
+		resetDialogOpen = true;
 	}
 
 	/**
@@ -416,12 +425,20 @@
 			<Card.Root
 				class="relative flex flex-1 flex-col overflow-hidden rounded-md gap-0 py-0 shadow-none"
 			>
-				<OptionsDialog
-					{maps}
-					{currentMapIndex}
-					onSelectMap={setMapIndex}
-					buttonClass="absolute top-0 left-0 z-10 shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0 ml-1 mt-1"
-				/>
+				<div class="absolute top-0 left-0 z-10 flex gap-1 ml-1 mt-1">
+					<SettingsDialog
+						{maps}
+						{currentMapIndex}
+						onSelectMap={setMapIndex}
+						buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
+					/>
+
+					<ResetDialog
+						bind:open={resetDialogOpen}
+						onReset={clearAllSelections}
+						buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
+					/>
+				</div>
 
 				<SidebarLayout.Header>
 					<UprnTabBar
@@ -451,7 +468,7 @@
 						<UprnTabBarContent>
 							{#if webMapStore.isLoaded && customRendererServiceReady}
 								<!-- <TreeviewTags
-									tagDefinitionProvider={tagDefinitionProvider ?? undefined}
+									tasgDefinitionProvider={tagDefinitionProvider ?? undefined}
 									class="justify-center"
 									bind:selectedTagIds
 								/> -->
@@ -500,7 +517,7 @@
 						{#if areaSelectionInteractionStore}
 							<ExportMenuFooter
 								onExportSuccess={() => onTabValueChange('downloads')}
-								clearSelections={clearAllSelections}
+								clearSelections={requestClearAllSelections}
 								{areaSelectionInteractionStore}
 								{dataSelectionStore}
 							/>

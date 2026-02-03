@@ -16,7 +16,7 @@
 
 	const { maps, currentMapIndex, onSelectMap, buttonClass }: Props = $props();
 
-	let currentOptionIndex = $state(currentMapIndex);
+	let currentOptionIndex: number = $state(0);
 
 	function onOpen() {
 		currentOptionIndex = currentMapIndex;
@@ -33,7 +33,11 @@
 </script>
 
 <Dialog.Root>
-	<Dialog.Trigger onclick={onOpen} class={cn(buttonVariants({ variant: 'outline' }), buttonClass)}>
+	<Dialog.Trigger
+		onclick={onOpen}
+		title="Settings"
+		class={cn(buttonVariants({ variant: 'outline' }), buttonClass)}
+	>
 		<Settings />
 	</Dialog.Trigger>
 	<Dialog.Content class="sm:max-w-[425px]">
@@ -43,7 +47,7 @@
 		</Dialog.Header>
 		<RadioGroup.Root
 			value={currentOptionIndex.toString()}
-			onValueChange={(value) => (currentOptionIndex = parseInt(value))}
+			onValueChange={(value: any) => (currentOptionIndex = parseInt(value))}
 		>
 			{#each maps as map, index}
 				<div class="flex items-center space-x-2">
