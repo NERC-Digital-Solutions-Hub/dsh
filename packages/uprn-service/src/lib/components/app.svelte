@@ -311,17 +311,11 @@
 				.catch((e) => console.error('[uprn/page] Failed to load custom renderers', e));
 		}
 
-		selectionTrackingStore.portalItemId = currentMap.portalItemId || null;
-
 		// Update selection layers and field infos
 		selectionLayers = new Set((currentMap.selectableLayers || []).map((s) => s.id));
 		areaSelectionInteractionStore.setFieldInfos(currentMap.selectableLayers || []);
 
 		// Update treeview configurations
-		console.log(
-			`[uprn/page] Updating treeview configurations for map`,
-			$state.snapshot(currentMap.treeview)
-		);
 		treeviewConfig = new TreeviewConfigStore(
 			$state.snapshot(currentMap.treeview) as TreeviewConfig
 		);
@@ -335,6 +329,15 @@
 			itemId: currentMap.portalItemId || '',
 			proxy: currentMap.proxy
 		});
+	});
+
+	$effect(() => {
+		// don't invoke selection loading until the web map is loaded
+		if (!webMapStore.isLoaded || !currentMap) {
+			return;
+		}
+
+		selectionTrackingStore.portalItemId = currentMap.portalItemId || null;
 	});
 
 	$effect(() => {
@@ -475,7 +478,6 @@
 									{areaSelectionInteractionStore}
 									{dataSelectionStore}
 									dataSelectionTreeviewConfig={treeviewConfig!}
-									{fieldFilterMenuStore}
 								/>
 							{/if}
 						</UprnTabBarContent>
