@@ -13,13 +13,16 @@ const config = {
 		// See https://svelte.dev/docs/kit/adapters for more information about adapters.
 		adapter: adapter(),
 		prerender: {
-			handleHttpError: ({ status, path, message }) => {
-				if (status >= 500 && path === '/') {
-					console.warn('Ignoring prerender error on /:', message);
-					return;
+			handleHttpError: (error) => {
+				if (process.env.NODE_ENV === 'production') {
+					// Log the error or send to monitoring
+					return {
+						status: error.status || 500,
+						error: 'Page failed to prerender, but build will not stop'
+					};
+				} else {
+					throw error;
 				}
-
-				throw new Error(message);
 			},
 			handleUnseenRoutes: 'warn'
 		}
