@@ -423,7 +423,7 @@
 			class="relative flex h-full w-full min-w-0 flex-col gap-1 overflow-visible bg-slate-200 pt-1 px-1"
 		>
 			<Card.Root
-				class="relative flex flex-1 flex-col overflow-hidden rounded-md gap-0 py-0 shadow-none"
+				class="relative flex flex-1 flex-col overflow-hidden rounded-md gap-0 py-0 shadow-none bg-slate-50"
 			>
 				<div class="absolute top-0 left-0 z-10 flex gap-1 ml-1 mt-1">
 					<SettingsDialog
