@@ -2,6 +2,8 @@
 
 @import 'tw-animate-css';
 
+@import '@dsh/ai-catalogue/styles.css';
+
 @import '@dsh/uprn-service/styles.css';
 
 @import '@dsh/maps-page/styles.css';
