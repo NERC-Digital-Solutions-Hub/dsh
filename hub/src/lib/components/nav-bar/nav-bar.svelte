@@ -18,25 +18,25 @@
 			<NavigationMenu.Item openOnHover={false}>
 				<NavigationMenu.Trigger>Catalogues</NavigationMenu.Trigger>
 				<NavigationMenu.Content>
-					<ul class="apps-menu__dropdown grid w-[300px] gap-4 p-2">
+					<ul class="apps-menu-dropdown grid w-[300px] gap-4 p-2">
 						<li>
 							<NavigationMenu.Link
-								class="apps-menu__link"
+								class="apps-menu-link"
 								href={`${base}/catalogues/full-text-search`}
 								title="Explore our data using a traditional approach to search."
 							>
 								<div class="font-medium">Full-Text Search</div>
-								<div class="apps-menu__description text-muted-foreground">
+								<div class="apps-menu-description text-muted-foreground">
 									Explore our data using a traditional approach to search.
 								</div>
 							</NavigationMenu.Link>
 							<NavigationMenu.Link
-								class="apps-menu__link"
+								class="apps-menu-link"
 								href={`${base}/catalogues/ai`}
 								title="Explore our data using AI-powered search and discovery tools."
 							>
 								<div class="font-medium">AI</div>
-								<div class="apps-menu__description text-muted-foreground">
+								<div class="apps-menu-description text-muted-foreground">
 									Explore our data using AI-powered search and discovery tools.
 								</div>
 							</NavigationMenu.Link>
@@ -47,63 +47,63 @@
 			<NavigationMenu.Item openOnHover={false}>
 				<NavigationMenu.Trigger>Apps</NavigationMenu.Trigger>
 				<NavigationMenu.Content>
-					<ul class="apps-menu__dropdown grid w-[300px] gap-4 p-2">
+					<ul class="apps-menu-dropdown grid w-[300px] gap-4 p-2">
 						<li>
 							<NavigationMenu.Link
-								class="apps-menu__link"
+								class="apps-menu-link"
 								href={`${base}/apps/uprn`}
 								title="Explore Unique Property Reference Numbers (UPRNs) on an interactive map."
 							>
 								<div class="font-medium">UPRN</div>
-								<div class="apps-menu__description text-muted-foreground">
+								<div class="apps-menu-description text-muted-foreground">
 									Explore Unique Property Reference Numbers (UPRNs) on an interactive map.
 								</div>
 							</NavigationMenu.Link>
 							<NavigationMenu.Link
-								class="apps-menu__link"
+								class="apps-menu-link"
 								href={`${base}/apps/climate-just`}
 								title="Discover who is vulnerable to climate change and fuel-poverty and why."
 							>
 								<div class="font-medium">ClimateJust</div>
-								<div class="apps-menu__description text-muted-foreground">
+								<div class="apps-menu-description text-muted-foreground">
 									Discover who is vulnerable to climate change and fuel-poverty and why.
 								</div>
 							</NavigationMenu.Link>
 							<NavigationMenu.Link
-								class="apps-menu__link"
+								class="apps-menu-link"
 								href={`${base}/apps/health-and-environment`}
 								title="Explore the spatial relationships between a broad set of environmental and health data along with the ability to add your own data for your own use."
 							>
 								<div class="font-medium">Health and Environment</div>
-								<div class="apps-menu__description text-muted-foreground">
+								<div class="apps-menu-description text-muted-foreground">
 									Explore the spatial relationships between a broad set of environmental and health
 									data along with the ability to add your own data for your own use.
 								</div>
 							</NavigationMenu.Link>
 							<NavigationMenu.Link
-								class="apps-menu__link"
+								class="apps-menu-link"
 								href={`${base}/apps/where-to-build`}
 								title="Identify potential sites for housing and undertake a site analysis based on your choices."
 							>
 								<div class="font-medium">Where to Build</div>
-								<div class="apps-menu__description text-muted-foreground">
+								<div class="apps-menu-description text-muted-foreground">
 									Identify potential sites for housing and undertake a site analysis based on your
 									choices.
 								</div>
 							</NavigationMenu.Link>
 							<NavigationMenu.Link
-								class="apps-menu__link"
+								class="apps-menu-link"
 								href={`${base}/apps/ai-where-to-build`}
 								title="Identify potential sites for housing and undertake a site analysis based on your choices - AI powered."
 							>
 								<div class="font-medium">Where to Build (AI)</div>
-								<div class="apps-menu__description text-muted-foreground">
+								<div class="apps-menu-description text-muted-foreground">
 									Identify potential sites for housing and undertake a site analysis based on your
 									choices - AI powered.
 								</div>
 							</NavigationMenu.Link>
 							<NavigationMenu.Link
-								class="apps-menu__link"
+								class="apps-menu-link"
 								href={`${base}/apps`}
 								title="View all apps."
 							>
