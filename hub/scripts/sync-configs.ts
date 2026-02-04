@@ -1,7 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const packages = ['uprn-service', 'maps-page', 'research-page', 'ai-where-to-build'];
+const packages = [
+	'ai-catalogue',
+	'uprn-service',
+	'maps-page',
+	'research-page',
+	'ai-where-to-build'
+];
 
 // Ensure we are using the project root (hub)
 const projectRoot = process.cwd();

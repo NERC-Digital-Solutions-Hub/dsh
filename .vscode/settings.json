@@ -1,0 +1,11 @@
+{
+	"files.associations": {
+		"*.css": "tailwindcss"
+	},
+	"typescript.tsserver.watchOptions": {
+		"watchFile": "dynamicPriorityPolling",
+		"watchDirectory": "dynamicPriorityPolling",
+		"fallbackPolling": "dynamicPriorityPolling",
+		"synchronousWatchDirectory": false
+	}
+}
