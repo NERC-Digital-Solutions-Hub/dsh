@@ -2,8 +2,6 @@
 
 @import 'tw-animate-css';
 
-@import './prose.css';
-
 @custom-variant dark (&:is(.dark *));
 
 :root {
