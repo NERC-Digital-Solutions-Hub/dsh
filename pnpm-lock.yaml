@@ -10,6 +10,9 @@ importers:
 
   hub:
     dependencies:
+      '@dsh/ai-catalogue':
+        specifier: workspace:*
+        version: link:../packages/ai-catalogue
       '@dsh/ai-where-to-build':
         specifier: workspace:*
         version: link:../packages/ai-where-to-build
