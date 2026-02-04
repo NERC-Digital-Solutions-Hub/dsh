@@ -73,7 +73,6 @@ export class CatalogueSearchStore {
 		} catch (error) {
 			console.error('Error fetching resource types:', error);
 			this.#resourceTypes = [];
-			throw error;
 		}
 	};
 
@@ -94,7 +93,6 @@ export class CatalogueSearchStore {
 		} catch (error) {
 			console.error('Error fetching formats:', error);
 			this.#formats = [];
-			throw error;
 		}
 	};
 
