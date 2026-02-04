@@ -208,7 +208,7 @@ export class TreeviewStore implements INodeTagProvider {
 			node.featureLayer.displayField = isVisible ? node.field.name : '';
 
 			if (isVisible && this.#customRendererService) {
-				//console.log('[TreeviewStore] Applying custom renderer for field:', node.field.name);
+				console.log('[TreeviewStore] Applying custom renderer for field:', node.field.name);
 				this.#customRendererService.applyCustomRenderer(node.featureLayer, node.field.name);
 			}
 		}
@@ -537,7 +537,8 @@ export class TreeviewStore implements INodeTagProvider {
 			return converter.layerToNode(layer, parent ?? null) as TreeLayerNode;
 		}
 
-		const node = new TreeLayerNode(layer.id, layer.title as string, layer, [], parent);
+		const nodeName = nodeConfig?.displayName || layer.title || layer.id;
+		const node = new TreeLayerNode(layer.id, nodeName, layer, [], parent);
 		layer.visible = nodeConfig?.disableVisibilityToggle
 			? layer.visible // if disabled, keep layer visibility as is
 			: nodeConfig?.isHidden
@@ -588,17 +589,18 @@ export class TreeviewStore implements INodeTagProvider {
 
 	#fieldToNode(field: __esri.Field, parentLayerNode: TreeLayerNode): TreeFieldNode {
 		const fieldNodeId: string = this.#getFieldNodeId(parentLayerNode.id, field.name);
+		const fieldItemConfig: TreeviewNodeConfig | undefined =
+			this.#findTreeviewItemConfig(fieldNodeId);
+
 		const fieldNode = new TreeFieldNode(
 			fieldNodeId,
-			field.alias || field.name,
+			fieldItemConfig?.displayName || field.alias || field.name,
 			parentLayerNode.layer as __esri.FeatureLayer,
 			field,
 			[],
 			parentLayerNode
 		);
 
-		const fieldItemConfig: TreeviewNodeConfig | undefined =
-			this.#findTreeviewItemConfig(fieldNodeId);
 		this.#visibilityStates.set(fieldNodeId, fieldItemConfig?.isVisibleOnInit ?? false);
 		return fieldNode;
 	}
@@ -621,14 +623,16 @@ export class TreeviewStore implements INodeTagProvider {
 	#sublayerToNode(subLayer: __esri.Sublayer, parent?: TreeLayerNode): TreeLayerNode {
 		const layerId = getSublayerId(subLayer, parent?.layer as __esri.Layer);
 
-		const node = new TreeLayerNode(layerId, subLayer.title as string, subLayer, [], parent);
+		const nodeConfig: TreeviewNodeConfig | undefined = this.#findTreeviewItemConfig(layerId);
+		const nodeName = nodeConfig?.displayName || subLayer.title || layerId;
+
+		const node = new TreeLayerNode(layerId, nodeName, subLayer, [], parent);
 		if (subLayer.sublayers?.length) {
 			node.children = subLayer.sublayers
 				.toArray()
 				.map((sublayer) => this.#sublayerToNode(sublayer, node));
 		}
 
-		const nodeConfig: TreeviewNodeConfig | undefined = this.#findTreeviewItemConfig(layerId);
 		subLayer.visible = nodeConfig?.disableVisibilityToggle
 			? subLayer.visible // if disabled, keep layer visibility as is
 			: nodeConfig?.isHidden

@@ -251,6 +251,7 @@ export class TreeviewConfigStore implements INodeTagProvider {
 		nodeConfig = {
 			id: nodeId,
 			name: nodeConfig?.name,
+			displayName: nodeConfig?.displayName,
 			type: TreeviewNodeType.None,
 			tags: this.#getConfigValue(false, 'tags', nodeConfig, parentNodeConfig, undefined),
 			order: this.#getConfigValue(false, 'order', nodeConfig, parentNodeConfig, undefined),

@@ -45,6 +45,9 @@ export interface TreeviewNodeConfig {
 	/** Optional name for configuration management */
 	name?: string;
 
+	/** Display name for the treeview node to be shown in the user interface */
+	displayName?: string;
+
 	/** Type of the treeview node, e.g., 'group-layer' */
 	type: TreeviewNodeType;
 

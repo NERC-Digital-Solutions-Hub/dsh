@@ -840,6 +840,7 @@
       {
         "id": "f453fdab598745ad895f75064cdaa1fc",
         "name": "Tiling Schemes",
+        "displayName": "Ordnance Survey National Grid",
         "treeviewType": "area",
         "typology": "folder",
         "visibilityGroupId": "group:area",
