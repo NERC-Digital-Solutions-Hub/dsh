@@ -8,6 +8,7 @@
 	import LoaderIcon from '@lucide/svelte/icons/loader';
 	import XCircleIcon from '@lucide/svelte/icons/x-circle';
 	import RetryIcon from '@lucide/svelte/icons/rotate-ccw';
+	import HourglassIcon from '$lib/components/icons/hourglass-icon.svelte';
 	import { toast } from 'svelte-sonner';
 	import type { UprnDownloadService } from '$lib/services/uprn-download-service';
 	import {
@@ -37,11 +38,25 @@
 	 * Status configuration for downloads, mapping status to colors, text, and icons.
 	 */
 	const statusConfig = {
-		completed: { color: '#059669', text: 'Completed', icon: CheckCircleIcon },
-		'in-progress': { color: '#2563eb', text: 'In Progress', icon: LoaderIcon },
-		failed: { color: '#dc2626', text: 'Failed', icon: XCircleIcon },
-		pending: { color: '#6b7280', text: 'Pending', icon: Spinner }
-	} as const; // TODO: move into config file.
+		completed: { color: '#059669', text: 'Completed', icon: CheckCircleIcon, iconSize: 14 },
+		'in-progress': { color: '#2563eb', text: 'In Progress', icon: LoaderIcon, iconSize: 14 },
+		failed: { color: '#dc2626', text: 'Failed', icon: XCircleIcon, iconSize: 14 },
+		pending: { color: '#6b7280', text: 'Pending', icon: Spinner, iconSize: 14 },
+		queued: { color: '#6b7280', text: 'Queued', icon: HourglassIcon, iconSize: 22 },
+		submitted: { color: '#6b7280', text: 'Submitted', icon: Spinner, iconSize: 14 }
+	} satisfies Record<
+		string,
+		{
+			color: string;
+			text: string;
+			icon: any;
+			iconSize?: number;
+		}
+	>;
+
+	function getStatusCfg(status: string) {
+		return statusConfig[status as keyof typeof statusConfig] ?? statusConfig.pending;
+	}
 
 	onMount(() => {
 		submitRequests();
@@ -186,6 +201,12 @@
 			for (const download of matched) {
 				switch (job.status.type) {
 					case JobStatusType.Submitted:
+						download.status = DownloadStatus.Submitted;
+						download.errorMessage = undefined; // Clear any previous error message
+						break; // still pending
+					case JobStatusType.Queued:
+						download.status = DownloadStatus.Queued;
+						download.errorMessage = undefined; // Clear any previous error message
 						break; // still pending
 					case JobStatusType.Processing:
 						download.status = DownloadStatus.InProgress;
@@ -306,17 +327,24 @@
 								: download.errorMessage}
 						</span>
 					{/if}
-					<Button
-						variant="ghost"
-						size="sm"
-						class="download-status-btn"
-						style="color: {getStatusColor(download.status)}"
-						title={getStatusText(download.status)}
-						disabled
-					>
-						{@const StatusIcon = getStatusIcon(download.status)}
-						<StatusIcon size={14} class={download.status === 'in-progress' ? 'spinning' : ''} />
-					</Button>
+					<!-- <HourglassIcon color="#6b7280" /> -->
+					{@const cfg = getStatusCfg(download.status)}
+					<span title={cfg.text} class="inline-flex">
+						<Button
+							variant="ghost"
+							size="sm"
+							class="download-status-btn"
+							style="color: {cfg.color}"
+							disabled
+						>
+							{@const StatusIcon = cfg.icon}
+							<StatusIcon
+								size={cfg.iconSize ?? 14}
+								color={cfg.color}
+								class={download.status === 'in-progress' ? 'spinning' : ''}
+							/>
+						</Button>
+					</span>
 					{#if download.externalId}
 						<Button
 							variant="ghost"

@@ -84,7 +84,7 @@
 						<InputGroup.Input
 							placeholder="Search..."
 							value={catalogueStore?.getSearchTerm()}
-							oninput={(e) => catalogueStore?.setSearchTerm(e.currentTarget.value)}
+							oninput={(e: InputEvent) => catalogueStore?.setSearchTerm((e.target as HTMLInputElement).value)}
 						/>
 						<InputGroup.Addon>
 							<SearchIcon />

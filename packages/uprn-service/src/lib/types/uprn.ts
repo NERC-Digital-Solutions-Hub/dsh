@@ -59,6 +59,8 @@ export interface DataSelectionInfo {
  */
 export const DownloadStatus = Object.freeze({
 	Pending: 'pending',
+	Submitted: 'submitted',
+	Queued: 'queued',
 	InProgress: 'in-progress',
 	Completed: 'completed',
 	Failed: 'failed'

@@ -73,6 +73,7 @@
 		"svelte"
 	],
 	"dependencies": {
-		"dexie": "^4.2.1"
+		"dexie": "^4.2.1",
+		"lottie-web": "^5.13.0"
 	}
 }
