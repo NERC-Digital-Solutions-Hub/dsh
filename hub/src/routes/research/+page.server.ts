@@ -1,9 +1,10 @@
 import { researchPageLoad } from '@dsh/research-page';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async (event) => {
+	const data = await researchPageLoad(event);
 	return {
-		researchPageLoad,
+		...data,
 		title: 'Research'
 	};
 };
