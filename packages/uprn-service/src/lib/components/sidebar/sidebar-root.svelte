@@ -37,8 +37,6 @@
 		isOpen,
 		onToggle = () => {},
 		position = SidebarPosition.LEFT,
-		originalSize,
-		minSize,
 		openIcon,
 		sidebarContent,
 		mainContent,
@@ -53,7 +51,7 @@
 
 <div class="sidebar-layout" class:vertical={isVertical}>
 	<div class="z-10">
-		<Sidebar {isOpen} {onToggle} {position} {originalSize} {minSize} {openIcon} {hideToggleButton}>
+		<Sidebar {isOpen} {onToggle} {position} {openIcon} {hideToggleButton}>
 			{#if sidebarContent}
 				{@render sidebarContent()}
 			{/if}
