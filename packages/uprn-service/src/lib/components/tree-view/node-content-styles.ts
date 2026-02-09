@@ -25,7 +25,7 @@ export const simpleHoverStyles = 'transition-colors hover:bg-blue-500';
  * Font styling for text content.
  * Sets font size and weight.
  */
-export const fontStyles = 'text-sm text-foreground';
+export const fontStyles = 'text-sm font-normal text-foreground';
 
 /**
  * Default background styling.
