@@ -38,7 +38,7 @@
 	import { uprnConfigStore } from '$lib/stores/uprn-store.svelte';
 	import ItemInfoDialog from '$lib/components/item-info-dialog/item-info-dialog.svelte';
 	import { setItemInfoDialogEvents } from '$lib/events/item-info-dialog-events';
-	import { Plus } from '@lucide/svelte';
+	import { Plus, Slash } from '@lucide/svelte';
 	import { TabProgress } from '$lib/types/uprn';
 	import { TabStateService } from '$lib/services/TabStateService';
 	import { UserStateProvider } from '$lib/services/UserStateProvider';
@@ -411,13 +411,7 @@
 	<AreaSelectionToast {areaSelectionInteractionStore} />
 {/if}
 
-<Sidebar.Root
-	isOpen={mainSidebarOpen}
-	onToggle={toggleMainSidebar}
-	position={mainSidebarPosition}
-	originalSize={mainSidebarOriginalSize}
-	minSize={mainSidebarMinSize}
->
+<Sidebar.Root isOpen={mainSidebarOpen} onToggle={toggleMainSidebar} position={mainSidebarPosition}>
 	{#snippet sidebarContent()}
 		<div
 			class="relative flex h-full w-full min-w-0 flex-col gap-1 overflow-visible bg-slate-200 pt-1 px-1"
@@ -425,7 +419,7 @@
 			<Card.Root
 				class="relative flex flex-1 flex-col overflow-hidden rounded-md gap-0 py-0 shadow-none bg-slate-50"
 			>
-				<div class="absolute top-0 left-0 z-10 flex gap-1 ml-1 mt-1">
+				<!-- <div class="absolute top-0 left-0 z-10 flex gap-1 ml-1 mt-1">
 					<SettingsDialog
 						{maps}
 						{currentMapIndex}
@@ -438,15 +432,27 @@
 						onReset={clearAllSelections}
 						buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
 					/>
-				</div>
+				</div> -->
 
 				<SidebarLayout.Header>
-					<UprnTabBar
-						value={currentTab}
-						triggers={tabBarTriggers}
-						progressByValue={tabProgressByValue}
-						onValueChange={onTabValueChange}
-					/>
+					<div class="tabs-center">
+						<div class="tabbar-anchor">
+							<UprnTabBar
+								value={currentTab}
+								triggers={tabBarTriggers}
+								progressByValue={tabProgressByValue}
+								onValueChange={onTabValueChange}
+							/>
+
+							<div class="reset-anchor">
+								<ResetDialog
+									bind:open={resetDialogOpen}
+									onReset={clearAllSelections}
+									buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
+								/>
+							</div>
+						</div>
+					</div>
 				</SidebarLayout.Header>
 
 				<SidebarLayout.Content>
@@ -558,5 +564,25 @@
 		transition-property: all;
 		transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 		transition-duration: 150ms;
+	}
+	.tabs-center {
+		width: 100%;
+		display: flex;
+		justify-content: center;
+	}
+
+	/* This box should match the tab bar width (so button anchors to it) */
+	.tabbar-anchor {
+		position: relative;
+		display: inline-block; /* shrink-wrap to UprnTabBar */
+	}
+
+	/* Button positioned relative to the tab bar’s right edge */
+	.reset-anchor {
+		position: absolute;
+		top: 50%;
+		right: 0;
+		transform: translate(calc(100% + 0.25rem), -50%);
+		z-index: 10;
 	}
 </style>
