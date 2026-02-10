@@ -284,6 +284,11 @@
 			label: 'Clear Downloads',
 			description: 'Remove all download history and pending jobs',
 			onReset: clearDownloads
+		},
+		{
+			label: 'Clear All',
+			description: 'Removes all selections and download history',
+			onReset: clearAllSelections
 		}
 	];
 
@@ -522,6 +527,18 @@
 							</div>
 						</div>
 					</div>
+					<!-- <UprnTabBar
+						value={currentTab}
+						triggers={tabBarTriggers}
+						progressByValue={tabProgressByValue}
+						onValueChange={onTabValueChange}
+					>
+						| <ResetDialog
+							bind:open={resetDialogOpen}
+							actions={resetActions}
+							buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
+						/>
+					</UprnTabBar> -->
 				</SidebarLayout.Header>
 
 				<SidebarLayout.Content>
