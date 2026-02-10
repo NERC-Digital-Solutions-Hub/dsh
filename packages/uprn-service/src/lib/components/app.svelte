@@ -125,7 +125,7 @@
 
 		console.log(`[uprn/page] Calculated sidebar min size based on tab bar width: ${tabBarWidth}px`);
 		// Add space for the reset button (2rem width + 0.25rem gap) and some extra padding
-		return `calc(${tabBarWidth}px + 6rem)`;
+		return `calc(${tabBarWidth}px + 1rem)`;
 	});
 
 	let uprnDownloadApi = $derived(
@@ -509,7 +509,7 @@
 				</div> -->
 
 				<SidebarLayout.Header>
-					<div class="tabs-center">
+					<!-- <div class="tabs-center">
 						<div class="tabbar-anchor" bind:this={tabBarElement} use:observeTabbarSize>
 							<UprnTabBar
 								value={currentTab}
@@ -526,19 +526,23 @@
 								/>
 							</div>
 						</div>
+					</div> -->
+					<div class="tabs-center">
+						<div class="tabbar-anchor" bind:this={tabBarElement} use:observeTabbarSize>
+							<UprnTabBar
+								value={currentTab}
+								triggers={tabBarTriggers}
+								progressByValue={tabProgressByValue}
+								onValueChange={onTabValueChange}
+							>
+								| <ResetDialog
+									bind:open={resetDialogOpen}
+									actions={resetActions}
+									buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
+								/>
+							</UprnTabBar>
+						</div>
 					</div>
-					<!-- <UprnTabBar
-						value={currentTab}
-						triggers={tabBarTriggers}
-						progressByValue={tabProgressByValue}
-						onValueChange={onTabValueChange}
-					>
-						| <ResetDialog
-							bind:open={resetDialogOpen}
-							actions={resetActions}
-							buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
-						/>
-					</UprnTabBar> -->
 				</SidebarLayout.Header>
 
 				<SidebarLayout.Content>
