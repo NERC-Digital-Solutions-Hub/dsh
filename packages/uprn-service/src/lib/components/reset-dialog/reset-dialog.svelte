@@ -4,16 +4,22 @@
 	import { RotateCcw } from '@lucide/svelte';
 	import { cn } from '$lib/utils';
 
-	type Props = {
+	export type ResetAction = {
+		label: string;
+		description: string;
 		onReset: () => void;
+	};
+
+	type Props = {
+		actions: ResetAction[];
 		buttonClass?: string;
 		open?: boolean;
 	};
 
-	let { onReset, buttonClass, open = $bindable(false) }: Props = $props();
+	let { actions, buttonClass, open = $bindable(false) }: Props = $props();
 
-	function handleConfirm() {
-		onReset();
+	function handleAction(action: ResetAction) {
+		action.onReset();
 		open = false;
 	}
 </script>
@@ -24,13 +30,25 @@
 	</Dialog.Trigger>
 	<Dialog.Content class="sm:max-w-[425px]">
 		<Dialog.Header>
-			<Dialog.Title>Are you sure?</Dialog.Title>
-			<Dialog.Description
-				>This action will clear all current selections. This cannot be undone.</Dialog.Description
-			>
+			<Dialog.Title>Reset Options</Dialog.Title>
+			<Dialog.Description>Choose what to reset. These actions cannot be undone.</Dialog.Description>
 		</Dialog.Header>
-		<Dialog.Footer>
-			<Button variant="destructive" onclick={handleConfirm}>Reset</Button>
+		<div class="flex flex-col gap-2 py-2">
+			{#each actions as action (action.label)}
+				<Button
+					variant="outline"
+					class="h-auto w-full justify-start gap-3 px-4 py-3 text-left"
+					onclick={() => handleAction(action)}
+				>
+					<div class="flex flex-col items-start">
+						<span class="text-sm font-medium">{action.label}</span>
+						<span class="text-xs text-muted-foreground">{action.description}</span>
+					</div>
+				</Button>
+			{/each}
+		</div>
+		<Dialog.Footer class="sm:justify-start">
+			<Button variant="ghost" onclick={() => (open = false)}>Cancel</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

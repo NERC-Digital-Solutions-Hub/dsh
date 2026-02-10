@@ -43,6 +43,8 @@
 	import { TabStateService } from '$lib/services/TabStateService';
 	import { UserStateProvider } from '$lib/services/UserStateProvider';
 	import { TagDefinitionProvider } from '$lib/services/TagDefinitionProvider';
+	import { downloadsStore } from '$lib/stores/downloads-store.svelte';
+	import type { ResetAction } from '$lib/components/reset-dialog/reset-dialog.svelte';
 
 	const tabBarTriggers = [
 		{
@@ -242,18 +244,48 @@
 
 	function clearAllSelections() {
 		console.log('[uprn/page] Clearing all selections');
+		clearAreaSelections();
+		clearDataSelections();
+		clearDownloads();
+	}
+
+	function clearAreaSelections() {
+		console.log('[uprn/page] Clearing area selections');
 		areaSelectionStore.setLayerId(null);
 		areaSelectionStore.clearSelectedAreas();
-		dataSelectionStore.clearSelections();
 		areaSelectionTreeview?.clearSelections();
-		dataSelectionTreeview?.clearSelections();
 		mapView?.graphics.removeAll();
+	}
+
+	function clearDataSelections() {
+		console.log('[uprn/page] Clearing data selections');
+		dataSelectionStore.clearSelections();
+		dataSelectionTreeview?.clearSelections();
 		selectedTagIds = new Set<string>();
 	}
 
-	function requestClearAllSelections() {
-		resetDialogOpen = true;
+	function clearDownloads() {
+		console.log('[uprn/page] Clearing downloads');
+		downloadsStore.clearDownloads();
 	}
+
+	const resetActions: ResetAction[] = [
+		{
+			label: 'Clear Area Selections',
+			description: 'Remove all selected areas of interest from the map',
+			onReset: clearAreaSelections
+		},
+		{
+			label: 'Clear Data Selections',
+			description: 'Remove all selected data layers for export',
+			onReset: clearDataSelections
+		},
+		{
+			label: 'Clear Downloads',
+			description: 'Remove all download history and pending jobs',
+			onReset: clearDownloads
+		}
+	];
 
 	function observeTabbarSize(node: HTMLElement) {
 		const resizeObserver = new ResizeObserver(([entry]) => {
@@ -484,7 +516,7 @@
 							<div class="reset-anchor">
 								<ResetDialog
 									bind:open={resetDialogOpen}
-									onReset={clearAllSelections}
+									actions={resetActions}
 									buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
 								/>
 							</div>
@@ -560,7 +592,7 @@
 						{#if areaSelectionInteractionStore}
 							<ExportMenuFooter
 								onExportSuccess={() => onTabValueChange('downloads')}
-								clearSelections={requestClearAllSelections}
+								clearSelections={() => (resetDialogOpen = true)}
 								{areaSelectionInteractionStore}
 								{dataSelectionStore}
 							/>

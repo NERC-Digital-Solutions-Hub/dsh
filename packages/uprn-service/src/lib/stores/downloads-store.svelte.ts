@@ -1,5 +1,11 @@
 import { SvelteMap } from 'svelte/reactivity';
-import { addUserDownload, deleteUserDownload, getUserDownloads, updateUserDownload } from '$lib/db';
+import {
+	addUserDownload,
+	clearUserDownloads,
+	deleteUserDownload,
+	getUserDownloads,
+	updateUserDownload
+} from '$lib/db';
 import { browser } from '$app/environment';
 import { type DownloadEntry } from '$lib/types/uprn';
 
@@ -38,6 +44,12 @@ class DownloadsStore {
 	public removeDownload(localId: string) {
 		this.#downloads.delete(localId);
 		deleteUserDownload(localId);
+	}
+
+	public async clearDownloads() {
+		this.#downloads.clear();
+		await clearUserDownloads();
+		console.log('[downloads-store] All downloads cleared');
 	}
 
 	public getDownloads(): DownloadEntry[] {
