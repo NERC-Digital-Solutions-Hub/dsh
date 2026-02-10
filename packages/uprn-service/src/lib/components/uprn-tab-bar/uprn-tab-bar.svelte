@@ -75,9 +75,9 @@
 					{/if}
 				{/if}
 			{/each}
+			{@render children?.()}
 		</Tabs.List>
 	</div>
-	{@render children?.()}
 </Tabs.Root>
 
 <style>
