@@ -112,7 +112,7 @@ export class WebMapStore implements IWebMapService {
 		}
 
 		esriConfig.portalUrl = portalUrl as string;
-		console.log(esriConfig);
+		//console.log(esriConfig);
 
 		if (!proxy) {
 			return;

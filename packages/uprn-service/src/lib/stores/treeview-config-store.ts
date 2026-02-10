@@ -54,7 +54,7 @@ export class TreeviewConfigStore implements INodeTagProvider {
 			throw new Error('TreeviewConfigStore requires a valid configuration object.');
 		}
 
-		console.log('[TreeviewConfigStore] Initializing with config:', config);
+		//console.log('[TreeviewConfigStore] Initializing with config:', config);
 		this.#configs = config.layers ?? [];
 		this.#configLookup = new Map(this.#configs.map((item) => [item.id, item]));
 
