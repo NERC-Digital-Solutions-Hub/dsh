@@ -46,6 +46,8 @@
 	}: Props = $props();
 
 	// Constants
+	const DEFAULT_MIN_WIDTH = 500;
+	const DEFAULT_MIN_HEIGHT = 100;
 	const RESIZE_HANDLE_SIZE = 6;
 	const MAX_VIEWPORT_PERCENTAGE = 0.6; // 60% of viewport
 
@@ -71,12 +73,15 @@
 			: 'var(--dsh-sidebar-original-size-vertical, 300px)'
 	);
 	const defaultMinSize = $derived(
-		isHorizontal
-			? 'var(--dsh-sidebar-min-size, 500px)'
-			: 'var(--dsh-sidebar-min-size-vertical, 100px)'
+		minSize
+			? String(minSize).match(/^\d+$/)
+				? `${minSize}px`
+				: minSize
+			: isHorizontal
+				? `var(--dsh-sidebar-min-size, ${DEFAULT_MIN_WIDTH}px)`
+				: `var(--dsh-sidebar-min-size-vertical, ${DEFAULT_MIN_HEIGHT}px)`
 	);
 	const finalOriginalSize = $derived(originalSize ?? defaultOriginalSize);
-	const finalMinSize = $derived(minSize ?? defaultMinSize);
 	const sizeProperty = $derived(isHorizontal ? 'width' : 'height');
 	const resizeCursor = $derived(isHorizontal ? 'ew-resize' : 'ns-resize');
 
@@ -234,13 +239,12 @@
 	// The resize handle overlaps the sidebar edge via negative margin.
 	const wrapperSize = $derived(() => {
 		if (isOpen) {
-			return currentSize;
+			return `max(${currentSize}, ${defaultMinSize})`;
 		}
 		return '0px';
 	});
 
-	// Panel clipper size: full panel when open, 0 when closed
-	const clipperSize = $derived(isOpen ? currentSize : '0px');
+	const clipperSize = $derived(isOpen ? `max(${currentSize}, ${defaultMinSize})` : '0px');
 
 	// Clipper justify-content: anchors content to the correct edge for slide direction
 	const clipperJustify = $derived(isStartPosition ? 'flex-start' : 'flex-end');
@@ -278,7 +282,7 @@
 				class="flex shrink-0"
 				class:h-full={isHorizontal}
 				class:w-full={!isHorizontal}
-				style="{sizeProperty}: {currentSize}; flex-direction: {flexDirection()};"
+				style="{sizeProperty}: max({currentSize}, {defaultMinSize}); flex-direction: {flexDirection()};"
 			>
 				<!-- Sidebar panel -->
 				<aside
@@ -293,7 +297,9 @@
 					class:border-b={position === SidebarPosition.TOP}
 					class:border-t={position === SidebarPosition.BOTTOM}
 					class:border-sidebar-border={true}
-					style="{sizeProperty}: {currentSize};"
+					style="{sizeProperty}: {currentSize}; {isHorizontal
+						? 'min-width'
+						: 'min-height'}: {defaultMinSize};"
 				>
 					<div
 						class="flex overflow-hidden"

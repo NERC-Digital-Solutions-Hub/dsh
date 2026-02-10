@@ -111,7 +111,20 @@
 	let itemInfoDialogActiveLayerId: string | null = $state(null);
 	let resetDialogOpen: boolean = $state(false);
 
-	let dataSelectionCount: number = $derived(dataSelectionStore.dataSelections.size);
+	let tabBarElement: HTMLElement | null = $state(null);
+	let tabBarWidth: number | null = $state(null);
+	let sidebarMinSize: string | undefined = $derived.by(() => {
+		if (!tabBarWidth) {
+			console.warn(
+				'[uprn/page] Tab bar width is not available yet, using default sidebar min size'
+			);
+			return undefined;
+		}
+
+		console.log(`[uprn/page] Calculated sidebar min size based on tab bar width: ${tabBarWidth}px`);
+		// Add space for the reset button (2rem width + 0.25rem gap) and some extra padding
+		return `calc(${tabBarWidth}px + 6rem)`;
+	});
 
 	let uprnDownloadApi = $derived(
 		uprnConfigStore.instance?.uprnDownloadApiConfig.value
@@ -240,6 +253,25 @@
 
 	function requestClearAllSelections() {
 		resetDialogOpen = true;
+	}
+
+	function observeTabbarSize(node: HTMLElement) {
+		const resizeObserver = new ResizeObserver(([entry]) => {
+			console.log(`[uprn/page] Tab bar width changed: ${entry.contentRect.width}px`);
+			tabBarWidth = entry.contentRect.width;
+
+			console.log(
+				`[uprn/page] Updated sidebar min size based on new tab bar width: ${tabBarWidth}`
+			);
+		});
+
+		resizeObserver.observe(node);
+
+		return {
+			destroy() {
+				resizeObserver.disconnect();
+			}
+		};
 	}
 
 	/**
@@ -411,7 +443,12 @@
 	<AreaSelectionToast {areaSelectionInteractionStore} />
 {/if}
 
-<Sidebar.Root isOpen={mainSidebarOpen} onToggle={toggleMainSidebar} position={mainSidebarPosition}>
+<Sidebar.Root
+	isOpen={mainSidebarOpen}
+	minSize={sidebarMinSize}
+	onToggle={toggleMainSidebar}
+	position={mainSidebarPosition}
+>
 	{#snippet sidebarContent()}
 		<div
 			class="relative flex h-full w-full min-w-0 flex-col gap-1 overflow-visible bg-slate-200 pt-1 px-1"
@@ -436,7 +473,7 @@
 
 				<SidebarLayout.Header>
 					<div class="tabs-center">
-						<div class="tabbar-anchor">
+						<div class="tabbar-anchor" bind:this={tabBarElement} use:observeTabbarSize>
 							<UprnTabBar
 								value={currentTab}
 								triggers={tabBarTriggers}
