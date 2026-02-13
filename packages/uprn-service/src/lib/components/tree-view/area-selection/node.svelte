@@ -3,7 +3,12 @@
 	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
 	import { getNodeIcon } from '../get-node-icon';
 	import NodeAnimation from '../node-animation.svelte';
-	import { LayerDrawState, TreeLayerNode, type TreeNode } from '$lib/models/treeview/index.js';
+	import {
+		LayerDrawState,
+		TreeFieldNode,
+		TreeLayerNode,
+		type TreeNode
+	} from '$lib/models/treeview/index.js';
 	import NodeContent from './node-content.svelte';
 	import Node from './node.svelte';
 	import { TreeviewNodeTypology, type TreeviewNodeConfig } from '$lib/types/treeview';
@@ -49,7 +54,13 @@
 	);
 
 	/** Whether this node represents a folder (has children). */
-	const isFolder = $derived(!!(node.children && node.children.length));
+	const isFolder = $derived(
+		!!(
+			node.children &&
+			node.children.length &&
+			node.children.some((child) => !(child instanceof TreeFieldNode))
+		)
+	);
 
 	/** Whether this node has visibility controls (leaf nodes). */
 	const hasVisibility = $derived(!isFolder);
@@ -205,7 +216,8 @@
 {/snippet}
 
 {#snippet childNode(node: TreeNode)}
-	{#if isFolder && isOpen && !treeviewConfigStore.getItemConfig(node.id)?.isHidden}
+	{@const childConfig = treeviewConfigStore.getItemConfig(node.id)}
+	{#if isFolder && isOpen && !childConfig?.isHidden}
 		<Node
 			{treeviewConfigStore}
 			{node}
@@ -219,7 +231,12 @@
 	{/if}
 {/snippet}
 
-<NodeAnimation {isOpen} {content} childNodes={isFolder ? node.children : null} {childNode} />
+<NodeAnimation
+	{isOpen}
+	{content}
+	childNodes={isFolder ? node.children.filter((child) => !(child instanceof TreeFieldNode)) : null}
+	{childNode}
+/>
 
 <style>
 	.visibility-wrapper {
