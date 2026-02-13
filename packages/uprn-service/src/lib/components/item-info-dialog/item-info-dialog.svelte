@@ -9,7 +9,12 @@
 	import * as Tabs from '$lib/components/shadcn/tabs/index.js';
 	import * as Carousel from '$lib/components/shadcn/carousel/index.js';
 	import ScrollArea from '$lib/components/shadcn/scroll-area/scroll-area.svelte';
+	import * as Card from '$lib/components/shadcn/card/index.js';
+	import { Button } from '$lib/components/shadcn/button/index.js';
 	import { Lightbox, LightboxGallery, GalleryThumbnail, GalleryImage } from 'svelte-lightbox';
+	import XmlTree from '$lib/components/xml-tree/xml-tree.svelte';
+	import { ArrowDownToLine } from '@lucide/svelte';
+	import CopyToClipboardButton from '$lib/components/copy-to-clipboard-button/copy-to-clipboard-button.svelte';
 
 	type ContentHook = ReturnType<typeof useFetchMetadataContent>;
 	type LayerDef = {
@@ -34,8 +39,9 @@
 
 	let hasLayerDef: boolean | null = $state(null);
 	let layerDef: LayerDef | null = $state(null);
+	let layerSummary: string | null = $state(null);
 	let layerDescription: string | null = $state(null);
-	let layerCopyright: string | null = $state(null);
+	let layerCredits: string | null = $state(null);
 
 	const layer: __esri.Layer | __esri.Sublayer | null = $derived.by(() => {
 		return activeLayerId ? webmapService.getLayerById(activeLayerId) || null : null;
@@ -68,16 +74,23 @@
 	let contentHooksByKey = $state<Record<string, ContentHook>>({});
 	let previousLayerId: string | null = $state(null);
 
-	function createContentKey(tabTitle: string, index: number, contentItem: MetadataTabContentItem) {
+	function createContentKey(
+		tabTitle: string,
+		index: number,
+		contentItem: MetadataTabContentItem
+	): string {
 		switch (contentItem.type) {
 			case 'text':
 			case 'image':
+			case 'xml':
 			case 'docx':
 			case 'pdf':
 				return `${activeLayerId ?? 'none'}::${tabTitle}::${index}::${contentItem.type}::${contentItem.link}`;
 			case 'slideshow':
 				return `${activeLayerId ?? 'none'}::${tabTitle}::${index}::${contentItem.type}::${contentItem.links.join('|')}`;
 		}
+
+		throw new Error('Unknown metadata tab content type');
 	}
 
 	function getHook(tabTitle: string, index: number, contentItem: MetadataTabContentItem) {
@@ -156,8 +169,8 @@
 
 				layerDef = data;
 				layerDescription = layerDef?.description || null;
-				layerCopyright = layerDef?.copyrightText || null;
-				//console.log('[ItemInfoDialog] Loaded data:', data, 'for layer:', layer);
+				layerCredits = layerDef?.copyrightText || null;
+				console.log('[ItemInfoDialog] Loaded data:', data, 'for layer:', layer);
 			} catch (error) {
 				hasLayerDef = false;
 				console.error('[ItemInfoDialog] Error loading portal item:', error);
@@ -189,7 +202,7 @@
 
 	$effect(() => {
 		const selectedTab = getSelectedTab();
-		if (!selectedTab || !activeTabId) {
+		if (!selectedTab) {
 			return;
 		}
 
@@ -214,6 +227,19 @@
 		}
 
 		return String(value);
+	}
+
+	function downloadXml(value: string, filename = 'metadata.xml') {
+		if (!value) return;
+		const blob = new Blob([value], { type: 'application/xml;charset=utf-8' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = filename;
+		document.body.appendChild(a);
+		a.click();
+		a.remove();
+		URL.revokeObjectURL(url);
 	}
 </script>
 
@@ -246,17 +272,36 @@
 					</div>
 				</div>
 			{:else if useTabInfo && useTabInfo.content && useTabInfo.content.tabs.length > 0}
-				{@const initialValue = useTabInfo.content.tabs[0].title}
 				<Tabs.Root
 					class="flex h-full min-h-0 flex-1 flex-col overflow-hidden"
-					value={activeTabId ?? initialValue}
+					value="information"
 					onValueChange={(value) => (activeTabId = value)}
 				>
 					<Tabs.List class="shrink-0 self-center">
+						<Tabs.Trigger value="information">Information</Tabs.Trigger>
 						{#each useTabInfo.content.tabs as tab}
 							<Tabs.Trigger value={tab.title}>{tab.title}</Tabs.Trigger>
 						{/each}
 					</Tabs.List>
+					<Tabs.Content value="information" class="flex-1 min-h-0 overflow-hidden">
+						<ScrollArea class="h-full w-full" type="always">
+							<div>
+								<div>
+									<h4 class="text-lg font-semibold pb-2">Description</h4>
+									<p>
+										{layerDescription ?? 'No description available.'}
+									</p>
+								</div>
+
+								<div>
+									<h4 class="text-lg font-semibold pb-2">Credits</h4>
+									<p>
+										{layerCredits ?? 'No credits available.'}
+									</p>
+								</div>
+							</div>
+						</ScrollArea>
+					</Tabs.Content>
 					{#each useTabInfo.content.tabs as tab}
 						<Tabs.Content value={tab.title} class="flex-1 min-h-0 overflow-hidden">
 							<ScrollArea class="h-full w-full" type="always">
@@ -283,6 +328,7 @@
 													<img
 														src={String(contentHook.content)}
 														alt={`Metadata image ${index + 1}`}
+														class="mx-auto max-h-[320px] w-auto cursor-zoom-in rounded-md object-contain"
 													/>
 												</Lightbox>
 											{:else if contentItem.type === 'slideshow'}
@@ -318,6 +364,28 @@
 														{/each}
 													</LightboxGallery>
 												{/if}
+											{:else if contentItem.type === 'xml'}
+												{@const xmlString =
+													typeof contentHook.content === 'string' ? contentHook.content : ''}
+												<Card.Root class="w-full self-stretch py-2 gap-1">
+													<Card.Header class="gap-0 pb-0 pt-0 mb-0 mt-0">
+														<div class="flex w-full items-center justify-end gap-2">
+															<CopyToClipboardButton value={xmlString} variant="outline" />
+
+															<Button
+																variant="outline"
+																size="sm"
+																disabled={!xmlString}
+																onclick={() => downloadXml(xmlString)}
+															>
+																<ArrowDownToLine />
+															</Button>
+														</div>
+													</Card.Header>
+													<Card.Content class="pt-0 mt-0">
+														<XmlTree xmlText={xmlString} expandAll={true} />
+													</Card.Content>
+												</Card.Root>
 											{:else if contentItem.type === 'docx'}
 												<a
 													href={String(contentHook.content)}

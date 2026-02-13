@@ -11,6 +11,7 @@ export type MetadataTabContentItem =
 	| TextContent
 	| ImageContent
 	| SlideshowContent
+	| XmlContent
 	| DocxContent
 	| PdfContent;
 
@@ -27,6 +28,11 @@ export type ImageContent = {
 export type SlideshowContent = {
 	type: 'slideshow';
 	links: string[];
+};
+
+export type XmlContent = {
+	type: 'xml';
+	link: string;
 };
 
 export type DocxContent = {
