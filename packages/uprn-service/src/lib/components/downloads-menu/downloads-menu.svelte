@@ -3,13 +3,10 @@
 	import { Spinner } from '$lib/components/shadcn/spinner/index.js';
 	import { downloadsStore } from '$lib/stores/downloads-store.svelte';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
-	import ClipboardIcon from '@lucide/svelte/icons/clipboard';
-	import ClipboardCheckIcon from '@lucide/svelte/icons/clipboard-check';
 	import LoaderIcon from '@lucide/svelte/icons/loader';
 	import XCircleIcon from '@lucide/svelte/icons/x-circle';
 	import RetryIcon from '@lucide/svelte/icons/rotate-ccw';
 	import HourglassIcon from '$lib/components/icons/hourglass-icon.svelte';
-	import { toast } from 'svelte-sonner';
 	import type { UprnDownloadService } from '$lib/services/uprn-download-service';
 	import {
 		DownloadStatus,
@@ -22,7 +19,7 @@
 	import Download from '@lucide/svelte/icons/download';
 	import { onMount } from 'svelte';
 	import SelectionEntryCard from '$lib/components/selection-entry-card/selection-entry-card.svelte';
-	import { SvelteSet } from 'svelte/reactivity';
+	import CopyToClipboardButton from '$lib/components/copy-to-clipboard-button/copy-to-clipboard-button.svelte';
 
 	type Props = {
 		uprnDownloadService: UprnDownloadService;
@@ -31,7 +28,6 @@
 
 	const { uprnDownloadService, fieldsToHide }: Props = $props();
 
-	let copiedUrls = $state<Set<string>>(new Set()); // track which URLs have been recently copied
 	const downloads = $derived.by(() => downloadsStore.getDownloads());
 
 	/**
@@ -254,29 +250,6 @@
 	}
 
 	/**
-	 * Copies the given URL to the clipboard and shows a toast notification.
-	 * Temporarily marks the URL as copied for UI feedback.
-	 * @param url - The URL to copy.
-	 */
-	async function copyUrlToClipboard(url: string) {
-		try {
-			await navigator.clipboard.writeText(url);
-			copiedUrls = new SvelteSet(copiedUrls).add(url); // Create new Set to trigger reactivity
-			toast.success('URL copied to clipboard');
-
-			// Reset the icon after 2 seconds
-			setTimeout(() => {
-				const newCopiedUrls = new SvelteSet(copiedUrls);
-				newCopiedUrls.delete(url);
-				copiedUrls = newCopiedUrls; // Assign new Set to trigger reactivity
-			}, 2000);
-		} catch (err) {
-			console.error('Failed to copy URL:', err);
-			toast.error('Failed to copy URL to clipboard');
-		}
-	}
-
-	/**
 	 * Gets the color associated with a download status.
 	 * @param status - The download status.
 	 * @returns The color string.
@@ -346,19 +319,14 @@
 						</Button>
 					</span>
 					{#if download.externalId}
-						<Button
-							variant="ghost"
-							size="sm"
+						<CopyToClipboardButton
+							value={getDownloadUrl(download.externalId!)}
 							class="download-clipboard-btn"
-							onclick={() => copyUrlToClipboard(getDownloadUrl(download.externalId!))}
 							title="Copy URL to clipboard"
-						>
-							{#if copiedUrls.has(getDownloadUrl(download.externalId))}
-								<ClipboardCheckIcon size={14} />
-							{:else}
-								<ClipboardIcon size={14} />
-							{/if}
-						</Button>
+							successMessage="URL copied to clipboard"
+							errorMessage="Failed to copy URL to clipboard"
+							iconSize={14}
+						/>
 					{/if}
 					{#if download.externalId && download.status === 'completed'}
 						<Button
