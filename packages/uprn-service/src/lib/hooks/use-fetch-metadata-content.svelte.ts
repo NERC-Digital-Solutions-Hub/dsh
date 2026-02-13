@@ -59,6 +59,9 @@ export function useFetchMetadataContent(contentItem: MetadataTabContentItem) {
 				case 'image':
 					content = await fetchBlobAsObjectUrl(contentItem.link, 'image');
 					break;
+				case 'xml':
+					content = await fetchText(contentItem.link);
+					break;
 				case 'docx':
 					content = await fetchBlobAsObjectUrl(contentItem.link, 'docx');
 					break;
@@ -72,6 +75,8 @@ export function useFetchMetadataContent(contentItem: MetadataTabContentItem) {
 					content = urls;
 					break;
 				}
+				default:
+					throw new Error(`Unsupported content type: ${contentItem}`);
 			}
 		} catch (err) {
 			error = err;
