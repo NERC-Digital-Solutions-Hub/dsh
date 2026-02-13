@@ -1,3 +1,4 @@
+import type { INodeConfigProvider } from '$lib/services/INodeConfigProvider';
 import type { INodeTagProvider } from '$lib/services/INodeTagProvider';
 import {
 	TreeviewNodeType,
@@ -25,7 +26,7 @@ type TagCount = {
  * This class encapsulates the configuration data and provides a clean API for accessing
  * treeview items and visibility groups without exposing the internal data structures.
  */
-export class TreeviewConfigStore implements INodeTagProvider {
+export class TreeviewConfigStore implements INodeConfigProvider, INodeTagProvider {
 	/** Array storing all treeview node configurations */
 	#configs: TreeviewNodeConfig[] = [];
 
@@ -76,7 +77,7 @@ export class TreeviewConfigStore implements INodeTagProvider {
 	 * @param id - The unique identifier of the treeview item to retrieve
 	 * @returns The treeview item configuration if found, undefined otherwise
 	 */
-	public getItemConfig(id: string): TreeviewNodeConfig | undefined {
+	public getConfig(id: string): TreeviewNodeConfig | undefined {
 		return this.#configLookup.get(id);
 	}
 
@@ -100,7 +101,7 @@ export class TreeviewConfigStore implements INodeTagProvider {
 
 		// resolve inheritance groups
 		for (const layer of layers) {
-			const config = this.getItemConfig(layer.id);
+			const config = this.getConfig(layer.id);
 			this.#resolveLayerInheritance(layer, config);
 		}
 
@@ -121,7 +122,7 @@ export class TreeviewConfigStore implements INodeTagProvider {
 		}
 
 		// Fallback (should be rare): return any directly configured tags.
-		return this.getItemConfig(nodeId)?.tags ?? [];
+		return this.getConfig(nodeId)?.tags ?? [];
 	}
 
 	/**
@@ -160,7 +161,7 @@ export class TreeviewConfigStore implements INodeTagProvider {
 		);
 
 		// If the layer is a feature layer and has fields to show, create field nodes
-		if (this.#isFeatureLayer(layer) && nodeConfig.showFields) {
+		if (this.#isFeatureLayer(layer) /* && nodeConfig?.showFields */) {
 			const featureLayer = layer as __esri.FeatureLayer;
 			if (!featureLayer.loaded) {
 				console.warn(`Layer not loaded: ${layer.id}`);
@@ -245,10 +246,21 @@ export class TreeviewConfigStore implements INodeTagProvider {
 		nodeId: string,
 		parentNodeConfig?: TreeviewNodeConfig
 	): TreeviewNodeConfig {
-		let nodeConfig: TreeviewNodeConfig | undefined = this.getItemConfig(nodeId);
+		let nodeConfig: TreeviewNodeConfig | undefined = this.getConfig(nodeId);
 		nodeConfig ??= parentNodeConfig?.children?.find((child) => child.id === nodeId);
 
+		// if (
+		// 	nodeConfig &&
+		// 	nodeConfig.visibilityDependencyIds &&
+		// 	nodeConfig.visibilityDependencyIds.length > 0
+		// ) {
+		// 	console.log(
+		// 		`[TreeviewConfigStore] (BEFORE) Node ${nodeId} has visibility dependencies on datasets: ${nodeConfig.visibilityDependencyIds.join(', ')}`
+		// 	);
+		// }
+
 		nodeConfig = {
+			...nodeConfig,
 			id: nodeId,
 			name: nodeConfig?.name,
 			displayName: nodeConfig?.displayName,
@@ -294,7 +306,7 @@ export class TreeviewConfigStore implements INodeTagProvider {
 			),
 			showFields: this.#getConfigValue(false, 'showFields', nodeConfig, parentNodeConfig, false),
 			visibilityDependencyIds: this.#getConfigValue(
-				false,
+				true,
 				'visibilityDependencyIds',
 				nodeConfig,
 				parentNodeConfig,
@@ -317,6 +329,16 @@ export class TreeviewConfigStore implements INodeTagProvider {
 			children: nodeConfig?.children ?? []
 		};
 
+		// if (
+		// 	nodeConfig &&
+		// 	nodeConfig.visibilityDependencyIds &&
+		// 	nodeConfig.visibilityDependencyIds.length > 0
+		// ) {
+		// 	console.log(
+		// 		`[TreeviewConfigStore] (AFTER) Node ${nodeId} has visibility dependencies on datasets: ${nodeConfig.visibilityDependencyIds.join(', ')}`
+		// 	);
+		// }
+
 		this.removeItemConfig(nodeConfig); // remove existing config if present
 		this.addItemConfig(nodeConfig);
 
@@ -333,7 +355,7 @@ export class TreeviewConfigStore implements INodeTagProvider {
 				? getSublayerIdFromParentId(layer, parentNodeConfig?.id ?? '')
 				: layer.id;
 
-		const nodeConfig = this.getItemConfig(layerId);
+		const nodeConfig = this.getConfig(layerId);
 		const tagCounts = new Map<string, number>();
 
 		// Children inherit all tags from their ancestors.
@@ -348,11 +370,11 @@ export class TreeviewConfigStore implements INodeTagProvider {
 		}
 
 		// Feature layers can expose field nodes as children.
-		if (this.#isFeatureLayer(layer) && nodeConfig?.showFields) {
+		if (this.#isFeatureLayer(layer) /* && nodeConfig?.showFields */) {
 			const featureLayer = layer as __esri.FeatureLayer;
 			for (const field of featureLayer.fields ?? []) {
 				const fieldNodeId = this.#getFieldNodeId(featureLayer.id, field.name);
-				const fieldConfig = this.getItemConfig(fieldNodeId);
+				const fieldConfig = this.getConfig(fieldNodeId);
 				const fieldTagCounts = new Map<string, number>();
 
 				// Field nodes inherit tags from the feature layer (and its ancestors).

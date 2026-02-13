@@ -50,7 +50,7 @@
 	}: Props = $props();
 
 	let nodeConfig: TreeviewNodeConfig | null = $derived(
-		treeviewConfigStore?.getItemConfig(node.id) ?? null
+		treeviewConfigStore?.getConfig(node.id) ?? null
 	);
 
 	/** Whether this node represents a folder (has children). */
@@ -174,7 +174,7 @@
 </script>
 
 {#snippet content()}
-	{#if !treeviewConfigStore.getItemConfig(node.id)?.isHidden}
+	{#if !treeviewConfigStore.getConfig(node.id)?.isHidden}
 		{#if isFolder}
 			<NodeContent
 				isTogglable={false}
@@ -216,7 +216,7 @@
 {/snippet}
 
 {#snippet childNode(node: TreeNode)}
-	{@const childConfig = treeviewConfigStore.getItemConfig(node.id)}
+	{@const childConfig = treeviewConfigStore.getConfig(node.id)}
 	{#if isFolder && isOpen && !childConfig?.isHidden}
 		<Node
 			{treeviewConfigStore}

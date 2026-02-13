@@ -254,7 +254,7 @@
 				nodeTagProvider={treeviewConfigStore}
 				{tagDefinitionProvider}
 				{selectedTagIds}
-				isDownloadable={treeviewConfigStore.getItemConfig(node.id)?.isDownloadable ?? true}
+				isDownloadable={treeviewConfigStore.getConfig(node.id)?.isDownloadable ?? true}
 				depth={0}
 			/>
 		{/each}

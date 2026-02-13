@@ -37,7 +37,7 @@ export class TreeviewSelectionController {
 	 * @param state - The desired DownloadState for the node.
 	 */
 	public updateSelection(node: TreeNode, state: SelectionState) {
-		const nodeConfig = this.#treeviewConfigStore.getItemConfig(node.id);
+		const nodeConfig = this.#treeviewConfigStore.getConfig(node.id);
 		if (nodeConfig?.isHidden) {
 			return; // hidden nodes should not be selectable
 		}
@@ -210,7 +210,7 @@ export class TreeviewSelectionController {
 		let totalCount = 0;
 
 		for (const child of node.children || []) {
-			const nodeConfig = this.#treeviewConfigStore.getItemConfig(child.id);
+			const nodeConfig = this.#treeviewConfigStore.getConfig(child.id);
 			if (nodeConfig?.isHidden) {
 				continue; // skip hidden nodes
 			}

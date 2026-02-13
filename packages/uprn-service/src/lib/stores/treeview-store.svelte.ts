@@ -491,7 +491,7 @@ export class TreeviewStore implements INodeTagProvider {
 			return undefined;
 		}
 
-		return this.#configStore.getItemConfig(id);
+		return this.#configStore.getConfig(id);
 	}
 
 	/**
@@ -550,13 +550,17 @@ export class TreeviewStore implements INodeTagProvider {
 		this.#visibilityStates.set(layer.id, layer.visible);
 		this.updateDrawState(node, layer.visible);
 
-		if (this.#isFeatureLayer(layer) && nodeConfig?.showFields) {
+		if (this.#isFeatureLayer(layer) /* && nodeConfig?.showFields */) {
 			const featureLayer = layer as __esri.FeatureLayer;
 			if (!featureLayer.loaded) {
 				console.warn(`Layer not loaded: ${layer.id}`);
 			}
 
 			for (const field of featureLayer.fields ?? []) {
+				if (!this.#shouldIncludeNode(this.#getFieldNodeId(layer.id, field.name))) {
+					continue;
+				}
+
 				const fieldNode = this.#fieldToNode(field, node);
 				node.children.push(fieldNode);
 			}

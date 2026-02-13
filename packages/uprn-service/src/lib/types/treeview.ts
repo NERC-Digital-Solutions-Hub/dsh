@@ -90,6 +90,9 @@ export interface TreeviewNodeConfig {
 	/** Optional ID of a custom converter to use for this node, if applicable */
 	customConverterId?: string;
 
+	/** Optional URL to the metadata tab info */
+	metadataTabInfoUrl?: string;
+
 	/** The child nodes of this treeview node, allowing for hierarchical structures. */
 	children?: TreeviewNodeConfig[];
 }

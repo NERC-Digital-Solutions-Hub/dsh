@@ -70,7 +70,7 @@
 	let isChecked: boolean = $state(false);
 
 	let nodeConfig: TreeviewNodeConfig | null = $derived(
-		treeviewConfigStore?.getItemConfig(node.id) ?? null
+		treeviewConfigStore?.getConfig(node.id) ?? null
 	);
 
 	const nodeTagDefinitions: TagDefinition[] = $derived.by(() => {

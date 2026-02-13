@@ -87,7 +87,7 @@
 				continue;
 			}
 
-			const nodeConfig: TreeviewNodeConfig | undefined = dataSelectionTreeviewConfig?.getItemConfig(
+			const nodeConfig: TreeviewNodeConfig | undefined = dataSelectionTreeviewConfig?.getConfig(
 				selection.layerId
 			);
 
@@ -119,8 +119,9 @@
 			// Walk up the parent chain
 			while (current && 'parent' in current && current.parent) {
 				const parent = current.parent as __esri.Layer | __esri.GroupLayer;
-				const parentConfig: TreeviewNodeConfig | undefined =
-					dataSelectionTreeviewConfig?.getItemConfig(parent.id);
+				const parentConfig: TreeviewNodeConfig | undefined = dataSelectionTreeviewConfig?.getConfig(
+					parent.id
+				);
 				if (parent && 'id' in parent) {
 					path.unshift({
 						id: parent.id,

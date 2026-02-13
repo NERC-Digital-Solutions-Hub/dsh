@@ -18,7 +18,7 @@ export class AliasPathNodeConverter extends CustomNodeConverter {
 	/** @inheritdoc */
 	public layerToNode(layer: __esri.Layer, parent: TreeNode | null): TreeNode {
 		const node = new TreeLayerNode(layer.id, layer.title as string, layer, [], parent);
-		const nodeConfig: TreeviewNodeConfig | undefined = this.configStore.getItemConfig(layer.id);
+		const nodeConfig: TreeviewNodeConfig | undefined = this.configStore.getConfig(layer.id);
 
 		if (this.#isFeatureLayer(layer) && nodeConfig?.showFields) {
 			const featureLayer = layer as __esri.FeatureLayer;
@@ -28,9 +28,7 @@ export class AliasPathNodeConverter extends CustomNodeConverter {
 
 			const nodePathMap: Map<string, TreeNode> = new Map();
 			for (const field of featureLayer.fields ?? []) {
-				const fieldConfig = this.configStore.getItemConfig(
-					this.#getFieldNodeId(layer.id, field.name)
-				);
+				const fieldConfig = this.configStore.getConfig(this.#getFieldNodeId(layer.id, field.name));
 				if (!fieldConfig || fieldConfig.isHidden) {
 					continue;
 				}
