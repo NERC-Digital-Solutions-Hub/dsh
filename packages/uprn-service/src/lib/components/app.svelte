@@ -45,6 +45,8 @@
 	import { TagDefinitionProvider } from '$lib/services/TagDefinitionProvider';
 	import { downloadsStore } from '$lib/stores/downloads-store.svelte';
 	import type { ResetAction } from '$lib/components/reset-dialog/reset-dialog.svelte';
+	import { CsvConfigFetcher } from '$lib/services/config-api/csv-config-fetcher';
+	import { ConfigTransformer } from '$lib/services/config-api/config-transformer';
 
 	const tabBarTriggers = [
 		{
@@ -321,6 +323,14 @@
 			console.error('[uprn/page] Failed to load UPRN config', error);
 		}
 
+		const datasetsCsvPath = asset('config/apps/uprn/api/datasets.csv');
+		const variablesCsvPath = asset('config/apps/uprn/api/variables.csv');
+		const configFetcher = new CsvConfigFetcher(datasetsCsvPath, variablesCsvPath);
+		const { datasets, variables } = await configFetcher.fetch();
+		const configTransformer = new ConfigTransformer();
+		const treeviewNodes = await configTransformer.transform({ datasets, variables });
+		currentMap.treeview.layers = treeviewNodes;
+
 		const { default: MapView } = await import('@arcgis/core/views/MapView');
 		mapView = new MapView();
 
@@ -470,11 +480,14 @@
 
 <Toaster />
 <FieldSelectionMenu {dataSelectionStore} {fieldFilterMenuStore} {fieldsToHide} />
-<ItemInfoDialog
-	webmapService={webMapStore}
-	bind:isOpen={itemInfoDialogOpen}
-	bind:activeLayerId={itemInfoDialogActiveLayerId}
-/>
+{#if treeviewConfig}
+	<ItemInfoDialog
+		webmapService={webMapStore}
+		nodeConfigProvider={treeviewConfig}
+		bind:isOpen={itemInfoDialogOpen}
+		bind:activeLayerId={itemInfoDialogActiveLayerId}
+	/>
+{/if}
 {#if areaSelectionInteractionStore}
 	<AreaSelectionHoverCard {areaSelectionInteractionStore} />
 	<AreaSelectionToast {areaSelectionInteractionStore} />
