@@ -148,6 +148,7 @@
 		const parsedLayer = localLayer as __esri.FeatureLayer & {
 			parsedUrl: { path: string };
 		};
+
 		const layerUrl: string | undefined = parsedLayer?.parsedUrl?.path;
 		if (!layerUrl) {
 			console.log('[ItemInfoDialog] No URL found for layer:', layer);
@@ -246,7 +247,7 @@
 {#if layer && (hasLayerDef == false || (hasLayerDef == true && layerDef))}
 	<Dialog.Root bind:open={isOpen} onOpenChange={(open) => (isOpen = open)}>
 		<Dialog.Content
-			class="grid h-[80vh] min-h-0 min-w-[700px] grid-rows-[auto_1fr] overflow-hidden"
+			class="grid h-[80vh] min-h-0 min-w-[850px] grid-rows-[auto_1fr] overflow-hidden"
 			onInteractOutside={(e) => {
 				const overlay = document.querySelector('.svelte-lightbox-overlay');
 				if (overlay && overlay.contains(e.target as Node)) e.preventDefault();
