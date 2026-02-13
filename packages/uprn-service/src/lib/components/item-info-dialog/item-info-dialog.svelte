@@ -179,13 +179,17 @@
 				nodeConfig?.metadataTabInfoUrl
 			);
 
+			console.log(
+				'[ItemInfoDialog] Checking if we need to fetch tab info. useTabInfo:',
+				useTabInfo
+			);
 			useTabInfo.fetch();
 		}
 	});
 
 	$effect(() => {
 		const selectedTab = getSelectedTab();
-		if (!selectedTab) {
+		if (!selectedTab || !activeTabId) {
 			return;
 		}
 
@@ -249,42 +253,10 @@
 					onValueChange={(value) => (activeTabId = value)}
 				>
 					<Tabs.List class="shrink-0 self-center">
-						{#if layerDescription || layerCopyright}
-							<Tabs.Trigger value="metadata">Metadata</Tabs.Trigger>
-						{/if}
 						{#each useTabInfo.content.tabs as tab}
 							<Tabs.Trigger value={tab.title}>{tab.title}</Tabs.Trigger>
 						{/each}
 					</Tabs.List>
-					{#if layerDescription || layerCopyright}
-						<Tabs.Content value="metadata" class="flex-1 min-h-0 overflow-hidden">
-							<ScrollArea class="h-full w-full" type="always">
-								<div class="mx-auto flex w-full max-w-3xl flex-col items-center gap-6 py-1">
-									{#if layerDescription}
-										<div class="self-stretch">
-											<h4 class="text-lg font-semibold pb-2">Description</h4>
-											<p
-												class="whitespace-pre-wrap text-sm leading-relaxed"
-											>
-												{layerDescription}
-											</p>
-										</div>
-									{/if}
-
-									{#if layerCopyright}
-										<div class="self-stretch">
-											<h4 class="text-lg font-semibold pb-2">Copyright</h4>
-											<p
-												class="whitespace-pre-wrap text-sm leading-relaxed"
-											>
-												{layerCopyright}
-											</p>
-										</div>
-									{/if}
-								</div>
-							</ScrollArea>
-						</Tabs.Content>
-					{/if}
 					{#each useTabInfo.content.tabs as tab}
 						<Tabs.Content value={tab.title} class="flex-1 min-h-0 overflow-hidden">
 							<ScrollArea class="h-full w-full" type="always">
