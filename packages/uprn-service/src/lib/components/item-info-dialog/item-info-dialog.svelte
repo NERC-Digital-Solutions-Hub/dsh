@@ -329,7 +329,7 @@
 													<img
 														src={String(contentHook.content)}
 														alt={`Metadata image ${index + 1}`}
-														class="mx-auto max-h-[320px] w-auto cursor-zoom-in rounded-md object-contain"
+														class="mx-auto max-h-[420px] w-auto cursor-zoom-in rounded-md object-contain"
 													/>
 												</Lightbox>
 											{:else if contentItem.type === 'slideshow'}
