@@ -323,8 +323,8 @@
 			console.error('[uprn/page] Failed to load UPRN config', error);
 		}
 
-		const datasetsCsvPath = asset('config/apps/uprn/api/datasets.csv');
-		const variablesCsvPath = asset('config/apps/uprn/api/variables.csv');
+		const datasetsCsvPath = asset('/config/apps/uprn/api/datasets.csv');
+		const variablesCsvPath = asset('/config/apps/uprn/api/variables.csv');
 		const configFetcher = new CsvConfigFetcher(datasetsCsvPath, variablesCsvPath);
 		const { datasets, variables } = await configFetcher.fetch();
 		const configTransformer = new ConfigTransformer();
