@@ -2,7 +2,7 @@ export type XmlElementNode = {
 	kind: 'element';
 	name: string;
 	attrs: Record<string, string>;
-	children: XmlTreeNode[];
+	children: XmlTreeviewNode[];
 };
 
 export type XmlTextNode = {
@@ -20,4 +20,4 @@ export type XmlCdataNode = {
 	text: string;
 };
 
-export type XmlTreeNode = XmlElementNode | XmlTextNode | XmlCommentNode | XmlCdataNode;
+export type XmlTreeviewNode = XmlElementNode | XmlTextNode | XmlCommentNode | XmlCdataNode;

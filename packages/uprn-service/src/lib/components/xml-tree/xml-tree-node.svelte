@@ -1,9 +1,9 @@
 <script lang="ts">
 	import Self from './xml-tree-node.svelte';
-	import type { XmlElementNode, XmlTreeNode } from './xml-tree.types';
+	import type { XmlElementNode, XmlTreeviewNode } from './xml-tree.types';
 
 	type Props = {
-		node: XmlTreeNode;
+		node: XmlTreeviewNode;
 		depth?: number;
 		expandAll?: boolean;
 	};

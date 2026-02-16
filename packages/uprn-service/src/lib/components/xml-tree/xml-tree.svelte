@@ -1,6 +1,6 @@
 <script lang="ts">
 	import XmlNode from './xml-tree-node.svelte';
-	import type { XmlTreeNode } from './xml-tree.types';
+	import type { XmlTreeviewNode } from './xml-tree.types';
 
 	type Props = {
 		xmlText: string | null | undefined;
@@ -15,7 +15,7 @@
 	let { xmlText, expandAll }: Props = $props();
 
 	let error = $state('');
-	let root = $state<XmlTreeNode | null>(null);
+	let root = $state<XmlTreeviewNode | null>(null);
 
 	function parseXml(source: string): Document {
 		return new DOMParser().parseFromString(source, 'application/xml');
@@ -31,7 +31,7 @@
 		return textarea.value;
 	}
 
-	function nodeToTree(node: Node): XmlTreeNode | null {
+	function nodeToTree(node: Node): XmlTreeviewNode | null {
 		if (node.nodeType === ELEMENT_NODE) {
 			const element = node as Element;
 			const attrs: Record<string, string> = {};
@@ -39,7 +39,7 @@
 				attrs[attr.name] = attr.value;
 			}
 
-			const children: XmlTreeNode[] = [];
+			const children: XmlTreeviewNode[] = [];
 			for (const child of element.childNodes) {
 				const mappedNode = nodeToTree(child);
 				if (mappedNode) {
