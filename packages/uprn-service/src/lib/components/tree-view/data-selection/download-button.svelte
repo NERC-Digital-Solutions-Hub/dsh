@@ -1,18 +1,18 @@
 <!-- DownloadButton.svelte -->
 <script lang="ts">
 	import DownloadCheckbox from '$lib/components/download-checkbox/download-checkbox.svelte';
-	import { SelectionState, type TreeNode } from '$lib/models/treeview/index.js';
+	import { SelectionState, type TreeviewNode } from '$lib/models/treeview/index.js';
 
 	/**
 	 * Props for the DownloadButton component.
 	 */
 	type Props = {
 		/** The tree node this button controls. */
-		node: TreeNode;
+		node: TreeviewNode;
 		/** Callback when download state changes. */
-		onDownloadStateChanged?: (node: TreeNode, downloadState: SelectionState) => void;
+		onDownloadStateChanged?: (node: TreeviewNode, downloadState: SelectionState) => void;
 		/** Function to get current download state. */
-		getDownloadState?: (node: TreeNode) => SelectionState;
+		getDownloadState?: (node: TreeviewNode) => SelectionState;
 	};
 
 	/** Destructured props. */

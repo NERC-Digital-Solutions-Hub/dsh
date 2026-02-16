@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { IWebMapService } from '$lib/services/IWebMapService';
-	import SelectionTreeNode, {
-		type SelectionTreeNode as SelectionTreeNodeType
+	import SelectionTreeviewNode, {
+		type SelectionTreeviewNode as SelectionTreeviewNodeType
 	} from './selection-tree-node.svelte';
 	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
 	import type {
@@ -37,7 +37,7 @@
 	 * Builds a hierarchical tree structure from selected area infos.
 	 * Areas are grouped under their parent layer.
 	 */
-	let areaSelectionTree: SelectionTreeNodeType[] = $derived.by(() => {
+	let areaSelectionTree: SelectionTreeviewNodeType[] = $derived.by(() => {
 		if (areaInfos.length === 0) {
 			return [];
 		}
@@ -46,7 +46,7 @@
 		const layerTitle =
 			areaSelectionInteractionStore.selectionViewState?.layerView?.layer?.title ?? 'Selected Areas';
 
-		const childNodes: SelectionTreeNodeType[] = areaInfos.map((area) => ({
+		const childNodes: SelectionTreeviewNodeType[] = areaInfos.map((area) => ({
 			id: String(area.HighlightAreaInfo.id),
 			name: area.name,
 			isLeaf: true,
@@ -71,15 +71,15 @@
 	 * Layers are grouped by their parent group layers.
 	 * Feature layers with showFields include selected fields as child nodes.
 	 */
-	let dataSelectionTree: SelectionTreeNodeType[] = $derived.by(() => {
+	let dataSelectionTree: SelectionTreeviewNodeType[] = $derived.by(() => {
 		const selections = dataSelectionStore.getAllSelections();
 		if (selections.length === 0) {
 			return [];
 		}
 
 		// Build a map of all nodes we need to display, including their ancestors
-		const nodeMap = new Map<string, SelectionTreeNodeType>();
-		const rootNodes: SelectionTreeNodeType[] = [];
+		const nodeMap = new Map<string, SelectionTreeviewNodeType>();
+		const rootNodes: SelectionTreeviewNodeType[] = [];
 
 		for (const selection of selections) {
 			const layer = webMapService.getLayerById(selection.layerId);
@@ -136,7 +136,7 @@
 			}
 
 			// Build tree nodes for this path
-			let parentNode: SelectionTreeNodeType | null = null;
+			let parentNode: SelectionTreeviewNodeType | null = null;
 
 			for (let i = 0; i < path.length; i++) {
 				const pathItem = path[i];
@@ -154,12 +154,12 @@
 
 					if (parentNode) {
 						// Add as child of parent if not already present
-						if (!parentNode.children.find((c: SelectionTreeNodeType) => c.id === node!.id)) {
+						if (!parentNode.children.find((c: SelectionTreeviewNodeType) => c.id === node!.id)) {
 							parentNode.children.push(node);
 						}
 					} else {
 						// This is a root node
-						if (!rootNodes.find((r: SelectionTreeNodeType) => r.id === node!.id)) {
+						if (!rootNodes.find((r: SelectionTreeviewNodeType) => r.id === node!.id)) {
 							rootNodes.push(node);
 						}
 					}
@@ -178,7 +178,7 @@
 					if (field) {
 						const fieldNodeId = `${selection.layerId}::${field.name}`;
 						if (!nodeMap.has(fieldNodeId)) {
-							const fieldNode: SelectionTreeNodeType = {
+							const fieldNode: SelectionTreeviewNodeType = {
 								id: fieldNodeId,
 								name: field.alias || field.name,
 								isLeaf: true,
@@ -276,7 +276,7 @@
 	{#if areaSelectionTree.length > 0}
 		<div class="selection-tree">
 			{#each areaSelectionTree as node (node.id)}
-				<SelectionTreeNode {node} onRemove={removeArea} />
+				<SelectionTreeviewNode {node} onRemove={removeArea} />
 			{/each}
 		</div>
 		<p class="count">
@@ -292,7 +292,7 @@
 	{#if dataSelectionTree.length > 0}
 		<div class="selection-tree">
 			{#each dataSelectionTree as node (node.id)}
-				<SelectionTreeNode {node} onRemove={removeDataSelection} />
+				<SelectionTreeviewNode {node} onRemove={removeDataSelection} />
 			{/each}
 		</div>
 		<p class="count">{dataSelectionStore.getAllSelections().length} data layer(s) selected</p>

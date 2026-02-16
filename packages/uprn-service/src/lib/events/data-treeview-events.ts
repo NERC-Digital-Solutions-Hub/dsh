@@ -1,16 +1,16 @@
 import { createContext } from 'svelte';
-import { LayerDrawState, SelectionState, TreeNode } from '$lib/models/treeview/index.js';
+import { LayerDrawState, SelectionState, TreeviewNode } from '$lib/models/treeview/index.js';
 
 /* Tree event related types and context */
 export type TreeEvents = {
 	/** Callback when node is clicked. */
-	onNodeClick?: (node: TreeNode) => void;
+	onNodeClick?: (node: TreeviewNode) => void;
 	/** Callback when node visibility changes. */
-	onNodeVisibilityChange?: (node: TreeNode, visible: boolean) => void;
+	onNodeVisibilityChange?: (node: TreeviewNode, visible: boolean) => void;
 	/** Callback when download state changes. */
-	onDownloadStateChanged?: (node: TreeNode, downloadState: SelectionState) => void;
+	onDownloadStateChanged?: (node: TreeviewNode, downloadState: SelectionState) => void;
 	/** Function to get current download state. */
-	getDownloadState?: (node: TreeNode) => SelectionState;
+	getDownloadState?: (node: TreeviewNode) => SelectionState;
 	/** Callback when filter is clicked. */
 	onFilterClicked?: (layerId: string) => void;
 	/** Callback when info is clicked. */

@@ -5,9 +5,9 @@
 	import NodeAnimation from '../node-animation.svelte';
 	import {
 		LayerDrawState,
-		TreeFieldNode,
-		TreeLayerNode,
-		type TreeNode
+		VariableTreeviewNode,
+		LayerTreeviewNode,
+		type TreeviewNode
 	} from '$lib/models/treeview/index.js';
 	import NodeContent from './node-content.svelte';
 	import Node from './node.svelte';
@@ -22,11 +22,11 @@
 		/** Configuration store for tree view settings. */
 		treeviewConfigStore: TreeviewConfigStore;
 		/** The tree node to render. */
-		node: TreeNode;
+		node: TreeviewNode;
 		/** Callback when node is clicked. */
-		onNodeClick?: (node: TreeNode) => void;
+		onNodeClick?: (node: TreeviewNode) => void;
 		/** Callback when node visibility changes. */
-		onNodeVisibilityChange?: (node: TreeNode, visible: boolean) => void;
+		onNodeVisibilityChange?: (node: TreeviewNode, visible: boolean) => void;
 		/** Function to get current node visibility. */
 		getNodeVisibility?: (nodeId: string) => boolean | undefined;
 		/** Function to get current node draw state. */
@@ -58,7 +58,7 @@
 		!!(
 			node.children &&
 			node.children.length &&
-			node.children.some((child) => !(child instanceof TreeFieldNode))
+			node.children.some((child) => !(child instanceof VariableTreeviewNode))
 		)
 	);
 
@@ -92,7 +92,7 @@
 			const childVisibility = getNodeVisibility(child.id);
 			return childVisibility !== undefined
 				? childVisibility
-				: child instanceof TreeLayerNode
+				: child instanceof LayerTreeviewNode
 					? child.layer.visible
 					: false;
 		});
@@ -100,7 +100,7 @@
 
 	// Update pressed state and icon based on node properties
 	$effect(() => {
-		if (!node || !(node instanceof TreeLayerNode)) {
+		if (!node || !(node instanceof LayerTreeviewNode)) {
 			return;
 		}
 
@@ -215,7 +215,7 @@
 	{/if}
 {/snippet}
 
-{#snippet childNode(node: TreeNode)}
+{#snippet childNode(node: TreeviewNode)}
 	{@const childConfig = treeviewConfigStore.getConfig(node.id)}
 	{#if isFolder && isOpen && !childConfig?.isHidden}
 		<Node
@@ -234,7 +234,9 @@
 <NodeAnimation
 	{isOpen}
 	{content}
-	childNodes={isFolder ? node.children.filter((child) => !(child instanceof TreeFieldNode)) : null}
+	childNodes={isFolder
+		? node.children.filter((child) => !(child instanceof VariableTreeviewNode))
+		: null}
 	{childNode}
 />
 

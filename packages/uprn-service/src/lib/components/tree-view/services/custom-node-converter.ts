@@ -1,4 +1,4 @@
-import type { TreeNode } from '$lib/models/treeview';
+import type { TreeviewNode } from '$lib/models/treeview';
 import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
 
 /**
@@ -31,5 +31,5 @@ export abstract class CustomNodeConverter {
 	 * @param parent - The parent node, if any
 	 * @returns The created tree node
 	 */
-	public abstract layerToNode(layer: __esri.Layer, parent: TreeNode | null): TreeNode;
+	public abstract layerToNode(layer: __esri.Layer, parent: TreeviewNode | null): TreeviewNode;
 }

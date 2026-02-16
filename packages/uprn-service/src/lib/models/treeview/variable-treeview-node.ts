@@ -1,18 +1,19 @@
-import { TreeLayerNode } from '$lib/models/treeview/tree-layer-node';
-import type { TreeNode } from '$lib/models/treeview/tree-node';
+import { LayerTreeviewNode } from '$lib/models/treeview/layer-treeview-node';
+import type { TreeviewNode } from '$lib/models/treeview/treeview-node';
 
 /**
- * Tree node that represents a field within a feature layer.
- * Extends TreeLayerNode with field-specific properties.
+ * Treeview node that represents a variable within a layer.
+ * Extends LayerTreeviewNode with field-specific properties.
  */
-export class TreeFieldNode extends TreeLayerNode {
+export class VariableTreeviewNode extends LayerTreeviewNode {
 	/** The associated feature layer. */
 	public featureLayer: __esri.FeatureLayer;
+
 	/** The associated field. */
 	public field: __esri.Field;
 
 	/**
-	 * Creates a new TreeFieldNode.
+	 * Initializes a new instance of the VariableTreeviewNode class.
 	 * @param id - Unique identifier.
 	 * @param name - Display name.
 	 * @param layer - The ESRI feature layer.
@@ -25,8 +26,8 @@ export class TreeFieldNode extends TreeLayerNode {
 		name: string,
 		layer: __esri.FeatureLayer,
 		field: __esri.Field,
-		children: TreeNode[] = [],
-		parent: TreeNode | null = null
+		children: TreeviewNode[] = [],
+		parent: TreeviewNode | null = null
 	) {
 		super(id, name, layer, children, parent);
 		this.field = field;

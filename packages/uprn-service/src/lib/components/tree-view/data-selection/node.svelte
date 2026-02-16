@@ -8,8 +8,8 @@
 	import {
 		LayerDrawState,
 		SelectionState,
-		TreeLayerNode,
-		type TreeNode
+		LayerTreeviewNode,
+		type TreeviewNode
 	} from '$lib/models/treeview/index.js';
 	import { getTreeEvents } from '$lib/events/data-treeview-events';
 	import DownloadButton from './download-button.svelte';
@@ -31,7 +31,7 @@
 		/** Optional tag definition provider. */
 		tagDefinitionProvider?: ITagDefinitionProvider;
 		/** The tree node to render. */
-		node: TreeNode;
+		node: TreeviewNode;
 		/** Whether the node is downloadable. */
 		isDownloadable?: boolean;
 		/** Depth level in the tree. */
@@ -92,7 +92,7 @@
 	 * @param targetNode - The node to check.
 	 * @returns True if the node or any descendant matches the filter criteria.
 	 */
-	function nodeMatchesTagFilter(targetNode: TreeNode): boolean {
+	function nodeMatchesTagFilter(targetNode: TreeviewNode): boolean {
 		if (selectedTagIds.size === 0) {
 			return true;
 		}
@@ -113,7 +113,7 @@
 	/**
 	 * Filtered children based on selected tag IDs.
 	 */
-	const filteredChildren: TreeNode[] = $derived.by(() => {
+	const filteredChildren: TreeviewNode[] = $derived.by(() => {
 		if (!node.children?.length) {
 			return [];
 		}
@@ -180,7 +180,7 @@
 
 		const isVisible = getNodeVisibility ? getNodeVisibility(node.id) : false;
 		isChecked = isVisible ?? false;
-		// if (!(node instanceof TreeLayerNode)) {
+		// if (!(node instanceof LayerTreeviewNode)) {
 		// 	return;
 		// }
 
@@ -189,7 +189,7 @@
 
 	// Handle filter visibility changes with animation
 	$effect(() => {
-		if (!(node instanceof TreeLayerNode)) {
+		if (!(node instanceof LayerTreeviewNode)) {
 			return;
 		}
 
@@ -309,7 +309,7 @@
 	{/if}
 {/snippet}
 
-{#snippet childNode(node: TreeNode)}
+{#snippet childNode(node: TreeviewNode)}
 	{#if isFolder && isOpen && !nodeConfig?.isHidden}
 		<Node
 			{treeviewConfigStore}

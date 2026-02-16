@@ -8,8 +8,8 @@
 	import {
 		LayerDrawState,
 		SelectionState,
-		TreeLayerNode,
-		type TreeNode
+		LayerTreeviewNode,
+		type TreeviewNode
 	} from '$lib/models/treeview/index.js';
 	import { setTreeEvents } from '$lib/events/data-treeview-events.js';
 	import Node from './node.svelte';
@@ -119,7 +119,7 @@
 		}
 	}
 
-	function onNodeVisibilityChange(node: TreeNode, visible: boolean): void {
+	function onNodeVisibilityChange(node: TreeviewNode, visible: boolean): void {
 		console.log(
 			`[tree-view] onNodeVisibilityChange: Setting visibility of node ${node.id} to ${visible}`
 		);
@@ -136,7 +136,7 @@
 	 * @param node - The node to update download state for
 	 * @param downloadState - The new download state of the node.
 	 */
-	function onDownloadStateChanged(node: TreeNode, downloadState: SelectionState): void {
+	function onDownloadStateChanged(node: TreeviewNode, downloadState: SelectionState): void {
 		selectionController.updateSelection(node, downloadState);
 	}
 
@@ -145,7 +145,7 @@
 	 * @param node - The node to check download state for
 	 * @returns The download state of the node
 	 */
-	function getDownloadState(node: TreeNode): SelectionState {
+	function getDownloadState(node: TreeviewNode): SelectionState {
 		return selectionController.getSelectionState(node);
 	}
 
@@ -165,7 +165,7 @@
 
 		// Open filter menu for the clicked layer
 		const node = treeviewStore.getNodeById(nodeId);
-		if (!node || !(node instanceof TreeLayerNode)) {
+		if (!node || !(node instanceof LayerTreeviewNode)) {
 			return;
 		}
 
@@ -183,8 +183,8 @@
 			return false;
 		}
 
-		const node: TreeNode | undefined = treeviewStore.getNodeById(nodeId);
-		if (!node || !(node instanceof TreeLayerNode)) {
+		const node: TreeviewNode | undefined = treeviewStore.getNodeById(nodeId);
+		if (!node || !(node instanceof LayerTreeviewNode)) {
 			return false;
 		}
 
@@ -211,7 +211,7 @@
 	 * @param node - The node to check.
 	 * @returns True if the node or any descendant matches the filter criteria.
 	 */
-	function nodeMatchesTagFilter(node: TreeNode): boolean {
+	function nodeMatchesTagFilter(node: TreeviewNode): boolean {
 		// If no tags are selected, show all nodes
 		if (selectedTagIds.size === 0) {
 			return true;

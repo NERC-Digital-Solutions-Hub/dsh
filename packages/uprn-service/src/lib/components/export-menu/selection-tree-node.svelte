@@ -4,7 +4,7 @@
 	/**
 	 * Represents a node in the selection tree.
 	 */
-	export type SelectionTreeNode = {
+	export type SelectionTreeviewNode = {
 		/** Unique identifier for the node */
 		id: string;
 		/** Display name of the node */
@@ -12,7 +12,7 @@
 		/** Whether this is a selectable leaf node */
 		isLeaf: boolean;
 		/** Child nodes */
-		children: SelectionTreeNode[];
+		children: SelectionTreeviewNode[];
 		/** Optional typology for icon display */
 		typology?: TreeviewNodeTypology;
 	};
@@ -30,11 +30,11 @@
 
 	type Props = {
 		/** The selection tree node to render */
-		node: SelectionTreeNode;
+		node: SelectionTreeviewNode;
 		/** Callback when a node's remove button is clicked */
 		onRemove: (nodeId: string) => void;
 		/** Optional snippet for additional actions on leaf nodes */
-		actions?: Snippet<[SelectionTreeNode]>;
+		actions?: Snippet<[SelectionTreeviewNode]>;
 		/** Current depth for indentation */
 		depth?: number;
 	};

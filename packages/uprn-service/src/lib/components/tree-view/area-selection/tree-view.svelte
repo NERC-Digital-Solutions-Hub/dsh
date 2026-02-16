@@ -3,7 +3,7 @@
 	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
 	import { TreeviewStore } from '$lib/stores/treeview-store.svelte';
 	import Node from './node.svelte';
-	import { LayerDrawState, TreeLayerNode } from '$lib/models/treeview/index.js';
+	import { LayerDrawState, LayerTreeviewNode } from '$lib/models/treeview/index.js';
 	import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 	import type { AreaSelectionStore } from '$lib/stores/area-selection-store.svelte';
 	import { TreeviewType } from '$lib/types/treeview';
@@ -82,11 +82,11 @@
 
 		const node = treeviewStore
 			.getVisibleNodes()
-			.find((n) => n instanceof TreeLayerNode && n.layer instanceof FeatureLayer) as
-			| TreeLayerNode
+			.find((n) => n instanceof LayerTreeviewNode && n.layer instanceof FeatureLayer) as
+			| LayerTreeviewNode
 			| undefined;
 
-		if (!node || !(node instanceof TreeLayerNode)) {
+		if (!node || !(node instanceof LayerTreeviewNode)) {
 			console.warn('Visible node is not a FeatureLayer');
 			return;
 		}

@@ -1,5 +1,5 @@
 import { CustomNodeConverter } from '$lib/components/tree-view/services/custom-node-converter';
-import { TreeFieldNode, TreeLayerNode, TreeNode } from '$lib/models/treeview';
+import { VariableTreeviewNode, LayerTreeviewNode, TreeviewNode } from '$lib/models/treeview';
 import {
 	TreeviewNodeType,
 	TreeviewNodeTypology,
@@ -16,8 +16,8 @@ export class AliasPathNodeConverter extends CustomNodeConverter {
 	public readonly id = 'aliasPath';
 
 	/** @inheritdoc */
-	public layerToNode(layer: __esri.Layer, parent: TreeNode | null): TreeNode {
-		const node = new TreeLayerNode(layer.id, layer.title as string, layer, [], parent);
+	public layerToNode(layer: __esri.Layer, parent: TreeviewNode | null): TreeviewNode {
+		const node = new LayerTreeviewNode(layer.id, layer.title as string, layer, [], parent);
 		const nodeConfig: TreeviewNodeConfig | undefined = this.configStore.getConfig(layer.id);
 
 		if (this.#isFeatureLayer(layer) && nodeConfig?.showFields) {
@@ -26,7 +26,7 @@ export class AliasPathNodeConverter extends CustomNodeConverter {
 				console.warn(`Layer not loaded: ${layer.id}`);
 			}
 
-			const nodePathMap: Map<string, TreeNode> = new Map();
+			const nodePathMap: Map<string, TreeviewNode> = new Map();
 			for (const field of featureLayer.fields ?? []) {
 				const fieldConfig = this.configStore.getConfig(this.#getFieldNodeId(layer.id, field.name));
 				if (!fieldConfig || fieldConfig.isHidden) {
@@ -61,9 +61,9 @@ export class AliasPathNodeConverter extends CustomNodeConverter {
 	 */
 	#fieldToNode(
 		field: __esri.Field,
-		parentLayerNode: TreeLayerNode,
-		nodePathMap: Map<string, TreeNode> = new Map()
-	): TreeFieldNode {
+		parentLayerNode: LayerTreeviewNode,
+		nodePathMap: Map<string, TreeviewNode> = new Map()
+	): VariableTreeviewNode {
 		const fieldNodeId: string = this.#getFieldNodeId(parentLayerNode.id, field.name);
 
 		// Split alias like "A | B | C" -> ["A","B","C"]
@@ -76,7 +76,7 @@ export class AliasPathNodeConverter extends CustomNodeConverter {
 
 		// If no alias path, just attach the field directly under the layer
 		if (pathNodes.length === 0) {
-			const fieldNode = new TreeFieldNode(
+			const fieldNode = new VariableTreeviewNode(
 				fieldNodeId,
 				field.alias || field.name,
 				parentLayerNode.layer as __esri.FeatureLayer,
@@ -92,10 +92,10 @@ export class AliasPathNodeConverter extends CustomNodeConverter {
 		const parentPathParts = pathNodes.slice(0, -1);
 		const fieldLabel = pathNodes[pathNodes.length - 1];
 
-		let currentParent: TreeNode = parentLayerNode;
+		let currentParent: TreeviewNode = parentLayerNode;
 
 		// Helper to add a child safely
-		const attachChild = (parent: TreeNode, child: TreeNode) => {
+		const attachChild = (parent: TreeviewNode, child: TreeviewNode) => {
 			parent.children ??= [];
 			if (!parent.children.includes(child)) parent.children.push(child);
 		};
@@ -108,7 +108,7 @@ export class AliasPathNodeConverter extends CustomNodeConverter {
 
 			let node = nodePathMap.get(key);
 			if (!node) {
-				node = new TreeNode(key, label, [], currentParent);
+				node = new TreeviewNode(key, label, [], currentParent);
 				this.configStore.addItemConfig({
 					id: key,
 					name: label,
@@ -123,7 +123,7 @@ export class AliasPathNodeConverter extends CustomNodeConverter {
 		}
 
 		// Create the field node under the final parent
-		const fieldNode = new TreeFieldNode(
+		const fieldNode = new VariableTreeviewNode(
 			fieldNodeId,
 			fieldLabel || field.name, // last part of alias is the field node label
 			parentLayerNode.layer as __esri.FeatureLayer,

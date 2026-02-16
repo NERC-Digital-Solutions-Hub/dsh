@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { TreeNode } from '../../models/treeview/types.js';
+	import type { TreeviewNode } from '../../models/treeview/types.js';
 	import { type Snippet } from 'svelte';
 	import { slide } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
@@ -11,11 +11,11 @@
 		/** Whether the node is currently open (expanded). */
 		isOpen?: boolean;
 		/** The child nodes to render when expanded. */
-		childNodes?: TreeNode[] | null;
+		childNodes?: TreeviewNode[] | null;
 		/** The content snippet to render for the node. */
 		content?: Snippet;
 		/** The snippet to render for each child node. */
-		childNode?: Snippet<[TreeNode]>;
+		childNode?: Snippet<[TreeviewNode]>;
 		/** Optional animation duration in milliseconds. */
 		duration?: number;
 	};

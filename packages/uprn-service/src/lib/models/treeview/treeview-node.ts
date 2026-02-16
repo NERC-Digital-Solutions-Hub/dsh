@@ -1,25 +1,33 @@
 /**
- * Base class representing a node in the tree view.
+ * Base class representing a node in the treeview.
  * Provides common properties and structure for all tree nodes.
  */
-export class TreeNode {
+export class TreeviewNode {
 	/** Unique identifier for the node. */
 	public id: string;
+
 	/** Display name of the node. */
 	public name: string;
+
 	/** Child nodes under this node. */
-	public children: TreeNode[];
+	public children: TreeviewNode[];
+
 	/** Parent node, if any. */
-	public parent: TreeNode | null;
+	public parent: TreeviewNode | null;
 
 	/**
-	 * Creates a new TreeNode.
+	 * Initializes a new instance of the TreeviewNode class.
 	 * @param id - Unique identifier.
 	 * @param name - Display name.
 	 * @param children - Initial child nodes.
 	 * @param parent - Parent node.
 	 */
-	constructor(id: string, name: string, children: TreeNode[] = [], parent: TreeNode | null = null) {
+	constructor(
+		id: string,
+		name: string,
+		children: TreeviewNode[] = [],
+		parent: TreeviewNode | null = null
+	) {
 		this.id = id;
 		this.name = name;
 		this.children = children;

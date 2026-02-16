@@ -1,8 +1,8 @@
 import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store.js';
 import {
-	TreeNode,
-	TreeLayerNode,
-	TreeFieldNode,
+	TreeviewNode,
+	LayerTreeviewNode,
+	VariableTreeviewNode,
 	LayerDrawState
 } from '$lib/models/treeview/index.js';
 import {
@@ -30,14 +30,14 @@ export class TreeviewStore implements INodeTagProvider {
 	#layerViewProvider: LayerViewProvider | null = null;
 
 	/** The hierarchical tree structure of map layers */
-	#treeNodes: TreeNode[] = $state<TreeNode[]>([]);
+	#treeNodes: TreeviewNode[] = $state<TreeviewNode[]>([]);
 
 	/**
 	 * Lookup map for quick access to any tree node by its ID.
 	 * Automatically rebuilds when layerTree changes.
 	 */
-	#treeNodesLookup: SvelteMap<string, TreeNode> = $derived.by(() => {
-		const map = new SvelteMap<string, TreeNode>();
+	#treeNodesLookup: SvelteMap<string, TreeviewNode> = $derived.by(() => {
+		const map = new SvelteMap<string, TreeviewNode>();
 		this.#addNodesToLookupMap(this.#treeNodes, map);
 		return map;
 	});
@@ -110,19 +110,19 @@ export class TreeviewStore implements INodeTagProvider {
 		this.#treeNodes = this.#buildTreeFromLayers(layers);
 	}
 
-	public getNodeById(id: string): TreeNode | undefined {
+	public getNodeById(id: string): TreeviewNode | undefined {
 		this.#checkInitialized();
 		return this.#treeNodesLookup.get(id);
 	}
 
-	public getNodes(): TreeNode[] {
+	public getNodes(): TreeviewNode[] {
 		this.#checkInitialized();
 		return this.#treeNodes;
 	}
 
-	public getVisibleNodes(): TreeNode[] {
+	public getVisibleNodes(): TreeviewNode[] {
 		this.#checkInitialized();
-		const visibleNodes: TreeNode[] = [];
+		const visibleNodes: TreeviewNode[] = [];
 		for (const [nodeId, isVisible] of this.#visibilityStates) {
 			if (!isVisible) {
 				continue;
@@ -137,7 +137,7 @@ export class TreeviewStore implements INodeTagProvider {
 		return visibleNodes;
 	}
 
-	public getNonHiddenNodes(): TreeNode[] {
+	public getNonHiddenNodes(): TreeviewNode[] {
 		this.#checkInitialized();
 		return this.#getNonHiddenNodes(this.#treeNodes);
 	}
@@ -146,7 +146,7 @@ export class TreeviewStore implements INodeTagProvider {
 		for (const nodeId of this.#visibilityStates.keys()) {
 			this.#visibilityStates.set(nodeId, false);
 			const node = this.#treeNodesLookup.get(nodeId);
-			if (node && node instanceof TreeLayerNode) {
+			if (node && node instanceof LayerTreeviewNode) {
 				node.layer.visible = false;
 			}
 		}
@@ -154,9 +154,9 @@ export class TreeviewStore implements INodeTagProvider {
 		this.#activeInVisibilityGroup.clear();
 	}
 
-	#getNonHiddenNodes(nodes: TreeNode[]): TreeNode[] {
+	#getNonHiddenNodes(nodes: TreeviewNode[]): TreeviewNode[] {
 		this.#checkInitialized();
-		const nonHiddenNodes: TreeNode[] = [];
+		const nonHiddenNodes: TreeviewNode[] = [];
 		for (const node of nodes) {
 			const nodeConfig = this.#findTreeviewItemConfig(node.id);
 			if (nodeConfig && (nodeConfig.isHidden || nodeConfig.treeviewType !== this.#treeviewType)) {
@@ -191,7 +191,7 @@ export class TreeviewStore implements INodeTagProvider {
 			throw new Error(`Tree node not found for ID: ${nodeId}`);
 		}
 
-		if (!(node instanceof TreeLayerNode)) {
+		if (!(node instanceof LayerTreeviewNode)) {
 			throw new Error(`Tree node is not a layer node: ${nodeId}`);
 		}
 
@@ -204,7 +204,7 @@ export class TreeviewStore implements INodeTagProvider {
 		node.layer.visible = isVisible;
 		this.updateDrawState(node, isVisible);
 
-		if (node instanceof TreeFieldNode) {
+		if (node instanceof VariableTreeviewNode) {
 			node.featureLayer.displayField = isVisible ? node.field.name : '';
 
 			if (isVisible && this.#customRendererService) {
@@ -258,7 +258,7 @@ export class TreeviewStore implements INodeTagProvider {
 		const hideId = (id: string) => {
 			this.#visibilityStates.set(id, false);
 			const node = this.#treeNodesLookup.get(id);
-			if (node && node instanceof TreeLayerNode) {
+			if (node && node instanceof LayerTreeviewNode) {
 				node.layer.visible = false;
 				this.updateDrawState(node, false);
 				this.#updateParentVisibility(node, false);
@@ -287,7 +287,7 @@ export class TreeviewStore implements INodeTagProvider {
 		}
 	}
 
-	public async updateDrawState(node: TreeNode, visible: boolean): Promise<void> {
+	public async updateDrawState(node: TreeviewNode, visible: boolean): Promise<void> {
 		if (!this.#layerViewProvider) {
 			return;
 		}
@@ -299,7 +299,7 @@ export class TreeviewStore implements INodeTagProvider {
 			return; // don't subscribe if not visible
 		}
 
-		if (!(node instanceof TreeLayerNode) || !(node.layer instanceof Layer)) {
+		if (!(node instanceof LayerTreeviewNode) || !(node.layer instanceof Layer)) {
 			return;
 		}
 
@@ -333,8 +333,8 @@ export class TreeviewStore implements INodeTagProvider {
 		return this.#drawStates.get(nodeId) ?? LayerDrawState.Hidden;
 	}
 
-	public setInitialDrawState(node: TreeNode, layerView: LayerView): void {
-		if (!(node instanceof TreeLayerNode) || !(node.layer instanceof Layer)) {
+	public setInitialDrawState(node: TreeviewNode, layerView: LayerView): void {
+		if (!(node instanceof LayerTreeviewNode) || !(node.layer instanceof Layer)) {
 			return;
 		}
 
@@ -374,13 +374,13 @@ export class TreeviewStore implements INodeTagProvider {
 		return this.#configStore?.getTags(nodeId) ?? [];
 	}
 
-	#updateParentVisibility(node: TreeNode, isVisible: boolean): void {
+	#updateParentVisibility(node: TreeviewNode, isVisible: boolean): void {
 		const parentNode = node.parent;
 		if (!parentNode) {
 			return;
 		}
 
-		if (!(parentNode instanceof TreeLayerNode)) {
+		if (!(parentNode instanceof LayerTreeviewNode)) {
 			this.#updateParentVisibility(parentNode, isVisible);
 			return;
 		}
@@ -390,7 +390,7 @@ export class TreeviewStore implements INodeTagProvider {
 		this.#updateParentVisibility(parentNode, isVisible);
 	}
 
-	#updateDependencyVisibility(node: TreeNode, isVisible: boolean): void {
+	#updateDependencyVisibility(node: TreeviewNode, isVisible: boolean): void {
 		const config = this.#findTreeviewItemConfig(node.id);
 		if (!config) {
 			return;
@@ -402,7 +402,7 @@ export class TreeviewStore implements INodeTagProvider {
 
 		for (const depId of config.visibilityDependencyIds) {
 			const depNode = this.#treeNodesLookup.get(depId);
-			if (depNode && depNode instanceof TreeLayerNode) {
+			if (depNode && depNode instanceof LayerTreeviewNode) {
 				this.#visibilityStates.set(depId, isVisible);
 				depNode.layer.visible = isVisible;
 				this.#updateParentVisibility(depNode, isVisible);
@@ -436,7 +436,7 @@ export class TreeviewStore implements INodeTagProvider {
 	 * @param layers - The layers to build the tree from
 	 * @returns An array of the root tree nodes
 	 */
-	#buildTreeFromLayers(layers: __esri.Layer[]): TreeNode[] {
+	#buildTreeFromLayers(layers: __esri.Layer[]): TreeviewNode[] {
 		const rootNodes = layers
 			.map((layer) => {
 				return this.#layerToNode(layer, undefined);
@@ -448,7 +448,7 @@ export class TreeviewStore implements INodeTagProvider {
 		return nodes;
 	}
 
-	#applyNodeOrdering(nodes: TreeNode[]): void {
+	#applyNodeOrdering(nodes: TreeviewNode[]): void {
 		if (!nodes || nodes.length === 0) {
 			return;
 		}
@@ -500,7 +500,7 @@ export class TreeviewStore implements INodeTagProvider {
 	 * @param nodes - The nodes to reverse
 	 * @returns The nodes in reversed order
 	 */
-	#reverseTreeOrder(nodes: TreeNode[]): TreeNode[] {
+	#reverseTreeOrder(nodes: TreeviewNode[]): TreeviewNode[] {
 		nodes.reverse();
 		for (const node of nodes) {
 			if (node.children?.length) {
@@ -517,7 +517,7 @@ export class TreeviewStore implements INodeTagProvider {
 	 * @param parent - The parent node, if any
 	 * @returns The created tree node
 	 */
-	#layerToNode(layer: __esri.Layer, parent?: TreeNode): TreeLayerNode | null {
+	#layerToNode(layer: __esri.Layer, parent?: TreeviewNode): LayerTreeviewNode | null {
 		const nodeConfig: TreeviewNodeConfig | undefined = this.#findTreeviewItemConfig(layer.id);
 		if (!this.#shouldIncludeNode(layer.id)) {
 			layer.visible = false;
@@ -534,11 +534,11 @@ export class TreeviewStore implements INodeTagProvider {
 				throw new Error(`Custom converter not found: ${nodeConfig.customConverterId}`);
 			}
 
-			return converter.layerToNode(layer, parent ?? null) as TreeLayerNode;
+			return converter.layerToNode(layer, parent ?? null) as LayerTreeviewNode;
 		}
 
 		const nodeName = nodeConfig?.displayName || layer.title || layer.id;
-		const node = new TreeLayerNode(layer.id, nodeName, layer, [], parent);
+		const node = new LayerTreeviewNode(layer.id, nodeName, layer, [], parent);
 		layer.visible = nodeConfig?.disableVisibilityToggle
 			? layer.visible // if disabled, keep layer visibility as is
 			: nodeConfig?.isHidden
@@ -591,12 +591,12 @@ export class TreeviewStore implements INodeTagProvider {
 		return node;
 	}
 
-	#fieldToNode(field: __esri.Field, parentLayerNode: TreeLayerNode): TreeFieldNode {
+	#fieldToNode(field: __esri.Field, parentLayerNode: LayerTreeviewNode): VariableTreeviewNode {
 		const fieldNodeId: string = this.#getFieldNodeId(parentLayerNode.id, field.name);
 		const fieldItemConfig: TreeviewNodeConfig | undefined =
 			this.#findTreeviewItemConfig(fieldNodeId);
 
-		const fieldNode = new TreeFieldNode(
+		const fieldNode = new VariableTreeviewNode(
 			fieldNodeId,
 			fieldItemConfig?.displayName || field.alias || field.name,
 			parentLayerNode.layer as __esri.FeatureLayer,
@@ -624,13 +624,13 @@ export class TreeviewStore implements INodeTagProvider {
 	 * @param subLayer - The sublayer to convert
 	 * @returns The created tree node
 	 */
-	#sublayerToNode(subLayer: __esri.Sublayer, parent?: TreeLayerNode): TreeLayerNode {
+	#sublayerToNode(subLayer: __esri.Sublayer, parent?: LayerTreeviewNode): LayerTreeviewNode {
 		const layerId = getSublayerId(subLayer, parent?.layer as __esri.Layer);
 
 		const nodeConfig: TreeviewNodeConfig | undefined = this.#findTreeviewItemConfig(layerId);
 		const nodeName = nodeConfig?.displayName || subLayer.title || layerId;
 
-		const node = new TreeLayerNode(layerId, nodeName, subLayer, [], parent);
+		const node = new LayerTreeviewNode(layerId, nodeName, subLayer, [], parent);
 		if (subLayer.sublayers?.length) {
 			node.children = subLayer.sublayers
 				.toArray()
@@ -652,7 +652,7 @@ export class TreeviewStore implements INodeTagProvider {
 	 * @param nodes - Array of tree nodes to process
 	 * @param map - Map to populate with node ID -> node mappings
 	 */
-	#addNodesToLookupMap(nodes: TreeNode[], map: Map<string, TreeNode>): void {
+	#addNodesToLookupMap(nodes: TreeviewNode[], map: Map<string, TreeviewNode>): void {
 		for (const node of nodes) {
 			map.set(node.id, node);
 			if (node.children?.length) {
