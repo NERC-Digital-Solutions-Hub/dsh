@@ -1,52 +1,50 @@
 <script lang="ts">
+	import { asset, base } from '$app/paths';
 	import AreaSelectionHoverCard from '$lib/components/area-selection-hover-card/area-selection-hover-card.svelte';
 	import AreaSelectionToast from '$lib/components/area-selection-toast/area-selection-toast.svelte';
 	import UprnChat from '$lib/components/chat/chat.svelte';
+	import CollapsibleWindow from '$lib/components/collapsible-window/collapsible-window.svelte';
 	import DownloadsMenu from '$lib/components/downloads-menu/downloads-menu.svelte';
 	import ExportMenuFooter from '$lib/components/export-menu/export-menu-footer.svelte';
 	import ExportMenu from '$lib/components/export-menu/export-menu.svelte';
 	import FieldSelectionMenu from '$lib/components/field-selection-menu/field-selection-menu.svelte';
+	import ItemInfoDialog from '$lib/components/item-info-dialog/item-info-dialog.svelte';
+	import type { ResetAction } from '$lib/components/reset-dialog/reset-dialog.svelte';
+	import ResetDialog from '$lib/components/reset-dialog/reset-dialog.svelte';
+	import * as Card from '$lib/components/shadcn/card/index.js';
+	import { Toaster } from '$lib/components/shadcn/sonner';
+	import * as SidebarLayout from '$lib/components/sidebar-layout/index.js';
+	import * as Sidebar from '$lib/components/sidebar/index.js';
+	import { SidebarPosition } from '$lib/components/sidebar/sidebar-position.js';
 	import AreaSelectionTreeview from '$lib/components/tree-view/area-selection/tree-view.svelte';
 	import DataSelectionTreeview from '$lib/components/tree-view/data-selection/tree-view.svelte';
-	import TreeviewTags from '$lib/components/treeview-tags/treeview-tags.svelte';
 	import UprnMapView from '$lib/components/uprn-map-view/uprn-map-view.svelte';
 	import UprnTabBarContent from '$lib/components/uprn-tab-bar/uprn-tab-bar-content.svelte';
 	import UprnTabBar from '$lib/components/uprn-tab-bar/uprn-tab-bar.svelte';
-	import * as Sidebar from '$lib/components/sidebar/index.js';
-	import * as SidebarLayout from '$lib/components/sidebar-layout/index.js';
-	import * as Card from '$lib/components/shadcn/card/index.js';
-	import { SidebarPosition } from '$lib/components/sidebar/sidebar-position.js';
-	import { Toaster } from '$lib/components/shadcn/sonner';
-	import { AreaSelectionStore } from '$lib/stores/area-selection-store.svelte';
+	import { setItemInfoDialogEvents } from '$lib/events/item-info-dialog-events';
+	import { AiUprnChatbotService } from '$lib/services/ai-uprn-chatbot-service';
+	import { ConfigTransformer } from '$lib/services/config-api/config-transformer';
+	import { CsvConfigFetcher } from '$lib/services/config-api/csv-config-fetcher';
+	import { CustomRendererService } from '$lib/services/custom-renderer-service';
+	import { LayerViewProvider } from '$lib/services/layer-view-provider';
+	import { TabStateService } from '$lib/services/TabStateService';
+	import { TagDefinitionProvider } from '$lib/services/TagDefinitionProvider';
+	import { UprnDownloadService } from '$lib/services/uprn-download-service';
+	import { UserStateProvider } from '$lib/services/UserStateProvider';
 	import { AreaSelectionInteractionStore } from '$lib/stores/area-selection-interaction-store.svelte';
+	import { AreaSelectionStore } from '$lib/stores/area-selection-store.svelte';
+	import { DataSelectionStore } from '$lib/stores/data-selection-store.svelte';
+	import { downloadsStore } from '$lib/stores/downloads-store.svelte';
 	import FieldFilterMenuStore from '$lib/stores/field-filter-menu-store.svelte';
+	import { SelectionTrackingStore } from '$lib/stores/selection-tracking-store.svelte';
 	import { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
+	import { uprnConfigStore } from '$lib/stores/uprn-store.svelte';
 	import { WebMapStore } from '$lib/stores/web-map-store.svelte';
 	import type { PortalItemConfig, SizeConfig } from '$lib/types/config';
 	import type { TreeviewConfig } from '$lib/types/treeview.js';
-	import { onDestroy, onMount } from 'svelte';
-	import { DataSelectionStore } from '$lib/stores/data-selection-store.svelte';
-	import { UprnDownloadService } from '$lib/services/uprn-download-service';
-	import { AiUprnChatbotService } from '$lib/services/ai-uprn-chatbot-service';
-	import { CustomRendererService } from '$lib/services/custom-renderer-service';
-	import CollapsibleWindow from '$lib/components/collapsible-window/collapsible-window.svelte';
-	import { asset, base } from '$app/paths';
-	import { LayerViewProvider } from '$lib/services/layer-view-provider';
-	import { SelectionTrackingStore } from '$lib/stores/selection-tracking-store.svelte';
-	import SettingsDialog from '$lib/components/settings-dialog/settings-dialog.svelte';
-	import ResetDialog from '$lib/components/reset-dialog/reset-dialog.svelte';
-	import { uprnConfigStore } from '$lib/stores/uprn-store.svelte';
-	import ItemInfoDialog from '$lib/components/item-info-dialog/item-info-dialog.svelte';
-	import { setItemInfoDialogEvents } from '$lib/events/item-info-dialog-events';
-	import { Plus, Slash } from '@lucide/svelte';
 	import { TabProgress } from '$lib/types/uprn';
-	import { TabStateService } from '$lib/services/TabStateService';
-	import { UserStateProvider } from '$lib/services/UserStateProvider';
-	import { TagDefinitionProvider } from '$lib/services/TagDefinitionProvider';
-	import { downloadsStore } from '$lib/stores/downloads-store.svelte';
-	import type { ResetAction } from '$lib/components/reset-dialog/reset-dialog.svelte';
-	import { CsvConfigFetcher } from '$lib/services/config-api/csv-config-fetcher';
-	import { ConfigTransformer } from '$lib/services/config-api/config-transformer';
+	import { Plus } from '@lucide/svelte';
+	import { onDestroy, onMount } from 'svelte';
 
 	const tabBarTriggers = [
 		{
@@ -83,8 +81,8 @@
 	let dataSelectionTreeview: DataSelectionTreeview | null = $state(null);
 	let uprnMapView: UprnMapView | null = $state(null);
 
-	const webMapStore: WebMapStore = $state(new WebMapStore());
-	const fieldFilterMenuStore: FieldFilterMenuStore = $state(new FieldFilterMenuStore());
+	const webMapStore: WebMapStore = new WebMapStore();
+	const fieldFilterMenuStore: FieldFilterMenuStore = new FieldFilterMenuStore();
 
 	// Maps state management
 	let maps: PortalItemConfig[] = $derived(
@@ -96,12 +94,13 @@
 	let currentMap: PortalItemConfig = $derived(maps[currentMapIndex]);
 
 	let currentTab: string = $state('areas-of-interest');
-	let dataSelectionStore: DataSelectionStore = $state(new DataSelectionStore());
-	let areaSelectionStore: AreaSelectionStore = $state(new AreaSelectionStore());
-	let areaSelectionInteractionStore: AreaSelectionInteractionStore | null = $state(null);
-	let selectionTrackingStore: SelectionTrackingStore = $state(
-		new SelectionTrackingStore(areaSelectionStore, dataSelectionStore)
+	const dataSelectionStore: DataSelectionStore = new DataSelectionStore();
+	const areaSelectionStore: AreaSelectionStore = new AreaSelectionStore();
+	const selectionTrackingStore: SelectionTrackingStore = new SelectionTrackingStore(
+		areaSelectionStore,
+		dataSelectionStore
 	);
+	let areaSelectionInteractionStore: AreaSelectionInteractionStore | null = $state(null);
 
 	let mapView: __esri.MapView | null = $state(null);
 	let treeviewConfig: TreeviewConfigStore | undefined = $state();
@@ -126,7 +125,6 @@
 		}
 
 		console.log(`[uprn/page] Calculated sidebar min size based on tab bar width: ${tabBarWidth}px`);
-		// Add space for the reset button (2rem width + 0.25rem gap) and some extra padding
 		return `calc(${tabBarWidth}px + 1rem)`;
 	});
 
@@ -152,38 +150,6 @@
 	let mainSidebarPosition = $state<Sidebar.PositionType>(SidebarPosition.LEFT);
 	let mainSidebarSizes: SizeConfig[] = $derived(uprnConfigStore.instance?.mainSidebarSizes ?? []);
 	let windowWidth = $state(typeof window !== 'undefined' ? window.innerWidth : 1280);
-
-	// === Derived State for Responsive Sidebar Sizing ===
-
-	/**
-	 * Derives the original size (initial size) based on window width and breakpoints.
-	 */
-	let mainSidebarOriginalSize = $derived.by(
-		() => getMatchingSize(mainSidebarSizes, (config) => config.originalSize) ?? '300px'
-	);
-
-	/**
-	 * Derives the minimum size (for resizing) based on window width and breakpoints.
-	 */
-	let mainSidebarMinSize = $derived.by(
-		() => getMatchingSize(mainSidebarSizes, (config) => config.minSize) ?? '200px'
-	);
-
-	/**
-	 * Gets the matching size configuration based on window width breakpoints.
-	 * @param sizes - Array of size configurations with breakpoints
-	 * @param expr - Function to extract the desired size property from a config
-	 * @returns The matching size string or '0' if no match found
-	 */
-	function getMatchingSize(sizes: SizeConfig[], expr: (config: SizeConfig) => string) {
-		if (!sizes || sizes.length === 0) {
-			return undefined;
-		}
-
-		const sortedSizes = [...sizes].sort((a, b) => b.breakpoint - a.breakpoint);
-		const matchingSize = sortedSizes.find((config) => windowWidth >= config.breakpoint);
-		return matchingSize ? expr(matchingSize) : '0';
-	}
 
 	/**
 	 * Toggles the main sidebar open/closed state.
@@ -212,23 +178,6 @@
 		console.log('[uprn/page] Current user state:', userStateProvider?.getUserState());
 	}
 
-	function setMapIndex(index: number) {
-		if (index < 0 || index >= maps.length) {
-			console.warn(`[uprn/page] Invalid map index: ${index}`);
-			return;
-		}
-
-		clearAllSelections();
-
-		onTabValueChange('areas-of-interest');
-
-		// Reset webmap store to force reload
-		webMapStore.data = null;
-		webMapStore.isLoaded = false;
-
-		currentMapIndex = index;
-	}
-
 	/**
 	 * Checks the availability of the UPRN Download Service.
 	 */
@@ -255,6 +204,7 @@
 		console.log('[uprn/page] Clearing area selections');
 		areaSelectionStore.setLayerId(null);
 		areaSelectionStore.clearSelectedAreas();
+		areaSelectionInteractionStore?.cleanup();
 		areaSelectionTreeview?.clearSelections();
 		mapView?.graphics.removeAll();
 	}
