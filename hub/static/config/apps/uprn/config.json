@@ -11,14 +11,6 @@
         {
             "itemType": "url",
             "path": "/config/apps/uprn/maps/uprn-poc-uk-web-map-v1.7-new.json"
-        },
-        {
-            "itemType": "url",
-            "path": "/config/apps/uprn/maps/uprn-manchester.json"
-        },
-        {
-            "itemType": "url",
-            "path": "/config/apps/uprn/maps/uprn-uk.json"
         }
     ],
     "mainSidebarSizes": [

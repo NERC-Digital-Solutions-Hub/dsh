@@ -10,6 +10,10 @@
         "name": "AQREAN Surface Level - Bias Corrected",
         "treeviewType": "data",
         "typology": "folder",
+        "tags": [
+          "environment",
+          "health"
+        ],
         "visibilityGroupId": "group:main",
         "visibilityDependencyIds": [
           "19b03f7b1ab-layer-229"
@@ -74,11 +78,6 @@
             "id": "19b03f7b1ab-layer-229",
             "name": "AQREAN Raster Cells (Bias Corrected)",
             "treeviewType": "data",
-            "typology": "dataset-raster",
-            "visibilityGroupId": "group:main",
-            "visibilityDependencyIds": [
-              "19b03f7b1ab-layer-229"
-            ],
             "isHidden": true,
             "children": []
           }
@@ -89,6 +88,10 @@
         "name": "AQREAN Surface Level",
         "treeviewType": "data",
         "typology": "folder",
+        "tags": [
+          "environment",
+          "health"
+        ],
         "visibilityGroupId": "group:main",
         "visibilityDependencyIds": [
           "19b03f4cc8f-layer-161"
@@ -285,11 +288,6 @@
             "id": "19b03f4cc8f-layer-161",
             "name": "AQREAN Raster Cells",
             "treeviewType": "data",
-            "typology": "dataset-raster",
-            "visibilityGroupId": "group:main",
-            "visibilityDependencyIds": [
-              "19b03f4cc8f-layer-161"
-            ],
             "isHidden": true,
             "children": []
           }
@@ -301,10 +299,20 @@
         "treeviewType": "data",
         "typology": "dataset-raster",
         "visibilityGroupId": "group:main",
+        "tags": [
+          "environment"
+        ],
         "visibilityDependencyIds": [
           "19b02dc323e-layer-276-0"
         ],
-        "children": []
+        "children": [
+          {
+            "id": "19b02dc323e-layer-276-0",
+            "name": "EVI Raster Cells",
+            "treeviewType": "data",
+            "isHidden": true
+          }
+        ]
       },
       {
         "id": "19b02d862f9-layer-275",
@@ -312,23 +320,22 @@
         "treeviewType": "data",
         "typology": "dataset-raster",
         "visibilityGroupId": "group:main",
+        "tags": [
+          "environment"
+        ],
         "visibilityDependencyIds": [
           "19b02d862f9-layer-275-15"
         ],
         "children": [
           {
-            "id": 15,
+            "id": "19b02d862f9-layer-275-15",
             "name": 15,
             "treeviewType": "data",
-            "typology": "dataset-raster",
-            "visibilityGroupId": "group:main",
-            "visibilityDependencyIds": [
-              "19b02d862f9-layer-275-15"
-            ],
+            "isHidden": true,
             "children": []
           },
           {
-            "id": 0,
+            "id": "19b02d862f9-layer-275-0",
             "name": 0,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -339,7 +346,7 @@
             "children": []
           },
           {
-            "id": 1,
+            "id": "19b02d862f9-layer-275-1",
             "name": 1,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -350,7 +357,7 @@
             "children": []
           },
           {
-            "id": 2,
+            "id": "19b02d862f9-layer-275-2",
             "name": 2,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -361,7 +368,7 @@
             "children": []
           },
           {
-            "id": 3,
+            "id": "19b02d862f9-layer-275-3",
             "name": 3,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -372,7 +379,7 @@
             "children": []
           },
           {
-            "id": 4,
+            "id": "19b02d862f9-layer-275-4",
             "name": 4,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -383,7 +390,7 @@
             "children": []
           },
           {
-            "id": 5,
+            "id": "19b02d862f9-layer-275-5",
             "name": 5,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -394,7 +401,7 @@
             "children": []
           },
           {
-            "id": 6,
+            "id": "19b02d862f9-layer-275-6",
             "name": 6,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -405,7 +412,7 @@
             "children": []
           },
           {
-            "id": 7,
+            "id": "19b02d862f9-layer-275-7",
             "name": 7,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -416,7 +423,7 @@
             "children": []
           },
           {
-            "id": 8,
+            "id": "19b02d862f9-layer-275-8",
             "name": 8,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -427,7 +434,7 @@
             "children": []
           },
           {
-            "id": 9,
+            "id": "19b02d862f9-layer-275-9",
             "name": 9,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -438,7 +445,7 @@
             "children": []
           },
           {
-            "id": 10,
+            "id": "19b02d862f9-layer-275-10",
             "name": 10,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -449,7 +456,7 @@
             "children": []
           },
           {
-            "id": 11,
+            "id": "19b02d862f9-layer-275-11",
             "name": 11,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -460,7 +467,7 @@
             "children": []
           },
           {
-            "id": 12,
+            "id": "19b02d862f9-layer-275-12",
             "name": 12,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -471,7 +478,7 @@
             "children": []
           },
           {
-            "id": 13,
+            "id": "19b02d862f9-layer-275-13",
             "name": 13,
             "treeviewType": "data",
             "typology": "dataset-raster",
@@ -488,6 +495,10 @@
         "name": "UK Air - Modelled Background Pollution",
         "treeviewType": "data",
         "typology": "folder",
+        "tags": [
+          "environment",
+          "health"
+        ],
         "visibilityGroupId": "group:main",
         "visibilityDependencyIds": [
           "19b02eff60d-layer-289"
@@ -585,11 +596,6 @@
             "id": "19b02eff60d-layer-289",
             "name": "Modelled Background Pollution Raster Cells",
             "treeviewType": "data",
-            "typology": "dataset-raster",
-            "visibilityGroupId": "group:main",
-            "visibilityDependencyIds": [
-              "19b02eff60d-layer-289"
-            ],
             "isHidden": true,
             "children": []
           }
@@ -607,6 +613,10 @@
             "name": "Urban Areas Required To Undertake Strategic Noise Mapping - Round 3",
             "treeviewType": "data",
             "typology": "dataset-vector",
+            "tags": [
+              "environment",
+              "health"
+            ],
             "visibilityGroupId": "group:main",
             "children": []
           },
@@ -615,6 +625,10 @@
             "name": "Day Time Average Noise Level On Network Rail and HS1 Routes and Populated Rail Sources (7AM to 11PM) - Round 3",
             "treeviewType": "data",
             "typology": "dataset-vector",
+            "tags": [
+              "environment",
+              "health"
+            ],
             "visibilityGroupId": "group:main",
             "children": []
           },
@@ -623,6 +637,10 @@
             "name": "Average 24 Hour Noise Level On Network Rail and HS1 Routes and Populated Rail Sources  - Round 3",
             "treeviewType": "data",
             "typology": "dataset-vector",
+            "tags": [
+              "environment",
+              "health"
+            ],
             "visibilityGroupId": "group:main",
             "children": []
           },
@@ -631,6 +649,10 @@
             "name": "Night Time Average Noise Level On Network Rail and HS1 Routes and Populated Rail Sources (11PM to 7AM) - Round 3",
             "treeviewType": "data",
             "typology": "dataset-vector",
+            "tags": [
+              "environment",
+              "health"
+            ],
             "visibilityGroupId": "group:main",
             "children": []
           },
@@ -639,6 +661,10 @@
             "name": "Day Time Average Noise Level Of Major Traffic Routes and Populated Road Sources (7AM to 11PM) - Round 3",
             "treeviewType": "data",
             "typology": "dataset-vector",
+            "tags": [
+              "environment",
+              "health"
+            ],
             "visibilityGroupId": "group:main",
             "children": []
           },
@@ -647,6 +673,10 @@
             "name": "Average 24 Hour Noise Level Of Major Traffic Routes and Populated Road Sources - Round 3",
             "treeviewType": "data",
             "typology": "dataset-vector",
+            "tags": [
+              "environment",
+              "health"
+            ],
             "visibilityGroupId": "group:main",
             "children": []
           },
@@ -655,6 +685,10 @@
             "name": "Night Time Average Noise Level Of Major Traffic Routes and Populated Road Sources (11PM to 7AM) - Round 3",
             "treeviewType": "data",
             "typology": "dataset-vector",
+            "tags": [
+              "environment",
+              "health"
+            ],
             "visibilityGroupId": "group:main",
             "children": []
           }
@@ -683,6 +717,11 @@
             "name": "ClimateJust - LSOAs (UK) (2011) - Flood Data",
             "treeviewType": "data",
             "typology": "dataset-vector",
+            "tags": [
+              "flooding",
+              "environment",
+              "housing"
+            ],
             "visibilityGroupId": "group:main",
             "showFields": true,
             "customConverterId": "aliasPath",
@@ -736,6 +775,7 @@
         "treeviewType": "area",
         "typology": "folder",
         "visibilityGroupId": "group:area",
+        "order": 1,
         "children": [
           {
             "id": "948081273f1c4a33a7a7a940d6b541e8",
@@ -800,6 +840,7 @@
       {
         "id": "f453fdab598745ad895f75064cdaa1fc",
         "name": "Tiling Schemes",
+        "displayName": "Ordnance Survey National Grid",
         "treeviewType": "area",
         "typology": "folder",
         "visibilityGroupId": "group:area",
@@ -961,6 +1002,28 @@
       "vulnerabilityduetopropertytenur"
     ]
   },
+  "tagDefinitions": [
+    {
+      "id": "environment",
+      "label": "Environment",
+      "color": "#7EAD80"
+    },
+    {
+      "id": "health",
+      "label": "Health",
+      "color": "#ED745E"
+    },
+    {
+      "id": "housing",
+      "label": "Housing",
+      "color": "#D8B07A"
+    },
+    {
+      "id": "flooding",
+      "label": "Flooding",
+      "color": "#75A6F4"
+    }
+  ],
   "selectableLayers": [
     {
       "_name": "Built Up Areas (Dec 22) GB",
