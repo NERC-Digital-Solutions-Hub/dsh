@@ -1,7 +1,7 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import * as NavigationMenu from '$lib/components/shadcn/navigation-menu/index.js';
 	import { navigationMenuTriggerStyle } from '$lib/components/shadcn/navigation-menu/navigation-menu-trigger.svelte';
-	import { base } from '$app/paths';
 </script>
 
 <nav>
@@ -22,10 +22,10 @@
 						<li>
 							<NavigationMenu.Link
 								class="apps-menu-link"
-								href={`${base}/catalogues/full-text-search`}
+								href={`${base}/catalogues/dsh-catalogue`}
 								title="Explore our data using a traditional approach to search."
 							>
-								<div class="font-medium">Full-Text Search</div>
+								<div class="font-medium">DSH Catalogue</div>
 								<div class="apps-menu-description text-muted-foreground">
 									Explore our data using a traditional approach to search.
 								</div>
@@ -35,7 +35,7 @@
 								href={`${base}/catalogues/ai`}
 								title="Explore our data using AI-powered search and discovery tools."
 							>
-								<div class="font-medium">AI</div>
+								<div class="font-medium">AI Catalogue</div>
 								<div class="apps-menu-description text-muted-foreground">
 									Explore our data using AI-powered search and discovery tools.
 								</div>
