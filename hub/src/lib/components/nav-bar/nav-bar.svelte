@@ -32,6 +32,16 @@
 							</NavigationMenu.Link>
 							<NavigationMenu.Link
 								class="apps-menu-link"
+								href={`${base}/catalogues/dsh-catalogue-arcgisonline`}
+								title="Explore our data using a traditional approach to search."
+							>
+								<div class="font-medium">DSH Catalogue (ArcGIS Online)</div>
+								<div class="apps-menu-description text-muted-foreground">
+									Explore our data using a traditional approach to search.
+								</div>
+							</NavigationMenu.Link>
+							<NavigationMenu.Link
+								class="apps-menu-link"
 								href={`${base}/catalogues/ai`}
 								title="Explore our data using AI-powered search and discovery tools."
 							>
