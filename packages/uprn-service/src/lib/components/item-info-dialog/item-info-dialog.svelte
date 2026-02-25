@@ -244,179 +244,177 @@
 	}
 </script>
 
-{#if layer && (hasLayerDef == false || (hasLayerDef == true && layerDef))}
-	<Dialog.Root bind:open={isOpen} onOpenChange={(open) => (isOpen = open)}>
-		<Dialog.Content
-			class="grid h-[80vh] min-h-0 min-w-[850px] grid-rows-[auto_1fr] overflow-hidden"
-			onInteractOutside={(e) => {
-				const overlay = document.querySelector('.svelte-lightbox-overlay');
-				if (overlay && overlay.contains(e.target as Node)) e.preventDefault();
-			}}
-		>
-			<Dialog.Header>
-				<Dialog.Title>{layer.title ?? 'Name not found'}</Dialog.Title>
-			</Dialog.Header>
-			{#if useTabInfo && useTabInfo.isLoading}
-				<div class="flex-1 min-h-0 overflow-y-auto pr-4">
-					<div class="flex flex-col gap-4">
-						<p class="mx-auto max-w-prose text-center text-sm italic text-muted-foreground">
-							Loading...
-						</p>
-					</div>
+<Dialog.Root bind:open={isOpen} onOpenChange={(open) => (isOpen = open)}>
+	<Dialog.Content
+		class="grid h-[80vh] min-h-0 min-w-[850px] grid-rows-[auto_1fr] overflow-hidden"
+		onInteractOutside={(e) => {
+			const overlay = document.querySelector('.svelte-lightbox-overlay');
+			if (overlay && overlay.contains(e.target as Node)) e.preventDefault();
+		}}
+	>
+		<Dialog.Header>
+			<Dialog.Title>{nodeConfig?.displayName ?? 'Name not found'}</Dialog.Title>
+		</Dialog.Header>
+		{#if useTabInfo && useTabInfo.isLoading}
+			<div class="flex-1 min-h-0 overflow-y-auto pr-4">
+				<div class="flex flex-col gap-4">
+					<p class="mx-auto max-w-prose text-center text-sm italic text-muted-foreground">
+						Loading...
+					</p>
 				</div>
-			{:else if useTabInfo && useTabInfo.error}
-				<div class="flex-1 min-h-0 overflow-y-auto pr-4">
-					<div class="flex flex-col gap-4">
-						<p class="mx-auto max-w-prose text-center text-sm italic text-destructive">
-							Error loading metadata information: {useTabInfo.error}
-						</p>
-					</div>
+			</div>
+		{:else if useTabInfo && useTabInfo.error}
+			<div class="flex-1 min-h-0 overflow-y-auto pr-4">
+				<div class="flex flex-col gap-4">
+					<p class="mx-auto max-w-prose text-center text-sm italic text-destructive">
+						Error loading metadata information: {useTabInfo.error}
+					</p>
 				</div>
-			{:else if useTabInfo && useTabInfo.content && useTabInfo.content.tabs.length > 0}
-				<Tabs.Root
-					class="flex h-full min-h-0 flex-1 flex-col overflow-hidden"
-					value="information"
-					onValueChange={(value) => (activeTabId = value)}
-				>
-					<Tabs.List class="shrink-0 self-center">
-						<Tabs.Trigger value="information">Information</Tabs.Trigger>
-						{#each useTabInfo.content.tabs as tab}
-							<Tabs.Trigger value={tab.title}>{tab.title}</Tabs.Trigger>
-						{/each}
-					</Tabs.List>
-					<Tabs.Content value="information" class="flex-1 min-h-0 overflow-hidden">
-						<ScrollArea class="h-full w-full" type="always">
+			</div>
+		{:else if useTabInfo && useTabInfo.content && useTabInfo.content.tabs.length > 0}
+			<Tabs.Root
+				class="flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+				value="information"
+				onValueChange={(value) => (activeTabId = value)}
+			>
+				<Tabs.List class="shrink-0 self-center">
+					<Tabs.Trigger value="information">Information</Tabs.Trigger>
+					{#each useTabInfo.content.tabs as tab}
+						<Tabs.Trigger value={tab.title}>{tab.title}</Tabs.Trigger>
+					{/each}
+				</Tabs.List>
+				<Tabs.Content value="information" class="flex-1 min-h-0 overflow-hidden">
+					<ScrollArea class="h-full w-full" type="always">
+						<div>
 							<div>
-								<div>
-									<h4 class="text-lg font-semibold pb-2">Description</h4>
-									<p>
-										{layerDescription ?? 'No description available.'}
-									</p>
-								</div>
+								<h4 class="text-lg font-semibold pb-2">Description</h4>
+								<p>
+									{layerDescription ?? 'No description available.'}
+								</p>
+							</div>
 
-								<div>
-									<h4 class="text-lg font-semibold pb-2">Credits</h4>
-									<p>
-										{layerCredits ?? 'No credits available.'}
-									</p>
-								</div>
+							<div>
+								<h4 class="text-lg font-semibold pb-2">Credits</h4>
+								<p>
+									{layerCredits ?? 'No credits available.'}
+								</p>
+							</div>
+						</div>
+					</ScrollArea>
+				</Tabs.Content>
+				{#each useTabInfo.content.tabs as tab}
+					<Tabs.Content value={tab.title} class="flex-1 min-h-0 overflow-hidden">
+						<ScrollArea class="h-full w-full" type="always">
+							<div class="mx-auto flex w-full max-w-3xl flex-col items-center gap-6 py-1">
+								{#each tab.content as contentItem, index}
+									{@const contentHook = getHook(tab.title, index, contentItem)}
+									{#if contentHook?.isLoading}
+										<p class="w-full text-center text-sm italic text-muted-foreground">
+											Loading content...
+										</p>
+									{:else if contentHook?.error}
+										<p class="w-full text-center text-sm italic text-destructive">
+											Error loading content: {formatHookError(contentHook.error)}
+										</p>
+									{:else if contentHook?.content}
+										{#if contentItem.type === 'text'}
+											<p
+												class="w-full max-w-prose self-stretch whitespace-pre-wrap text-sm leading-relaxed"
+											>
+												{String(contentHook.content)}
+											</p>
+										{:else if contentItem.type === 'image'}
+											<Lightbox imagePreset="scroll" enableImageExpand={true}>
+												<img
+													src={String(contentHook.content)}
+													alt={`Metadata image ${index + 1}`}
+													class="mx-auto max-h-[420px] w-auto cursor-zoom-in rounded-md object-contain"
+												/>
+											</Lightbox>
+										{:else if contentItem.type === 'slideshow'}
+											{#if Array.isArray(contentHook.content)}
+												{@const images = contentHook.content}
+
+												<LightboxGallery enableImageExpand={true}>
+													<div slot="thumbnail" class="mx-auto w-full max-w-[520px]">
+														<Carousel.Root>
+															<Carousel.Content>
+																{#each images as imageUrl, imageIndex}
+																	<Carousel.Item class="flex justify-center">
+																		<GalleryThumbnail id={imageIndex}>
+																			<img
+																				src={imageUrl}
+																				alt={`Slideshow image ${imageIndex + 1}`}
+																				class="mx-auto max-h-[320px] w-auto cursor-zoom-in rounded-md object-contain"
+																			/>
+																		</GalleryThumbnail>
+																	</Carousel.Item>
+																{/each}
+															</Carousel.Content>
+
+															<Carousel.Previous class="-start-8" />
+															<Carousel.Next class="-end-8" />
+														</Carousel.Root>
+													</div>
+
+													{#each images as imageUrl, imageIndex}
+														<GalleryImage title={`Image ${imageIndex + 1}`}>
+															<img src={imageUrl} alt={`Slideshow image ${imageIndex + 1}`} />
+														</GalleryImage>
+													{/each}
+												</LightboxGallery>
+											{/if}
+										{:else if contentItem.type === 'xml'}
+											{@const xmlString =
+												typeof contentHook.content === 'string' ? contentHook.content : ''}
+											<Card.Root class="w-full self-stretch py-2 gap-1">
+												<Card.Header class="gap-0 pb-0 pt-0 mb-0 mt-0">
+													<div class="flex w-full items-center justify-end gap-2">
+														<CopyToClipboardButton value={xmlString} variant="outline" />
+
+														<Button
+															variant="outline"
+															size="sm"
+															disabled={!xmlString}
+															onclick={() => downloadXml(xmlString)}
+														>
+															<ArrowDownToLine />
+														</Button>
+													</div>
+												</Card.Header>
+												<Card.Content class="pt-0 mt-0">
+													<XmlTree xmlText={xmlString} expandAll={true} />
+												</Card.Content>
+											</Card.Root>
+										{:else if contentItem.type === 'docx'}
+											<a
+												href={String(contentHook.content)}
+												target="_blank"
+												rel="noreferrer"
+												class="text-sm underline"
+											>
+												Open document
+											</a>
+										{:else if contentItem.type === 'pdf'}
+											<a
+												href={String(contentHook.content)}
+												target="_blank"
+												rel="noreferrer"
+												class="text-sm underline"
+											>
+												Open PDF
+											</a>
+										{/if}
+									{/if}
+								{/each}
 							</div>
 						</ScrollArea>
 					</Tabs.Content>
-					{#each useTabInfo.content.tabs as tab}
-						<Tabs.Content value={tab.title} class="flex-1 min-h-0 overflow-hidden">
-							<ScrollArea class="h-full w-full" type="always">
-								<div class="mx-auto flex w-full max-w-3xl flex-col items-center gap-6 py-1">
-									{#each tab.content as contentItem, index}
-										{@const contentHook = getHook(tab.title, index, contentItem)}
-										{#if contentHook?.isLoading}
-											<p class="w-full text-center text-sm italic text-muted-foreground">
-												Loading content...
-											</p>
-										{:else if contentHook?.error}
-											<p class="w-full text-center text-sm italic text-destructive">
-												Error loading content: {formatHookError(contentHook.error)}
-											</p>
-										{:else if contentHook?.content}
-											{#if contentItem.type === 'text'}
-												<p
-													class="w-full max-w-prose self-stretch whitespace-pre-wrap text-sm leading-relaxed"
-												>
-													{String(contentHook.content)}
-												</p>
-											{:else if contentItem.type === 'image'}
-												<Lightbox imagePreset="scroll" enableImageExpand={true}>
-													<img
-														src={String(contentHook.content)}
-														alt={`Metadata image ${index + 1}`}
-														class="mx-auto max-h-[420px] w-auto cursor-zoom-in rounded-md object-contain"
-													/>
-												</Lightbox>
-											{:else if contentItem.type === 'slideshow'}
-												{#if Array.isArray(contentHook.content)}
-													{@const images = contentHook.content}
-
-													<LightboxGallery enableImageExpand={true}>
-														<div slot="thumbnail" class="mx-auto w-full max-w-[520px]">
-															<Carousel.Root>
-																<Carousel.Content>
-																	{#each images as imageUrl, imageIndex}
-																		<Carousel.Item class="flex justify-center">
-																			<GalleryThumbnail id={imageIndex}>
-																				<img
-																					src={imageUrl}
-																					alt={`Slideshow image ${imageIndex + 1}`}
-																					class="mx-auto max-h-[320px] w-auto cursor-zoom-in rounded-md object-contain"
-																				/>
-																			</GalleryThumbnail>
-																		</Carousel.Item>
-																	{/each}
-																</Carousel.Content>
-
-																<Carousel.Previous class="-start-8" />
-																<Carousel.Next class="-end-8" />
-															</Carousel.Root>
-														</div>
-
-														{#each images as imageUrl, imageIndex}
-															<GalleryImage title={`Image ${imageIndex + 1}`}>
-																<img src={imageUrl} alt={`Slideshow image ${imageIndex + 1}`} />
-															</GalleryImage>
-														{/each}
-													</LightboxGallery>
-												{/if}
-											{:else if contentItem.type === 'xml'}
-												{@const xmlString =
-													typeof contentHook.content === 'string' ? contentHook.content : ''}
-												<Card.Root class="w-full self-stretch py-2 gap-1">
-													<Card.Header class="gap-0 pb-0 pt-0 mb-0 mt-0">
-														<div class="flex w-full items-center justify-end gap-2">
-															<CopyToClipboardButton value={xmlString} variant="outline" />
-
-															<Button
-																variant="outline"
-																size="sm"
-																disabled={!xmlString}
-																onclick={() => downloadXml(xmlString)}
-															>
-																<ArrowDownToLine />
-															</Button>
-														</div>
-													</Card.Header>
-													<Card.Content class="pt-0 mt-0">
-														<XmlTree xmlText={xmlString} expandAll={true} />
-													</Card.Content>
-												</Card.Root>
-											{:else if contentItem.type === 'docx'}
-												<a
-													href={String(contentHook.content)}
-													target="_blank"
-													rel="noreferrer"
-													class="text-sm underline"
-												>
-													Open document
-												</a>
-											{:else if contentItem.type === 'pdf'}
-												<a
-													href={String(contentHook.content)}
-													target="_blank"
-													rel="noreferrer"
-													class="text-sm underline"
-												>
-													Open PDF
-												</a>
-											{/if}
-										{/if}
-									{/each}
-								</div>
-							</ScrollArea>
-						</Tabs.Content>
-					{/each}
-				</Tabs.Root>
-			{/if}
-		</Dialog.Content>
-	</Dialog.Root>
-{/if}
+				{/each}
+			</Tabs.Root>
+		{/if}
+	</Dialog.Content>
+</Dialog.Root>
 
 <!--
 {#if layer && (hasLayerDef == false || (hasLayerDef == true && layerDef))}
