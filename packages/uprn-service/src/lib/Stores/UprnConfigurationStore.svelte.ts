@@ -3,6 +3,7 @@ import type { PortalItemConfig } from '$lib/Types/config';
 import type {
 	AiUprnChatbotEndpoints,
 	ConfigurationItemInfo,
+	ContentConfig,
 	SidebarSize,
 	UprnConfiguration,
 	UprnDownloadEndpoints
@@ -12,9 +13,11 @@ export class UprnConfigurationStore {
 	public uprnDownloadApiConfig = new ConfigManager<UprnDownloadEndpoints>();
 	public uprnChatbotApiConfig = new ConfigManager<AiUprnChatbotEndpoints>();
 	public mapsConfig = $state<ConfigManager<PortalItemConfig>[]>([]);
+	public contentConfig: ContentConfig = $state({} as ContentConfig);
 	public mainSidebarSizes = $state<SidebarSize[]>([]);
 
 	public async init(configuration: UprnConfiguration) {
+		this.contentConfig = configuration.contentConfig;
 		this.mainSidebarSizes = configuration.mainSidebarSizes ?? [];
 		await Promise.all([
 			this.#loadConfigItem(this.uprnDownloadApiConfig, configuration.uprnDownloadApiConfig),

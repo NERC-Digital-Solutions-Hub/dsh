@@ -1,5 +1,6 @@
 import type { AreaSelectionStoreSnapshot } from '$lib/Stores/AreaSelectionStore.svelte';
 import type { DataSelectionSnapshot } from '$lib/Stores/DataSelectionStore.svelte';
+import type { TreeviewNodeConfig } from '$lib/Types/treeview';
 import {
 	DownloadStatus,
 	type AreaSelectionInfoWithCode,
@@ -27,11 +28,30 @@ export interface DbUserDownload extends DownloadEntry {
 	createdAt: number;
 }
 
+/**
+ * A cached transformed-config record keyed by the manifest URL.
+ *
+ * Stores the fully transformed `TreeviewNodeConfig[]` alongside the manifest
+ * version so subsequent loads can skip the CSV fetch + transform pipeline when
+ * the remote manifest version has not changed.
+ */
+export interface DbCachedTransformedConfig {
+	/** The manifest endpoint URL – used as the primary key. */
+	url: string;
+	/** The manifest version that produced this transformed config. */
+	version: number;
+	/** The transformed treeview node configs derived from the CSV data. */
+	layers: TreeviewNodeConfig[];
+	/** Epoch millis when this entry was written. */
+	cachedAt: number;
+}
+
 class AppDB extends Dexie {
 	public uprnSelections!: Table<DbUprnSelection, string>;
 	public areaSelections!: Table<DbUprnAreaSelectionInfo, number>;
 	public dataSelections!: Table<DbUprnDataSelectionInfo, number>;
 	public userDownloads!: Table<DbUserDownload, number>;
+	public cachedConfigs!: Table<DbCachedTransformedConfig, string>;
 
 	constructor() {
 		super('uprn-service-db');
@@ -40,6 +60,9 @@ class AppDB extends Dexie {
 			areaSelections: '++id, layerId, *areaIds',
 			dataSelections: '++id, layerId, *fields',
 			userDownloads: '++id, &localId, createdAt'
+		});
+		this.version(2).stores({
+			cachedConfigs: '&url, version'
 		});
 	}
 }
@@ -127,4 +150,46 @@ export const clearUserDownloads = async () => await db.userDownloads.clear();
 export const clearDatabase = async () => {
 	await db.uprnSelections.clear();
 	await db.userDownloads.clear();
+	await db.cachedConfigs.clear();
+};
+
+// ---------------------------------------------------------------------------
+// Transformed-config cache helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Retrieves a cached transformed config for the given manifest URL, if one exists.
+ */
+export const getCachedConfig = async (
+	url: string
+): Promise<DbCachedTransformedConfig | undefined> => await db.cachedConfigs.get(url);
+
+/**
+ * Inserts or replaces the cached transformed config for a given manifest URL.
+ */
+export const putCachedConfig = async (
+	url: string,
+	version: number,
+	layers: TreeviewNodeConfig[]
+): Promise<void> => {
+	await db.cachedConfigs.put({
+		url,
+		version,
+		layers,
+		cachedAt: Date.now()
+	});
+};
+
+/**
+ * Removes a single cached transformed-config entry.
+ */
+export const deleteCachedConfig = async (url: string): Promise<void> => {
+	await db.cachedConfigs.delete(url);
+};
+
+/**
+ * Clears all cached transformed configs.
+ */
+export const clearCachedConfigs = async (): Promise<void> => {
+	await db.cachedConfigs.clear();
 };

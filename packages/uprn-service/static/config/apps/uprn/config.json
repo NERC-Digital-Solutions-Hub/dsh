@@ -1,4 +1,8 @@
 {
+    "contentConfig": {
+        "baseUrl": "https://nerc-digital-solutions-hub.github.io/dsh-content/",
+        "manifestPath": "pages/apps/uprn-service/generated/manifest.json"
+    },
     "uprnDownloadApiConfig": {
         "itemType": "url",
         "path": "/config/apps/uprn/api/uprn-download-api.json"
