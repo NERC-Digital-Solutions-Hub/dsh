@@ -1,11 +1,11 @@
-import type { AreaSelectionStoreSnapshot } from '$lib/stores/area-selection-store.svelte';
-import type { DataSelectionSnapshot } from '$lib/stores/data-selection-store.svelte';
+import type { AreaSelectionStoreSnapshot } from '$lib/Stores/AreaSelectionStore.svelte';
+import type { DataSelectionSnapshot } from '$lib/Stores/DataSelectionStore.svelte';
 import {
 	DownloadStatus,
 	type AreaSelectionInfoWithCode,
 	type DataSelectionInfo,
 	type DownloadEntry
-} from '$lib/types/uprn';
+} from '$lib/Types/uprn';
 import Dexie, { type Table } from 'dexie';
 
 export interface DbUprnSelection {

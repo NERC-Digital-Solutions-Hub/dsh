@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { asset, base } from '$app/paths';
 	import AreaSelectionHoverCard from '$lib/components/area-selection-hover-card/area-selection-hover-card.svelte';
 	import AreaSelectionToast from '$lib/components/area-selection-toast/area-selection-toast.svelte';
 	import UprnChat from '$lib/components/chat/chat.svelte';
@@ -7,44 +6,50 @@
 	import DownloadsMenu from '$lib/components/downloads-menu/downloads-menu.svelte';
 	import ExportMenuFooter from '$lib/components/export-menu/export-menu-footer.svelte';
 	import ExportMenu from '$lib/components/export-menu/export-menu.svelte';
-	import FieldSelectionMenu from '$lib/components/field-selection-menu/field-selection-menu.svelte';
 	import ItemInfoDialog from '$lib/components/item-info-dialog/item-info-dialog.svelte';
 	import type { ResetAction } from '$lib/components/reset-dialog/reset-dialog.svelte';
 	import ResetDialog from '$lib/components/reset-dialog/reset-dialog.svelte';
 	import * as Card from '$lib/components/shadcn/card/index.js';
 	import { Toaster } from '$lib/components/shadcn/sonner';
+	import Spinner from '$lib/components/shadcn/spinner/spinner.svelte';
 	import * as SidebarLayout from '$lib/components/sidebar-layout/index.js';
 	import * as Sidebar from '$lib/components/sidebar/index.js';
-	import { SidebarPosition } from '$lib/components/sidebar/sidebar-position.js';
-	import AreaSelectionTreeview from '$lib/components/tree-view/area-selection/tree-view.svelte';
-	import DataSelectionTreeview from '$lib/components/tree-view/data-selection/tree-view.svelte';
+	import AreaSelectionTreeview from '$lib/components/Treeview/Area/Treeview.svelte';
+	import DataSelectionTreeview from '$lib/components/Treeview/Data/Treeview.svelte';
 	import UprnMapView from '$lib/components/uprn-map-view/uprn-map-view.svelte';
 	import UprnTabBarContent from '$lib/components/uprn-tab-bar/uprn-tab-bar-content.svelte';
 	import UprnTabBar from '$lib/components/uprn-tab-bar/uprn-tab-bar.svelte';
-	import { setItemInfoDialogEvents } from '$lib/events/item-info-dialog-events';
-	import { AiUprnChatbotService } from '$lib/services/ai-uprn-chatbot-service';
-	import { ConfigTransformer } from '$lib/services/config-api/config-transformer';
-	import { CsvConfigFetcher } from '$lib/services/config-api/csv-config-fetcher';
-	import { CustomRendererService } from '$lib/services/custom-renderer-service';
-	import { LayerViewProvider } from '$lib/services/layer-view-provider';
-	import { TabStateService } from '$lib/services/TabStateService';
-	import { TagDefinitionProvider } from '$lib/services/TagDefinitionProvider';
-	import { UprnDownloadService } from '$lib/services/uprn-download-service';
-	import { UserStateProvider } from '$lib/services/UserStateProvider';
-	import { AreaSelectionInteractionStore } from '$lib/stores/area-selection-interaction-store.svelte';
-	import { AreaSelectionStore } from '$lib/stores/area-selection-store.svelte';
-	import { DataSelectionStore } from '$lib/stores/data-selection-store.svelte';
-	import { downloadsStore } from '$lib/stores/downloads-store.svelte';
-	import FieldFilterMenuStore from '$lib/stores/field-filter-menu-store.svelte';
-	import { SelectionTrackingStore } from '$lib/stores/selection-tracking-store.svelte';
-	import { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
-	import { uprnConfigStore } from '$lib/stores/uprn-store.svelte';
-	import { WebMapStore } from '$lib/stores/web-map-store.svelte';
-	import type { PortalItemConfig, SizeConfig } from '$lib/types/config';
-	import type { TreeviewConfig } from '$lib/types/treeview.js';
-	import { TabProgress } from '$lib/types/uprn';
+	import { updateSelection } from '$lib/db';
+	import { setItemInfoDialogEvents } from '$lib/Events/ItemInfoDialogEvents';
+	import { useAiChatbotHealth } from '$lib/Hooks/UseAiChatbotHealth.svelte';
+	import { useFetchAppConfig } from '$lib/Hooks/UseFetchAppConfig.svelte';
+	import { useLoadSelectionsFromIndexDb } from '$lib/Hooks/UseLoadSelectionsFromIndexDb.svelte';
+	import { useUprnDownloadHealth } from '$lib/Hooks/UseUprnDownloadHealth.svelte';
+	import { SelectionState } from '$lib/Models/Treeview/SelectionState';
+	import { TreeviewNode } from '$lib/Models/Treeview/TreeviewNode';
+	import type { INodeProvider } from '$lib/Services/INodeProvider';
+	import { LayerViewProvider } from '$lib/Services/LayerViewProvider';
+	import { NodeProvider } from '$lib/Services/NodeProvider';
+	import { NodeSelectionController } from '$lib/Services/NodeSelectionController';
+	import { NodeVisibilityController } from '$lib/Services/NodeVisibilityController.svelte';
+	import { TabStateService } from '$lib/Services/TabStateService';
+	import { TagDefinitionProvider } from '$lib/Services/TagDefinitionProvider';
+	import { AreaSelectionInteractionStore } from '$lib/Stores/AreaSelectionInteractionStore.svelte';
+	import { AreaSelectionStore } from '$lib/Stores/AreaSelectionStore.svelte';
+	import {
+		DataSelectionStore,
+		type DataSelectionSnapshot
+	} from '$lib/Stores/DataSelectionStore.svelte';
+	import DownloadsStore from '$lib/Stores/DownloadsStore.svelte';
+	import { TreeviewConfigStore } from '$lib/Stores/TreeviewConfigStore';
+	import { TreeviewStore } from '$lib/Stores/TreeviewStore.svelte';
+	import { WebMapStore } from '$lib/Stores/WebMapStore.svelte';
+	import { TreeviewType } from '$lib/Types/treeview';
+	import { TabProgress } from '$lib/Types/uprn';
+	import { createTreeviewNodes } from '$lib/Utilities/CreateTreeviewNodes';
 	import { Plus } from '@lucide/svelte';
-	import { onDestroy, onMount } from 'svelte';
+	import { onMount } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	const tabBarTriggers = [
 		{
@@ -71,156 +76,6 @@
 		}
 	];
 
-	const tabStateService = new TabStateService('areas-of-interest');
-	let userStateProvider: UserStateProvider | null = $state(null);
-	let tagDefinitionProvider: TagDefinitionProvider | null = $state(null);
-
-	let tabProgressByValue: Record<string, TabProgress | undefined> = $state({});
-
-	let areaSelectionTreeview: DataSelectionTreeview | null = $state(null);
-	let dataSelectionTreeview: DataSelectionTreeview | null = $state(null);
-	let uprnMapView: UprnMapView | null = $state(null);
-
-	const webMapStore: WebMapStore = new WebMapStore();
-	const fieldFilterMenuStore: FieldFilterMenuStore = new FieldFilterMenuStore();
-
-	// Maps state management
-	let maps: PortalItemConfig[] = $derived(
-		uprnConfigStore.instance?.mapsConfig
-			.map((m) => m.value)
-			.filter((v): v is PortalItemConfig => v !== undefined) ?? []
-	);
-	let currentMapIndex: number = $state(0);
-	let currentMap: PortalItemConfig = $derived(maps[currentMapIndex]);
-
-	let currentTab: string = $state('areas-of-interest');
-	const dataSelectionStore: DataSelectionStore = new DataSelectionStore();
-	const areaSelectionStore: AreaSelectionStore = new AreaSelectionStore();
-	const selectionTrackingStore: SelectionTrackingStore = new SelectionTrackingStore(
-		areaSelectionStore,
-		dataSelectionStore
-	);
-	let areaSelectionInteractionStore: AreaSelectionInteractionStore | null = $state(null);
-
-	let mapView: __esri.MapView | null = $state(null);
-	let treeviewConfig: TreeviewConfigStore | undefined = $state();
-
-	/** Selected tag IDs for filtering the data selection treeview. */
-	let selectedTagIds: Set<string> = $state(new Set<string>());
-	let customRendererService = new CustomRendererService();
-	let customRendererServiceReady = $state(false);
-
-	let itemInfoDialogOpen: boolean = $state(false);
-	let itemInfoDialogActiveLayerId: string | null = $state(null);
-	let resetDialogOpen: boolean = $state(false);
-
-	let tabBarElement: HTMLElement | null = $state(null);
-	let tabBarWidth: number | null = $state(null);
-	let sidebarMinSize: string | undefined = $derived.by(() => {
-		if (!tabBarWidth) {
-			console.warn(
-				'[uprn/page] Tab bar width is not available yet, using default sidebar min size'
-			);
-			return undefined;
-		}
-
-		console.log(`[uprn/page] Calculated sidebar min size based on tab bar width: ${tabBarWidth}px`);
-		return `calc(${tabBarWidth}px + 1rem)`;
-	});
-
-	let uprnDownloadApi = $derived(
-		uprnConfigStore.instance?.uprnDownloadApiConfig.value
-			? new UprnDownloadService(uprnConfigStore.instance.uprnDownloadApiConfig.value)
-			: undefined
-	);
-
-	let aiUprnChatbotApi = $derived(
-		uprnConfigStore.instance?.uprnChatbotApiConfig.value
-			? new AiUprnChatbotService(uprnConfigStore.instance.uprnChatbotApiConfig.value)
-			: undefined
-	);
-
-	let isUprnDownloadServiceAvailable: boolean = $state(false);
-	let isAiUprnChatbotServiceAvailable: boolean = $state(false);
-	let fieldsToHide: Set<string> = $state(new Set());
-	let selectionLayers: Set<string> = $state(new Set());
-
-	// === Sidebar State ===
-	let mainSidebarOpen = $state(true);
-	let mainSidebarPosition = $state<Sidebar.PositionType>(SidebarPosition.LEFT);
-	let mainSidebarSizes: SizeConfig[] = $derived(uprnConfigStore.instance?.mainSidebarSizes ?? []);
-	let windowWidth = $state(typeof window !== 'undefined' ? window.innerWidth : 1280);
-
-	/**
-	 * Toggles the main sidebar open/closed state.
-	 */
-	function toggleMainSidebar() {
-		mainSidebarOpen = !mainSidebarOpen;
-	}
-
-	/**
-	 * Sets the progress state for a specific tab.
-	 * @param tabValue - The value of the tab to update
-	 * @param progress - The new progress state to set
-	 */
-	function setTabProgress(tabValue: string, progress: TabProgress) {
-		tabProgressByValue[tabValue] = progress;
-	}
-
-	/**
-	 * Handles tab value changes and updates the current tab state.
-	 * @param value - The new tab value to switch to
-	 */
-	function onTabValueChange(value: string) {
-		currentTab = value;
-		tabStateService.setCurrentTab(value);
-		console.log(`[uprn/page] Switched to tab: ${value}`);
-		console.log('[uprn/page] Current user state:', userStateProvider?.getUserState());
-	}
-
-	/**
-	 * Checks the availability of the UPRN Download Service.
-	 */
-	function checkDownloadServiceAvailability() {
-		if (!uprnDownloadApi || isUprnDownloadServiceAvailable) {
-			return;
-		}
-
-		uprnDownloadApi.getHealth().then((available) => {
-			isUprnDownloadServiceAvailable = available;
-			if (available) console.log('[uprn/page] UPRN Download Service is available');
-			else console.warn('[uprn/page] UPRN Download Service is NOT available');
-		});
-	}
-
-	function clearAllSelections() {
-		console.log('[uprn/page] Clearing all selections');
-		clearAreaSelections();
-		clearDataSelections();
-		clearDownloads();
-	}
-
-	function clearAreaSelections() {
-		console.log('[uprn/page] Clearing area selections');
-		areaSelectionStore.setLayerId(null);
-		areaSelectionStore.clearSelectedAreas();
-		areaSelectionInteractionStore?.cleanup();
-		areaSelectionTreeview?.clearSelections();
-		mapView?.graphics.removeAll();
-	}
-
-	function clearDataSelections() {
-		console.log('[uprn/page] Clearing data selections');
-		dataSelectionStore.clearSelections();
-		dataSelectionTreeview?.clearSelections();
-		selectedTagIds = new Set<string>();
-	}
-
-	function clearDownloads() {
-		console.log('[uprn/page] Clearing downloads');
-		downloadsStore.clearDownloads();
-	}
-
 	const resetActions: ResetAction[] = [
 		{
 			label: 'Clear Area Selections',
@@ -244,147 +99,287 @@
 		}
 	];
 
-	function observeTabbarSize(node: HTMLElement) {
-		const resizeObserver = new ResizeObserver(([entry]) => {
-			console.log(`[uprn/page] Tab bar width changed: ${entry.contentRect.width}px`);
-			tabBarWidth = entry.contentRect.width;
+	const tabStateService = new TabStateService('areas-of-interest');
+	const dataSelectionStore: DataSelectionStore = new DataSelectionStore();
+	const areaSelectionStore: AreaSelectionStore = new AreaSelectionStore();
+	const downloadsStore: DownloadsStore = new DownloadsStore();
 
-			console.log(
-				`[uprn/page] Updated sidebar min size based on new tab bar width: ${tabBarWidth}`
-			);
-		});
+	/** The app configuration hook. */
+	const appConfig = useFetchAppConfig();
 
-		resizeObserver.observe(node);
+	/** State to track whether initial selections have been loaded from the database. */
+	let initializedSelectionsFromDb = $state(false);
 
-		return {
-			destroy() {
-				resizeObserver.disconnect();
-			}
+	/** State to track whether initial node visibility has been set. */
+	let initializedNodeVisibility = $state(false);
+
+	/** State for managing the visibility of the item info dialog. */
+	let itemInfoDialogOpen: boolean = $state(false);
+
+	/** State for tracking the currently active layer ID in the item info dialog. */
+	let itemInfoDialogActiveLayerId: string | null = $state(null);
+
+	/** State for managing the visibility of the reset dialog. */
+	let resetDialogOpen: boolean = $state(false);
+
+	/** The current active tab. */
+	let currentTab: string = $state('areas-of-interest');
+
+	/** The tab bar progress that contains the tabs the user has visited.. */
+	let tabProgressByValue: Record<string, TabProgress | undefined> = $state({});
+
+	/** The tab bar width. */
+	let tabBarWidth: number | null = $state(null);
+
+	/** The IDs of currently selected tags to filter by. */
+	const selectedTagIds: Set<string> = $state(new SvelteSet<string>());
+
+	/** The ArcGIS MapView instance. */
+	let mapView: __esri.MapView | null = $state(null);
+
+	/** Hook for the AI UPRN chatbot health check. */
+	const aiUprnChatbotHealth = $derived.by(() => {
+		if (!appConfig.content?.aiUprnChatbot) {
+			return null;
+		}
+
+		const { baseUrl, healthRoute } = appConfig.content.aiUprnChatbot;
+		const url = `${baseUrl}${healthRoute}`;
+		const health = useAiChatbotHealth(url);
+		health.fetch();
+		return health;
+	});
+
+	/** Hook for the UPRN download health check. */
+	const uprnDownloadHealth = $derived.by(() => {
+		if (!appConfig.content?.uprnDownload) {
+			return null;
+		}
+
+		const { baseUrl, healthRoute } = appConfig.content.uprnDownload;
+		const url = `${baseUrl}${healthRoute}`;
+		const health = useUprnDownloadHealth(url);
+		health.fetch();
+		return health;
+	});
+
+	/** Hook to load previous selections from indexedDb based on the portal item ID in the app configuration. */
+	const selectionsFromDb = $derived.by(() => {
+		if (!appConfig.content?.map.portalItemId) {
+			return null;
+		}
+
+		const selections = useLoadSelectionsFromIndexDb(appConfig.content.map.portalItemId);
+		selections.fetch();
+		return selections;
+	});
+
+	/** The web map store instance. */
+	let webMapStore: WebMapStore | null = $derived.by(() => {
+		return appConfig.content
+			? new WebMapStore({
+					portalUrl: appConfig.content.map.portalUrl,
+					itemId: appConfig.content.map.portalItemId || '',
+					proxy: appConfig.content.map.proxy
+				})
+			: null;
+	});
+
+	/** The minimum size of the sidebar.  */
+	let sidebarMinSize: string | undefined = $derived.by(() => {
+		return typeof tabBarWidth === 'number' ? `calc(${tabBarWidth}px + 1rem)` : undefined;
+	});
+
+	/** The treeview configuration store. */
+	let treeviewConfigStore: TreeviewConfigStore | null = $derived.by(() => {
+		return appConfig.content && appConfig.content.map.treeview
+			? new TreeviewConfigStore(appConfig.content.map.treeview)
+			: null;
+	});
+
+	/** Controller for managing data node selections. */
+	let dataNodeSelectionController: NodeSelectionController | null = $derived.by(() => {
+		return treeviewConfigStore
+			? new NodeSelectionController(dataSelectionStore, treeviewConfigStore)
+			: null;
+	});
+
+	/** Provider for tag definitions. */
+	let tagDefinitionProvider: TagDefinitionProvider | null = $derived.by(() => {
+		return appConfig.content && appConfig.content.map.tagDefinitions
+			? new TagDefinitionProvider(appConfig.content.map.tagDefinitions)
+			: null;
+	});
+
+	/** Store for managing area selection interactions on the map. */
+	let areaSelectionInteractionStore: AreaSelectionInteractionStore | null = $derived.by(() => {
+		return mapView && appConfig.content?.map.selectableLayers
+			? new AreaSelectionInteractionStore(
+					areaSelectionStore,
+					new LayerViewProvider(mapView),
+					appConfig.content.map.selectableLayers
+				)
+			: null;
+	});
+
+	/** A set of layer IDs that are interactable based on the app configuration. */
+	let interactableLayers: SvelteSet<string> | null = $derived.by(() => {
+		return appConfig.content && appConfig.content.map.selectableLayers
+			? new SvelteSet(appConfig.content.map.selectableLayers.map((layer) => layer.id))
+			: null;
+	});
+
+	let treeviewNodes: TreeviewNode[] | null = $derived.by(() => {
+		return treeviewConfigStore ? createTreeviewNodes(treeviewConfigStore.configs) : null;
+	});
+
+	/** The node provider for the area treeview. */
+	let treeviewNodeProvider: INodeProvider | null = $derived.by(() => {
+		return treeviewNodes ? new NodeProvider(treeviewNodes) : null;
+	});
+
+	/** The area treeview nodes. */
+	let areaTreeviewNodes: TreeviewNode[] | null = $derived.by(() => {
+		return treeviewNodes && treeviewNodes.length > 0
+			? filterTreeviewNodesByType(treeviewNodes, TreeviewType.Area)
+			: null;
+	});
+
+	/** The node provider for the area treeview. */
+	let areaTreeviewNodeProvider: INodeProvider | null = $derived.by(() => {
+		return areaTreeviewNodes ? new NodeProvider(areaTreeviewNodes) : null;
+	});
+
+	/** The data treeview nodes. */
+	let dataTreeviewNodes: TreeviewNode[] | null = $derived.by(() => {
+		return treeviewNodes && treeviewNodes.length > 0
+			? filterTreeviewNodesByType(treeviewNodes, TreeviewType.Data)
+			: null;
+	});
+
+	/** The node provider for the data treeview. */
+	let dataTreeviewNodeProvider: INodeProvider | null = $derived.by(() => {
+		return dataTreeviewNodes ? new NodeProvider(dataTreeviewNodes) : null;
+	});
+
+	/** Controller for managing node visibility. */
+	let nodeVisibilityController: NodeVisibilityController | null = $derived.by(() => {
+		return mapView && treeviewNodeProvider && treeviewConfigStore
+			? new NodeVisibilityController(
+					new LayerViewProvider(mapView),
+					treeviewNodeProvider,
+					treeviewConfigStore,
+					treeviewConfigStore
+				)
+			: null;
+	});
+
+	/** The area treeview store instance. */
+	let areaTreeviewStore: TreeviewStore | null = $derived.by(() => {
+		return areaTreeviewNodeProvider &&
+			treeviewConfigStore &&
+			dataNodeSelectionController &&
+			nodeVisibilityController
+			? new TreeviewStore(
+					TreeviewType.Area,
+					areaTreeviewNodeProvider,
+					treeviewConfigStore,
+					treeviewConfigStore,
+					dataNodeSelectionController,
+					nodeVisibilityController
+				)
+			: null;
+	});
+
+	/** The data treeview store instance. */
+	let dataTreeviewStore: TreeviewStore | null = $derived.by(() => {
+		return dataTreeviewNodeProvider &&
+			treeviewConfigStore &&
+			dataNodeSelectionController &&
+			nodeVisibilityController
+			? new TreeviewStore(
+					TreeviewType.Data,
+					dataTreeviewNodeProvider,
+					treeviewConfigStore,
+					treeviewConfigStore,
+					dataNodeSelectionController,
+					nodeVisibilityController
+				)
+			: null;
+	});
+
+	/** Determines whether the map view can be rendered based on the availability of required dependencies. */
+	let loadMapView: boolean = $derived(
+		!!(webMapStore && webMapStore.data && areaSelectionInteractionStore && interactableLayers)
+	);
+
+	/** Determines whether the area treeview can be rendered based on the availability of required dependencies. */
+	let loadAreaTreeview: boolean = $derived(
+		!!(areaTreeviewNodes && areaTreeviewStore && treeviewConfigStore)
+	);
+
+	/** Determines whether the data treeview can be rendered based on the availability of required dependencies. */
+	let loadDataTreeview: boolean = $derived(
+		!!(dataTreeviewNodes && dataTreeviewStore && treeviewConfigStore && tagDefinitionProvider)
+	);
+
+	/** Determines whether the export menu can be rendered based on the availability of required dependencies. */
+	let loadExportMenu: boolean = $derived(
+		!!(areaSelectionInteractionStore && treeviewNodeProvider && treeviewConfigStore)
+	);
+
+	onMount(() => {
+		appConfig.fetch();
+		const async = async () => {
+			const { default: MapView } = await import('@arcgis/core/views/MapView');
+			mapView = new MapView();
 		};
-	}
-
-	/**
-	 * Initializes the application by loading configuration and setting up stores.
-	 */
-	onMount(async () => {
-		try {
-			await uprnConfigStore.load(`${base}/config/apps/uprn/config.json`);
-		} catch (error) {
-			console.error('[uprn/page] Failed to load UPRN config', error);
-		}
-
-		const datasetsCsvPath = asset('/config/apps/uprn/api/datasets.csv');
-		const variablesCsvPath = asset('/config/apps/uprn/api/variables.csv');
-		const configFetcher = new CsvConfigFetcher(datasetsCsvPath, variablesCsvPath);
-		const { datasets, variables } = await configFetcher.fetch();
-		const configTransformer = new ConfigTransformer();
-		const treeviewNodes = await configTransformer.transform({ datasets, variables });
-		currentMap.treeview.layers = treeviewNodes;
-
-		const { default: MapView } = await import('@arcgis/core/views/MapView');
-		mapView = new MapView();
-
-		areaSelectionInteractionStore = new AreaSelectionInteractionStore(
-			areaSelectionStore,
-			new LayerViewProvider(mapView)
-		);
-
-		userStateProvider = new UserStateProvider(
-			tabStateService,
-			areaSelectionStore,
-			dataSelectionStore,
-			webMapStore
-		);
-
-		tagDefinitionProvider = new TagDefinitionProvider(currentMap.tagDefinitions || []);
+		async();
 	});
 
+	/** Effect to set initial visibility of treeview nodes based on their configurations when they are loaded. */
 	$effect(() => {
-		if (currentTab === 'downloads') {
-			checkDownloadServiceAvailability();
-		}
-	});
-
-	$effect(() => {
-		if (uprnDownloadApi) {
-			uprnDownloadApi.getHealth().then((available) => {
-				isUprnDownloadServiceAvailable = available;
-				if (available) console.log('[uprn/page] UPRN Download Service is available');
-				else console.warn('[uprn/page] UPRN Download Service is NOT available');
-			});
-		} else {
-			isUprnDownloadServiceAvailable = false;
-		}
-	});
-
-	$effect(() => {
-		if (aiUprnChatbotApi) {
-			aiUprnChatbotApi.getHealth().then((available) => {
-				isAiUprnChatbotServiceAvailable = available;
-				if (available) console.log('[uprn/page] AI UPRN Chatbot Service is available');
-				else console.warn('[uprn/page] AI UPRN Chatbot Service is NOT available');
-			});
-		} else {
-			isAiUprnChatbotServiceAvailable = false;
-		}
-	});
-
-	/**
-	 * Effect to reinitialize map-dependent components when currentMapIndex changes.
-	 * This allows for easy switching between different map configurations.
-	 */
-	$effect(() => {
-		if (!currentMap || !mapView || !areaSelectionInteractionStore) {
+		if (
+			initializedNodeVisibility ||
+			!webMapStore?.isLoaded ||
+			!nodeVisibilityController ||
+			!treeviewNodes
+		) {
 			return;
 		}
 
-		console.log(`[uprn/page] Loading map ${currentMapIndex + 1} of ${maps.length}`);
+		console.log('[uprn/app] Setting initial visibility for treeview nodes');
 
-		if (currentMap.customRenderers) {
-			customRendererServiceReady = false;
-			const customRendererPath = asset(currentMap.customRenderers);
-			customRendererService
-				.init(customRendererPath)
-				.then(() => (customRendererServiceReady = true))
-				.catch((e) => console.error('[uprn/page] Failed to load custom renderers', e));
-		}
+		const setVisibility = (nodes: TreeviewNode[]) => {
+			nodes.forEach((node) => {
+				const config = treeviewConfigStore?.getConfig(node.id);
+				if (node) {
+					nodeVisibilityController.setVisibilityState(node, config?.isVisibleOnInit ?? false);
+				}
 
-		// Update selection layers and field infos
-		selectionLayers = new Set((currentMap.selectableLayers || []).map((s) => s.id));
-		areaSelectionInteractionStore.setFieldInfos(currentMap.selectableLayers || []);
+				if (node.children) {
+					setVisibility(node.children);
+				}
+			});
+		};
 
-		// Update treeview configurations
-		treeviewConfig = new TreeviewConfigStore(
-			$state.snapshot(currentMap.treeview) as TreeviewConfig
-		);
-
-		// Update fields to hide
-		fieldsToHide = new Set(currentMap.treeview?.fieldsToHide || []);
-
-		// Initialize the web map with new configuration
-		webMapStore.initializeAsync({
-			portalUrl: currentMap.portalUrl,
-			itemId: currentMap.portalItemId || '',
-			proxy: currentMap.proxy
-		});
+		setVisibility(treeviewNodes);
+		initializedNodeVisibility = true;
 	});
 
+	/** Effect to update tab progress based on area and data selection states. */
 	$effect(() => {
-		// don't invoke selection loading until the web map is loaded
-		if (!webMapStore.isLoaded || !currentMap) {
-			return;
-		}
-
-		selectionTrackingStore.portalItemId = currentMap.portalItemId || null;
-	});
-
-	$effect(() => {
-		const anyAreaSelected = areaSelectionStore.selectedAreaIds.size > 0;
+		const areaLayerSelected = areaSelectionStore.layerId !== null;
+		const anyAreaSelected = areaSelectionStore.areaIds.size > 0;
 		const anyDataSelected = dataSelectionStore.dataSelections.size > 0;
 
 		setTabProgress(
 			'areas-of-interest',
-			anyAreaSelected ? TabProgress.Completed : TabProgress.NotStarted
+			areaLayerSelected && anyAreaSelected
+				? TabProgress.Completed
+				: areaLayerSelected
+					? TabProgress.InProgress
+					: TabProgress.NotStarted
 		);
 
 		setTabProgress('select-data', anyDataSelected ? TabProgress.Completed : TabProgress.NotStarted);
@@ -400,26 +395,205 @@
 	});
 
 	/**
-	 * Sets up window resize listener for reactive sidebar sizing.
+	 * Effect to load previous selections from indexedDb and populate the area and data
+	 * selection stores accordingly.
 	 */
-	onMount(() => {
-		const handleResize = () => {
-			windowWidth = window.innerWidth;
-		};
+	$effect(() => {
+		if (
+			initializedSelectionsFromDb ||
+			!initializedNodeVisibility ||
+			!selectionsFromDb ||
+			selectionsFromDb.isLoading ||
+			!selectionsFromDb.content ||
+			!treeviewNodeProvider ||
+			!nodeVisibilityController ||
+			!dataNodeSelectionController
+		) {
+			return;
+		}
 
-		window.addEventListener('resize', handleResize);
+		const selections = selectionsFromDb.content;
+		console.log('[uprn/app] Loaded selections from IndexedDb', selections);
 
-		return () => {
-			window.removeEventListener('resize', handleResize);
-		};
+		if (selections.areas) {
+			areaSelectionStore.setAreaSelectionLayer(selections.areas.nodeId);
+			areaSelectionStore.addSelectedAreas(Array.from(selections.areas.areaIds));
+
+			if (selections.areas.nodeId) {
+				const node = treeviewNodeProvider.getTreeviewNode(selections.areas.nodeId);
+				if (node) {
+					nodeVisibilityController.setVisibilityState(node, true);
+				}
+			}
+		}
+
+		selections.data.forEach((dataSelection) => {
+			dataSelectionStore.addSelection(dataSelection);
+			if (dataSelection.selectedFieldIds.size === 0) {
+				const node = treeviewNodeProvider.getTreeviewNode(dataSelection.nodeId);
+				if (node) {
+					dataNodeSelectionController.setSelectionState(node, SelectionState.Active);
+				}
+			}
+
+			dataSelection.selectedFieldIds.forEach((fieldId) => {
+				const nodeId = `${dataSelection.nodeId}-${fieldId}`;
+				const node = treeviewNodeProvider.getTreeviewNode(nodeId);
+				if (node) {
+					dataNodeSelectionController.setSelectionState(node, SelectionState.Active);
+				}
+			});
+		});
+
+		initializedSelectionsFromDb = true;
 	});
 
-	onDestroy(() => {
-		dataSelectionStore.cleanup();
+	/**
+	 * Effect to track changes in area selection and update the selection tracking in indexedDb.
+	 * It listens for changes in the area selection snapshot and updates the stored selection for the current portal item.
+	 */
+	$effect(() => {
+		const portalItemId = appConfig.content?.map.portalItemId;
+		if (!portalItemId || !initializedSelectionsFromDb) {
+			return;
+		}
+
+		const snapshot = areaSelectionStore.exportSnapshot();
+		if (!snapshot.nodeId) {
+			updateSelection(portalItemId, { areas: null });
+			return;
+		}
+
+		updateSelection(portalItemId, { areas: snapshot });
 	});
 
-	function onOpenInfoDialog(layerId: string) {
-		itemInfoDialogActiveLayerId = layerId;
+	/**
+	 * Effect to track changes in data selection and update the selection tracking in indexedDb.
+	 * It listens for changes in the data selection snapshot and updates the stored selection for the current portal item.
+	 */
+
+	$effect(() => {
+		const portalItemId = appConfig.content?.map.portalItemId;
+		if (!portalItemId || !initializedSelectionsFromDb) {
+			return;
+		}
+
+		const selections = [...dataSelectionStore.dataSelections.values()];
+		const snapshots = $state.snapshot(selections) as DataSelectionSnapshot[];
+		updateSelection(portalItemId, {
+			data: snapshots
+		});
+	});
+
+	/**
+	 * Recursively filters treeview nodes based on the specified treeview type and visibility settings.
+	 * @param nodes - The array of TreeviewNode instances to filter.
+	 * @param type - The TreeviewType to filter nodes by.
+	 * @return An array of TreeviewNode instances that match the specified type and are not hidden, with their
+	 * children also filtered accordingly.
+	 */
+	function filterTreeviewNodesByType(nodes: TreeviewNode[], type: TreeviewType): TreeviewNode[] {
+		return nodes
+			.filter((node) => {
+				const config = treeviewConfigStore?.getConfig(node.id);
+				return config?.treeviewType === type && !config.isHidden;
+			})
+			.map((node) => {
+				if (node.children) {
+					return {
+						...node,
+						children: filterTreeviewNodesByType(node.children, type)
+					};
+				}
+				return node;
+			});
+	}
+
+	/**
+	 * Handles tab value changes and updates the current tab state.
+	 * @param value - The new tab value to switch to
+	 */
+	function onTabValueChange(value: string): void {
+		currentTab = value;
+		tabStateService.setCurrentTab(value);
+		console.log(`[uprn/app] Switched to tab: ${value}`);
+	}
+
+	/**
+	 * Sets the progress state for a specific tab.
+	 * @param tabValue - The value of the tab to update
+	 * @param progress - The new progress state to set
+	 */
+	function setTabProgress(tabValue: string, progress: TabProgress) {
+		tabProgressByValue[tabValue] = progress;
+	}
+
+	/**
+	 * Observes the size of the tab bar and updates the tabBarWidth state accordingly, which is used to adjust
+	 * the sidebar minimum size.
+	 * @param element - The HTML element of the tab bar to observe for size changes.
+	 * @return An object with a destroy method to clean up the observer when the element is removed from the DOM.
+	 */
+	function observeTabbarSize(element: HTMLElement): { destroy: () => void } {
+		const resizeObserver = new ResizeObserver(([entry]) => {
+			tabBarWidth = entry.contentRect.width;
+		});
+
+		resizeObserver.observe(element);
+
+		return {
+			destroy() {
+				resizeObserver.disconnect();
+			}
+		};
+	}
+
+	/**
+	 * Clears all area selections by resetting the area selection layer, clearing selected areas from the store,
+	 * cleaning up interactions, and removing graphics from the map view.
+	 */
+	function clearAreaSelections() {
+		console.log('[uprn/app] Clearing area selections');
+		areaSelectionStore.setAreaSelectionLayer(null);
+		areaSelectionStore.clearSelectedAreas();
+		areaSelectionInteractionStore?.cleanup();
+		mapView?.graphics.removeAll();
+	}
+
+	/**
+	 * Clears all data selections by clearing selected data from the store and resetting the selected tag IDs.
+	 */
+	function clearDataSelections() {
+		console.log('[uprn/app] Clearing data selections');
+		dataSelectionStore.clearSelections();
+		selectedTagIds.clear();
+	}
+
+	/**
+	 * Clears all downloads by clearing the downloads store.
+	 */
+	function clearDownloads() {
+		console.log('[uprn/app] Clearing downloads');
+		downloadsStore.clearDownloads();
+	}
+
+	/**
+	 * Clears all selections and downloads by invoking the respective clear functions for area selections, data
+	 * selections, and downloads.
+	 */
+	function clearAllSelections() {
+		console.log('[uprn/app] Clearing all selections');
+		clearAreaSelections();
+		clearDataSelections();
+		clearDownloads();
+	}
+
+	/**
+	 * Event handler for opening the item info dialog, sets the active layer ID and opens the dialog.
+	 * @param nodeId - The ID of the node for which to display information in the dialog.
+	 */
+	function onOpenInfoDialog(nodeId: string): void {
+		itemInfoDialogActiveLayerId = nodeId;
 		itemInfoDialogOpen = true;
 	}
 
@@ -429,13 +603,12 @@
 </script>
 
 <Toaster />
-<FieldSelectionMenu {dataSelectionStore} {fieldFilterMenuStore} {fieldsToHide} />
-{#if treeviewConfig}
+{#if webMapStore?.isLoaded && treeviewConfigStore}
 	<ItemInfoDialog
-		webmapService={webMapStore}
-		nodeConfigProvider={treeviewConfig}
 		bind:isOpen={itemInfoDialogOpen}
 		bind:activeLayerId={itemInfoDialogActiveLayerId}
+		webmapService={webMapStore}
+		nodeConfigProvider={treeviewConfigStore}
 	/>
 {/if}
 {#if areaSelectionInteractionStore}
@@ -443,12 +616,7 @@
 	<AreaSelectionToast {areaSelectionInteractionStore} />
 {/if}
 
-<Sidebar.Root
-	isOpen={mainSidebarOpen}
-	minSize={sidebarMinSize}
-	onToggle={toggleMainSidebar}
-	position={mainSidebarPosition}
->
+<Sidebar.Root isOpen={true} minSize={sidebarMinSize} position={Sidebar.SidebarPosition.LEFT}>
 	{#snippet sidebarContent()}
 		<div
 			class="relative flex h-full w-full min-w-0 flex-col gap-1 overflow-visible bg-slate-200 pt-1 px-1"
@@ -456,42 +624,9 @@
 			<Card.Root
 				class="relative flex flex-1 flex-col overflow-hidden rounded-md gap-0 py-0 shadow-none bg-slate-50"
 			>
-				<!-- <div class="absolute top-0 left-0 z-10 flex gap-1 ml-1 mt-1">
-					<SettingsDialog
-						{maps}
-						{currentMapIndex}
-						onSelectMap={setMapIndex}
-						buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
-					/>
-
-					<ResetDialog
-						bind:open={resetDialogOpen}
-						onReset={clearAllSelections}
-						buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
-					/>
-				</div> -->
-
 				<SidebarLayout.Header>
-					<!-- <div class="tabs-center">
-						<div class="tabbar-anchor" bind:this={tabBarElement} use:observeTabbarSize>
-							<UprnTabBar
-								value={currentTab}
-								triggers={tabBarTriggers}
-								progressByValue={tabProgressByValue}
-								onValueChange={onTabValueChange}
-							/>
-
-							<div class="reset-anchor">
-								<ResetDialog
-									bind:open={resetDialogOpen}
-									actions={resetActions}
-									buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
-								/>
-							</div>
-						</div>
-					</div> -->
 					<div class="tabs-center">
-						<div class="tabbar-anchor" bind:this={tabBarElement} use:observeTabbarSize>
+						<div class="tabbar-anchor" use:observeTabbarSize>
 							<UprnTabBar
 								value={currentTab}
 								triggers={tabBarTriggers}
@@ -511,13 +646,11 @@
 				<SidebarLayout.Content>
 					<div hidden={currentTab !== 'areas-of-interest'}>
 						<UprnTabBarContent>
-							{#if webMapStore.isLoaded}
+							{#if loadAreaTreeview}
 								<AreaSelectionTreeview
-									bind:this={areaSelectionTreeview}
-									webMap={webMapStore.data!}
-									treeviewConfigStore={treeviewConfig!}
-									layerViewProvider={uprnMapView?.getLayerViewProvider()!}
-									{areaSelectionStore}
+									treeviewStore={areaTreeviewStore!}
+									nodeConfigProvider={treeviewConfigStore!}
+									areaSelectionController={areaSelectionStore}
 								/>
 							{/if}
 						</UprnTabBarContent>
@@ -525,21 +658,12 @@
 
 					<div hidden={currentTab !== 'select-data'}>
 						<UprnTabBarContent>
-							{#if webMapStore.isLoaded && customRendererServiceReady}
-								<!-- <TreeviewTags
-									tasgDefinitionProvider={tagDefinitionProvider ?? undefined}
-									class="justify-center"
-									bind:selectedTagIds
-								/> -->
+							{#if loadDataTreeview}
 								<DataSelectionTreeview
-									bind:this={dataSelectionTreeview}
-									webMap={webMapStore.data!}
-									{dataSelectionStore}
-									layerViewProvider={uprnMapView?.getLayerViewProvider()!}
-									treeviewConfigStore={treeviewConfig!}
+									treeviewStore={dataTreeviewStore!}
+									nodeConfigProvider={treeviewConfigStore!}
+									nodeTagProvider={treeviewConfigStore!}
 									tagDefinitionProvider={tagDefinitionProvider!}
-									{customRendererService}
-									{fieldFilterMenuStore}
 									{selectedTagIds}
 								/>
 							{/if}
@@ -548,12 +672,12 @@
 
 					<div hidden={currentTab !== 'export'}>
 						<UprnTabBarContent>
-							{#if areaSelectionInteractionStore && webMapStore.isLoaded}
+							{#if loadExportMenu}
 								<ExportMenu
-									webMapService={webMapStore}
-									{areaSelectionInteractionStore}
+									nodeProvider={treeviewNodeProvider!}
+									nodeConfigProvider={treeviewConfigStore!}
+									areaSelectionInteractionStore={areaSelectionInteractionStore!}
 									{dataSelectionStore}
-									dataSelectionTreeviewConfig={treeviewConfig!}
 								/>
 							{/if}
 						</UprnTabBarContent>
@@ -561,24 +685,38 @@
 
 					<div hidden={currentTab !== 'downloads'}>
 						<UprnTabBarContent>
-							{#if !uprnDownloadApi || !isUprnDownloadServiceAvailable || !webMapStore.isLoaded}
+							{#if !uprnDownloadHealth || uprnDownloadHealth.isLoading}
+								<div class="flex h-full w-full items-center justify-center">
+									<Spinner class="w-10 h-10" />
+								</div>
+							{:else if !!uprnDownloadHealth && (!uprnDownloadHealth.isAccessible || !!uprnDownloadHealth.error)}
 								<p class="p-4 text-center text-sm text-gray-500">
 									Download service is not available.
 								</p>
-							{:else}
-								<DownloadsMenu uprnDownloadService={uprnDownloadApi} {fieldsToHide} />
+							{:else if !!uprnDownloadHealth && uprnDownloadHealth.isAccessible && appConfig.content?.uprnDownload}
+								{@const requestJobUrl = `${appConfig.content.uprnDownload.baseUrl}${appConfig.content.uprnDownload.requestJobRoute}`}
+								{@const requestJobStatusUrl = `${appConfig.content.uprnDownload.baseUrl}${appConfig.content.uprnDownload.requestJobStatusesRoute}`}
+								{@const downloadBaseUrl = `${appConfig.content.uprnDownload.baseUrl}${appConfig.content.uprnDownload.fetchDownloadRoute}`}
+								<DownloadsMenu
+									{downloadsStore}
+									{requestJobUrl}
+									jobStatusesUrl={requestJobStatusUrl}
+									{downloadBaseUrl}
+								/>
 							{/if}
 						</UprnTabBarContent>
 					</div>
 				</SidebarLayout.Content>
+
 				<SidebarLayout.Footer>
 					<div hidden={currentTab !== 'export'}>
 						{#if areaSelectionInteractionStore}
 							<ExportMenuFooter
 								onExportSuccess={() => onTabValueChange('downloads')}
-								clearSelections={() => (resetDialogOpen = true)}
+								clearSelections={() => {}}
 								{areaSelectionInteractionStore}
 								{dataSelectionStore}
+								{downloadsStore}
 							/>
 						{/if}
 					</div>
@@ -586,26 +724,34 @@
 			</Card.Root>
 
 			<CollapsibleWindow isOpenedOnInit={true} class="mt-0 shadow-none">
-				{#if !aiUprnChatbotApi || !isAiUprnChatbotServiceAvailable}
+				{#if !aiUprnChatbotHealth || aiUprnChatbotHealth.isLoading}
+					<div class="flex h-full w-full items-center justify-center">
+						<Spinner class="w-10 h-10" />
+					</div>
+				{:else if !!aiUprnChatbotHealth && (!aiUprnChatbotHealth.isAccessible || !!aiUprnChatbotHealth.error)}
 					<p class="p-4 text-center text-sm text-gray-500">
 						AI UPRN Chatbot service is not available.
 					</p>
-				{:else}
-					<UprnChat aiUprnChatbotService={aiUprnChatbotApi} />
+				{:else if !!aiUprnChatbotHealth && aiUprnChatbotHealth.isAccessible && appConfig.content?.aiUprnChatbot}
+					{@const chatStreamingUrl = `${appConfig.content.aiUprnChatbot.baseUrl}${appConfig.content.aiUprnChatbot.chatRoute}`}
+					<UprnChat streamUrl={chatStreamingUrl} />
 				{/if}
 			</CollapsibleWindow>
 		</div>
 	{/snippet}
 
 	{#snippet mainContent()}
-		{#if areaSelectionInteractionStore}
+		{#if loadMapView}
 			<UprnMapView
-				bind:this={uprnMapView}
-				webMap={webMapStore.data!}
+				webMap={webMapStore?.data!}
 				mapView={mapView!}
-				{areaSelectionInteractionStore}
-				interactableLayers={selectionLayers}
+				areaSelectionInteractionStore={areaSelectionInteractionStore!}
+				interactableLayers={interactableLayers!}
 			/>
+		{:else}
+			<div class="flex h-full w-full items-center justify-center">
+				<Spinner class="w-10 h-10" />
+			</div>
 		{/if}
 	{/snippet}
 </Sidebar.Root>
@@ -624,18 +770,8 @@
 		justify-content: center;
 	}
 
-	/* This box should match the tab bar width (so button anchors to it) */
 	.tabbar-anchor {
 		position: relative;
-		display: inline-block; /* shrink-wrap to UprnTabBar */
-	}
-
-	/* Button positioned relative to the tab bar’s right edge */
-	.reset-anchor {
-		position: absolute;
-		top: 50%;
-		right: 0;
-		transform: translate(calc(100% + 0.25rem), -50%);
-		z-index: 10;
+		display: inline-block;
 	}
 </style>

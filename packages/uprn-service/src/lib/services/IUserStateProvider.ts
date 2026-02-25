@@ -1,4 +1,4 @@
-import type { UserState } from '$lib/types/uprn';
+import type { UserState } from '$lib/Types/uprn';
 
 /**
  * Interface that provides the user state information. This includes information such as which tab is selected, and which items they've selected.

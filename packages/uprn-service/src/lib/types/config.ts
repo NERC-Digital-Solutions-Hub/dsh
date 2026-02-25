@@ -1,11 +1,11 @@
-import type { TreeviewConfig } from '$lib/types/treeview';
-import type { AiUprnChatbotEndpoints, UprnDownloadEndpoints } from '$lib/types/uprn';
+import type { TreeviewConfig } from '$lib/Types/treeview';
+import type { AiUprnChatbotEndpoints, UprnDownloadEndpoints } from '$lib/Types/uprn';
 
 export type AppsUprnConfig = {
-	uprnDownloadServiceEndpoints: UprnDownloadEndpoints;
-	aiUprnChatbotServiceEndpoints: AiUprnChatbotEndpoints;
+	map: PortalItemConfig;
+	uprnDownload: UprnDownloadEndpoints;
+	aiUprnChatbot: AiUprnChatbotEndpoints;
 	mainSidebarSizes?: SizeConfig[];
-	maps: PortalItemConfig[];
 };
 
 export type PortalItemConfig = {

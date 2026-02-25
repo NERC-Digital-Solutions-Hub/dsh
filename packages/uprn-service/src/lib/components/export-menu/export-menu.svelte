@@ -1,35 +1,43 @@
 <script lang="ts">
-	import type { IWebMapService } from '$lib/services/IWebMapService';
-	import SelectionTreeviewNode, {
-		type SelectionTreeviewNode as SelectionTreeviewNodeType
-	} from './selection-tree-node.svelte';
-	import type { TreeviewConfigStore } from '$lib/stores/treeview-config-store';
+	import type { DatasetTreeviewNode } from '$lib/Models/Treeview/DatasetTreeviewNode';
+	import type { VariableTreeviewNode } from '$lib/Models/Treeview/Index';
+	import type { TreeviewNode } from '$lib/Models/Treeview/TreeviewNode';
+	import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
+	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
+	import type { INodeProvider } from '$lib/Services/INodeProvider';
 	import type {
 		AreaFieldHandleInfo,
 		AreaSelectionInteractionStore
-	} from '$lib/stores/area-selection-interaction-store.svelte';
-	import type { DataSelectionStore } from '$lib/stores/data-selection-store.svelte';
-	import { TreeviewNodeTypology, type TreeviewNodeConfig } from '$lib/types/treeview.js';
-
-	export type Props = {
-		webMapService: IWebMapService;
-		areaSelectionInteractionStore: AreaSelectionInteractionStore;
-		dataSelectionStore: DataSelectionStore;
-		dataSelectionTreeviewConfig: TreeviewConfigStore;
-	};
-
-	const {
-		webMapService,
-		areaSelectionInteractionStore,
-		dataSelectionStore,
-		dataSelectionTreeviewConfig
-	}: Props = $props();
+	} from '$lib/Stores/AreaSelectionInteractionStore.svelte';
+	import type { DataSelectionStore } from '$lib/Stores/DataSelectionStore.svelte';
+	import { TreeviewNodeTypology } from '$lib/Types/treeview.js';
+	import SelectionTreeviewNode, {
+		type SelectionTreeviewNode as SelectionTreeviewNodeType
+	} from './selection-tree-node.svelte';
 
 	type AreaInfo = {
 		id: number;
 		name: string;
 		HighlightAreaInfo: AreaFieldHandleInfo;
 	};
+
+	type SelectionTreeviewNodeTypeWithParent = SelectionTreeviewNodeType & {
+		parentId?: string;
+	};
+
+	type Props = {
+		nodeProvider: INodeProvider;
+		nodeConfigProvider: INodeConfigProvider;
+		areaSelectionInteractionStore: AreaSelectionInteractionStore;
+		dataSelectionStore: DataSelectionStore;
+	};
+
+	const {
+		nodeProvider,
+		nodeConfigProvider,
+		areaSelectionInteractionStore,
+		dataSelectionStore
+	}: Props = $props();
 
 	let areaInfos: AreaInfo[] = $state<AreaInfo[]>([]);
 
@@ -49,6 +57,7 @@
 		const childNodes: SelectionTreeviewNodeType[] = areaInfos.map((area) => ({
 			id: String(area.HighlightAreaInfo.id),
 			name: area.name,
+			isVariable: false,
 			isLeaf: true,
 			children: [],
 			typology: TreeviewNodeTypology.Variable
@@ -59,6 +68,7 @@
 			{
 				id: 'area-layer-root',
 				name: layerTitle,
+				isVariable: false,
 				isLeaf: false,
 				children: childNodes,
 				typology: TreeviewNodeTypology.Area
@@ -67,130 +77,79 @@
 	});
 
 	/**
-	 * Builds a hierarchical tree structure from selected data layers.
-	 * Layers are grouped by their parent group layers.
-	 * Feature layers with showFields include selected fields as child nodes.
+	 * Builds a hierarchical tree structure from selected data nodes.
+	 * Nodes are grouped by their parent nodes (including ancestors).
 	 */
 	let dataSelectionTree: SelectionTreeviewNodeType[] = $derived.by(() => {
 		const selections = dataSelectionStore.getAllSelections();
-		if (selections.length === 0) {
-			return [];
-		}
+		if (selections.length === 0) return [];
 
-		// Build a map of all nodes we need to display, including their ancestors
-		const nodeMap = new Map<string, SelectionTreeviewNodeType>();
-		const rootNodes: SelectionTreeviewNodeType[] = [];
+		const nodeMap = new Map<string, SelectionTreeviewNodeTypeWithParent>();
+
+		const ensureNode = (node: TreeviewNode): SelectionTreeviewNodeTypeWithParent | null => {
+			const existing = nodeMap.get(node.id);
+			if (existing) return existing;
+
+			const nodeConfig = nodeConfigProvider.getConfig(node.id);
+			if (!nodeConfig) return null;
+
+			const created: SelectionTreeviewNodeTypeWithParent = {
+				id: node.id,
+				name: nodeConfig.displayName || nodeConfig.name || node.id,
+				isVariable: isVariableNode(node),
+				isLeaf: true,
+				children: [],
+				typology: nodeConfig.typology || TreeviewNodeTypology.Variable,
+				parentId: node.parent?.id
+			};
+
+			nodeMap.set(node.id, created);
+			return created;
+		};
+
+		const ensureAncestors = (start: TreeviewNode | undefined) => {
+			let current = start;
+			while (current) {
+				const ensured = ensureNode(current);
+				if (!ensured) break;
+				current = current.parent?.id ? nodeProvider.getTreeviewNode(current.parent.id) : undefined;
+			}
+		};
 
 		for (const selection of selections) {
-			const layer = webMapService.getLayerById(selection.layerId);
-			if (!layer) {
+			const base = nodeProvider.getTreeviewNode(selection.nodeId);
+			if (!base) continue;
+
+			// include selected node + its ancestors
+			ensureAncestors(base);
+
+			// include each selected field node + its ancestors
+			for (const variableName of selection.selectedFieldIds) {
+				const variableId = `${selection.nodeId}-${variableName}`;
+				const variableNode = nodeProvider.getTreeviewNode(variableId);
+				if (!variableNode) continue;
+				ensureAncestors(variableNode);
+			}
+		}
+
+		const rootNodes: SelectionTreeviewNodeType[] = [];
+
+		for (const node of nodeMap.values()) {
+			if (!node.parentId) {
+				rootNodes.push(node);
 				continue;
 			}
-
-			const nodeConfig: TreeviewNodeConfig | undefined = dataSelectionTreeviewConfig?.getConfig(
-				selection.layerId
-			);
-
-			const layerTypology = nodeConfig?.typology ?? TreeviewNodeTypology.Variable;
-
-			// Build the path from the selected layer up to the root
-			const path: Array<{
-				id: string;
-				name: string;
-				isLeaf: boolean;
-				typology: TreeviewNodeTypology;
-			}> = [];
-			let current: __esri.Layer | __esri.Sublayer | null = layer;
-
-			// Check if this layer should show fields
-			const showFields = nodeConfig?.showFields ?? false;
-			const hasFieldChildren =
-				showFields && layer.type === 'feature' && selection.selectedFieldIds?.size > 0;
-
-			// First, add the selected layer itself
-			// If it has field children, it's not a leaf
-			path.unshift({
-				id: selection.layerId,
-				name: layer.title || 'Unknown Layer',
-				isLeaf: !hasFieldChildren,
-				typology: layerTypology
-			});
-
-			// Walk up the parent chain
-			while (current && 'parent' in current && current.parent) {
-				const parent = current.parent as __esri.Layer | __esri.GroupLayer;
-				const parentConfig: TreeviewNodeConfig | undefined = dataSelectionTreeviewConfig?.getConfig(
-					parent.id
-				);
-				if (parent && 'id' in parent) {
-					path.unshift({
-						id: parent.id,
-						name: parent.title || 'Unknown Group',
-						isLeaf: false,
-						typology: parentConfig?.typology ?? TreeviewNodeTypology.Folder
-					});
-					current = parent as __esri.Layer;
-				} else {
-					break;
-				}
+			const parentNode = nodeMap.get(node.parentId);
+			if (parentNode) {
+				parentNode.children.push(node);
+				parentNode.isLeaf = false;
+			} else {
+				rootNodes.push(node);
 			}
+		}
 
-			// Build tree nodes for this path
-			let parentNode: SelectionTreeviewNodeType | null = null;
-
-			for (let i = 0; i < path.length; i++) {
-				const pathItem = path[i];
-				let node = nodeMap.get(pathItem.id);
-
-				if (!node) {
-					node = {
-						id: pathItem.id,
-						name: pathItem.name,
-						isLeaf: pathItem.isLeaf,
-						children: [],
-						typology: pathItem.typology
-					};
-					nodeMap.set(pathItem.id, node);
-
-					if (parentNode) {
-						// Add as child of parent if not already present
-						if (!parentNode.children.find((c: SelectionTreeviewNodeType) => c.id === node!.id)) {
-							parentNode.children.push(node);
-						}
-					} else {
-						// This is a root node
-						if (!rootNodes.find((r: SelectionTreeviewNodeType) => r.id === node!.id)) {
-							rootNodes.push(node);
-						}
-					}
-				}
-
-				parentNode = node;
-			}
-
-			// Add field nodes as children of the layer node if showFields is enabled
-			if (hasFieldChildren && parentNode) {
-				const featureLayer = layer as __esri.FeatureLayer;
-				const fields = featureLayer.fields ?? [];
-
-				for (const fieldId of selection.selectedFieldIds) {
-					const field = fields.find((f) => f.name === fieldId);
-					if (field) {
-						const fieldNodeId = `${selection.layerId}::${field.name}`;
-						if (!nodeMap.has(fieldNodeId)) {
-							const fieldNode: SelectionTreeviewNodeType = {
-								id: fieldNodeId,
-								name: field.alias || field.name,
-								isLeaf: true,
-								children: [],
-								typology: TreeviewNodeTypology.Variable
-							};
-							nodeMap.set(fieldNodeId, fieldNode);
-							parentNode.children.push(fieldNode);
-						}
-					}
-				}
-			}
+		for (const node of nodeMap.values()) {
+			node.isLeaf = node.children.length === 0;
 		}
 
 		return rootNodes;
@@ -235,8 +194,8 @@
 	 * Removes an area from the selection by its ID.
 	 * @param areaId - The string ID of the area to remove (will be converted to number).
 	 */
-	function removeArea(areaId: string) {
-		const numericId = parseInt(areaId, 10);
+	function removeArea(node: SelectionTreeviewNodeType) {
+		const numericId = parseInt(node.id, 10);
 		if (!isNaN(numericId)) {
 			areaSelectionInteractionStore.removeSelectedArea(numericId);
 		}
@@ -247,25 +206,49 @@
 	 * Also handles removing individual fields.
 	 * @param nodeId - The ID of the node to remove (layer ID or field ID in format "layerId::fieldName").
 	 */
-	function removeDataSelection(nodeId: string) {
-		// Check if this is a field node (format: "layerId::fieldName")
-		if (nodeId.includes('::')) {
-			const [layerId, fieldName] = nodeId.split('::');
-			const selection = dataSelectionStore.getSelection(layerId);
-			if (selection && selection.selectedFieldIds) {
-				const newFieldIds = Array.from(selection.selectedFieldIds).filter((id) => id !== fieldName);
-				if (newFieldIds.length === 0) {
-					// If no fields left, remove the entire layer selection
-					dataSelectionStore.removeSelection(layerId);
-				} else {
-					dataSelectionStore.updateSelection(layerId, newFieldIds);
-				}
-			}
-		} else {
-			// This is a layer node
-			console.log('[export-menu] Removing data selection for layerId:', nodeId);
-			dataSelectionStore.removeSelection(nodeId);
+	function removeDataSelection(node: SelectionTreeviewNodeType) {
+		if (!node.isVariable) {
+			console.log('[export-menu] Removing data selection for layerId:', node.id);
+			dataSelectionStore.removeSelection(node.id);
+			return;
 		}
+
+		const treeviewNode = nodeProvider.getTreeviewNode(node.id);
+		if (!treeviewNode || !isVariableNode(treeviewNode)) {
+			console.warn('[export-menu] Could not find treeview node for id:', node.id);
+			return;
+		}
+
+		const layerId = treeviewNode.layerId;
+		const fieldName = treeviewNode.variableId;
+		const selection = dataSelectionStore.getSelection(layerId);
+		if (selection && selection.selectedFieldIds) {
+			const newFieldIds = Array.from(selection.selectedFieldIds).filter((id) => id !== fieldName);
+			if (newFieldIds.length === 0) {
+				// If no fields left, remove the entire layer selection
+				dataSelectionStore.removeSelection(layerId);
+			} else {
+				dataSelectionStore.updateSelection(layerId, newFieldIds);
+			}
+		}
+	}
+
+	/**
+	 * Checks if a given node is a DatasetTreeviewNode.
+	 * @param node The node to check.
+	 * @returns True if the node is a DatasetTreeviewNode, false otherwise.
+	 */
+	function isDatasetNode(node: TreeviewNode): node is DatasetTreeviewNode {
+		return node.type === TreeviewNodeType.Dataset;
+	}
+
+	/**
+	 * Checks if a given node is a VariableTreeviewNode.
+	 * @param node The node to check.
+	 * @returns True if the node is a VariableTreeviewNode, false otherwise.
+	 */
+	function isVariableNode(node: TreeviewNode): node is VariableTreeviewNode {
+		return node.type === TreeviewNodeType.Variable;
 	}
 </script>
 

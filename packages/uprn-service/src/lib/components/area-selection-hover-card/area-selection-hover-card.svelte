@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as Card from '$lib/components/shadcn/card/index.js';
-	import type { AreaSelectionInteractionStore } from '$lib/stores/area-selection-interaction-store.svelte';
+	import type { AreaSelectionInteractionStore } from '$lib/Stores/AreaSelectionInteractionStore.svelte';
 
 	type Props = {
 		areaSelectionInteractionStore: AreaSelectionInteractionStore;

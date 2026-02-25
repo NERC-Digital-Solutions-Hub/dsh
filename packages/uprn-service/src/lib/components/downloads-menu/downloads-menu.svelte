@@ -1,13 +1,12 @@
 <script lang="ts">
+	import CopyToClipboardButton from '$lib/components/copy-to-clipboard-button/copy-to-clipboard-button.svelte';
+	import HourglassIcon from '$lib/components/icons/hourglass-icon.svelte';
+	import SelectionEntryCard from '$lib/components/selection-entry-card/selection-entry-card.svelte';
 	import Button from '$lib/components/shadcn/button/button.svelte';
 	import { Spinner } from '$lib/components/shadcn/spinner/index.js';
-	import { downloadsStore } from '$lib/stores/downloads-store.svelte';
-	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
-	import LoaderIcon from '@lucide/svelte/icons/loader';
-	import XCircleIcon from '@lucide/svelte/icons/x-circle';
-	import RetryIcon from '@lucide/svelte/icons/rotate-ccw';
-	import HourglassIcon from '$lib/components/icons/hourglass-icon.svelte';
-	import type { UprnDownloadService } from '$lib/services/uprn-download-service';
+	import { useUprnDownloadJobStatuses } from '$lib/Hooks/UseUprnDownloadJobStatuses.svelte';
+	import { useUprnDownloadRequestJob } from '$lib/Hooks/UseUprnDownloadRequestJob.svelte';
+	import type DownloadsStore from '$lib/Stores/DownloadsStore.svelte';
 	import {
 		DownloadStatus,
 		JobRequestResponseType,
@@ -15,18 +14,31 @@
 		type UprnDownloadGetJobStatusesRequest,
 		type UprnDownloadGetJobStatusesResponse,
 		type UprnDownloadJobRequest
-	} from '$lib/types/uprn';
+	} from '$lib/Types/uprn';
+	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
 	import Download from '@lucide/svelte/icons/download';
+	import LoaderIcon from '@lucide/svelte/icons/loader';
+	import RetryIcon from '@lucide/svelte/icons/rotate-ccw';
+	import XCircleIcon from '@lucide/svelte/icons/x-circle';
 	import { onMount } from 'svelte';
-	import SelectionEntryCard from '$lib/components/selection-entry-card/selection-entry-card.svelte';
-	import CopyToClipboardButton from '$lib/components/copy-to-clipboard-button/copy-to-clipboard-button.svelte';
 
+	/**
+	 * Props interface for the downloads menu component.
+	 */
 	type Props = {
-		uprnDownloadService: UprnDownloadService;
-		fieldsToHide?: Set<string>;
+		downloadsStore: DownloadsStore;
+		requestJobUrl: string;
+		jobStatusesUrl: string;
+		downloadBaseUrl: string;
 	};
 
-	const { uprnDownloadService, fieldsToHide }: Props = $props();
+	const { downloadsStore, requestJobUrl, jobStatusesUrl, downloadBaseUrl }: Props = $props();
+
+	/** Hook for submitting download job requests. */
+	const requestJobHook = $derived.by(() => useUprnDownloadRequestJob(requestJobUrl));
+
+	/** Hook for checking job statuses. */
+	const jobStatusesHook = $derived.by(() => useUprnDownloadJobStatuses(jobStatusesUrl));
 
 	const downloads = $derived.by(() => downloadsStore.getDownloads());
 
@@ -71,8 +83,8 @@
 			return;
 		}
 
-		// if downloads has changed, then submit a request to the uprn download service.;
-		if (downloads.length <= 0 || !uprnDownloadService) {
+		// if downloads has changed, then submit a request to the uprn download service.
+		if (downloads.length <= 0) {
 			return;
 		}
 
@@ -97,7 +109,7 @@
 					dataSelectionLayers: download.dataSelections.map((selection) => {
 						return {
 							remoteId: selection.layerId,
-							fields: selection.fields.filter((field) => !fieldsToHide || !fieldsToHide.has(field))
+							fields: selection.fields
 						};
 					})
 				}
@@ -105,34 +117,34 @@
 
 			console.log('[downloads-menu] Submitting download request:', request);
 
-			try {
-				const response = await uprnDownloadService.requestJob(request);
+			await requestJobHook.fetch(request);
+			const response = requestJobHook.content;
 
-				if (!response || !response.guid || response.type !== JobRequestResponseType.Success) {
-					download.status = DownloadStatus.Failed;
-					download.errorMessage =
-						response?.message || !response
-							? 'The server did not return a valid response.'
-							: !response.guid
-								? 'The server responded but returned an invalid GUID.'
-								: 'The server responded but did not return a successful response.';
-					console.error('[downloads-menu] Download request failed:', response);
-					downloadsStore.updateDownloadStatus(download);
-					continue;
-				}
-
-				download.externalId = response.guid;
-				downloadsStore.updateDownloadStatus(download);
-			} catch (error) {
-				console.error('[downloads-menu] Error submitting download request:', error);
+			if (
+				requestJobHook.error ||
+				!response ||
+				!response.guid ||
+				response.type !== JobRequestResponseType.Success
+			) {
 				download.status = DownloadStatus.Failed;
+				download.errorMessage =
+					response?.message || !response
+						? 'The server did not return a valid response.'
+						: !response.guid
+							? 'The server responded but returned an invalid GUID.'
+							: 'The server responded but did not return a successful response.';
+				console.error('[downloads-menu] Download request failed:', response);
 				downloadsStore.updateDownloadStatus(download);
+				continue;
 			}
+
+			download.externalId = response.guid;
+			downloadsStore.updateDownloadStatus(download);
 		}
 	}
 
 	async function checkJobStatuses() {
-		if (downloads.length <= 0 || !uprnDownloadService) {
+		if (downloads.length <= 0) {
 			return;
 		}
 
@@ -177,12 +189,10 @@
 		}
 
 		console.log('[downloads-menu] Checking job statuses for downloads:', request);
-		const response: UprnDownloadGetJobStatusesResponse | undefined =
-			(await uprnDownloadService.requestJobStatuses(request)) as
-				| UprnDownloadGetJobStatusesResponse
-				| undefined;
+		await jobStatusesHook.fetch(request);
+		const response = jobStatusesHook.content as UprnDownloadGetJobStatusesResponse | undefined;
 
-		if (!response) {
+		if (!response || jobStatusesHook.error) {
 			console.error('[downloads-menu] Failed to get job statuses.', response);
 			return;
 		}
@@ -277,7 +287,8 @@
 	}
 
 	function getDownloadUrl(externalId: string): string {
-		return uprnDownloadService.getDownloadUrl(externalId);
+		const base = downloadBaseUrl.replace(/\/+$/, '');
+		return `${base}/${encodeURIComponent(externalId)}`;
 	}
 </script>
 

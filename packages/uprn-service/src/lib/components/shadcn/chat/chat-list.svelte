@@ -4,7 +4,7 @@
 	import { Button } from '$lib/components/shadcn/button';
 	import ArrowDownIcon from '@lucide/svelte/icons/arrow-down';
 	import { scale } from 'svelte/transition';
-	import { UseAutoScroll } from '$lib/hooks/use-auto-scroll.svelte.js';
+	import { UseAutoScroll } from '$lib/Hooks/use-auto-scroll.svelte.js';
 	import type { ChatListProps } from './types';
 
 	let { ref = $bindable(null), children, class: className, ...rest }: ChatListProps = $props();

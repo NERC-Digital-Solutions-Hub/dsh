@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
-	import type { TagDefinition } from '$lib/types/config';
-	import type { ITagDefinitionProvider } from '$lib/services/ITagDefinitionProvider';
+	import type { TagDefinition } from '$lib/Types/config';
+	import type { ITagDefinitionProvider } from '$lib/Services/ITagDefinitionProvider';
 	import { Badge } from '$lib/components/shadcn/badge/index.js';
 
 	type Props = {

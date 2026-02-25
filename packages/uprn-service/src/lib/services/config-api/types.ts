@@ -6,29 +6,22 @@
  */
 export type DatasetVariableRowRaw = {
 	DbId: number;
-	WmId: string;
-	WmTitle: string;
-	WmLayerType: string;
-	WmItemId: string;
-	WmUrl: string;
 	DatasetName: string | null;
-	TvType: string;
-	TvPath: string;
 	Order: number;
-	VariableName: string;
-	VariableLabel: string;
+	TvVariableName: string;
+	TvVariableLabel: string;
 	HasDependants: string[] | null;
 	IsListed: boolean;
 	IsEnabled: boolean;
 	DefaultExported: boolean | null;
-	TvFieldPath: string | null;
+	TvVariablePath: string | null;
 	TvTags: string | null;
-	TvMetadataUrl: string | null;
-	TreeviewId: string | null;
+	TvMetadataConfigUrl: string | null;
+	TreeviewId: number | null;
 	VisibilityGroupId: number | null;
 	IsOpenOnInit: boolean;
-	IsVisibleOnInit: boolean;
-	DisableVisibility: boolean;
+	IsRenderedOnInit: boolean;
+	DisableRendering: boolean;
 	AlternativeTitle: string | null;
 	MetadataTabInfoUrl: string | null;
 };
@@ -38,33 +31,26 @@ export type DatasetVariableRowRaw = {
  */
 export type DatasetVariableRow = {
 	dbId: number;
-	wmId: string;
-	wmTitle: string;
-	wmLayerType: string;
-	wmItemId: string;
-	wmUrl: string;
 	datasetName: string | null;
-	tvType: string;
-	tvPath: string;
 	order: number;
-	variableName: string;
-	variableLabel: string;
+	tvVariableName: string;
+	tvVariableLabel: string;
 	hasDependants: string[] | null;
 	isListed: boolean;
 	isEnabled: boolean;
 	defaultExported: boolean | null;
-	tvFieldPath: string | null;
+	tvVariablePath: string | null;
 	/**
 	 * Tags as delivered by the source.
 	 * If/when the API formalizes tag structure, we can change this to `string[]`.
 	 */
 	tvTags: string | null;
-	tvMetadataUrl: string | null;
-	treeviewId: string | null;
+	tvMetadataConfigUrl: string | null;
+	treeviewId: number | null;
 	visibilityGroupId: number | null;
 	isOpenOnInit: boolean;
-	isVisibleOnInit: boolean;
-	disableVisibility: boolean;
+	isRenderedOnInit: boolean;
+	disableRendering: boolean;
 	alternativeTitle: string | null;
 	metadataTabInfoUrl: string | null;
 };
@@ -75,26 +61,24 @@ export type DatasetVariableRow = {
 export type DatasetRowRaw = {
 	DbId: number;
 	WmId: string;
-	WmTitle: string;
-	WmLayerType: string;
+	TvTitle: string;
+	WmLayerType: number;
 	WmItemId: string;
 	WmUrl: string;
 	DatasetName: string | null;
 	HasDependants: string[] | null;
 	IsListed: boolean;
 	IsEnabled: boolean;
-	TvType: string;
+	TvType: number;
 	TvPath: string;
 	Order: number;
 	MetadataId: string | null;
-	MetadataUrl: string | null;
-	TreeviewId: string | null;
+	MetadataConfigUrl: string | null;
+	TreeviewId: number | null;
 	VisibilityGroupId: number | null;
 	IsOpenOnInit: boolean;
-	IsVisibleOnInit: boolean;
-	DisableVisibility: boolean;
-	AlternativeTitle: string | null;
-	MetadataTabInfoUrl: string | null;
+	IsRenderedOnInit: boolean;
+	DisableRendering: boolean;
 };
 
 /**
@@ -103,24 +87,58 @@ export type DatasetRowRaw = {
 export type DatasetRow = {
 	dbId: number;
 	wmId: string;
-	wmTitle: string;
-	wmLayerType: string;
+	tvTitle: string;
+	wmLayerType: number;
 	wmItemId: string;
 	wmUrl: string;
 	datasetName: string | null;
 	hasDependants: string[] | null;
 	isListed: boolean;
 	isEnabled: boolean;
-	tvType: string;
+	tvType: number;
 	tvPath: string;
 	order: number;
 	metadataId: string | null;
-	metadataUrl: string | null;
-	treeviewId: string | null;
+	metadataConfigUrl: string | null;
+	treeviewId: number | null;
 	visibilityGroupId: number | null;
 	isOpenOnInit: boolean;
-	isVisibleOnInit: boolean;
-	disableVisibility: boolean;
-	alternativeTitle: string | null;
-	metadataTabInfoUrl: string | null;
+	isRenderedOnInit: boolean;
+	disableRendering: boolean;
+};
+
+/**
+ * Represents a single row from the folder table.
+ */
+export type FolderRowRaw = {
+	DbId: number;
+	FolderName: string | null;
+	IsListed: boolean;
+	IsEnabled: boolean;
+	TvPath: string;
+	TvTitle: string | null;
+	Order: number;
+	MetadataConfigUrl: string | null;
+	TreeviewId: number | null;
+	IsOpenOnInit: boolean;
+	DisabledReason: string | null;
+	Description: string | null;
+};
+
+/**
+ * Camel-cased representation of {@link FolderRowRaw} for use within the app.
+ */
+export type FolderRow = {
+	dbId: number;
+	folderName: string | null;
+	isListed: boolean;
+	isEnabled: boolean;
+	tvPath: string;
+	tvTitle: string | null;
+	order: number;
+	metadataConfigUrl: string | null;
+	treeviewId: number | null;
+	isOpenOnInit: boolean;
+	disabledReason: string | null;
+	description: string | null;
 };

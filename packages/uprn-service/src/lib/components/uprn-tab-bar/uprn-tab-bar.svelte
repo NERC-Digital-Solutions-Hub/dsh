@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as Tabs from '$lib/components/shadcn/tabs/index.js';
-	import { TabProgress } from '$lib/types/uprn';
+	import { TabProgress } from '$lib/Types/uprn';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import type { Component, Snippet } from 'svelte';
 	import { CircleDashed, CircleDot, CircleCheckBig } from '@lucide/svelte';

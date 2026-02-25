@@ -1,0 +1,284 @@
+import {
+	DatasetTreeviewNode,
+	SelectionState,
+	TreeviewNode,
+	VariableTreeviewNode
+} from '$lib/Models/Treeview/Index';
+import { LayerType } from '$lib/Models/Treeview/LayerType';
+import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
+import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
+import type { INodeSelectionController } from '$lib/Services/INodeSelectionController';
+import type {
+	DataSelectionSnapshot,
+	DataSelectionStore
+} from '$lib/Stores/DataSelectionStore.svelte';
+import { SvelteSet } from 'svelte/reactivity';
+
+/**
+ * Controller for managing treeview selection state.
+ *
+ * This class provides methods to update and retrieve the selection state
+ */
+export class NodeSelectionController implements INodeSelectionController {
+	#dataSelectionStore: DataSelectionStore;
+	#nodeConfigProvider: INodeConfigProvider;
+
+	/**
+	 * Creates an instance of TreeviewSelectionController.
+	 *
+	 * @param dataSelectionStore - The DataSelectionStore instance to manage selections.
+	 * @param nodeConfigProvider - The INodeConfigProvider instance for configuration data.
+	 */
+	constructor(dataSelectionStore: DataSelectionStore, nodeConfigProvider: INodeConfigProvider) {
+		this.#dataSelectionStore = dataSelectionStore;
+		this.#nodeConfigProvider = nodeConfigProvider;
+	}
+
+	/** @inheritdoc */
+	public getSelectionState(node: TreeviewNode): SelectionState {
+		if (!this.isDatasetNode(node) && !this.isVariableNode(node)) {
+			return this.determineSelectionStateFromChildren(node);
+		}
+
+		if (node.children && node.children.length > 0) {
+			return this.determineSelectionStateFromChildren(node);
+		}
+
+		let selection;
+		if (this.isVariableNode(node)) {
+			selection = this.#dataSelectionStore.getSelection(node.layerId);
+			if (!selection) {
+				return SelectionState.Inactive;
+			}
+
+			return selection.selectedFieldIds.has(node.variableId)
+				? SelectionState.Active
+				: SelectionState.Inactive;
+		}
+
+		selection = this.#dataSelectionStore.getSelection(node.id);
+		if (!selection) {
+			return SelectionState.Inactive;
+		}
+
+		// if the layer has variables shown, check if all variables are selected...
+		if (node.children && node.children.length > 0) {
+			return this.determineSelectionStateFromChildren(node);
+		}
+
+		return SelectionState.Active;
+	}
+
+	/** @inheritdoc */
+	public setSelectionState(node: TreeviewNode, state: SelectionState) {
+		const nodeConfig = this.#nodeConfigProvider.getConfig(node.id);
+		if (nodeConfig?.isHidden) {
+			return; // hidden nodes should not be selectable
+		}
+
+		if (!this.isDatasetNode(node) && !this.isVariableNode(node)) {
+			// in this case, either all its children are selected or none are.
+			this.updateChildrenSelection(node, state);
+			return;
+		}
+
+		if (this.isVariableNode(node)) {
+			this.updateFieldSelection(node, state);
+			return;
+		}
+
+		this.updateLayerSelection(node, state);
+	}
+
+	/** @inheritdoc */
+	public reset() {
+		this.#dataSelectionStore.clearSelections();
+	}
+
+	/**
+	 * Update selection for a layer node.
+	 *
+	 * - When activating: ensures a DataSelection exists for non-group
+	 *   layers and propagates the Active state to children.
+	 * - When deactivating: removes the DataSelection for non-group layers
+	 *   and propagates Inactive to children (useful for group layers).
+	 *
+	 * @param node - The LayerTreeviewNode to update.
+	 * @param state - The desired DownloadState for the layer.
+	 */
+	private updateLayerSelection(node: DatasetTreeviewNode, state: SelectionState) {
+		let selection = this.#dataSelectionStore.getSelection(node.id);
+
+		switch (state) {
+			case SelectionState.Active:
+				if (!selection && (!node.children || node.children.length === 0)) {
+					selection = this.createAndAddDataSelection(node.id);
+					break;
+				}
+
+				for (const child of node.children || []) {
+					this.setSelectionState(child, state);
+				}
+				break;
+			case SelectionState.Inactive:
+				if (selection && (!node.children || node.children.length === 0)) {
+					this.#dataSelectionStore.removeSelection(node.id);
+					break;
+				}
+
+				this.updateChildrenSelection(node, state); // if group layer, unselect all children
+				break;
+		}
+	}
+
+	/**
+	 * Update selection when toggling an individual field.
+	 *
+	 * Activating will ensure a DataSelection exists for the feature layer
+	 * and will add the field name to the selection.fields set. Deactivating
+	 * will remove the field from the set and remove the overall selection if
+	 * no fields remain selected.
+	 *
+	 * @param node - The VariableTreeviewNode representing the field.
+	 * @param state - The desired DownloadState for the field.
+	 */
+	private updateFieldSelection(node: VariableTreeviewNode, state: SelectionState) {
+		let selection = this.#dataSelectionStore.getSelection(node.layerId);
+
+		switch (state) {
+			case SelectionState.Active:
+				if (!selection) {
+					selection = this.createAndAddDataSelection(node.layerId);
+				}
+
+				this.#dataSelectionStore.addOrUpdateSelection(node.layerId, [
+					...selection.selectedFieldIds,
+					node.variableId
+				]);
+				break;
+			case SelectionState.Inactive: {
+				if (!selection) {
+					break;
+				}
+
+				const updatedFieldIds = new SvelteSet<string>(selection.selectedFieldIds);
+				updatedFieldIds.delete(node.variableId);
+				this.#dataSelectionStore.addOrUpdateSelection(node.layerId, [...updatedFieldIds]);
+
+				// selection.selectedFieldIds.delete(node.field.name);
+				if (updatedFieldIds.size === 0) {
+					this.#dataSelectionStore.removeSelection(selection.nodeId);
+				}
+				break;
+			}
+		}
+	}
+
+	/**
+	 * Recursively update the selection state for all children of the node.
+	 *
+	 * This helper iterates over the node's children (if any) and applies the
+	 * provided state to each child using updateSelection.
+	 *
+	 * @param node - The TreeviewNode whose children should be updated.
+	 * @param state - The DownloadState to apply to each child.
+	 */
+	private updateChildrenSelection(node: TreeviewNode, state: SelectionState) {
+		for (const child of node.children || []) {
+			this.setSelectionState(child, state);
+		}
+	}
+
+	/**
+	 * Determine a node's DownloadState based on its children's states.
+	 *
+	 * Counts Active (and partially-active feature layers) children. If any
+	 * child is Indeterminate, the result is Indeterminate. If none are
+	 * selected the result is Inactive. If all are selected the result is
+	 * Active. Otherwise the result is Indeterminate.
+	 *
+	 * @param node - The parent node to evaluate.
+	 * @returns The aggregated DownloadState derived from the children.
+	 */
+	private determineSelectionStateFromChildren(node: TreeviewNode): SelectionState {
+		let selectedCount = 0;
+		let totalCount = 0;
+
+		for (const child of node.children || []) {
+			const nodeConfig = this.#nodeConfigProvider.getConfig(child.id);
+			if (nodeConfig?.isHidden) {
+				continue; // skip hidden nodes
+			}
+
+			totalCount++;
+			const childState = this.getSelectionState(child);
+			if (
+				childState === SelectionState.Active ||
+				(this.isDatasetNode(child) &&
+					child.layerType === LayerType.Feature &&
+					childState !== SelectionState.Inactive) // NOTE: This condition ensures that feature layers with some fields selected are counted as active
+			) {
+				selectedCount++;
+			} else if (childState === SelectionState.Indeterminate) {
+				return SelectionState.Indeterminate;
+			}
+		}
+
+		if (selectedCount === 0) {
+			return SelectionState.Inactive;
+		}
+
+		if (selectedCount === totalCount) {
+			return SelectionState.Active;
+		}
+
+		return SelectionState.Indeterminate;
+	}
+
+	/**
+	 * Create a new DataSelection object and add it to the store.
+	 *
+	 * The created DataSelection will have an empty SvelteSet for fields.
+	 * The selection is added to DataSelections via addSelection and the
+	 * created object is returned for immediate use.
+	 *
+	 * @param id - The layer id to use for the DataSelection.layerId.
+	 * @returns The newly created DataSelection.
+	 */
+	private createAndAddDataSelection(id: string): DataSelectionSnapshot {
+		const selection: DataSelectionSnapshot = {
+			nodeId: id,
+			selectedFieldIds: new SvelteSet<string>()
+		};
+
+		this.#dataSelectionStore.addSelection(selection);
+		return selection;
+	}
+
+	/**
+	 * Checks if a given node is a folder TreeviewNode.
+	 * @param node The node to check.
+	 * @returns True if the node is a folder TreeviewNode, false otherwise.
+	 */
+	private isFolderNode(node: TreeviewNode): node is TreeviewNode {
+		return node.type === TreeviewNodeType.Folder;
+	}
+
+	/**
+	 * Checks if a given node is a DatasetTreeviewNode.
+	 * @param node The node to check.
+	 * @returns True if the node is a DatasetTreeviewNode, false otherwise.
+	 */
+	private isDatasetNode(node: TreeviewNode): node is DatasetTreeviewNode {
+		return node.type === TreeviewNodeType.Dataset;
+	}
+
+	/**
+	 * Checks if a given node is a VariableTreeviewNode.
+	 * @param node The node to check.
+	 * @returns True if the node is a VariableTreeviewNode, false otherwise.
+	 */
+	private isVariableNode(node: TreeviewNode): node is VariableTreeviewNode {
+		return node.type === TreeviewNodeType.Variable;
+	}
+}

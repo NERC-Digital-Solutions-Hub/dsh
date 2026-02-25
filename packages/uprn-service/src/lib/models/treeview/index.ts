@@ -1,12 +1,12 @@
-import { TreeviewNode } from '$lib/models/treeview/treeview-node';
-import { LayerTreeviewNode } from '$lib/models/treeview/layer-treeview-node';
-import { VariableTreeviewNode } from '$lib/models/treeview/variable-treeview-node';
-import { LayerDrawState } from '$lib/models/treeview/layer-draw-state';
-import { SelectionState } from '$lib/models/treeview/selection-state';
+import { DatasetTreeviewNode } from '$lib/Models/Treeview/DatasetTreeviewNode';
+import { NodeDrawState } from '$lib/Models/Treeview/NodeDrawState';
+import { SelectionState } from '$lib/Models/Treeview/SelectionState';
+import { TreeviewNode } from '$lib/Models/Treeview/TreeviewNode';
+import { VariableTreeviewNode } from '$lib/Models/Treeview/VariableTreeviewNode';
 export {
+	DatasetTreeviewNode as DatasetTreeviewNode,
+	NodeDrawState as NodeDrawState,
+	SelectionState,
 	TreeviewNode as TreeviewNode,
-	LayerTreeviewNode as LayerTreeviewNode,
-	VariableTreeviewNode as VariableTreeviewNode,
-	LayerDrawState,
-	SelectionState
+	VariableTreeviewNode as VariableTreeviewNode
 };

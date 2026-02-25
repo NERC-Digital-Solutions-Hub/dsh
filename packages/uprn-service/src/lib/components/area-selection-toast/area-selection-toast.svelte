@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { AreaSelectionInteractionStore } from '$lib/stores/area-selection-interaction-store.svelte';
+	import type { AreaSelectionInteractionStore } from '$lib/Stores/AreaSelectionInteractionStore.svelte';
 	import { toast } from 'svelte-sonner';
 
 	type Props = {

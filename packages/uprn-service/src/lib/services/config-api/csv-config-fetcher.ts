@@ -1,42 +1,84 @@
-import type { IConfigurationFetcher } from '$lib/services/config-api/IConfigurationFetcher';
+import type { IConfigurationFetcher } from '$lib/Services/config-api/IConfigurationFetcher';
 import type {
 	DatasetRow,
 	DatasetRowRaw,
 	DatasetVariableRow,
-	DatasetVariableRowRaw
-} from '$lib/services/config-api/types';
+	DatasetVariableRowRaw,
+	FolderRow,
+	FolderRowRaw
+} from '$lib/Services/config-api/types';
 
 /**
- * Represents a configuration fetcher that retrieves dataset variable information from a CSV file.
+ * Represents a configuration fetcher that retrieves dataset variable information from CSV files.
+ *
+ * This fetcher also "completes" the folder configuration by synthesizing missing folder rows
+ * that are referenced by:
+ *  - Dataset tvPath (folder ancestors leading to a dataset)
+ *  - Variable tvVariablePath (folder/dataset segments under a dataset)
+ *
+ * It is careful to NOT create folders for dataset identifiers (titles/names).
  */
 export class CsvConfigFetcher implements IConfigurationFetcher<{
 	datasets: ReadonlyArray<DatasetRow>;
 	variables: ReadonlyArray<DatasetVariableRow>;
+	folders: ReadonlyArray<FolderRow>;
 }> {
 	private readonly datasetUrl: string;
 	private readonly variableUrl: string;
+	private readonly folderUrl: string;
 
 	/**
 	 * Initializes the fetcher with the URLs of the CSV files.
-	 * @param datasetUrl The url to the dataset CSV file.
-	 * @param variableUrl The url to the variable CSV file.
+	 *
+	 * @param datasetUrl - The URL to the dataset CSV file.
+	 * @param variableUrl - The URL to the variable CSV file.
+	 * @param folderUrl - The URL to the folder CSV file.
 	 */
-	constructor(datasetUrl: string, variableUrl: string) {
+	constructor(datasetUrl: string, variableUrl: string, folderUrl: string) {
 		this.datasetUrl = datasetUrl;
 		this.variableUrl = variableUrl;
+		this.folderUrl = folderUrl;
 	}
 
 	/** @inheritdoc */
 	public async fetch(): Promise<{
 		datasets: ReadonlyArray<DatasetRow>;
 		variables: ReadonlyArray<DatasetVariableRow>;
+		folders: ReadonlyArray<FolderRow>;
 	}> {
-		const [datasets, variables] = await Promise.all([
+		const [datasets, variables, allFolders] = await Promise.all([
 			this.fetchCsv(this.datasetUrl, CsvConfigFetcher.toDatasetRow),
-			this.fetchCsv(this.variableUrl, CsvConfigFetcher.toDatasetVariableRow)
+			this.fetchCsv(this.variableUrl, CsvConfigFetcher.toDatasetVariableRow),
+			this.fetchCsv(this.folderUrl, CsvConfigFetcher.toFolderRow)
 		]);
 
-		return { datasets, variables };
+		// Keep only configured folders with a name; null rows are likely placeholders.
+		const configuredFolders = allFolders.filter((folder) => folder.folderName !== null);
+
+		const missingFolders = CsvConfigFetcher.createMissingFolderRows({
+			datasets,
+			variables,
+			existingFolders: configuredFolders,
+
+			/**
+			 * If you have specific defaults you want for auto-created folders,
+			 * change them here (or pass via constructor/config).
+			 */
+			defaults: {
+				isListed: true,
+				isEnabled: true,
+				isOpenOnInit: false,
+				order: 0,
+				tvTitleFromName: true
+			},
+
+			/**
+			 * Controls whether we log a warning with the missing folders summary.
+			 */
+			logWarnings: true
+		});
+
+		return { datasets, variables, folders: [...configuredFolders, ...missingFolders] };
 	}
 
 	private async fetchCsv<T>(
@@ -52,7 +94,6 @@ export class CsvConfigFetcher implements IConfigurationFetcher<{
 
 		const text = await res.text();
 		const rawRows = this.parseCsv(text);
-
 		return rawRows.map(mapper);
 	}
 
@@ -62,9 +103,6 @@ export class CsvConfigFetcher implements IConfigurationFetcher<{
 		const lines = cleanText.split(/\r?\n/);
 		if (lines.length === 0) return [];
 
-		// Parse headers
-		// Assuming headers do not contain commas or quotes for simplicity,
-		// but using the splitter just in case.
 		const headerLine = lines[0];
 		if (!headerLine.trim()) return [];
 
@@ -78,10 +116,8 @@ export class CsvConfigFetcher implements IConfigurationFetcher<{
 			const values = this.splitCsvLine(line);
 			const row: Record<string, string> = {};
 
-			// Map values to headers
 			for (let j = 0; j < headers.length; j++) {
 				const header = headers[j];
-				// Accessing by index for safety, defaulting to empty string
 				row[header] = values[j] ?? '';
 			}
 			result.push(row);
@@ -99,10 +135,9 @@ export class CsvConfigFetcher implements IConfigurationFetcher<{
 			const char = line[i];
 
 			if (char === '"') {
-				// Check for escaped quote ("")
 				if (inQuote && line[i + 1] === '"') {
 					current += '"';
-					i++; // Skip the next quote
+					i++;
 				} else {
 					inQuote = !inQuote;
 				}
@@ -113,9 +148,12 @@ export class CsvConfigFetcher implements IConfigurationFetcher<{
 				current += char;
 			}
 		}
+
 		values.push(current);
 		return values;
 	}
+
+	// -------------------- Row mapping (unchanged) --------------------
 
 	private static toDatasetRow(attributes: Record<string, unknown>): DatasetRow {
 		const toBoolean = CsvConfigFetcher.toBoolean;
@@ -127,20 +165,20 @@ export class CsvConfigFetcher implements IConfigurationFetcher<{
 		const raw: DatasetRowRaw = {
 			DbId: toNumber(get('DbId')),
 			WmId: String(get('WmId') ?? ''),
-			WmTitle: String(get('WmTitle') ?? ''),
-			WmLayerType: String(get('WmLayerType') ?? ''),
+			TvTitle: String(get('TvTitle') ?? ''),
+			WmLayerType: toNumber(get('WmLayerType') ?? ''),
 			WmItemId: String(get('WmItemId') ?? ''),
 			WmUrl: String(get('WmUrl') ?? ''),
 			DatasetName: toNullableString(get('DatasetName')),
 			HasDependants: toArrayOfStrings(get('HasDependants')),
 			IsListed: toBoolean(get('IsListed')),
 			IsEnabled: toBoolean(get('IsEnabled')),
-			TvType: String(get('TvType') ?? ''),
+			TvType: toNumber(get('TvType') ?? ''),
 			TvPath: String(get('TvPath') ?? ''),
 			Order: toNumber(get('Order')),
 			MetadataId: toNullableString(get('MetadataId')),
-			MetadataUrl: toNullableString(get('MetadataUrl')),
-			TreeviewId: toNullableString(get('TreeviewId')),
+			MetadataConfigUrl: toNullableString(get('MetadataConfigUrl')),
+			TreeviewId: toNumber(get('TreeviewId')),
 			VisibilityGroupId:
 				get('VisibilityGroupId') === null ||
 				get('VisibilityGroupId') === undefined ||
@@ -148,16 +186,14 @@ export class CsvConfigFetcher implements IConfigurationFetcher<{
 					? null
 					: toNumber(get('VisibilityGroupId')),
 			IsOpenOnInit: toBoolean(get('IsOpenOnInit')),
-			IsVisibleOnInit: toBoolean(get('IsVisibleOnInit')),
-			DisableVisibility: toBoolean(get('DisableVisibility')),
-			AlternativeTitle: toNullableString(get('AlternativeTitle')),
-			MetadataTabInfoUrl: toNullableString(get('MetadataTabInfoUrl'))
+			IsRenderedOnInit: toBoolean(get('IsRenderedOnInit')),
+			DisableRendering: toBoolean(get('DisableRendering'))
 		};
 
 		return {
 			dbId: raw.DbId,
 			wmId: raw.WmId,
-			wmTitle: raw.WmTitle,
+			tvTitle: raw.TvTitle,
 			wmLayerType: raw.WmLayerType,
 			wmItemId: raw.WmItemId,
 			wmUrl: raw.WmUrl,
@@ -169,14 +205,12 @@ export class CsvConfigFetcher implements IConfigurationFetcher<{
 			tvPath: raw.TvPath,
 			order: raw.Order,
 			metadataId: raw.MetadataId,
-			metadataUrl: raw.MetadataUrl,
+			metadataConfigUrl: raw.MetadataConfigUrl,
 			treeviewId: raw.TreeviewId,
 			visibilityGroupId: raw.VisibilityGroupId,
 			isOpenOnInit: raw.IsOpenOnInit,
-			isVisibleOnInit: raw.IsVisibleOnInit,
-			disableVisibility: raw.DisableVisibility,
-			alternativeTitle: raw.AlternativeTitle,
-			metadataTabInfoUrl: raw.MetadataTabInfoUrl
+			isRenderedOnInit: raw.IsRenderedOnInit,
+			disableRendering: raw.DisableRendering
 		};
 	}
 
@@ -189,17 +223,10 @@ export class CsvConfigFetcher implements IConfigurationFetcher<{
 
 		const raw: DatasetVariableRowRaw = {
 			DbId: toNumber(get('DbId')),
-			WmId: String(get('WmId') ?? ''),
-			WmTitle: String(get('WmTitle') ?? ''),
-			WmLayerType: String(get('WmLayerType') ?? ''),
-			WmItemId: String(get('WmItemId') ?? ''),
-			WmUrl: String(get('WmUrl') ?? ''),
 			DatasetName: toNullableString(get('DatasetName')),
-			TvType: String(get('TvType') ?? ''),
-			TvPath: String(get('TvPath') ?? ''),
 			Order: toNumber(get('Order')),
-			VariableName: String(get('VariableName') ?? ''),
-			VariableLabel: String(get('VariableLabel') ?? ''),
+			TvVariableName: String(get('TvVariableName') ?? ''),
+			TvVariableLabel: String(get('TvVariableLabel') ?? ''),
 			HasDependants: toArrayOfStrings(get('HasDependants')),
 			IsListed: toBoolean(get('IsListed')),
 			IsEnabled: toBoolean(get('IsEnabled')),
@@ -209,10 +236,10 @@ export class CsvConfigFetcher implements IConfigurationFetcher<{
 				get('DefaultExported') === ''
 					? null
 					: toBoolean(get('DefaultExported')),
-			TvFieldPath: toNullableString(get('TvFieldPath')),
+			TvVariablePath: toNullableString(get('TvVariablePath')),
 			TvTags: toNullableString(get('TvTags')),
-			TvMetadataUrl: toNullableString(get('TvMetadataUrl')),
-			TreeviewId: toNullableString(get('TreeviewId')),
+			TvMetadataConfigUrl: toNullableString(get('TvMetadataConfigUrl')),
+			TreeviewId: toNumber(get('TreeviewId')),
 			VisibilityGroupId:
 				get('VisibilityGroupId') === null ||
 				get('VisibilityGroupId') === undefined ||
@@ -220,43 +247,283 @@ export class CsvConfigFetcher implements IConfigurationFetcher<{
 					? null
 					: toNumber(get('VisibilityGroupId')),
 			IsOpenOnInit: toBoolean(get('IsOpenOnInit')),
-			IsVisibleOnInit: toBoolean(get('IsVisibleOnInit')),
-			DisableVisibility: toBoolean(get('DisableVisibility')),
+			IsRenderedOnInit: toBoolean(get('IsRenderedOnInit')),
+			DisableRendering: toBoolean(get('DisableRendering')),
 			AlternativeTitle: toNullableString(get('AlternativeTitle')),
 			MetadataTabInfoUrl: toNullableString(get('MetadataTabInfoUrl'))
 		};
 
 		return {
 			dbId: raw.DbId,
-			wmId: raw.WmId,
-			wmTitle: raw.WmTitle,
-			wmLayerType: raw.WmLayerType,
-			wmItemId: raw.WmItemId,
-			wmUrl: raw.WmUrl,
 			datasetName: raw.DatasetName,
-			tvType: raw.TvType,
-			tvPath: raw.TvPath,
 			order: raw.Order,
-			variableName: raw.VariableName,
-			variableLabel: raw.VariableLabel,
+			tvVariableName: raw.TvVariableName,
+			tvVariableLabel: raw.TvVariableLabel,
 			hasDependants: raw.HasDependants,
 			isListed: raw.IsListed,
 			isEnabled: raw.IsEnabled,
 			defaultExported: raw.DefaultExported,
-			tvFieldPath: raw.TvFieldPath,
+			tvVariablePath: raw.TvVariablePath,
 			tvTags: raw.TvTags,
-			tvMetadataUrl: raw.TvMetadataUrl,
+			tvMetadataConfigUrl: raw.TvMetadataConfigUrl,
 			treeviewId: raw.TreeviewId,
 			visibilityGroupId: raw.VisibilityGroupId,
 			isOpenOnInit: raw.IsOpenOnInit,
-			isVisibleOnInit: raw.IsVisibleOnInit,
-			disableVisibility: raw.DisableVisibility,
+			isRenderedOnInit: raw.IsRenderedOnInit,
+			disableRendering: raw.DisableRendering,
 			alternativeTitle: raw.AlternativeTitle,
 			metadataTabInfoUrl: raw.MetadataTabInfoUrl
 		};
 	}
 
-	// Helper functions as static properties/methods to be accessible
+	private static toFolderRow(attributes: Record<string, unknown>): FolderRow {
+		const toBoolean = CsvConfigFetcher.toBoolean;
+		const toNullableString = CsvConfigFetcher.toNullableString;
+		const toNumber = CsvConfigFetcher.toNumber;
+		const get = (key: keyof FolderRowRaw) => attributes[key];
+
+		const raw: FolderRowRaw = {
+			DbId: toNumber(get('DbId')),
+			FolderName: toNullableString(get('FolderName')),
+			IsListed: toBoolean(get('IsListed')),
+			IsEnabled: toBoolean(get('IsEnabled')),
+			TvPath: String(get('TvPath') ?? ''),
+			TvTitle: toNullableString(get('TvTitle')),
+			Order: toNumber(get('Order')),
+			MetadataConfigUrl: toNullableString(get('MetadataConfigUrl')),
+			TreeviewId:
+				get('TreeviewId') === null || get('TreeviewId') === undefined || get('TreeviewId') === ''
+					? null
+					: toNumber(get('TreeviewId')),
+			IsOpenOnInit: toBoolean(get('IsOpenOnInit')),
+			DisabledReason: toNullableString(get('DisabledReason')),
+			Description: toNullableString(get('Description'))
+		};
+
+		return {
+			dbId: raw.DbId,
+			folderName: raw.FolderName,
+			isListed: raw.IsListed,
+			isEnabled: raw.IsEnabled,
+			tvPath: raw.TvPath,
+			tvTitle: raw.TvTitle,
+			order: raw.Order,
+			metadataConfigUrl: raw.MetadataConfigUrl,
+			treeviewId: raw.TreeviewId,
+			isOpenOnInit: raw.IsOpenOnInit,
+			disabledReason: raw.DisabledReason,
+			description: raw.Description
+		};
+	}
+
+	// -------------------- Missing folder synthesis (refactor) --------------------
+
+	/**
+	 * Options for synthesizing missing folder rows.
+	 */
+	private static createMissingFolderRows(args: {
+		/**
+		 * Dataset rows. Used to:
+		 *  - create folder ancestors from `tvPath`
+		 *  - resolve variables' datasetName -> dataset title and dataset path
+		 *  - prevent mistakenly creating folders for dataset identifiers
+		 */
+		datasets: ReadonlyArray<DatasetRow>;
+
+		/**
+		 * Variable rows. Used to create folder rows for segments in `tvVariablePath`.
+		 */
+		variables: ReadonlyArray<DatasetVariableRow>;
+
+		/**
+		 * Existing folder rows coming from the folder CSV (already filtered for folderName != null).
+		 */
+		existingFolders: ReadonlyArray<FolderRow>;
+
+		/**
+		 * Defaults applied to synthesized folders.
+		 */
+		defaults?: {
+			isListed: boolean;
+			isEnabled: boolean;
+			isOpenOnInit: boolean;
+			order: number;
+			/**
+			 * If true, set tvTitle to folderName for synthesized rows.
+			 */
+			tvTitleFromName: boolean;
+		};
+
+		/**
+		 * Whether to log a warning summarizing created folders.
+		 */
+		logWarnings?: boolean;
+	}): FolderRow[] {
+		const {
+			datasets,
+			variables,
+			existingFolders,
+			defaults = {
+				isListed: true,
+				isEnabled: true,
+				isOpenOnInit: false,
+				order: 0,
+				tvTitleFromName: true
+			},
+			logWarnings = true
+		} = args;
+
+		// --- Helpers ---
+
+		const normalizePath = (p: string): string => {
+			// Convert empty/nullish to "/"
+			const raw = (p ?? '').trim();
+			if (!raw || raw === '/') return '/';
+
+			// Remove repeated slashes and remove trailing slash (except root)
+			const cleaned = raw.replace(/\/{2,}/g, '/');
+			const noTrailing = cleaned.length > 1 ? cleaned.replace(/\/+$/g, '') : cleaned;
+			return noTrailing.startsWith('/') ? noTrailing : `/${noTrailing}`;
+		};
+
+		const splitSegments = (p: string): string[] => {
+			const norm = normalizePath(p);
+			if (norm === '/') return [];
+			return norm
+				.split('/')
+				.map((s) => s.trim())
+				.filter((s) => s.length > 0);
+		};
+
+		const joinPath = (parent: string, name: string): string => {
+			const p = normalizePath(parent);
+			if (p === '/') return `/${name}`;
+			return `${p}/${name}`;
+		};
+
+		const folderKey = (tvPath: string, folderName: string): string =>
+			`${normalizePath(tvPath)}::${folderName}`;
+
+		/**
+		 * Adds missing folder rows for each segment in a path, in order.
+		 * @param baseParent - parent path to start from (usually "/")
+		 * @param segments - folder candidate segments
+		 * @param datasetIdentifiers - set of known dataset titles/names (to avoid creating folders for them)
+		 */
+		const addMissingFromSegments = (
+			baseParent: string,
+			segments: string[],
+			datasetIdentifiers: ReadonlySet<string>
+		) => {
+			let parentPath = normalizePath(baseParent);
+
+			for (const segment of segments) {
+				// Prevent mistakenly creating folders for datasets.
+				// We treat dataset "title" and dataset "name" as dataset identifiers.
+				if (datasetIdentifiers.has(segment)) {
+					// Once we hit a dataset identifier in a generic path, we stop:
+					// after a dataset comes either variables or variable paths that should be handled separately.
+					// Continuing would almost certainly misclassify segments.
+					break;
+				}
+
+				const key = folderKey(parentPath, segment);
+				if (!knownFolders.has(key) && !createdFolders.has(key)) {
+					createdFolders.set(key, {
+						dbId: 0,
+						folderName: segment,
+						isListed: defaults.isListed,
+						isEnabled: defaults.isEnabled,
+						tvPath: parentPath,
+						tvTitle: defaults.tvTitleFromName ? segment : null,
+						order: defaults.order,
+						metadataConfigUrl: null,
+						treeviewId: null,
+						isOpenOnInit: defaults.isOpenOnInit,
+						disabledReason: null,
+						description: null
+					});
+				}
+
+				parentPath = joinPath(parentPath, segment);
+			}
+		};
+
+		// --- Build lookup sets/maps ---
+
+		// Existing folder set MUST be path-aware (tvPath + folderName), not name-only.
+		const knownFolders = new Set<string>();
+		for (const f of existingFolders) {
+			if (!f.folderName) continue;
+			knownFolders.add(folderKey(f.tvPath, f.folderName));
+		}
+
+		// Dataset identifiers used to avoid creating folders for datasets.
+		// We include both tvTitle (display title) and datasetName (internal name) to be safe.
+		const datasetIdentifiers = new Set<string>();
+		for (const d of datasets) {
+			if (d.tvTitle?.trim()) datasetIdentifiers.add(d.tvTitle.trim());
+			if (d.datasetName?.trim()) datasetIdentifiers.add(d.datasetName.trim());
+		}
+
+		// Map datasetName -> dataset row (for variable resolution).
+		const datasetByDatasetName = new Map<string, DatasetRow>();
+		for (const d of datasets) {
+			if (d.datasetName) datasetByDatasetName.set(d.datasetName, d);
+		}
+
+		const createdFolders = new Map<string, FolderRow>();
+
+		// --- 1) Create missing folders referenced by datasets' tvPath ---
+		for (const dataset of datasets) {
+			// dataset.tvPath is the parent path to the dataset.
+			const segments = splitSegments(dataset.tvPath);
+			addMissingFromSegments('/', segments, datasetIdentifiers);
+		}
+
+		// --- 2) Create missing folders referenced by variables' tvVariablePath ---
+		for (const variable of variables) {
+			// If we can't resolve the dataset, we can't build the full path accurately,
+			// so we skip rather than guessing (production safety).
+			if (!variable.datasetName) continue;
+
+			const dataset = datasetByDatasetName.get(variable.datasetName);
+			if (!dataset) continue;
+
+			// Full dataset path: dataset.tvPath + dataset.tvTitle
+			// (Your definition uses TvTitle as the dataset's path segment.)
+			const datasetTitle = dataset.tvTitle?.trim();
+			if (!datasetTitle) continue;
+
+			const datasetFullPath = joinPath(normalizePath(dataset.tvPath), datasetTitle);
+
+			// TvVariablePath is relative to datasetFullPath.
+			const variablePath = variable.tvVariablePath ?? '/';
+			const segments = splitSegments(variablePath);
+
+			// Under dataset, segments might still contain dataset identifiers.
+			// If we see one, we stop (to avoid misclassifying a dataset as folder).
+			addMissingFromSegments(datasetFullPath, segments, datasetIdentifiers);
+		}
+
+		if (logWarnings && createdFolders.size > 0) {
+			const sample = Array.from(createdFolders.values())
+				.slice(0, 50)
+				.map((f) => `${normalizePath(f.tvPath)}/${f.folderName}`)
+				.join(', ');
+
+			console.warn(
+				`[CsvConfigFetcher] Detected ${createdFolders.size} missing folders referenced by datasets/variables. ` +
+					`These folders were added with default properties. ` +
+					`Sample (up to 50): ${sample}`
+			);
+		}
+
+		return Array.from(createdFolders.values());
+	}
+
+	// -------------------- Helpers --------------------
+
 	private static toBoolean(value: unknown): boolean {
 		if (typeof value === 'boolean') return value;
 		if (typeof value === 'number') return value !== 0;

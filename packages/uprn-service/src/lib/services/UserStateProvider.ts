@@ -1,10 +1,10 @@
-import type { IAreaSelectionProvider } from '$lib/services/IAreaSelectionProvider';
-import type { IDataSelectionProvider } from '$lib/services/IDataSelectionProvider';
-import type { ITabStateProvider } from '$lib/services/ITabStateProvider';
-import type { IUserStateProvider } from '$lib/services/IUserStateProvider';
-import type { IWebMapService } from '$lib/services/IWebMapService';
-import { SelectionType } from '$lib/types/uprn';
-import type { UserState, UserStateSelection } from '$lib/types/uprn';
+import type { IAreaSelectionProvider } from '$lib/Services/IAreaSelectionProvider';
+import type { IDataSelectionProvider } from '$lib/Services/IDataSelectionProvider';
+import type { ITabStateProvider } from '$lib/Services/ITabStateProvider';
+import type { IUserStateProvider } from '$lib/Services/IUserStateProvider';
+import type { IWebMapService } from '$lib/Services/IWebMapService';
+import type { UserState, UserStateSelection } from '$lib/Types/uprn';
+import { SelectionType } from '$lib/Types/uprn';
 
 /**
  * Implementation of IUserStateProvider to provide user state information.
@@ -79,7 +79,7 @@ export class UserStateProvider implements IUserStateProvider {
 		return selections;
 	}
 
-    	private ensureChildSelection(
+	private ensureChildSelection(
 		children: UserStateSelection[],
 		name: string,
 		type: SelectionType

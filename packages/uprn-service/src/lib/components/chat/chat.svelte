@@ -3,7 +3,7 @@
 	import * as Chat from '$lib/components/shadcn/chat';
 	import { Input } from '$lib/components/shadcn/input';
 	import ScrollArea from '$lib/components/shadcn/scroll-area/scroll-area.svelte';
-	import type { AiUprnChatbotService } from '$lib/services/ai-uprn-chatbot-service';
+	import { useAiChatbotChatStream } from '$lib/Hooks/UseAiChatbotChatStream.svelte';
 	import { cn } from '$lib/utils';
 	import SendIcon from '@lucide/svelte/icons/send';
 
@@ -15,8 +15,7 @@
 	 * Props interface for the chat component.
 	 */
 	type Props = {
-		/** The AI chatbot service instance for handling chat interactions */
-		aiUprnChatbotService: AiUprnChatbotService;
+		streamUrl: string;
 		class?: string;
 	};
 
@@ -52,7 +51,12 @@
 	// Component Props
 	// ============================================================================
 
-	const { aiUprnChatbotService, class: className }: Props = $props();
+	const { streamUrl, class: className }: Props = $props();
+
+	/** Hook for the AI UPRN chatbot streaming endpoint. */
+	const chatStream = $derived.by(() => {
+		return streamUrl ? useAiChatbotChatStream(streamUrl) : null;
+	});
 
 	// ============================================================================
 	// State
@@ -60,12 +64,6 @@
 
 	/** Current message being typed by the user */
 	let message = $state('');
-
-	/** Indicates whether the chatbot is currently processing a request */
-	let isLoading = $state(false);
-
-	/** Accumulates the streaming response from the AI as it arrives */
-	let streamingMessage = $state('');
 
 	/** Reference to the scroll container element */
 	let scrollContainer: HTMLDivElement | null = $state(null);
@@ -128,7 +126,7 @@
 	 */
 	$effect(() => {
 		messages.length;
-		streamingMessage;
+		chatStream?.content;
 
 		// Scroll to bottom after a small delay to ensure DOM has updated
 		if (scrollContainer) {
@@ -184,27 +182,9 @@
 		messages.push(createMessage(content, senderId));
 	}
 
-	/**
-	 * Resets the loading state and clears the streaming message buffer.
-	 */
-	function resetLoadingState(): void {
-		isLoading = false;
-		streamingMessage = '';
-	}
-
 	// ============================================================================
 	// Event Handlers
 	// ============================================================================
-
-	/**
-	 * Handles streaming chunks of text from the AI response.
-	 * Accumulates chunks into the streamingMessage state.
-	 *
-	 * @param chunk - A piece of the streaming response text
-	 */
-	function handleStreamChunk(chunk: string): void {
-		streamingMessage += chunk;
-	}
 
 	/**
 	 * Handles the form submission when the user sends a message.
@@ -219,7 +199,7 @@
 	async function handleSubmit(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
 
-		if (!message.trim() || isLoading) {
+		if (!message.trim() || chatStream?.isLoading) {
 			return;
 		}
 
@@ -228,14 +208,11 @@
 
 		addMessage(userMessage, USER_SENDER_ID);
 
-		isLoading = true;
-		streamingMessage = '';
-
 		try {
-			const success = await aiUprnChatbotService.chatStream(userMessage, handleStreamChunk);
+			await chatStream?.fetch(userMessage);
 
-			if (success && streamingMessage) {
-				addMessage(streamingMessage, BOT_SENDER_ID);
+			if (!chatStream?.error && chatStream?.content) {
+				addMessage(chatStream.content, BOT_SENDER_ID);
 			} else {
 				addMessage(ERROR_MESSAGE, BOT_SENDER_ID);
 			}
@@ -243,7 +220,6 @@
 			console.error('Chat error:', error);
 			addMessage(ERROR_MESSAGE, BOT_SENDER_ID);
 		} finally {
-			resetLoadingState();
 			setTimeout(() => inputRef?.focus(), 0);
 		}
 	}
@@ -269,12 +245,12 @@
 					</Chat.Bubble>
 				{/each}
 
-				{#if isLoading}
+				{#if chatStream?.isLoading}
 					<Chat.Bubble variant="received">
 						<Chat.BubbleAvatar />
 						<Chat.BubbleMessage class="flex flex-col gap-1">
-							{#if streamingMessage}
-								<p class="break-words whitespace-pre-wrap">{streamingMessage}</p>
+							{#if chatStream?.content}
+								<p class="break-words whitespace-pre-wrap">{chatStream.content}</p>
 							{:else}
 								<Chat.BubbleMessage typing />
 							{/if}
@@ -296,14 +272,14 @@
 				bind:value={message}
 				class="rounded-full"
 				placeholder="Type a message..."
-				disabled={isLoading}
+				disabled={chatStream?.isLoading}
 			/>
 			<Button
 				type="submit"
 				variant="default"
 				size="icon"
 				class="shrink-0 rounded-full"
-				disabled={message.trim() === '' || isLoading}
+				disabled={message.trim() === '' || chatStream?.isLoading}
 			>
 				<SendIcon />
 			</Button>

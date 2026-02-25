@@ -1,4 +1,4 @@
-import type { DataSelectionInfo } from '$lib/types/uprn';
+import type { DataSelectionInfo } from '$lib/Types/uprn';
 
 /**
  * Interface that provides the data selection information.

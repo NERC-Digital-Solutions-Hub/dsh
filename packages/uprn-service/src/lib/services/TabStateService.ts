@@ -1,4 +1,4 @@
-import type { ITabStateProvider } from '$lib/services/ITabStateProvider';
+import type { ITabStateProvider } from '$lib/Services/ITabStateProvider';
 
 /**
  * Represets a service that provides the current tab state.

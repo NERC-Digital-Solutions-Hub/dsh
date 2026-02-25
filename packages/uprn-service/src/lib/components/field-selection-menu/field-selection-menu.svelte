@@ -3,8 +3,8 @@
 	import Checkbox from '$lib/components/shadcn/checkbox/checkbox.svelte';
 	import * as Command from '$lib/components/shadcn/command/index.js';
 	import * as Dialog from '$lib/components/shadcn/dialog/index.js';
-	import type { DataSelectionStore } from '$lib/stores/data-selection-store.svelte';
-	import FieldFilterMenuStore from '$lib/stores/field-filter-menu-store.svelte';
+	import type { DataSelectionStore } from '$lib/Stores/DataSelectionStore.svelte';
+	import FieldFilterMenuStore from '$lib/Stores/field-filter-menu-store.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 
 	export type Props = {

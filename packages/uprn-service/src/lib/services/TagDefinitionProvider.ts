@@ -1,5 +1,5 @@
-import type { ITagDefinitionProvider } from '$lib/services/ITagDefinitionProvider';
-import type { TagDefinition } from '$lib/types/config';
+import type { ITagDefinitionProvider } from '$lib/Services/ITagDefinitionProvider';
+import type { TagDefinition } from '$lib/Types/config';
 
 /**
  * Implementation of ITagDefinitionProvider to provide tag definitions.

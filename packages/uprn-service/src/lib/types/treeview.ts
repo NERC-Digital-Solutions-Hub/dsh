@@ -49,7 +49,7 @@ export interface TreeviewNodeConfig {
 	displayName?: string;
 
 	/** Type of the treeview node, e.g., 'group-layer' */
-	type: TreeviewNodeType;
+	type: TreeviewNodeLayerType;
 
 	/** Type of treeview a node belongs to - area selection or data selection. */
 	treeviewType?: TreeviewType;
@@ -96,11 +96,17 @@ export interface TreeviewNodeConfig {
 	/** Optional URL to the metadata tab info */
 	metadataTabInfoUrl?: string;
 
+	/** Optional layer ID associated with this node, used for controlling visibility in the map view */
+	layerId?: string;
+
+	/** Optional variable ID associated with this node, used for controlling visibility in the map view */
+	variableId?: string;
+
 	/** The child nodes of this treeview node, allowing for hierarchical structures. */
 	children?: TreeviewNodeConfig[];
 }
 
-export enum TreeviewNodeType {
+export enum TreeviewNodeLayerType {
 	None = 'none',
 	GroupLayer = 'group-layer',
 	FeatureLayer = 'feature-layer',

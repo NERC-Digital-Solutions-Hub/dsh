@@ -1,35 +1,33 @@
 <!-- MapView component -->
 <script lang="ts">
-	import { browser } from '$app/environment';
-	import { LayerViewProvider } from '$lib/services/layer-view-provider';
-	import type { AreaSelectionInteractionStore } from '$lib/stores/area-selection-interaction-store.svelte';
-	import { MapInteractionStore } from '$lib/stores/map-interaction-store.svelte';
-	import type Map from '@arcgis/core/Map';
+	import { LayerViewProvider } from '$lib/Services/LayerViewProvider';
+	import type { AreaSelectionInteractionStore } from '$lib/Stores/AreaSelectionInteractionStore.svelte';
+	import { MapInteractionStore } from '$lib/Stores/MapInteractionStore.svelte';
 	import type MapView from '@arcgis/core/views/MapView';
 	import { onDestroy, onMount } from 'svelte';
+	import type { SvelteSet } from 'svelte/reactivity';
 
 	/**
 	 * Component props interface
 	 */
 	type Props = {
-		/** The WebMap instance to display. If null, a fallback map will be created */
-		webMap: __esri.WebMap;
-
+		webMap?: __esri.WebMap | null;
 		mapView: MapView;
-
 		areaSelectionInteractionStore: AreaSelectionInteractionStore;
-
-		interactableLayers: Set<string>;
+		interactableLayers: SvelteSet<string>;
 	};
 
 	const { webMap, mapView, areaSelectionInteractionStore, interactableLayers }: Props = $props();
 
-	let mapInteractionStore: MapInteractionStore | null = $state(null);
+	/** The map interaction store instance */
+	let mapInteractionStore: MapInteractionStore | null = $derived.by(() => {
+		return mapView
+			? new MapInteractionStore(mapView, areaSelectionInteractionStore, interactableLayers)
+			: null;
+	});
 	let mapContainer: HTMLDivElement | null = null;
 
 	const fallbackBasemap = 'streets-vector';
-	let MapContructor: typeof Map;
-	let MapViewContructor: typeof MapView;
 
 	export function getLayerViewProvider(): LayerViewProvider {
 		if (!mapView) {
@@ -40,39 +38,16 @@
 	}
 
 	onMount(async () => {
-		await loadEsriAsync();
-		await loadMapViewAsync();
+		//await loadMapViewAsync();
 	});
-
-	// === Map Loading Functions ===
-
-	/**
-	 * Asynchronously loads the required ArcGIS modules for map functionality.
-	 * Only loads modules once and only in browser environment.
-	 * @returns Promise that resolves when modules are loaded
-	 */
-	async function loadEsriAsync() {
-		if (!browser) {
-			return;
-		}
-
-		if (!MapViewContructor) {
-			const [{ default: Map }, { default: MapView }] = await Promise.all([
-				import('@arcgis/core/Map'),
-				import('@arcgis/core/views/MapView')
-			]);
-
-			MapContructor = Map;
-			MapViewContructor = MapView;
-		}
-	}
 
 	/**
 	 * Creates a fallback map with basic basemap when the main webmap fails to load.
 	 * @returns Promise that resolves to a basic Map instance
 	 */
 	async function createFallbackMap(): Promise<__esri.Map> {
-		return new MapContructor({
+		const { default: Map } = await import('@arcgis/core/Map');
+		return new Map({
 			basemap: fallbackBasemap
 		});
 	}
@@ -87,8 +62,7 @@
 		}
 
 		try {
-			await loadEsriAsync();
-			await loadMapViewAsync();
+			//await loadMapViewAsync();
 			if (!mapView) {
 				console.error('MapView is not initialized');
 				return;
@@ -97,6 +71,8 @@
 			mapView.container = mapContainer;
 			mapView.popupEnabled = false;
 			mapView.map = webMap;
+			mapView.background = { color: '#CFD3D4' };
+			mapView.ui.move('zoom', 'top-right');
 			console.log('[uprn-map-view] MapView updated with new webMap');
 
 			await areaSelectionInteractionStore.refreshLayerView();
@@ -111,32 +87,32 @@
 	 * Handles loading, error recovery, and UI setup.
 	 * @returns Promise that resolves when map view is loaded and configured
 	 */
-	async function loadMapViewAsync() {
-		if (!browser) {
-			return; // Ensure this runs only in the browser
-		}
+	// async function loadMapViewAsync() {
+	// 	if (!browser) {
+	// 		return; // Ensure this runs only in the browser
+	// 	}
 
-		if (!mapContainer) {
-			console.error('Map container element was not found');
-			return;
-		}
+	// 	if (!mapContainer) {
+	// 		console.error('Map container element was not found');
+	// 		return;
+	// 	}
 
-		try {
-			// Try to load the main map (webMap or undefined)
-			mapView.container = mapContainer;
-			mapView.popupEnabled = false;
-			mapView.map = webMap ?? undefined;
-			mapView.background = { color: '#CFD3D4' };
+	// 	try {
+	// 		// Try to load the main map (webMap or undefined)
+	// 		mapView.container = mapContainer;
+	// 		mapView.popupEnabled = false;
+	// 		mapView.map = webMap ?? undefined;
+	// 		mapView.background = { color: '#CFD3D4' };
 
-			mapView.ui.move('zoom', 'top-right');
-			await mapView.when();
+	// 		mapView.ui.move('zoom', 'top-right');
+	// 		await mapView.when();
 
-			console.log('[uprn-map-view] Map loaded successfully');
-		} catch (error) {
-			console.error('Error loading map:', error);
-			await loadFallbackMap();
-		}
-	}
+	// 		console.log('[uprn-map-view] Map loaded successfully');
+	// 	} catch (error) {
+	// 		console.error('Error loading map:', error);
+	// 		await loadFallbackMap();
+	// 	}
+	// }
 
 	/**
 	 * Loads a fallback map when the primary map fails to load.
@@ -166,21 +142,11 @@
 		updateMapWithWebMap();
 	});
 
-	// Effect to update interactable layers when they change
 	$effect(() => {
-		if (!mapView) {
+		if (!interactableLayers || !mapInteractionStore) {
 			return;
 		}
-
-		if (mapInteractionStore) {
-			mapInteractionStore.updateInteractableLayers(interactableLayers);
-		} else {
-			mapInteractionStore = new MapInteractionStore(
-				mapView,
-				areaSelectionInteractionStore,
-				interactableLayers
-			);
-		}
+		mapInteractionStore.updateInteractableLayers(interactableLayers);
 	});
 
 	/**

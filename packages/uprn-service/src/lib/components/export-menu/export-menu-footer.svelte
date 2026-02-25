@@ -1,31 +1,33 @@
 <script lang="ts">
+	import ClearSelectionsButton from '$lib/components/clear-selections-button/cl/clear-selections-button.svelte';
 	import Button from '$lib/components/shadcn/button/button.svelte';
-	import { downloadsStore } from '$lib/stores/downloads-store.svelte';
-	import { toast } from 'svelte-sonner';
+	import Spinner from '$lib/components/shadcn/spinner/spinner.svelte';
+	import type { AreaSelectionInteractionStore } from '$lib/Stores/AreaSelectionInteractionStore.svelte';
+	import { DataSelectionStore } from '$lib/Stores/DataSelectionStore.svelte';
+	import type DownloadsStore from '$lib/Stores/DownloadsStore.svelte';
 	import {
 		DownloadStatus,
 		type AreaFieldInfoWithCode,
 		type AreaSelectionInfoWithCode,
 		type DataSelectionInfo
-	} from '$lib/types/uprn';
-	import ClearSelectionsButton from '$lib/components/clear-selections-button/cl/clear-selections-button.svelte';
-	import type { AreaSelectionInteractionStore } from '$lib/stores/area-selection-interaction-store.svelte';
-	import { DataSelectionStore } from '$lib/stores/data-selection-store.svelte';
+	} from '$lib/Types/uprn';
 	import { onDestroy } from 'svelte';
-	import Spinner from '$lib/components/shadcn/spinner/spinner.svelte';
+	import { toast } from 'svelte-sonner';
 
 	type Props = {
 		onExportSuccess?: () => void;
 		clearSelections: () => void;
 		areaSelectionInteractionStore: AreaSelectionInteractionStore;
 		dataSelectionStore: DataSelectionStore;
+		downloadsStore: DownloadsStore;
 	};
 
 	const {
 		onExportSuccess,
 		clearSelections,
 		areaSelectionInteractionStore,
-		dataSelectionStore
+		dataSelectionStore,
+		downloadsStore
 	}: Props = $props();
 
 	const areRequirementsMet = $derived.by(() => {
@@ -93,7 +95,7 @@
 				.getAllSelections()
 				.map((selection) => {
 					return {
-						layerId: selection.layerId,
+						layerId: selection.nodeId,
 						fields: Array.from(selection.selectedFieldIds)
 					};
 				});

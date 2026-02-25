@@ -1,20 +1,20 @@
 <script lang="ts">
-	import esriRequest from '@arcgis/core/request.js';
-	import * as Dialog from '$lib/components/shadcn/dialog/index.js';
-	import type { IWebMapService } from '$lib/services/IWebMapService';
-	import type { INodeConfigProvider } from '$lib/services/INodeConfigProvider';
-	import { useFetchMetadataTabInfo } from '$lib/hooks/use-fetch-metadata-tab-info.svelte';
-	import { useFetchMetadataContent } from '$lib/hooks/use-fetch-metadata-content.svelte';
-	import type { MetadataTab, MetadataTabContentItem } from '$lib/types/metadata';
-	import * as Tabs from '$lib/components/shadcn/tabs/index.js';
-	import * as Carousel from '$lib/components/shadcn/carousel/index.js';
-	import ScrollArea from '$lib/components/shadcn/scroll-area/scroll-area.svelte';
-	import * as Card from '$lib/components/shadcn/card/index.js';
-	import { Button } from '$lib/components/shadcn/button/index.js';
-	import { Lightbox, LightboxGallery, GalleryThumbnail, GalleryImage } from 'svelte-lightbox';
-	import XmlTree from '$lib/components/xml-tree/xml-tree.svelte';
-	import { ArrowDownToLine } from '@lucide/svelte';
 	import CopyToClipboardButton from '$lib/components/copy-to-clipboard-button/copy-to-clipboard-button.svelte';
+	import { Button } from '$lib/components/shadcn/button/index.js';
+	import * as Card from '$lib/components/shadcn/card/index.js';
+	import * as Carousel from '$lib/components/shadcn/carousel/index.js';
+	import * as Dialog from '$lib/components/shadcn/dialog/index.js';
+	import ScrollArea from '$lib/components/shadcn/scroll-area/scroll-area.svelte';
+	import * as Tabs from '$lib/components/shadcn/tabs/index.js';
+	import XmlTree from '$lib/components/xml-tree/xml-tree.svelte';
+	import { useFetchMetadataContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
+	import { useFetchMetadataTabInfo } from '$lib/Hooks/UseFetchMetadataTabInfo.svelte';
+	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
+	import type { IWebMapService } from '$lib/Services/IWebMapService';
+	import type { MetadataTabContentItem } from '$lib/Types/metadata';
+	import esriRequest from '@arcgis/core/request.js';
+	import { ArrowDownToLine } from '@lucide/svelte';
+	import { GalleryImage, GalleryThumbnail, Lightbox, LightboxGallery } from 'svelte-lightbox';
 
 	type ContentHook = ReturnType<typeof useFetchMetadataContent>;
 	type LayerDef = {

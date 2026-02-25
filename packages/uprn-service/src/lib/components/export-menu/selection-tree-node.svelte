@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import { TreeviewNodeTypology } from '$lib/types/treeview.js';
+	import { TreeviewNodeTypology } from '$lib/Types/treeview.js';
 
 	/**
 	 * Represents a node in the selection tree.
@@ -9,6 +9,8 @@
 		id: string;
 		/** Display name of the node */
 		name: string;
+		/** Whether this node is a variable */
+		isVariable: boolean;
 		/** Whether this is a selectable leaf node */
 		isLeaf: boolean;
 		/** Child nodes */
@@ -19,20 +21,20 @@
 </script>
 
 <script lang="ts">
-	import { Button } from '$lib/components/shadcn/button/index.js';
 	import OpenIndicator from '$lib/components/open-indicator/open-indicator.svelte';
-	import { getNodeStyles } from '$lib/components/tree-view/node-content-styles.js';
-	import { getNodeIcon } from '$lib/components/tree-view/get-node-icon.js';
-	import Self from './selection-tree-node.svelte';
-	import type { Snippet, Component } from 'svelte';
-	import { slide } from 'svelte/transition';
+	import { Button } from '$lib/components/shadcn/button/index.js';
+	import { getNodeIcon } from '$lib/components/Treeview/GetNodeIcon.js';
+	import { getNodeStyles } from '$lib/components/Treeview/NodeContentStyles.js';
+	import type { Component, Snippet } from 'svelte';
 	import { cubicOut } from 'svelte/easing';
+	import { slide } from 'svelte/transition';
+	import Self from './selection-tree-node.svelte';
 
 	type Props = {
 		/** The selection tree node to render */
 		node: SelectionTreeviewNode;
 		/** Callback when a node's remove button is clicked */
-		onRemove: (nodeId: string) => void;
+		onRemove: (node: SelectionTreeviewNode) => void;
 		/** Optional snippet for additional actions on leaf nodes */
 		actions?: Snippet<[SelectionTreeviewNode]>;
 		/** Current depth for indentation */
@@ -63,7 +65,7 @@
 
 	function handleRemove(event: MouseEvent) {
 		event.stopPropagation();
-		onRemove(node.id);
+		onRemove(node);
 	}
 </script>
 
