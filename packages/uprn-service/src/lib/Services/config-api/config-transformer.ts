@@ -89,7 +89,7 @@ export class ConfigTransformer implements IConfigurationTransformer<
 				isOpenOnInit: row?.isOpenOnInit ?? false,
 				isHidden: row ? !row.isListed : false,
 				order: row?.order ?? 0,
-				arcGisMetadataUrl: row?.metadataConfigUrl || undefined,
+				metadataTabInfoUrl: row?.metadataConfigUrl || undefined,
 				children: []
 			};
 
