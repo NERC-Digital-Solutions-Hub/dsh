@@ -1,5 +1,5 @@
-import FeatureLayerIcon from '$lib/assets/feature-layer-16.svg?raw';
-import TileLayerIcon from '$lib/assets/tile-layer-16.svg?raw';
+import FeatureLayerIcon from '$lib/Assets/feature-layer-16.svg?raw';
+import TileLayerIcon from '$lib/Assets/tile-layer-16.svg?raw';
 import { TreeviewNodeTypology } from '$lib/Types/treeview';
 import { ChartCandlestick, Folder, FolderOpen, Grid2x2PlusIcon } from '@lucide/svelte';
 import type { Component } from 'svelte';
