@@ -1,8 +1,10 @@
 import type { TreeviewConfig } from '$lib/Types/treeview';
-import type { AiUprnChatbotEndpoints, UprnDownloadEndpoints } from '$lib/Types/uprn';
+import type { AiUprnChatbotEndpoints, ContentConfig, UprnDownloadEndpoints } from '$lib/Types/uprn';
 
 export type AppsUprnConfig = {
 	map: PortalItemConfig;
+	contentConfig: ContentConfig;
+
 	uprnDownload: UprnDownloadEndpoints;
 	aiUprnChatbot: AiUprnChatbotEndpoints;
 	mainSidebarSizes?: SizeConfig[];

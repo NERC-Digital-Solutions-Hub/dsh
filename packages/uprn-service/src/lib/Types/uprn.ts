@@ -11,6 +11,7 @@ export interface UprnConfiguration {
 export type ContentConfig = {
 	baseUrl: string;
 	manifestPath: string;
+	climateJustRenderersPath: string;
 };
 
 export interface SidebarSize {
