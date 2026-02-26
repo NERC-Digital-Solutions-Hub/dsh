@@ -21,8 +21,8 @@
 	import UprnTabBar from '$lib/components/uprn-tab-bar/uprn-tab-bar.svelte';
 	import { updateSelection } from '$lib/db';
 	import { setItemInfoDialogEvents } from '$lib/Events/ItemInfoDialogEvents';
-	import { useFetchAppConfig } from '$lib/Hooks/_UseFetchAppConfig.svelte';
 	import { useAiChatbotHealth } from '$lib/Hooks/UseAiChatbotHealth.svelte';
+	import { useFetchAppConfig } from '$lib/Hooks/UseFetchAppConfig.svelte';
 	import { useLoadSelectionsFromIndexDb } from '$lib/Hooks/UseLoadSelectionsFromIndexDb.svelte';
 	import { useUprnDownloadHealth } from '$lib/Hooks/UseUprnDownloadHealth.svelte';
 	import { SelectionState } from '$lib/Models/Treeview/SelectionState';

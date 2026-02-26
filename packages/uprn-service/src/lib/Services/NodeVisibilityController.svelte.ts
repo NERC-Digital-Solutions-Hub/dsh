@@ -4,6 +4,7 @@ import {
 	TreeviewNode,
 	VariableTreeviewNode
 } from '$lib/Models/Treeview/Index';
+import { LayerType } from '$lib/Models/Treeview/LayerType';
 import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 import { VariableSubType } from '$lib/Models/Treeview/VariableSubType';
 import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
@@ -307,7 +308,6 @@ export class NodeVisibilityController implements INodeVisibilityController {
 		}
 
 		this.visibilityStates.set(node.id, isVisible);
-		this.updateDependencyVisibility(node, isVisible);
 		this.updateVisibilityGroup(node, isVisible);
 		this.updateParentNodeVisibility(node, isVisible);
 
@@ -321,6 +321,8 @@ export class NodeVisibilityController implements INodeVisibilityController {
 			default:
 				console.warn(`Unknown variable subtype ${node.variableSubType} for node ${node.id}`);
 		}
+
+		this.updateDependencyVisibility(node, isVisible);
 	}
 
 	/**
@@ -555,7 +557,7 @@ export class NodeVisibilityController implements INodeVisibilityController {
 	 * @param node The node update the dependencies of.
 	 * @param isVisible The new visibility state of the node.
 	 */
-	private updateDependencyVisibility(node: TreeviewNode, isVisible: boolean): void {
+	private async updateDependencyVisibility(node: TreeviewNode, isVisible: boolean): Promise<void> {
 		const config: TreeviewNodeConfig | undefined = this.#nodeConfigProvider.getConfig(node.id);
 		if (!config) {
 			return;
@@ -566,8 +568,84 @@ export class NodeVisibilityController implements INodeVisibilityController {
 		}
 
 		for (const dependencyId of config.visibilityDependencyIds) {
-			//console.warn(`updateDependencyVisibility not implemented yet.`);
+			const dependentNode = this.#nodeProvider.getTreeviewNode(dependencyId);
+			if (!dependentNode) {
+				console.warn(
+					`Dependent node with ID ${dependencyId} not found for node ${node.id} while enforcing visibility dependencies`
+				);
+				continue;
+			}
+
+			if (!this.isDatasetNode(dependentNode)) {
+				console.warn(
+					`Dependent node with ID ${dependencyId} for node ${node.id} is not a dataset node, which is required for visibility dependencies`
+				);
+				continue;
+			}
+
+			const layerView: __esri.LayerView | undefined =
+				await this.#layerViewProvider.getLayerViewById(dependentNode.layerId);
+			if (!layerView) {
+				await this.handleDependentLayerNotFound(dependentNode, isVisible);
+				continue;
+			}
+
+			layerView.visible = isVisible;
 		}
+	}
+
+	/**
+	 * Handles the case where a dependent node's layer view cannot be found when enforcing visibility dependencies. This can occur when
+	 * the dependent node is a feature layer that is a child of a tile layer node that it depends on, due to how these layers are treated
+	 * as both datasets and variables in the configuration.
+	 * @param dependentNode The dependent node whose layer could not be found.
+	 * @param isVisible The new visibility state of the node.
+	 */
+	private async handleDependentLayerNotFound(
+		dependentNode: DatasetTreeviewNode,
+		isVisible: boolean
+	): Promise<void> {
+		if (
+			!dependentNode.parent ||
+			!this.isDatasetNode(dependentNode.parent) ||
+			dependentNode.parent.layerType !== LayerType.Tile ||
+			dependentNode.layerType !== LayerType.Feature
+		) {
+			console.warn(
+				`Layer view not found for dependent node ${dependentNode.id} with layer ID ${dependentNode.layerId} while enforcing visibility dependencies`
+			);
+			return;
+		}
+
+		// Special case for when a dependent node is a feature layer that is a child of a tile layer node that it depends on -
+		// in this case we need to get the layer as a sublayer.
+		// This is clunky but it's to workaround the fact how these layers are treated as both datasets and variables in the
+		// configuration (in datasets table but does not have a true unique webmap ID).
+
+		const parentLayerView: __esri.LayerView | undefined =
+			await this.#layerViewProvider.getLayerViewById(dependentNode.parent.layerId);
+		if (!parentLayerView) {
+			console.warn(
+				`Layer view not found for parent node ${dependentNode.parent.id} with layer ID ${dependentNode.parent.layerId} while enforcing visibility dependencies`
+			);
+			return;
+		}
+
+		const suffix = dependentNode.id.startsWith(`${dependentNode.parent.id}-`)
+			? dependentNode.id.slice(`${dependentNode.parent.id}-`.length)
+			: undefined;
+
+		const layerIndex = suffix !== undefined && suffix !== '' ? Number(suffix) : 0;
+
+		const subLayer: __esri.Sublayer | undefined = (
+			parentLayerView.layer as __esri.MapImageLayer
+		)?.allSublayers?.find((sublayer) => sublayer.id === layerIndex);
+
+		if (!subLayer) {
+			return;
+		}
+
+		subLayer.visible = isVisible;
 	}
 
 	/**
