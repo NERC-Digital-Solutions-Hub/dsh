@@ -213,34 +213,12 @@ export class NodeVisibilityController implements INodeVisibilityController {
 	}
 
 	/**
-	 * Gets the visibility group owner of a node.
-	 * @param node The node to get the owner of.
-	 * @returns The visibility group owner node.
-	 */
-	private getVisibilityGroupOwner(node: TreeviewNode): TreeviewNode {
-		if (this.isVariableNode(node)) {
-			if (node.variableSubType === VariableSubType.Field) {
-				const datasetNode = this.getDatasetNodeForVariable(node);
-				return datasetNode ?? node;
-			}
-
-			return node;
-		}
-
-		if (this.isDatasetNode(node)) {
-			return node;
-		}
-		return node;
-	}
-
-	/**
 	 * Update the visibility of nodes in the same visibility group.
 	 * @param node The node to add to its visibility group.
 	 * @param isVisible The new visibility state.
 	 */
 	private updateVisibilityGroup(node: TreeviewNode, isVisible: boolean): void {
-		const ownerNode = this.getVisibilityGroupOwner(node);
-		const config: TreeviewNodeConfig | undefined = this.#nodeConfigProvider.getConfig(ownerNode.id);
+		const config: TreeviewNodeConfig | undefined = this.#nodeConfigProvider.getConfig(node.id);
 		if (!config?.visibilityGroupId) {
 			return;
 		}
@@ -253,7 +231,7 @@ export class NodeVisibilityController implements INodeVisibilityController {
 		}
 
 		if (!isVisible) {
-			const index = activeNodes.indexOf(ownerNode.id);
+			const index = activeNodes.indexOf(node.id);
 			if (index === -1) {
 				// console.warn(
 				// 	`Node ${node.id} is being set to not visible but is not in the active nodes for its visibility group ${visibilityGroupId}`
@@ -293,7 +271,7 @@ export class NodeVisibilityController implements INodeVisibilityController {
 			hideId(oldestId);
 		}
 
-		activeNodes.push(ownerNode.id);
+		activeNodes.push(node.id);
 	}
 
 	/**
@@ -309,7 +287,6 @@ export class NodeVisibilityController implements INodeVisibilityController {
 
 		this.visibilityStates.set(node.id, isVisible);
 		this.updateVisibilityGroup(node, isVisible);
-		this.updateParentNodeVisibility(node, isVisible);
 
 		switch (node.variableSubType) {
 			case VariableSubType.Tile:
@@ -323,6 +300,7 @@ export class NodeVisibilityController implements INodeVisibilityController {
 		}
 
 		this.updateDependencyVisibility(node, isVisible);
+		this.updateParentNodeVisibility(node, isVisible);
 	}
 
 	/**
@@ -346,7 +324,17 @@ export class NodeVisibilityController implements INodeVisibilityController {
 			return;
 		}
 
-		this.setDatasetVisibilityState(datasetNode, isVisible);
+		const isCurrentlyVisible = this.visibilityStates.get(datasetNode.id);
+		if (isCurrentlyVisible !== undefined && isVisible === isCurrentlyVisible) {
+			return; // no change, do nothing
+		}
+
+		this.visibilityStates.set(datasetNode.id, isVisible);
+
+		this.updateDependencyVisibility(datasetNode, isVisible);
+		this.updateParentNodeVisibility(datasetNode, isVisible);
+
+		this.setDatasetDrawState(datasetNode, isVisible);
 	}
 
 	/**
@@ -548,7 +536,9 @@ export class NodeVisibilityController implements INodeVisibilityController {
 	 * @returns True if any descendant nodes are visible, false otherwise.
 	 */
 	private anyDescendantNodeVisible(node: TreeviewNode): boolean {
-		return node.children.some((child) => this.anyDescendantNodeVisible(child));
+		return node.children.some(
+			(child) => this.visibilityStates.get(child.id) || this.anyDescendantNodeVisible(child)
+		);
 	}
 
 	/**
