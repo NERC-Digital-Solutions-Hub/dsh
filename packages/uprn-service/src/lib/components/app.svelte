@@ -122,19 +122,19 @@
 	/** State for managing the visibility of the reset dialog. */
 	let resetDialogOpen: boolean = $state(false);
 
-	/** The current active tab. */
+	/** State for managing the current active tab. */
 	let currentTab: string = $state('areas-of-interest');
 
-	/** The tab bar progress that contains the tabs the user has visited.. */
+	/** State for tracking the tab bar progress that contains the tabs the user has visited. */
 	let tabProgressByValue: Record<string, TabProgress | undefined> = $state({});
 
-	/** The tab bar width. */
+	/** State for tracking the tab bar width. */
 	let tabBarWidth: number | null = $state(null);
 
-	/** The IDs of currently selected tags to filter by. */
+	/** State of the IDs of currently selected tags to filter by. */
 	const selectedTagIds: Set<string> = $state(new SvelteSet<string>());
 
-	/** The ArcGIS MapView instance. */
+	/** State of the ArcGIS MapView instance. */
 	let mapView: __esri.MapView | null = $state(null);
 
 	/** Hook for the AI UPRN chatbot health check. */
