@@ -34,6 +34,8 @@ export class ConfigTransformer implements IConfigurationTransformer<
 			variables
 		);
 
+		const nodesById = new Map<string, TreeviewNodeConfig>();
+
 		// ---- 1) Build full-path indexes for rows ----
 		const folderRowByFullPath = new Map<string, FolderRow>();
 		for (const f of folders) {
@@ -94,8 +96,11 @@ export class ConfigTransformer implements IConfigurationTransformer<
 			};
 
 			nodeByKey.set(key, cfg);
+			nodesById.set(cfg.id, cfg);
 			return cfg;
 		};
+
+		const datasetNameToNodeId = new Map<string, string>();
 
 		const ensureDatasetNode = (fullPath: string, row: DatasetRow): TreeviewNodeConfig => {
 			const key = `dataset::${fullPath}`;
@@ -114,6 +119,7 @@ export class ConfigTransformer implements IConfigurationTransformer<
 				isOpenOnInit: row.isOpenOnInit,
 				isVisibleOnInit: row.isRenderedOnInit,
 				disableVisibilityToggle: row.disableRendering,
+				visibilityDependencyIds: row.hasDependants ?? undefined,
 				visibilityGroupId:
 					row.visibilityGroupId !== null
 						? this.getVisibilityGroupId(row.visibilityGroupId)
@@ -126,6 +132,10 @@ export class ConfigTransformer implements IConfigurationTransformer<
 			};
 
 			nodeByKey.set(key, cfg);
+			nodesById.set(cfg.id, cfg);
+			if (row.datasetName) {
+				datasetNameToNodeId.set(row.datasetName, cfg.id);
+			}
 			return cfg;
 		};
 
@@ -237,10 +247,34 @@ export class ConfigTransformer implements IConfigurationTransformer<
 
 			// Finally attach the variable leaf node
 			const variableNode = this.createVariableConfig(datasetRow, v);
+			nodesById.set(variableNode.id, variableNode);
 			this.attachChildSafe(parent, variableNode, roots);
 		}
 
-		// ---- 8) Sort recursively (folders/datasets/variables mixed) ----
+		// ---- 8) Map dependency IDs to actual node IDs for visibility dependencies ----
+		for (const node of nodesById.values()) {
+			const dependencyIds = node.visibilityDependencyIds;
+			if (!dependencyIds || dependencyIds.length <= 0) {
+				continue;
+			}
+
+			const resolvedDependencyNodeIds: string[] = [];
+			for (const depId of dependencyIds) {
+				const resolvedNodeId = datasetNameToNodeId.get(this.normalizeKey(depId)!);
+				if (!resolvedNodeId) {
+					console.warn(
+						`[ConfigTransformer] Node "${node.id}" has visibility dependency on "${depId}", but no matching dataset was found.`
+					);
+					continue;
+				}
+
+				resolvedDependencyNodeIds.push(resolvedNodeId);
+			}
+
+			node.visibilityDependencyIds = resolvedDependencyNodeIds;
+		}
+
+		// ---- 9) Sort recursively (folders/datasets/variables mixed) ----
 		this.sortNodes(roots);
 		//console.debug(`[ConfigTransformer] Finished transformation. Resulting tree:`, roots);
 		return roots;
@@ -292,6 +326,7 @@ export class ConfigTransformer implements IConfigurationTransformer<
 			isDownloadable: variable.isEnabled,
 			isOpenOnInit: variable.isOpenOnInit,
 			isVisibleOnInit: variable.isRenderedOnInit,
+			visibilityDependencyIds: variable.hasDependants ?? undefined,
 			disableVisibilityToggle: variable.disableRendering,
 			visibilityGroupId:
 				variable.visibilityGroupId !== null
