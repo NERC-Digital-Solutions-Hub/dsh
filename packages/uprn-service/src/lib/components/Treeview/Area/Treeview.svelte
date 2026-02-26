@@ -30,7 +30,6 @@
 	$effect(() => {
 		const visibleNodes = treeviewStore?.getVisibleNodes();
 		if (!visibleNodes || visibleNodes.length === 0) {
-			console.warn('[Treeview] No visible nodes found, clearing area selection layer');
 			areaSelectionController.setAreaSelectionLayer(null);
 			return;
 		}
@@ -42,9 +41,6 @@
 			return;
 		}
 
-		console.log(
-			`[Treeview] Setting area selection layer to ${node.layerId} based on visible node ${node.id}`
-		);
 		areaSelectionController.setAreaSelectionLayer(node.layerId);
 	});
 
