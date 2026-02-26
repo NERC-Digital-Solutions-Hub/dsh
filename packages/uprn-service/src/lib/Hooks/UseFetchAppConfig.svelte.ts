@@ -7,6 +7,7 @@ import type { AppsUprnConfig, PortalItemConfig } from '$lib/Types/config';
 import type { TreeviewNodeConfig } from '$lib/Types/treeview';
 import type {
 	AiUprnChatbotEndpoints,
+	ContentConfig,
 	UprnDownloadEndpoints,
 	UprnServiceConfigManifest
 } from '$lib/Types/uprn';
@@ -57,6 +58,12 @@ export function useFetchAppConfig() {
 				treeview: { ...portalItemConfigs[0].treeview, layers: [...treeviewNodeConfigs] }
 			};
 
+			const contentConfig: ContentConfig | undefined = uprnConfigStore.instance?.contentConfig;
+			if (!contentConfig) {
+				console.error('Content configuration is missing');
+				throw new Error('Content configuration is missing');
+			}
+
 			const uprnChatbotApiConfig: AiUprnChatbotEndpoints | undefined =
 				uprnConfigStore.instance?.uprnChatbotApiConfig.value;
 			if (!uprnChatbotApiConfig) {
@@ -73,6 +80,7 @@ export function useFetchAppConfig() {
 
 			content = {
 				map,
+				contentConfig: contentConfig,
 				aiUprnChatbot: uprnChatbotApiConfig,
 				uprnDownload: uprnDownloadApiConfig
 			};
