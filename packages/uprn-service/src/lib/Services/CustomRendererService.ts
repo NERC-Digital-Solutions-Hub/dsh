@@ -1,5 +1,5 @@
-import { browser } from '$app/environment';
 import { ImageTileLevelOfDetails } from '$lib/Services/ImageTileLods';
+import type { LayerViewProvider } from '$lib/Services/LayerViewProvider';
 import type {
 	CustomRendererClassBreak,
 	CustomRenderers,
@@ -19,97 +19,22 @@ type CustomRendererSymbolWithAppearances = CustomRendererSymbol & {
 	Appearances: CustomRenderersSymbolAppearance[];
 };
 
+/**
+ * Service responsible for applying custom renderers to feature layers based on a provided configuration.
+ */
 export class CustomRendererService {
-	#data: CustomRenderers = null!;
-	#isInitialised: boolean = false;
-	#currentPath: string | null = null;
+	/** The custom renderers data. */
+	readonly #data: CustomRenderers;
 
-	public async init(path: string) {
-		if (!browser) {
-			console.warn(
-				'[custom-renderer-service] init called in non-browser environment. Skipping initialization.'
-			);
-			return;
-		}
-
-		if (this.#isInitialised && this.#currentPath === path) {
-			return;
-		}
-
-		await this.#loadJsonData(path);
-		this.#isInitialised = true;
-		this.#currentPath = path;
-	}
-
-	async #loadJsonData(path: string) {
-		const res = await fetch(path);
-		const data = await res.json();
-		this.#data = data as CustomRenderers;
-	}
-
-	public doesFieldHaveCustomRenderer(featureLayer: FeatureLayer, fieldName: string): boolean {
-		this.#ensureInitialised();
-
-		// Find the feature layer by name
-		const featureLayerRecord = this.#data.FeatureLayers.find(
-			(fl) => fl.Name === featureLayer.title
-		);
-
-		if (!featureLayerRecord) {
-			return false;
-		}
-
-		// Find the field by name and feature layer ID
-		const fieldRecord = this.#data.Fields.find(
-			(f) => f.FeatureLayerId === featureLayerRecord.Id && f.Name === fieldName
-		);
-
-		if (!fieldRecord) {
-			return false;
-		}
-
-		// Check if there's a custom renderer for this field
-		const customRendererField = this.#data.CustomRenderers_Fields.find(
-			(crf) => crf.FieldId === fieldRecord.Id
-		);
-
-		return !!customRendererField;
-	}
-
-	public getAllFieldsWithCustomRenderers(featureLayer: FeatureLayer): string[] {
-		this.#ensureInitialised();
-
-		// Find the feature layer by name
-		const featureLayerRecord = this.#data.FeatureLayers.find(
-			(fl) => fl.Name === featureLayer.title
-		);
-
-		if (!featureLayerRecord) {
-			return [];
-		}
-
-		// Find all fields for this feature layer
-		const fieldsForLayer = this.#data.Fields.filter(
-			(f) => f.FeatureLayerId === featureLayerRecord.Id
-		);
-
-		// Find fields that have custom renderers
-		const fieldNames: string[] = [];
-		for (const field of fieldsForLayer) {
-			const hasCustomRenderer = this.#data.CustomRenderers_Fields.some(
-				(crf) => crf.FieldId === field.Id
-			);
-			if (hasCustomRenderer) {
-				fieldNames.push(field.Name);
-			}
-		}
-
-		return fieldNames;
+	/**
+	 * Initializes an instance of CustomRendererService.
+	 * @param customRenderersData The custom renderers data.
+	 */
+	constructor(customRenderersData: CustomRenderers) {
+		this.#data = customRenderersData;
 	}
 
 	public async applyCustomRenderer(featureLayer: FeatureLayer, fieldName: string) {
-		this.#ensureInitialised();
-
 		// Find the feature layer by name
 		const featureLayerRecord = this.#data.FeatureLayers.find(
 			(fl) => fl.Name === featureLayer.title
@@ -187,6 +112,62 @@ export class CustomRendererService {
 
 		featureLayer.renderer = renderer;
 		this.setCustomOutlines(featureLayer, customRenderer.LodsGroupId);
+	}
+
+	public doesFieldHaveCustomRenderer(featureLayer: FeatureLayer, fieldName: string): boolean {
+		// Find the feature layer by name
+		const featureLayerRecord = this.#data.FeatureLayers.find(
+			(fl) => fl.Name === featureLayer.title
+		);
+
+		if (!featureLayerRecord) {
+			return false;
+		}
+
+		// Find the field by name and feature layer ID
+		const fieldRecord = this.#data.Fields.find(
+			(f) => f.FeatureLayerId === featureLayerRecord.Id && f.Name === fieldName
+		);
+
+		if (!fieldRecord) {
+			return false;
+		}
+
+		// Check if there's a custom renderer for this field
+		const customRendererField = this.#data.CustomRenderers_Fields.find(
+			(crf) => crf.FieldId === fieldRecord.Id
+		);
+
+		return !!customRendererField;
+	}
+
+	public getAllFieldsWithCustomRenderers(featureLayer: FeatureLayer): string[] {
+		// Find the feature layer by name
+		const featureLayerRecord = this.#data.FeatureLayers.find(
+			(fl) => fl.Name === featureLayer.title
+		);
+
+		if (!featureLayerRecord) {
+			return [];
+		}
+
+		// Find all fields for this feature layer
+		const fieldsForLayer = this.#data.Fields.filter(
+			(f) => f.FeatureLayerId === featureLayerRecord.Id
+		);
+
+		// Find fields that have custom renderers
+		const fieldNames: string[] = [];
+		for (const field of fieldsForLayer) {
+			const hasCustomRenderer = this.#data.CustomRenderers_Fields.some(
+				(crf) => crf.FieldId === field.Id
+			);
+			if (hasCustomRenderer) {
+				fieldNames.push(field.Name);
+			}
+		}
+
+		return fieldNames;
 	}
 
 	public async setCustomOutlines(featureLayer: FeatureLayer, lodsGroupId: number) {
@@ -364,15 +345,5 @@ export class CustomRendererService {
 				stops: lodSizes
 			} as __esri.VisualVariableProperties
 		];
-	}
-
-	#ensureInitialised() {
-		if (!this.#isInitialised) {
-			throw new Error('CustomRendererService is not initialized');
-		}
-
-		if (!this.#data) {
-			throw new Error('Data is not loaded');
-		}
 	}
 }

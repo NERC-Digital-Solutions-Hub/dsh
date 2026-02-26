@@ -23,10 +23,15 @@
 	import { setItemInfoDialogEvents } from '$lib/Events/ItemInfoDialogEvents';
 	import { useAiChatbotHealth } from '$lib/Hooks/UseAiChatbotHealth.svelte';
 	import { useFetchAppConfig } from '$lib/Hooks/UseFetchAppConfig.svelte';
+	import { useFetchCustomRenderers } from '$lib/Hooks/UseFetchCustomRenderers.svelte';
 	import { useLoadSelectionsFromIndexDb } from '$lib/Hooks/UseLoadSelectionsFromIndexDb.svelte';
 	import { useUprnDownloadHealth } from '$lib/Hooks/UseUprnDownloadHealth.svelte';
 	import { SelectionState } from '$lib/Models/Treeview/SelectionState';
 	import { TreeviewNode } from '$lib/Models/Treeview/TreeviewNode';
+	import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
+	import { VariableSubType } from '$lib/Models/Treeview/VariableSubType';
+	import type { VariableTreeviewNode } from '$lib/Models/Treeview/VariableTreeviewNode';
+	import { CustomRendererService } from '$lib/Services/CustomRendererService';
 	import type { INodeProvider } from '$lib/Services/INodeProvider';
 	import { LayerViewProvider } from '$lib/Services/LayerViewProvider';
 	import { NodeProvider } from '$lib/Services/NodeProvider';
@@ -174,6 +179,24 @@
 		return selections;
 	});
 
+	/** Hook to fetch custom renderers for the map based on the app configuration. */
+	const customRenderers = $derived.by(() => {
+		if (
+			!appConfig.content?.contentConfig?.baseUrl ||
+			!appConfig.content.contentConfig.climateJustRenderersPath
+		) {
+			return null;
+		}
+
+		const url: string = new URL(
+			appConfig.content.contentConfig.climateJustRenderersPath,
+			appConfig.content.contentConfig.baseUrl
+		).toString();
+		const renderers = useFetchCustomRenderers(url);
+		renderers.fetch();
+		return renderers;
+	});
+
 	/** The web map store instance. */
 	let webMapStore: WebMapStore | null = $derived.by(() => {
 		return appConfig.content
@@ -182,6 +205,13 @@
 					itemId: appConfig.content.map.portalItemId || '',
 					proxy: appConfig.content.map.proxy
 				})
+			: null;
+	});
+
+	/** The custom renderer service instance. */
+	let customRendererService: CustomRendererService | null = $derived.by(() => {
+		return customRenderers && customRenderers.content
+			? new CustomRendererService(customRenderers.content)
 			: null;
 	});
 
@@ -486,6 +516,59 @@
 	});
 
 	/**
+	 * Effect to apply custom renderers to map layers based on the currently visible variable 
+	 * nodes in the treeview.
+	*/
+	$effect(() => {
+		if (
+			!webMapStore?.isLoaded ||
+			!mapView ||
+			!customRendererService ||
+			!treeviewNodeProvider ||
+			!nodeVisibilityController
+		) {
+			return;
+		}
+
+		let variableNode: TreeviewNode | undefined;
+		for (const [nodeId, isVisible] of nodeVisibilityController.visibilityStates) {
+			if (!isVisible) {
+				continue;
+			}
+
+			const node = treeviewNodeProvider.getTreeviewNode(nodeId);
+			if (!node || !isVariableNode(node)) {
+				continue;
+			}
+
+			if (node.variableSubType === VariableSubType.Field) {
+				variableNode = node;
+				break;
+			}
+		}
+
+		if (!variableNode || !isVariableNode(variableNode)) {
+			return;
+		}
+
+		const layer: __esri.Layer | nullish = mapView.map?.findLayerById(variableNode.layerId);
+		if (!layer) {
+			console.warn(
+				`[uprn/app] Could not find layer for variable node ${variableNode.id} with layer ID ${variableNode.layerId}`
+			);
+			return;
+		}
+
+		customRendererService.applyCustomRenderer(
+			layer as __esri.FeatureLayer,
+			variableNode.variableId
+		);
+		console.log(
+			`[uprn/app] Applied custom renderer for variable node ${variableNode.id} on layer ${layer.id}`
+		);
+	});
+
+	/**
 	 * Recursively filters treeview nodes based on the specified treeview type and visibility settings.
 	 * @param nodes - The array of TreeviewNode instances to filter.
 	 * @param type - The TreeviewType to filter nodes by.
@@ -546,6 +629,15 @@
 				resizeObserver.disconnect();
 			}
 		};
+	}
+
+	/**
+	 * Checks if a given node is a VariableTreeviewNode.
+	 * @param node The node to check.
+	 * @returns True if the node is a VariableTreeviewNode, false otherwise.
+	 */
+	function isVariableNode(node: TreeviewNode): node is VariableTreeviewNode {
+		return node.type === TreeviewNodeType.Variable;
 	}
 
 	/**
