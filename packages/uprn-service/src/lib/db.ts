@@ -55,6 +55,7 @@ class AppDB extends Dexie {
 
 	constructor() {
 		super('uprn-service-db');
+
 		this.version(1).stores({
 			uprnSelections: '&portalItemId',
 			areaSelections: '++id, layerId, *areaIds',
@@ -62,8 +63,23 @@ class AppDB extends Dexie {
 			userDownloads: '++id, &localId, createdAt'
 		});
 		this.version(2).stores({
+			uprnSelections: '&portalItemId',
+			areaSelections: '++id, layerId, *areaIds',
+			dataSelections: '++id, layerId, *fields',
+			userDownloads: '++id, &localId, createdAt',
 			cachedConfigs: '&url, version'
 		});
+		this.version(3)
+			.stores({
+				uprnSelections: '&portalItemId',
+				areaSelections: '++id, layerId, *areaIds',
+				dataSelections: '++id, layerId, *fields',
+				userDownloads: '++id, &localId, createdAt',
+				cachedConfigs: '&url, version'
+			})
+			.upgrade(async (tx) => {
+				await tx.table('cachedConfigs').clear();
+			});
 	}
 }
 
