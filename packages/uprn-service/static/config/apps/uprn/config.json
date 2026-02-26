@@ -1,7 +1,8 @@
 {
     "contentConfig": {
         "baseUrl": "https://nerc-digital-solutions-hub.github.io/dsh-content/",
-        "manifestPath": "pages/apps/uprn-service/generated/manifest.json"
+        "manifestPath": "pages/apps/uprn-service/generated/manifest.json",
+        "climateJustRenderersPath": "pages/apps/uprn-service/climatejust-renderers.json"
     },
     "uprnDownloadApiConfig": {
         "itemType": "url",
