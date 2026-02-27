@@ -23,7 +23,7 @@ export function useFetchMetadataContent(contentItem: MetadataTabContentItem) {
 		objectUrls.clear();
 	}
 
-	async function fetchText(url: string) {
+	async function fetchTextFromSource(url: string) {
 		const response = await fetch(url);
 		if (!response.ok) {
 			throw new Error(`Failed to fetch text content: ${response.status} ${response.statusText}`);
@@ -53,24 +53,30 @@ export function useFetchMetadataContent(contentItem: MetadataTabContentItem) {
 			revokeObjectUrls();
 
 			switch (contentItem.type) {
+				case 'arcgisInfo':
+					content = 'placeholder';
+					break;
 				case 'text':
-					content = await fetchText(contentItem.link);
+					content = contentItem.value;
+					break;
+				case 'disclaimer':
+					content = contentItem.value;
 					break;
 				case 'image':
-					content = await fetchBlobAsObjectUrl(contentItem.link, 'image');
+					content = await fetchBlobAsObjectUrl(contentItem.source, 'image');
 					break;
 				case 'xml':
-					content = await fetchText(contentItem.link);
+					content = await fetchTextFromSource(contentItem.source);
 					break;
 				case 'docx':
-					content = await fetchBlobAsObjectUrl(contentItem.link, 'docx');
+					content = await fetchBlobAsObjectUrl(contentItem.source, 'docx');
 					break;
 				case 'pdf':
-					content = await fetchBlobAsObjectUrl(contentItem.link, 'pdf');
+					content = await fetchBlobAsObjectUrl(contentItem.source, 'pdf');
 					break;
 				case 'slideshow': {
 					const urls = await Promise.all(
-						contentItem.links.map((link) => fetchBlobAsObjectUrl(link, 'slideshow'))
+						contentItem.source.map((link) => fetchBlobAsObjectUrl(link, 'slideshow'))
 					);
 					content = urls;
 					break;
