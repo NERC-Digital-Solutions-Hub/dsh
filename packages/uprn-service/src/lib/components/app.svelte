@@ -50,6 +50,7 @@
 	import { TreeviewConfigStore } from '$lib/Stores/TreeviewConfigStore';
 	import { TreeviewStore } from '$lib/Stores/TreeviewStore.svelte';
 	import { WebMapStore } from '$lib/Stores/WebMapStore.svelte';
+	import type { AppTabState } from '$lib/Types/Chatbot.types';
 	import { TreeviewType } from '$lib/Types/Treeview.types';
 	import { TabProgress, TabType } from '$lib/Types/Uprn.types';
 	import { createTreeviewNodes } from '$lib/Utilities/CreateTreeviewNodes';
@@ -626,6 +627,18 @@
 	}
 
 	/**
+	 * Retrieves the current state of the application tabs, including the active tab and any relevant selections, to be used
+	 * for chatbot interactions.
+	 * @return An object representing the current state of the application tabs, including the active tab and any relevant selections.
+	 */
+	function getTabState(): AppTabState {
+		return {
+			tab: currentTab,
+			selections: []
+		};
+	}
+
+	/**
 	 * Observes the size of the tab bar and updates the tabBarWidth state accordingly, which is used to adjust
 	 * the sidebar minimum size.
 	 * @param element - The HTML element of the tab bar to observe for size changes.
@@ -840,8 +853,8 @@
 						AI UPRN Chatbot service is not available.
 					</p>
 				{:else if !!aiUprnChatbotHealth && aiUprnChatbotHealth.isAccessible && appConfig.content?.aiUprnChatbot}
-					{@const chatStreamingUrl = `${appConfig.content.aiUprnChatbot.baseUrl}${appConfig.content.aiUprnChatbot.chatRoute}`}
-					<UprnChat streamUrl={chatStreamingUrl} />
+					{@const chatEndpoint = `${appConfig.content.aiUprnChatbot.baseUrl}${appConfig.content.aiUprnChatbot.chatRoute}`}
+					<UprnChat {chatEndpoint} {getTabState} />
 				{/if}
 			</CollapsibleWindow>
 		</div>

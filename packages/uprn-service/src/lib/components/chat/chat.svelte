@@ -3,7 +3,8 @@
 	import * as Chat from '$lib/components/shadcn/chat';
 	import { Input } from '$lib/components/shadcn/input';
 	import ScrollArea from '$lib/components/shadcn/scroll-area/scroll-area.svelte';
-	import { useAiChatbotChatStream } from '$lib/Hooks/UseAiChatbotChatStream.svelte';
+	import { useSubmitAiChatbotChat } from '$lib/Hooks/UseSubmitAiChatbotChat.svelte';
+	import type { AppTabState } from '$lib/Types/Chatbot.types';
 	import { cn } from '$lib/utils';
 	import SendIcon from '@lucide/svelte/icons/send';
 
@@ -15,7 +16,8 @@
 	 * Props interface for the chat component.
 	 */
 	type Props = {
-		streamUrl: string;
+		chatEndpoint: string;
+		getTabState: () => AppTabState;
 		class?: string;
 	};
 
@@ -51,11 +53,11 @@
 	// Component Props
 	// ============================================================================
 
-	const { streamUrl, class: className }: Props = $props();
+	const { chatEndpoint, getTabState, class: className }: Props = $props();
 
 	/** Hook for the AI UPRN chatbot streaming endpoint. */
-	const chatStream = $derived.by(() => {
-		return streamUrl ? useAiChatbotChatStream(streamUrl) : null;
+	const chat = $derived.by(() => {
+		return chatEndpoint ? useSubmitAiChatbotChat(chatEndpoint) : null;
 	});
 
 	// ============================================================================
@@ -126,7 +128,7 @@
 	 */
 	$effect(() => {
 		messages.length;
-		chatStream?.content;
+		chat?.content;
 
 		// Scroll to bottom after a small delay to ensure DOM has updated
 		if (scrollContainer) {
@@ -199,7 +201,7 @@
 	async function handleSubmit(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
 
-		if (!message.trim() || chatStream?.isLoading) {
+		if (!message.trim() || chat?.isLoading) {
 			return;
 		}
 
@@ -209,10 +211,10 @@
 		addMessage(userMessage, USER_SENDER_ID);
 
 		try {
-			await chatStream?.fetch(userMessage);
+			await chat?.submit(userMessage, getTabState());
 
-			if (!chatStream?.error && chatStream?.content) {
-				addMessage(chatStream.content, BOT_SENDER_ID);
+			if (!chat?.error && chat?.content) {
+				addMessage(chat.content, BOT_SENDER_ID);
 			} else {
 				addMessage(ERROR_MESSAGE, BOT_SENDER_ID);
 			}
@@ -237,7 +239,7 @@
 					<Chat.Bubble variant={m.senderId === USER_SENDER_ID ? 'sent' : 'received'}>
 						<Chat.BubbleAvatar />
 						<Chat.BubbleMessage class="flex flex-col gap-1">
-							<p class="break-words whitespace-pre-wrap">{m.message}</p>
+							{@html m.message}
 							<div class="w-full text-xs group-data-[variant='sent']/chat-bubble:text-end">
 								{m.sentAt}
 							</div>
@@ -245,12 +247,12 @@
 					</Chat.Bubble>
 				{/each}
 
-				{#if chatStream?.isLoading}
+				{#if chat?.isLoading}
 					<Chat.Bubble variant="received">
 						<Chat.BubbleAvatar />
 						<Chat.BubbleMessage class="flex flex-col gap-1">
-							{#if chatStream?.content}
-								<p class="break-words whitespace-pre-wrap">{chatStream.content}</p>
+							{#if chat?.content}
+								<p class="break-words whitespace-pre-wrap">{@html chat.content}</p>
 							{:else}
 								<Chat.BubbleMessage typing />
 							{/if}
@@ -272,14 +274,14 @@
 				bind:value={message}
 				class="rounded-full"
 				placeholder="Type a message..."
-				disabled={chatStream?.isLoading}
+				disabled={chat?.isLoading}
 			/>
 			<Button
 				type="submit"
 				variant="default"
 				size="icon"
 				class="shrink-0 rounded-full"
-				disabled={message.trim() === '' || chatStream?.isLoading}
+				disabled={message.trim() === '' || chat?.isLoading}
 			>
 				<SendIcon />
 			</Button>
