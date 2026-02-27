@@ -51,7 +51,7 @@
 	import { TreeviewStore } from '$lib/Stores/TreeviewStore.svelte';
 	import { WebMapStore } from '$lib/Stores/WebMapStore.svelte';
 	import { TreeviewType } from '$lib/Types/Treeview.types';
-	import { TabProgress } from '$lib/Types/Uprn.types';
+	import { TabProgress, TabType } from '$lib/Types/Uprn.types';
 	import { createTreeviewNodes } from '$lib/Utilities/CreateTreeviewNodes';
 	import { Plus } from '@lucide/svelte';
 	import { onMount } from 'svelte';
@@ -59,23 +59,23 @@
 
 	const tabBarTriggers = [
 		{
-			value: 'areas-of-interest',
+			value: TabType.AreaOfInterest,
 			label: 'Areas of Interest',
 			tooltip: 'Select areas of interest on the map',
 			seperatorIcon: Plus
 		},
 		{
-			value: 'select-data',
+			value: TabType.Data,
 			label: 'Select Data',
 			tooltip: 'Select data layers for export'
 		},
 		{
-			value: 'export',
+			value: TabType.Export,
 			label: 'Export',
 			tooltip: 'Export selected data confined to selected areas'
 		},
 		{
-			value: 'downloads',
+			value: TabType.Downloads,
 			label: 'Download',
 			tooltip: 'Download your exported data',
 			hasProgress: false
@@ -129,7 +129,7 @@
 	let resetDialogOpen: boolean = $state(false);
 
 	/** State for managing the current active tab. */
-	let currentTab: string = $state('areas-of-interest');
+	let currentTab: TabType = $state(TabType.AreaOfInterest);
 
 	/** State for tracking the tab bar progress that contains the tabs the user has visited. */
 	let tabProgressByValue: Record<string, TabProgress | undefined> = $state({});
@@ -611,7 +611,7 @@
 	 * @param value - The new tab value to switch to
 	 */
 	function onTabValueChange(value: string): void {
-		currentTab = value;
+		currentTab = value as TabType;
 		tabStateService.setCurrentTab(value);
 		console.log(`[uprn/app] Switched to tab: ${value}`);
 	}
@@ -752,7 +752,7 @@
 				</SidebarLayout.Header>
 
 				<SidebarLayout.Content>
-					<div hidden={currentTab !== 'areas-of-interest'}>
+					<div hidden={currentTab !== TabType.AreaOfInterest}>
 						<UprnTabBarContent>
 							{#if loadAreaTreeview}
 								<AreaSelectionTreeview
@@ -764,7 +764,7 @@
 						</UprnTabBarContent>
 					</div>
 
-					<div hidden={currentTab !== 'select-data'}>
+					<div hidden={currentTab !== TabType.Data}>
 						<UprnTabBarContent>
 							{#if loadDataTreeview}
 								<DataSelectionTreeview
@@ -778,7 +778,7 @@
 						</UprnTabBarContent>
 					</div>
 
-					<div hidden={currentTab !== 'export'}>
+					<div hidden={currentTab !== TabType.Export}>
 						<UprnTabBarContent>
 							{#if loadExportMenu}
 								<ExportMenu
@@ -791,7 +791,7 @@
 						</UprnTabBarContent>
 					</div>
 
-					<div hidden={currentTab !== 'downloads'}>
+					<div hidden={currentTab !== TabType.Downloads}>
 						<UprnTabBarContent>
 							{#if !uprnDownloadHealth || uprnDownloadHealth.isLoading}
 								<div class="flex h-full w-full items-center justify-center">

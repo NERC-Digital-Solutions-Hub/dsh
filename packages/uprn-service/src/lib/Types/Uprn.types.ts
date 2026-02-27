@@ -26,6 +26,13 @@ export interface ConfigurationItemInfo {
 	path: string;
 }
 
+export enum TabType {
+	AreaOfInterest = 'area',
+	Data = 'data',
+	Export = 'export',
+	Downloads = 'downloads'
+}
+
 /**
  * A selection of data fields from a specific layer.
  */
