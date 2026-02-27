@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { Button, buttonVariants } from '$lib/components/shadcn/button/index.js';
 	import * as Dialog from '$lib/components/shadcn/dialog/index.js';
-	import { RotateCcw } from '@lucide/svelte';
 	import { cn } from '$lib/utils';
+	import { RotateCcw } from '@lucide/svelte';
 
 	export type ResetAction = {
 		label: string;
@@ -47,7 +47,7 @@
 				</Button>
 			{/each}
 		</div>
-		<Dialog.Footer class="sm:justify-start">
+		<Dialog.Footer class="sm:justify-end">
 			<Button variant="ghost" onclick={() => (open = false)}>Cancel</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
