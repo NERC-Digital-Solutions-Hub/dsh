@@ -16,7 +16,6 @@
 
 	type Props = {
 		onExportSuccess?: () => void;
-		clearSelections: () => void;
 		areaSelectionInteractionStore: AreaSelectionInteractionStore;
 		dataSelectionStore: DataSelectionStore;
 		downloadsStore: DownloadsStore;
@@ -24,7 +23,6 @@
 
 	const {
 		onExportSuccess,
-		clearSelections,
 		areaSelectionInteractionStore,
 		dataSelectionStore,
 		downloadsStore
@@ -121,7 +119,6 @@
 	</div>
 
 	<div class="export-footer__right">
-		<ClearSelectionsButton class="mr-4" clear={clearSelections} />
 		<Button
 			variant={areRequirementsMet ? 'default' : 'outline'}
 			disabled={coolingDown}

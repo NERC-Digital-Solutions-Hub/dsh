@@ -516,9 +516,9 @@
 	});
 
 	/**
-	 * Effect to apply custom renderers to map layers based on the currently visible variable 
+	 * Effect to apply custom renderers to map layers based on the currently visible variable
 	 * nodes in the treeview.
-	*/
+	 */
 	$effect(() => {
 		if (
 			!webMapStore?.isLoaded ||
@@ -805,7 +805,6 @@
 						{#if areaSelectionInteractionStore}
 							<ExportMenuFooter
 								onExportSuccess={() => onTabValueChange('downloads')}
-								clearSelections={() => {}}
 								{areaSelectionInteractionStore}
 								{dataSelectionStore}
 								{downloadsStore}
