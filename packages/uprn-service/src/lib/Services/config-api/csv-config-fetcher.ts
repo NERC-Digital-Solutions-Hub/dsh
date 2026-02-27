@@ -187,7 +187,8 @@ export class CsvConfigFetcher implements IConfigurationFetcher<{
 					: toNumber(get('VisibilityGroupId')),
 			IsOpenOnInit: toBoolean(get('IsOpenOnInit')),
 			IsRenderedOnInit: toBoolean(get('IsRenderedOnInit')),
-			DisableRendering: toBoolean(get('DisableRendering'))
+			DisableRendering: toBoolean(get('DisableRendering')),
+			DisabledReason: toNullableString(get('DisabledReason'))
 		};
 
 		return {
@@ -210,7 +211,8 @@ export class CsvConfigFetcher implements IConfigurationFetcher<{
 			visibilityGroupId: raw.VisibilityGroupId,
 			isOpenOnInit: raw.IsOpenOnInit,
 			isRenderedOnInit: raw.IsRenderedOnInit,
-			disableRendering: raw.DisableRendering
+			disableRendering: raw.DisableRendering,
+			disabledReason: raw.DisabledReason
 		};
 	}
 
@@ -250,7 +252,8 @@ export class CsvConfigFetcher implements IConfigurationFetcher<{
 			IsRenderedOnInit: toBoolean(get('IsRenderedOnInit')),
 			DisableRendering: toBoolean(get('DisableRendering')),
 			AlternativeTitle: toNullableString(get('AlternativeTitle')),
-			MetadataTabInfoUrl: toNullableString(get('MetadataTabInfoUrl'))
+			MetadataTabInfoUrl: toNullableString(get('MetadataTabInfoUrl')),
+			DisabledReason: toNullableString(get('DisabledReason'))
 		};
 
 		return {
@@ -272,7 +275,8 @@ export class CsvConfigFetcher implements IConfigurationFetcher<{
 			isRenderedOnInit: raw.IsRenderedOnInit,
 			disableRendering: raw.DisableRendering,
 			alternativeTitle: raw.AlternativeTitle,
-			metadataTabInfoUrl: raw.MetadataTabInfoUrl
+			metadataTabInfoUrl: raw.MetadataTabInfoUrl,
+			disabledReason: raw.DisabledReason
 		};
 	}
 

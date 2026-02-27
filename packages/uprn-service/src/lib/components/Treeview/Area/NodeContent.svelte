@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { Toggle } from '$lib/components/shadcn/toggle/index.js';
 	import OpenIndicator from '$lib/components/open-indicator/open-indicator.svelte';
 	import { Button } from '$lib/components/shadcn/button/index.js';
-	import { getNodeStyles, accentBgStyles, defaultBgStyles } from '../NodeContentStyles.js';
+	import { Toggle } from '$lib/components/shadcn/toggle/index.js';
+	import { Ban } from '@lucide/svelte';
 	import type { Component } from 'svelte';
+	import { accentBgStyles, defaultBgStyles, getNodeStyles } from '../NodeContentStyles.js';
 
 	/**
 	 * Props for the NodeContent component.
@@ -11,6 +12,10 @@
 	type Props = {
 		/** Whether the node can be toggled (for visibility). */
 		isTogglable: boolean;
+		/** Whether the node is enabled (downloadable). */
+		isEnabled: boolean;
+		/** Optional reason why the node is disabled. */
+		disabledReason?: string;
 		/** Whether the node is currently pressed/selected. */
 		pressed: boolean;
 		/** The icon HTML/SVG to display. */
@@ -27,7 +32,18 @@
 		isOpen: boolean;
 	};
 
-	const { isTogglable, pressed, icon, name, depth, onclick, children, isOpen }: Props = $props();
+	const {
+		isTogglable,
+		isEnabled,
+		disabledReason,
+		pressed,
+		icon,
+		name,
+		depth,
+		onclick,
+		children,
+		isOpen
+	}: Props = $props();
 
 	/** Calculate width to account for indentation. */
 	const widthCalc = $derived(`calc(100% - ${depth * 1}rem)`);
@@ -38,11 +54,16 @@
 {#if isTogglable}
 	<Toggle
 		{pressed}
-		class={`${baseClass} w-full h-auto py-2`}
+		disabled={!isEnabled}
+		class={`${baseClass} w-full h-auto py-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-auto`}
 		variant="outline"
 		style="width: {widthCalc};"
-		onPressedChange={onclick}
+		onPressedChange={() => {
+			if (!isEnabled) return;
+			onclick();
+		}}
 	>
+		{console.log('reason', disabledReason)}
 		<div class="grid w-full grid-cols-[auto_1fr_auto] items-center gap-x-2">
 			<div class="flex items-center gap-1">
 				<span class="inline-block size-4 shrink-0" aria-hidden="true">
@@ -61,6 +82,12 @@
 				{@render children?.()}
 			</div>
 		</div>
+
+		{#if !isEnabled}
+			<div title={disabledReason} class="pointer-events-auto">
+				<Ban class="text-red-500" />
+			</div>
+		{/if}
 	</Toggle>
 {:else}
 	<Button

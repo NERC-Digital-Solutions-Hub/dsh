@@ -22,6 +22,7 @@ export type DatasetVariableRowRaw = {
 	IsOpenOnInit: boolean;
 	IsRenderedOnInit: boolean;
 	DisableRendering: boolean;
+	DisabledReason: string | null;
 	AlternativeTitle: string | null;
 	MetadataTabInfoUrl: string | null;
 };
@@ -51,6 +52,7 @@ export type DatasetVariableRow = {
 	isOpenOnInit: boolean;
 	isRenderedOnInit: boolean;
 	disableRendering: boolean;
+	disabledReason: string | null;
 	alternativeTitle: string | null;
 	metadataTabInfoUrl: string | null;
 };
@@ -79,6 +81,7 @@ export type DatasetRowRaw = {
 	IsOpenOnInit: boolean;
 	IsRenderedOnInit: boolean;
 	DisableRendering: boolean;
+	DisabledReason: string | null;
 };
 
 /**
@@ -105,6 +108,7 @@ export type DatasetRow = {
 	isOpenOnInit: boolean;
 	isRenderedOnInit: boolean;
 	disableRendering: boolean;
+	disabledReason: string | null;
 };
 
 /**

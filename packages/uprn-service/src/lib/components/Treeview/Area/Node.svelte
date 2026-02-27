@@ -54,6 +54,9 @@
 		nodeConfigProvider?.getConfig(node.id) ?? null
 	);
 
+	/** Whether this node is enabled (downloadable). */
+	const isEnabled: boolean = $derived(nodeConfig?.isEnabled ?? false);
+
 	/** Whether this node represents a folder (has children). */
 	const isFolder = $derived(
 		!!(
@@ -78,22 +81,6 @@
 	/** Reactive state for visibility icon. */
 	let showVisibility: boolean = $state(false);
 	let isVisibilityAnimatingOut: boolean = $state(false);
-
-	/**
-	 * Checks if any child nodes are visible.
-	 * Used to determine folder pressed state.
-	 * @returns True if any child is visible.
-	 */
-	function hasVisibleChildren(): boolean {
-		if (!node.children || !getNodeVisibility) {
-			return false;
-		}
-
-		return node.children.some((child) => {
-			const childVisibility = getNodeVisibility(child.id);
-			return childVisibility ?? false;
-		});
-	}
 
 	// Update pressed state and icon based on node properties
 	$effect(() => {
@@ -133,6 +120,22 @@
 			}, 200);
 		}
 	});
+
+	/**
+	 * Checks if any child nodes are visible.
+	 * Used to determine folder pressed state.
+	 * @returns True if any child is visible.
+	 */
+	function hasVisibleChildren(): boolean {
+		if (!node.children || !getNodeVisibility) {
+			return false;
+		}
+
+		return node.children.some((child) => {
+			const childVisibility = getNodeVisibility(child.id);
+			return childVisibility ?? false;
+		});
+	}
 
 	/**
 	 * Toggles the visibility of the node.
@@ -189,9 +192,11 @@
 </script>
 
 {#snippet content()}
-	{#if !nodeConfigProvider.getConfig(node.id)?.isHidden}
+	{#if !nodeConfig?.isHidden}
 		<NodeContent
 			isTogglable={!isFolder}
+			{isEnabled}
+			disabledReason={nodeConfig?.disabledReason}
 			pressed={isPressed}
 			{icon}
 			name={node.name}

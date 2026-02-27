@@ -61,7 +61,10 @@ export interface TreeviewNodeConfig {
 	tags?: string[];
 
 	/** Whether this node can be downloaded by the user. Optional - defaults to false if not specified */
-	isDownloadable?: boolean;
+	isEnabled?: boolean;
+
+	/** Optional reason why this node is disabled, shown to users on hover if the node is not enabled */
+	disabledReason?: string;
 
 	/** Whether this node is visible on initialisation. Optional - defaults to false if not specified */
 	isVisibleOnInit?: boolean;

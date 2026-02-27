@@ -73,7 +73,7 @@
 	);
 
 	/** Reactive state for whether the node is downloadable. */
-	let isDownloadable: boolean = $derived(nodeConfig?.isDownloadable ?? true);
+	let isDownloadable: boolean = $derived(nodeConfig?.isEnabled ?? true);
 
 	/** Reactive state for node tag definitions. */
 	const nodeTagDefinitions: TagDefinition[] = $derived.by(() => {

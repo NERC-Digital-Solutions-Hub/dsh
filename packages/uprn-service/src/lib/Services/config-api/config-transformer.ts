@@ -87,7 +87,7 @@ export class ConfigTransformer implements IConfigurationTransformer<
 				treeviewType: row?.treeviewId
 					? this.getNodeTreeviewType(row.treeviewId)
 					: TreeviewType.Data,
-				isDownloadable: row?.isEnabled ?? false,
+				isEnabled: row?.isEnabled ?? false,
 				isOpenOnInit: row?.isOpenOnInit ?? false,
 				isHidden: row ? !row.isListed : false,
 				order: row?.order ?? 0,
@@ -115,7 +115,8 @@ export class ConfigTransformer implements IConfigurationTransformer<
 				type: this.getNodeType(row.wmLayerType),
 				typology: this.getNodeTypology(row.tvType),
 				treeviewType: row.treeviewId ? this.getNodeTreeviewType(row.treeviewId) : TreeviewType.Data,
-				isDownloadable: row.isEnabled,
+				isEnabled: row.isEnabled,
+				disabledReason: row.disabledReason || undefined,
 				isOpenOnInit: row.isOpenOnInit,
 				isVisibleOnInit: row.isRenderedOnInit,
 				disableVisibilityToggle: row.disableRendering,
@@ -323,7 +324,7 @@ export class ConfigTransformer implements IConfigurationTransformer<
 				: TreeviewType.Data,
 			type: TreeviewNodeLayerType.Field,
 			typology: TreeviewNodeTypology.Variable,
-			isDownloadable: variable.isEnabled,
+			isEnabled: variable.isEnabled,
 			isOpenOnInit: variable.isOpenOnInit,
 			isVisibleOnInit: variable.isRenderedOnInit,
 			visibilityDependencyIds: variable.hasDependants ?? undefined,
