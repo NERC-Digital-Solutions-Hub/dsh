@@ -39,7 +39,6 @@
 			.use(rehypeStringify)
 			.process(introduction.content);
 
-		console.log('Processed HTML:', htmlRaw.toString());
 		return htmlRaw.toString();
 	});
 </script>
