@@ -1,4 +1,4 @@
-import type { UprnDownloadJobRequest, UprnDownloadJobRequestResponse } from '$lib/Types/uprn';
+import type { UprnDownloadJobRequest, UprnDownloadJobRequestResponse } from '$lib/Types/Uprn.types';
 
 /**
  * Hook used to request a new UPRN download job. It manages the loading state,

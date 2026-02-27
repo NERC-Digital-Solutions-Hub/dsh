@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
-	import type { TagDefinition } from '$lib/Types/config';
+	import type { TagDefinition } from '$lib/Types/Configuration.types';
 	import type { ITagDefinitionProvider } from '$lib/Services/ITagDefinitionProvider';
 	import { Badge } from '$lib/components/shadcn/badge/index.js';
 

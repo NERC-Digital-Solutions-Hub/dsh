@@ -50,8 +50,8 @@
 	import { TreeviewConfigStore } from '$lib/Stores/TreeviewConfigStore';
 	import { TreeviewStore } from '$lib/Stores/TreeviewStore.svelte';
 	import { WebMapStore } from '$lib/Stores/WebMapStore.svelte';
-	import { TreeviewType } from '$lib/Types/treeview';
-	import { TabProgress } from '$lib/Types/uprn';
+	import { TreeviewType } from '$lib/Types/Treeview.types';
+	import { TabProgress } from '$lib/Types/Uprn.types';
 	import { createTreeviewNodes } from '$lib/Utilities/CreateTreeviewNodes';
 	import { Plus } from '@lucide/svelte';
 	import { onMount } from 'svelte';

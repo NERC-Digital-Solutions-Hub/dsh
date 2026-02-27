@@ -1,4 +1,4 @@
-import type { CustomRenderers } from '$lib/Types/custom-renderers';
+import type { CustomRenderers } from '$lib/Types/CustomRenderers.types';
 
 /**
  * Hook used to fetch the custom renderers config from a given URL.

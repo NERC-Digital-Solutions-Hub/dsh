@@ -14,7 +14,7 @@
 		type UprnDownloadGetJobStatusesRequest,
 		type UprnDownloadGetJobStatusesResponse,
 		type UprnDownloadJobRequest
-	} from '$lib/Types/uprn';
+	} from '$lib/Types/Uprn.types';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
 	import Download from '@lucide/svelte/icons/download';
 	import LoaderIcon from '@lucide/svelte/icons/loader';

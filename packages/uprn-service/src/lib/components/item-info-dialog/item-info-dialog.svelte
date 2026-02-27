@@ -11,7 +11,7 @@
 	import { useFetchMetadataTabInfo } from '$lib/Hooks/UseFetchMetadataTabInfo.svelte';
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 	import type { IWebMapService } from '$lib/Services/IWebMapService';
-	import type { MetadataTab, MetadataTabContentItem } from '$lib/Types/metadata';
+	import type { MetadataTab, MetadataTabContentItem } from '$lib/Types/Metadata.types';
 	import esriRequest from '@arcgis/core/request.js';
 	import { ArrowDownToLine } from '@lucide/svelte';
 	import { GalleryImage, GalleryThumbnail, Lightbox, LightboxGallery } from 'svelte-lightbox';

@@ -1,12 +1,11 @@
 import { ImageTileLevelOfDetails } from '$lib/Services/ImageTileLods';
-import type { LayerViewProvider } from '$lib/Services/LayerViewProvider';
 import type {
 	CustomRendererClassBreak,
 	CustomRenderers,
 	CustomRenderersSymbolAppearance,
 	CustomRendererSymbol,
 	LODSize
-} from '$lib/Types/custom-renderers';
+} from '$lib/Types/CustomRenderers.types';
 import Color from '@arcgis/core/Color';
 import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import ClassBreaksRenderer from '@arcgis/core/renderers/ClassBreaksRenderer';

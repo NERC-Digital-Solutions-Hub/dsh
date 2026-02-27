@@ -5,7 +5,7 @@ import {
 	TreeviewNodeTypology,
 	TreeviewType,
 	type TreeviewNodeConfig
-} from '$lib/Types/treeview';
+} from '$lib/Types/Treeview.types';
 
 type Input = {
 	folders: ReadonlyArray<FolderRow>;

@@ -10,7 +10,7 @@
 		AreaSelectionInteractionStore
 	} from '$lib/Stores/AreaSelectionInteractionStore.svelte';
 	import type { DataSelectionStore } from '$lib/Stores/DataSelectionStore.svelte';
-	import { TreeviewNodeTypology } from '$lib/Types/treeview.js';
+	import { TreeviewNodeTypology } from '$lib/Types/Treeview.types.js';
 	import SelectionTreeviewNode, {
 		type SelectionTreeviewNode as SelectionTreeviewNodeType
 	} from './selection-tree-node.svelte';

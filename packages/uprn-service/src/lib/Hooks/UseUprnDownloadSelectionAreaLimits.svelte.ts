@@ -1,4 +1,4 @@
-import type { UrpnDownloadAreaSelectionLimitResponse } from '$lib/Types/uprn';
+import type { UrpnDownloadAreaSelectionLimitResponse } from '$lib/Types/Uprn.types';
 
 /**
  * Hook used to fetch the selection area limits for different layers from the UPRN download service.

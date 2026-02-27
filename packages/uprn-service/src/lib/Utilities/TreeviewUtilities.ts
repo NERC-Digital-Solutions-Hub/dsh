@@ -1,4 +1,4 @@
-import { TreeviewNodeLayerType } from '$lib/Types/treeview';
+import { TreeviewNodeLayerType } from '$lib/Types/Treeview.types';
 
 export function getLayerTreeviewItemType(
 	layer: __esri.Layer | __esri.Sublayer

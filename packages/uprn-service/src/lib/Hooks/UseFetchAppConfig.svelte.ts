@@ -3,14 +3,14 @@ import { getCachedConfig, putCachedConfig } from '$lib/db';
 import { ConfigTransformer } from '$lib/Services/config-api/config-transformer';
 import { CsvConfigFetcher } from '$lib/Services/config-api/csv-config-fetcher';
 import { uprnConfigStore } from '$lib/Stores/UprnStore.svelte';
-import type { AppsUprnConfig, PortalItemConfig } from '$lib/Types/config';
-import type { TreeviewNodeConfig } from '$lib/Types/treeview';
+import type { AppsUprnConfig, PortalItemConfig } from '$lib/Types/Configuration.types';
+import type { TreeviewNodeConfig } from '$lib/Types/Treeview.types';
 import type {
 	AiUprnChatbotEndpoints,
 	ContentConfig,
 	UprnDownloadEndpoints,
 	UprnServiceConfigManifest
-} from '$lib/Types/uprn';
+} from '$lib/Types/Uprn.types';
 import { SvelteURL } from 'svelte/reactivity';
 
 /**

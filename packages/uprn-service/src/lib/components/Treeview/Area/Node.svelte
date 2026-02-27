@@ -9,7 +9,7 @@
 	} from '$lib/Models/Treeview/Index.js';
 	import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
-	import { TreeviewNodeTypology, type TreeviewNodeConfig } from '$lib/Types/treeview';
+	import { TreeviewNodeTypology, type TreeviewNodeConfig } from '$lib/Types/Treeview.types';
 	import type { Component } from 'svelte';
 	import { getNodeIcon } from '../GetNodeIcon';
 	import NodeAnimation from '../NodeAnimation.svelte';

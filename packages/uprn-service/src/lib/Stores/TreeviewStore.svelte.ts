@@ -10,7 +10,7 @@ import type { INodeProvider } from '$lib/Services/INodeProvider';
 import type { INodeSelectionController } from '$lib/Services/INodeSelectionController';
 import type { INodeTagProvider } from '$lib/Services/INodeTagProvider';
 import type { INodeVisibilityController } from '$lib/Services/INodeVisibilityController';
-import { TreeviewType } from '$lib/Types/treeview.js';
+import { TreeviewType } from '$lib/Types/Treeview.types.js';
 import { SvelteMap } from 'svelte/reactivity';
 
 export class TreeviewStore implements INodeTagProvider, INodeSelectionController {

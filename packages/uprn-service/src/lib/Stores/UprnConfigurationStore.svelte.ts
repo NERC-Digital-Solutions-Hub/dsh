@@ -1,5 +1,5 @@
 import { ConfigManager } from '$lib/Stores/ConfigManager.svelte';
-import type { PortalItemConfig } from '$lib/Types/config';
+import type { PortalItemConfig } from '$lib/Types/Configuration.types';
 import type {
 	AiUprnChatbotEndpoints,
 	ConfigurationItemInfo,
@@ -7,7 +7,7 @@ import type {
 	SidebarSize,
 	UprnConfiguration,
 	UprnDownloadEndpoints
-} from '$lib/Types/uprn';
+} from '$lib/Types/Uprn.types';
 
 export class UprnConfigurationStore {
 	public uprnDownloadApiConfig = new ConfigManager<UprnDownloadEndpoints>();

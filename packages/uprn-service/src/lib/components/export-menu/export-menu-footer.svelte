@@ -10,7 +10,7 @@
 		type AreaFieldInfoWithCode,
 		type AreaSelectionInfoWithCode,
 		type DataSelectionInfo
-	} from '$lib/Types/uprn';
+	} from '$lib/Types/Uprn.types';
 	import { onDestroy } from 'svelte';
 	import { toast } from 'svelte-sonner';
 

@@ -1,4 +1,4 @@
-import type { TabsPayload } from '$lib/Types/metadata';
+import type { TabsPayload } from '$lib/Types/Metadata.types';
 
 /**
  * Hook used to fetch metadata tab information from a given URL. It manages the loading state, any errors that occur during fetching,

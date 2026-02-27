@@ -40,9 +40,9 @@
 	import { TreeviewConfigStore } from '$lib/Stores/TreeviewConfigStore';
 	import { uprnConfigStore } from '$lib/Stores/UprnStore.svelte';
 	import { WebMapStore } from '$lib/Stores/WebMapStore.svelte';
-	import type { PortalItemConfig, SizeConfig } from '$lib/Types/config';
-	import type { TreeviewConfig } from '$lib/Types/treeview.js';
-	import { TabProgress } from '$lib/Types/uprn';
+	import type { PortalItemConfig, SizeConfig } from '$lib/Types/Configuration.types';
+	import type { TreeviewConfig } from '$lib/Types/Treeview.types.js';
+	import { TabProgress } from '$lib/Types/Uprn.types';
 	import { Plus } from '@lucide/svelte';
 	import { onDestroy, onMount } from 'svelte';
 

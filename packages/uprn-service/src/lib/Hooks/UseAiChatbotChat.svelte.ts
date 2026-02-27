@@ -1,4 +1,4 @@
-import type { AiUprnChatbotResponse } from '$lib/Types/uprn';
+import type { AiUprnChatbotResponse } from '$lib/Types/Uprn.types';
 
 /**
  * Hook used to send a chat query to the AI UPRN chatbot and receive a complete response.

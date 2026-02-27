@@ -12,8 +12,8 @@
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 	import type { INodeTagProvider } from '$lib/Services/INodeTagProvider';
 	import type { ITagDefinitionProvider } from '$lib/Services/ITagDefinitionProvider';
-	import type { TagDefinition } from '$lib/Types/config.js';
-	import { TreeviewNodeTypology, type TreeviewNodeConfig } from '$lib/Types/treeview.js';
+	import type { TagDefinition } from '$lib/Types/Configuration.types.js';
+	import { TreeviewNodeTypology, type TreeviewNodeConfig } from '$lib/Types/Treeview.types.js';
 	import type { Component } from 'svelte';
 	import DownloadButton from './DownloadButton.svelte';
 

@@ -1,12 +1,12 @@
 import type { AreaSelectionStoreSnapshot } from '$lib/Stores/AreaSelectionStore.svelte';
 import type { DataSelectionSnapshot } from '$lib/Stores/DataSelectionStore.svelte';
-import type { TreeviewNodeConfig } from '$lib/Types/treeview';
+import type { TreeviewNodeConfig } from '$lib/Types/Treeview.types';
 import {
 	DownloadStatus,
 	type AreaSelectionInfoWithCode,
 	type DataSelectionInfo,
 	type DownloadEntry
-} from '$lib/Types/uprn';
+} from '$lib/Types/Uprn.types';
 import Dexie, { type Table } from 'dexie';
 
 export interface DbUprnSelection {

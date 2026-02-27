@@ -3,8 +3,8 @@ import type { IDataSelectionProvider } from '$lib/Services/IDataSelectionProvide
 import type { ITabStateProvider } from '$lib/Services/ITabStateProvider';
 import type { IUserStateProvider } from '$lib/Services/IUserStateProvider';
 import type { IWebMapService } from '$lib/Services/IWebMapService';
-import type { UserState, UserStateSelection } from '$lib/Types/uprn';
-import { SelectionType } from '$lib/Types/uprn';
+import type { UserState, UserStateSelection } from '$lib/Types/Uprn.types';
+import { SelectionType } from '$lib/Types/Uprn.types';
 
 /**
  * Implementation of IUserStateProvider to provide user state information.

@@ -6,7 +6,7 @@ import {
 import { LayerType } from '$lib/Models/Treeview/LayerType';
 import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 import { VariableSubType } from '$lib/Models/Treeview/VariableSubType';
-import { TreeviewNodeTypology, type TreeviewNodeConfig } from '$lib/Types/treeview';
+import { TreeviewNodeTypology, type TreeviewNodeConfig } from '$lib/Types/Treeview.types';
 
 /**
  * Creates treeview nodes based on the provided configurations.

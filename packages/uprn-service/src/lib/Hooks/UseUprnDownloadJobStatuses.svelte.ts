@@ -1,7 +1,7 @@
 import type {
 	UprnDownloadGetJobStatusesRequest,
 	UprnDownloadGetJobStatusesResult
-} from '$lib/Types/uprn';
+} from '$lib/Types/Uprn.types';
 
 /**
  * Hook used to fetch the status of one or more UPRN download jobs. It manages the loading state,

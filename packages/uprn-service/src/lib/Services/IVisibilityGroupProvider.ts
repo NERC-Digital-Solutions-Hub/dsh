@@ -1,4 +1,4 @@
-import type { VisibilityGroupConfig } from '$lib/Types/treeview';
+import type { VisibilityGroupConfig } from '$lib/Types/Treeview.types';
 
 /**
  * Interface for providing configurations associated with treeview nodes.

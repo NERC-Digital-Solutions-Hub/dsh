@@ -1,5 +1,9 @@
-import type { TreeviewConfig } from '$lib/Types/treeview';
-import type { AiUprnChatbotEndpoints, ContentConfig, UprnDownloadEndpoints } from '$lib/Types/uprn';
+import type { TreeviewConfig } from '$lib/Types/Treeview.types';
+import type {
+	AiUprnChatbotEndpoints,
+	ContentConfig,
+	UprnDownloadEndpoints
+} from '$lib/Types/Uprn.types';
 
 export type AppsUprnConfig = {
 	map: PortalItemConfig;

@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import { TreeviewNodeTypology } from '$lib/Types/treeview.js';
+	import { TreeviewNodeTypology } from '$lib/Types/Treeview.types.js';
 
 	/**
 	 * Represents a node in the selection tree.

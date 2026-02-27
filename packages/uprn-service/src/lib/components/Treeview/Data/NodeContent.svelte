@@ -3,7 +3,7 @@
 	import OpenIndicator from '$lib/components/open-indicator/open-indicator.svelte';
 	import { getNodeStyles } from '../NodeContentStyles.js';
 	import { Button } from '$lib/components/shadcn/button/index.js';
-	import type { TagDefinition } from '$lib/Types/config.js';
+	import type { TagDefinition } from '$lib/Types/Configuration.types.js';
 
 	/**
 	 * Props for the NodeContent component.

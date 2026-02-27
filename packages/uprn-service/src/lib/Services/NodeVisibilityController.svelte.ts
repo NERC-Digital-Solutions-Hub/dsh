@@ -12,7 +12,7 @@ import type { INodeProvider } from '$lib/Services/INodeProvider';
 import type { INodeVisibilityController } from '$lib/Services/INodeVisibilityController';
 import type { IVisibilityGroupProvider } from '$lib/Services/IVisibilityGroupProvider';
 import type { LayerViewProvider } from '$lib/Services/LayerViewProvider';
-import type { TreeviewNodeConfig, VisibilityGroupConfig } from '$lib/Types/treeview';
+import type { TreeviewNodeConfig, VisibilityGroupConfig } from '$lib/Types/Treeview.types';
 import { SvelteMap } from 'svelte/reactivity';
 
 /**

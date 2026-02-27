@@ -1,4 +1,4 @@
-import type { AreaSelectionInfo } from '$lib/Types/uprn';
+import type { AreaSelectionInfo } from '$lib/Types/Uprn.types';
 
 /**
  * Interface that provides the area selection information.

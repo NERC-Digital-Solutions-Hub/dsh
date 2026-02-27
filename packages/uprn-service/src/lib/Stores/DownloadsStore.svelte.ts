@@ -6,7 +6,7 @@ import {
 	getUserDownloads,
 	updateUserDownload
 } from '$lib/db';
-import { type DownloadEntry } from '$lib/Types/uprn';
+import { type DownloadEntry } from '$lib/Types/Uprn.types';
 import { SvelteMap } from 'svelte/reactivity';
 
 /**

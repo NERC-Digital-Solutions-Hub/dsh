@@ -1,5 +1,5 @@
 import type { IDataSelectionProvider } from '$lib/Services/IDataSelectionProvider';
-import type { DataSelectionInfo } from '$lib/Types/uprn';
+import type { DataSelectionInfo } from '$lib/Types/Uprn.types';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 /**

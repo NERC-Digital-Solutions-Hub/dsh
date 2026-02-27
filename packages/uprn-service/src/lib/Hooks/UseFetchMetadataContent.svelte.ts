@@ -1,4 +1,4 @@
-import type { MetadataTabContentItem } from '$lib/Types/metadata';
+import type { MetadataTabContentItem } from '$lib/Types/Metadata.types';
 import { SvelteSet } from 'svelte/reactivity';
 
 /**

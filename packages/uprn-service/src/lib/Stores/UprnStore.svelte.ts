@@ -1,4 +1,4 @@
-import type { UprnConfiguration } from '$lib/Types/uprn';
+import type { UprnConfiguration } from '$lib/Types/Uprn.types';
 import { UprnConfigurationStore } from './UprnConfigurationStore.svelte';
 
 let storeInstance = $state<UprnConfigurationStore>();

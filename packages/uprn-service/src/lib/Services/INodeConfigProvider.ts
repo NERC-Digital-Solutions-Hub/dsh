@@ -1,4 +1,4 @@
-import type { TreeviewNodeConfig } from '$lib/Types/treeview';
+import type { TreeviewNodeConfig } from '$lib/Types/Treeview.types';
 
 /**
  * Interface for providing configurations associated with treeview nodes.

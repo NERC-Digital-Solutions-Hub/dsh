@@ -1,5 +1,5 @@
 import type { IAreaSelectionController } from '$lib/Services/IAreaSelectionController';
-import type { AreaSelectionInfo } from '$lib/Types/uprn';
+import type { AreaSelectionInfo } from '$lib/Types/Uprn.types';
 import { SvelteSet } from 'svelte/reactivity';
 
 /**

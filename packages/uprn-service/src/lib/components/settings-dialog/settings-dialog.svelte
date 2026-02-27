@@ -2,7 +2,7 @@
 	import { Button, buttonVariants } from '$lib/components/shadcn/button/index.js';
 	import * as Dialog from '$lib/components/shadcn/dialog/index.js';
 	import * as RadioGroup from '$lib/components/shadcn/radio-group/index.js';
-	import type { PortalItemConfig } from '$lib/Types/config';
+	import type { PortalItemConfig } from '$lib/Types/Configuration.types';
 	import { Settings } from '@lucide/svelte';
 	import { Label } from '$lib/components/shadcn/label/index.js';
 	import { cn } from '$lib/utils';

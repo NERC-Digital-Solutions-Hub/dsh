@@ -1,4 +1,4 @@
-import type { TagDefinition } from '$lib/Types/config';
+import type { TagDefinition } from '$lib/Types/Configuration.types';
 
 /**
  * Interface for providing tag definitions associated with specific tag IDs.

@@ -4,7 +4,7 @@ import {
 	type TreeviewConfig,
 	type TreeviewNodeConfig,
 	type VisibilityGroupConfig
-} from '$lib/Types/treeview';
+} from '$lib/Types/Treeview.types';
 
 /**
  * Type representing a tag and its associated count.
