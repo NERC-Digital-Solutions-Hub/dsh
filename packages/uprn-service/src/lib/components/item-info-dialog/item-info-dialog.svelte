@@ -11,7 +11,7 @@
 	import { useFetchMetadataTabInfo } from '$lib/Hooks/UseFetchMetadataTabInfo.svelte';
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 	import type { IWebMapService } from '$lib/Services/IWebMapService';
-	import type { MetadataTabContentItem } from '$lib/Types/metadata';
+	import type { MetadataTab, MetadataTabContentItem } from '$lib/Types/metadata';
 	import esriRequest from '@arcgis/core/request.js';
 	import { ArrowDownToLine } from '@lucide/svelte';
 	import { GalleryImage, GalleryThumbnail, Lightbox, LightboxGallery } from 'svelte-lightbox';
@@ -55,19 +55,24 @@
 	});
 
 	const useTabInfo = $derived.by(() => {
-		console.log('[ItemInfoDialog] Computing tabInfo for activeLayerId:', activeLayerId);
 		if (!nodeConfig?.metadataTabInfoUrl) {
-			console.log('[ItemInfoDialog] No metadataTabInfoUrl found for nodeConfig:', nodeConfig);
 			return null;
 		}
 
-		console.log(
-			'[ItemInfoDialog] Found metadataTabInfoUrl:',
-			nodeConfig.metadataTabInfoUrl,
-			'for activeLayerId:',
-			activeLayerId
-		);
 		return useFetchMetadataTabInfo(nodeConfig.metadataTabInfoUrl);
+	});
+
+	/** The flattened tabs. */
+	const flattenedTabs: MetadataTab[] | null = $derived.by(() => {
+		if (!useTabInfo?.content) {
+			return null;
+		}
+
+		if (useTabInfo.content.tabGroups && useTabInfo.content.tabGroups.length > 0) {
+			return useTabInfo.content.tabGroups.flatMap((group) => group.tabs);
+		}
+
+		return null;
 	});
 
 	let activeTabId: string | null = $state(null);
@@ -80,14 +85,18 @@
 		contentItem: MetadataTabContentItem
 	): string {
 		switch (contentItem.type) {
+			case 'arcgisInfo':
+				return `${activeLayerId ?? 'none'}::${tabTitle}::${index}::${contentItem.type}`;
 			case 'text':
+			case 'disclaimer':
+				return `${activeLayerId ?? 'none'}::${tabTitle}::${index}::${contentItem.type}::${contentItem.value}`;
 			case 'image':
 			case 'xml':
 			case 'docx':
 			case 'pdf':
-				return `${activeLayerId ?? 'none'}::${tabTitle}::${index}::${contentItem.type}::${contentItem.link}`;
+				return `${activeLayerId ?? 'none'}::${tabTitle}::${index}::${contentItem.type}::${contentItem.source}`;
 			case 'slideshow':
-				return `${activeLayerId ?? 'none'}::${tabTitle}::${index}::${contentItem.type}::${contentItem.links.join('|')}`;
+				return `${activeLayerId ?? 'none'}::${tabTitle}::${index}::${contentItem.type}::${contentItem.source.join('|')}`;
 		}
 
 		throw new Error('Unknown metadata tab content type');
@@ -99,15 +108,15 @@
 	}
 
 	function getSelectedTab() {
-		if (!useTabInfo?.content?.tabs?.length) {
+		if (!flattenedTabs?.length) {
 			return null;
 		}
 
 		if (!activeTabId) {
-			return useTabInfo.content.tabs[0] ?? null;
+			return flattenedTabs[0] ?? null;
 		}
 
-		return useTabInfo.content.tabs.find((tab) => tab.title === activeTabId) || null;
+		return flattenedTabs.find((tab) => tab.title === activeTabId) || null;
 	}
 
 	$effect(() => {
@@ -271,38 +280,18 @@
 					</p>
 				</div>
 			</div>
-		{:else if useTabInfo && useTabInfo.content && useTabInfo.content.tabs.length > 0}
+		{:else if flattenedTabs && flattenedTabs.length > 0}
 			<Tabs.Root
 				class="flex h-full min-h-0 flex-1 flex-col overflow-hidden"
 				value="information"
 				onValueChange={(value) => (activeTabId = value)}
 			>
 				<Tabs.List class="shrink-0 self-center">
-					<Tabs.Trigger value="information">Information</Tabs.Trigger>
-					{#each useTabInfo.content.tabs as tab}
+					{#each flattenedTabs as tab}
 						<Tabs.Trigger value={tab.title}>{tab.title}</Tabs.Trigger>
 					{/each}
 				</Tabs.List>
-				<Tabs.Content value="information" class="flex-1 min-h-0 overflow-hidden">
-					<ScrollArea class="h-full w-full" type="always">
-						<div>
-							<div>
-								<h4 class="text-lg font-semibold pb-2">Description</h4>
-								<p>
-									{layerDescription ?? 'No description available.'}
-								</p>
-							</div>
-
-							<div>
-								<h4 class="text-lg font-semibold pb-2">Credits</h4>
-								<p>
-									{layerCredits ?? 'No credits available.'}
-								</p>
-							</div>
-						</div>
-					</ScrollArea>
-				</Tabs.Content>
-				{#each useTabInfo.content.tabs as tab}
+				{#each flattenedTabs as tab}
 					<Tabs.Content value={tab.title} class="flex-1 min-h-0 overflow-hidden">
 						<ScrollArea class="h-full w-full" type="always">
 							<div class="mx-auto flex w-full max-w-3xl flex-col items-center gap-6 py-1">
@@ -317,11 +306,31 @@
 											Error loading content: {formatHookError(contentHook.error)}
 										</p>
 									{:else if contentHook?.content}
-										{#if contentItem.type === 'text'}
+										{#if contentItem.type === 'arcgisInfo'}
+											<div>
+												<div>
+													<h4 class="text-lg font-semibold pb-2">Description</h4>
+													<p>
+														{layerDescription ?? 'No description available.'}
+													</p>
+												</div>
+
+												<div>
+													<h4 class="text-lg font-semibold pb-2">Credits</h4>
+													<p>
+														{layerCredits ?? 'No credits available.'}
+													</p>
+												</div>
+											</div>
+										{:else if contentItem.type === 'text'}
 											<p
 												class="w-full max-w-prose self-stretch whitespace-pre-wrap text-sm leading-relaxed"
 											>
 												{String(contentHook.content)}
+											</p>
+										{:else if contentItem.type === 'disclaimer'}
+											<p class="text-sm italic text-muted-foreground">
+												Disclaimer: {String(contentHook.content)}
 											</p>
 										{:else if contentItem.type === 'image'}
 											<Lightbox imagePreset="scroll" enableImageExpand={true}>

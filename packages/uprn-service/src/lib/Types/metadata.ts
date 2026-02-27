@@ -1,4 +1,9 @@
 export type TabsPayload = {
+	tabGroups: TabGroup[];
+};
+
+export type TabGroup = {
+	title: string;
 	tabs: MetadataTab[];
 };
 
@@ -9,6 +14,8 @@ export type MetadataTab = {
 
 export type MetadataTabContentItem =
 	| TextContent
+	| DisclaimerContent
+	| ArcGISInformationContent
 	| ImageContent
 	| SlideshowContent
 	| XmlContent
@@ -17,30 +24,39 @@ export type MetadataTabContentItem =
 
 export type TextContent = {
 	type: 'text';
-	link: string;
+	value: string;
+};
+
+export type DisclaimerContent = {
+	type: 'disclaimer';
+	value: string;
+};
+
+export type ArcGISInformationContent = {
+	type: 'arcgisInfo';
 };
 
 export type ImageContent = {
 	type: 'image';
-	link: string;
+	source: string;
 };
 
 export type SlideshowContent = {
 	type: 'slideshow';
-	links: string[];
+	source: string[];
 };
 
 export type XmlContent = {
 	type: 'xml';
-	link: string;
+	source: string;
 };
 
 export type DocxContent = {
 	type: 'docx';
-	link: string;
+	source: string;
 };
 
 export type PdfContent = {
 	type: 'pdf';
-	link: string;
+	source: string;
 };
