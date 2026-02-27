@@ -701,9 +701,39 @@ importers:
       lottie-web:
         specifier: ^5.13.0
         version: 5.13.0
+      rehype-autolink-headings:
+        specifier: ^7.1.0
+        version: 7.1.0
+      rehype-external-links:
+        specifier: ^3.0.0
+        version: 3.0.0
+      rehype-raw:
+        specifier: ^7.0.0
+        version: 7.0.0
+      rehype-slug:
+        specifier: ^6.0.0
+        version: 6.0.0
+      rehype-stringify:
+        specifier: ^10.0.1
+        version: 10.0.1
+      remark-frontmatter:
+        specifier: ^5.0.0
+        version: 5.0.0
+      remark-gfm:
+        specifier: ^4.0.1
+        version: 4.0.1
+      remark-parse:
+        specifier: ^11.0.0
+        version: 11.0.0
+      remark-rehype:
+        specifier: ^11.1.2
+        version: 11.1.2
       svelte-lightbox:
         specifier: ^1.1.7
         version: 1.1.7(svelte@5.45.8)
+      unified:
+        specifier: ^11.0.5
+        version: 11.0.5
     devDependencies:
       '@arcgis/core':
         specifier: ^4.33.13
