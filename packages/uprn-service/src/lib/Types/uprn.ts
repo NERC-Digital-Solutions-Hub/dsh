@@ -12,6 +12,7 @@ export type ContentConfig = {
 	baseUrl: string;
 	manifestPath: string;
 	climateJustRenderersPath: string;
+	introductionPath: string;
 };
 
 export interface SidebarSize {

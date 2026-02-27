@@ -6,6 +6,7 @@
 	import DownloadsMenu from '$lib/components/downloads-menu/downloads-menu.svelte';
 	import ExportMenuFooter from '$lib/components/export-menu/export-menu-footer.svelte';
 	import ExportMenu from '$lib/components/export-menu/export-menu.svelte';
+	import IntroductionDialog from '$lib/components/IntroductionDialog/IntroductionDialog.svelte';
 	import ItemInfoDialog from '$lib/components/item-info-dialog/item-info-dialog.svelte';
 	import type { ResetAction } from '$lib/components/reset-dialog/reset-dialog.svelte';
 	import ResetDialog from '$lib/components/reset-dialog/reset-dialog.svelte';
@@ -195,6 +196,19 @@
 		const renderers = useFetchCustomRenderers(url);
 		renderers.fetch();
 		return renderers;
+	});
+
+	/** Derived state to compute the introduction content URL based on the app configuration. */
+	const introductionUrl: string | null = $derived.by(() => {
+		if (
+			!appConfig.content?.contentConfig?.baseUrl ||
+			!appConfig.content.contentConfig.introductionPath
+		) {
+			return null;
+		}
+
+		const { baseUrl, introductionPath } = appConfig.content.contentConfig;
+		return new URL(introductionPath, baseUrl).toString();
 	});
 
 	/** The web map store instance. */
@@ -693,6 +707,8 @@
 		onOpenInfoDialog
 	});
 </script>
+
+<IntroductionDialog contentUrl={introductionUrl} />
 
 <Toaster />
 {#if webMapStore?.isLoaded && treeviewConfigStore}
