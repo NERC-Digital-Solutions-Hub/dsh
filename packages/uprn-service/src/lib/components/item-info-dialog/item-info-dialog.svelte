@@ -11,7 +11,7 @@
 	import { useFetchMetadataTabInfo } from '$lib/Hooks/UseFetchMetadataTabInfo.svelte';
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 	import type { IWebMapService } from '$lib/Services/IWebMapService';
-	import type { MetadataTab, MetadataTabContentItem } from '$lib/Types/Metadata.types';
+	import type { MetadataTab, MetadataTabContentItem, TabGroup } from '$lib/Types/Metadata.types';
 	import esriRequest from '@arcgis/core/request.js';
 	import { ArrowDownToLine } from '@lucide/svelte';
 	import { GalleryImage, GalleryThumbnail, Lightbox, LightboxGallery } from 'svelte-lightbox';
@@ -62,17 +62,26 @@
 		return useFetchMetadataTabInfo(nodeConfig.metadataTabInfoUrl);
 	});
 
-	/** The flattened tabs. */
-	const flattenedTabs: MetadataTab[] | null = $derived.by(() => {
+	/** The tab groups preserving their grouping structure. */
+	const tabGroups: TabGroup[] | null = $derived.by(() => {
 		if (!useTabInfo?.content) {
 			return null;
 		}
 
 		if (useTabInfo.content.tabGroups && useTabInfo.content.tabGroups.length > 0) {
-			return useTabInfo.content.tabGroups.flatMap((group) => group.tabs);
+			return useTabInfo.content.tabGroups;
 		}
 
 		return null;
+	});
+
+	/** The flattened tabs (used for content rendering and lookup). */
+	const flattenedTabs: MetadataTab[] | null = $derived.by(() => {
+		if (!tabGroups) {
+			return null;
+		}
+
+		return tabGroups.flatMap((group) => group.tabs);
 	});
 
 	let activeTabId: string | null = $state(null);
@@ -280,17 +289,26 @@
 					</p>
 				</div>
 			</div>
-		{:else if flattenedTabs && flattenedTabs.length > 0}
+		{:else if tabGroups && tabGroups.length > 0 && flattenedTabs && flattenedTabs.length > 0}
 			<Tabs.Root
 				class="flex h-full min-h-0 flex-1 flex-col overflow-hidden"
 				value="information"
 				onValueChange={(value) => (activeTabId = value)}
 			>
-				<Tabs.List class="shrink-0 self-center">
-					{#each flattenedTabs as tab}
-						<Tabs.Trigger value={tab.title}>{tab.title}</Tabs.Trigger>
+				<div class="flex shrink-0 flex-wrap items-end justify-center gap-x-6 gap-y-2 pb-2">
+					{#each tabGroups as group}
+						<div class="flex flex-col items-center gap-1">
+							{#if tabGroups.length > 1}
+								<span class="text-xs font-medium text-muted-foreground">{group.title}</span>
+							{/if}
+							<Tabs.List>
+								{#each group.tabs as tab}
+									<Tabs.Trigger value={tab.title}>{tab.title}</Tabs.Trigger>
+								{/each}
+							</Tabs.List>
+						</div>
 					{/each}
-				</Tabs.List>
+				</div>
 				{#each flattenedTabs as tab}
 					<Tabs.Content value={tab.title} class="flex-1 min-h-0 overflow-hidden">
 						<ScrollArea class="h-full w-full" type="always">
