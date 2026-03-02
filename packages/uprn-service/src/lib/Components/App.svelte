@@ -907,7 +907,8 @@
 					</p>
 				{:else if !!aiUprnChatbotHealth && aiUprnChatbotHealth.isAccessible && appConfig.content?.aiUprnChatbot}
 					{@const chatEndpoint = `${appConfig.content.aiUprnChatbot.baseUrl}${appConfig.content.aiUprnChatbot.chatRoute}`}
-					<UprnChat {chatEndpoint} {getTabState} />
+					{@const feedbackEndpoint = `${appConfig.content.aiUprnChatbot.baseUrl}${appConfig.content.aiUprnChatbot.feedbackRoute}`}
+					<UprnChat {chatEndpoint} {feedbackEndpoint} {getTabState} />
 				{/if}
 			</CollapsibleWindow>
 		</div>

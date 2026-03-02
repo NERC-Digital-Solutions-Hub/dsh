@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ChatFeedbackDialog from '$lib/Components/Chat/ChatFeedbackDialog.svelte';
 	import { Button } from '$lib/Components/shadcn/button';
 	import * as Chat from '$lib/Components/shadcn/chat';
 	import { Input } from '$lib/Components/shadcn/input';
@@ -6,7 +7,7 @@
 	import { useSubmitAiChatbotChat } from '$lib/Hooks/UseSubmitAiChatbotChat.svelte';
 	import type { AppTabState } from '$lib/Types/Chatbot.types';
 	import { cn } from '$lib/utils';
-	import SendIcon from '@lucide/svelte/icons/send';
+	import { SendIcon, ThumbsUp, ThumbsDown } from '@lucide/svelte';
 
 	// ============================================================================
 	// Types
@@ -17,6 +18,7 @@
 	 */
 	type Props = {
 		chatEndpoint: string;
+		feedbackEndpoint: string;
 		getTabState: () => AppTabState;
 		class?: string;
 	};
@@ -24,18 +26,37 @@
 	/**
 	 * Represents a single chat message in the conversation.
 	 */
+	type FeedbackVote = 'up' | 'down' | null;
+
 	type ChatMessage = {
+		/** Unique identifier for the message */
+		id: number;
 		/** Unique identifier for the message sender (1 = bot, 2 = user) */
 		senderId: 1 | 2;
 		/** The text content of the message */
 		message: string;
 		/** Formatted timestamp when the message was sent */
 		sentAt: string;
+		/** Current feedback vote for this message */
+		feedbackVote: FeedbackVote;
+		/** Session identifier used for feedback submission */
+		sessionId?: string;
+		/** Sequence number used for feedback submission */
+		sequenceNumber?: number;
 	};
 
 	// ============================================================================
 	// Constants
 	// ============================================================================
+
+	const FEEDBACK_OPTIONS = [
+		'Incorrect or incomplete',
+		'Not what I asked for',
+		'Slow or buggy',
+		'Style or tone',
+		'Safety or legal concern',
+		'Other'
+	];
 
 	/** Identifier for bot messages */
 	const BOT_SENDER_ID = 1;
@@ -53,7 +74,7 @@
 	// Component Props
 	// ============================================================================
 
-	const { chatEndpoint, getTabState, class: className }: Props = $props();
+	const { chatEndpoint, feedbackEndpoint, getTabState, class: className }: Props = $props();
 
 	/** Hook for the AI UPRN chatbot streaming endpoint. */
 	const chat = $derived.by(() => {
@@ -66,6 +87,18 @@
 
 	/** Current message being typed by the user */
 	let message = $state('');
+
+	/** State for managing the visibility of the feedback dialog */
+	let isFeedbackDialogOpen = $state(false);
+
+	/** Session id for the bot message currently being reported */
+	let selectedFeedbackSessionId = $state<string | null>(null);
+
+	/** Sequence number for the bot message currently being reported */
+	let selectedFeedbackSequenceNumber = $state<number | null>(null);
+
+	/** Selected predefined feedback option for dialog */
+	let selectedFeedbackOption = $state<string | null>(null);
 
 	/** Reference to the scroll container element */
 	let scrollContainer: HTMLDivElement | null = $state(null);
@@ -80,11 +113,15 @@
 	let messageWrapper: HTMLDivElement | null = $state(null);
 
 	/** Array of all messages in the chat conversation */
+	let messageIdCounter = 1;
+
 	const messages = $state<ChatMessage[]>([
 		{
+			id: messageIdCounter++,
 			senderId: BOT_SENDER_ID,
 			message: INITIAL_GREETING,
-			sentAt: formatShortTime(new Date())
+			sentAt: formatShortTime(new Date()),
+			feedbackVote: null
 		}
 	]);
 
@@ -166,11 +203,19 @@
 	 * @param senderId - The ID of the sender (BOT_SENDER_ID or USER_SENDER_ID)
 	 * @returns A new ChatMessage object
 	 */
-	function createMessage(content: string, senderId: 1 | 2): ChatMessage {
+	function createMessage(
+		content: string,
+		senderId: 1 | 2,
+		metadata?: { sessionId?: string; sequenceNumber?: number }
+	): ChatMessage {
 		return {
+			id: messageIdCounter++,
 			message: content,
 			senderId,
-			sentAt: formatShortTime(new Date())
+			sentAt: formatShortTime(new Date()),
+			feedbackVote: null,
+			sessionId: metadata?.sessionId,
+			sequenceNumber: metadata?.sequenceNumber
 		};
 	}
 
@@ -180,8 +225,28 @@
 	 * @param content - The text content of the message
 	 * @param senderId - The ID of the sender (BOT_SENDER_ID or USER_SENDER_ID)
 	 */
-	function addMessage(content: string, senderId: 1 | 2): void {
-		messages.push(createMessage(content, senderId));
+	function addMessage(
+		content: string,
+		senderId: 1 | 2,
+		metadata?: { sessionId?: string; sequenceNumber?: number }
+	): void {
+		messages.push(createMessage(content, senderId, metadata));
+	}
+
+	/**
+	 * Handles feedback thumb selection for a bot message.
+	 * Only one thumb can be active at a time, and clicking an active thumb clears it.
+	 */
+	function handleThumbVote(message: ChatMessage, vote: Exclude<FeedbackVote, null>): void {
+		const nextVote: FeedbackVote = message.feedbackVote === vote ? null : vote;
+		message.feedbackVote = nextVote;
+
+		if (nextVote === 'down' && message.sessionId && message.sequenceNumber) {
+			selectedFeedbackSessionId = message.sessionId;
+			selectedFeedbackSequenceNumber = message.sequenceNumber;
+			selectedFeedbackOption = null;
+			isFeedbackDialogOpen = true;
+		}
 	}
 
 	// ============================================================================
@@ -210,11 +275,17 @@
 
 		addMessage(userMessage, USER_SENDER_ID);
 
+		const responseSessionId = chat?.sessionId;
+		const responseSequenceNumber = chat?.sequenceNumber;
+
 		try {
 			await chat?.submit(userMessage, getTabState());
 
 			if (!chat?.error && chat?.content) {
-				addMessage(chat.content, BOT_SENDER_ID);
+				addMessage(chat.content, BOT_SENDER_ID, {
+					sessionId: responseSessionId,
+					sequenceNumber: responseSequenceNumber
+				});
 			} else {
 				addMessage(ERROR_MESSAGE, BOT_SENDER_ID);
 			}
@@ -227,6 +298,15 @@
 	}
 </script>
 
+<ChatFeedbackDialog
+	bind:isOpen={isFeedbackDialogOpen}
+	feedbackUrl={feedbackEndpoint}
+	feedbackOptions={FEEDBACK_OPTIONS}
+	sessionId={selectedFeedbackSessionId}
+	sequenceNumber={selectedFeedbackSequenceNumber}
+	selectedOption={selectedFeedbackOption}
+/>
+
 <!-- ============================================================================ -->
 <!-- Chat Container -->
 <!-- ============================================================================ -->
@@ -235,13 +315,67 @@
 	<div class="message-wrapper" bind:this={messageWrapper}>
 		<ScrollArea class="h-full w-full" bind:ref={scrollContainer}>
 			<Chat.List>
-				{#each messages as m (m)}
+				{#each messages as m (m.id)}
 					<Chat.Bubble variant={m.senderId === USER_SENDER_ID ? 'sent' : 'received'}>
 						<Chat.BubbleAvatar />
 						<Chat.BubbleMessage class="flex flex-col gap-1">
 							{@html m.message}
-							<div class="w-full text-xs group-data-[variant='sent']/chat-bubble:text-end">
-								{m.sentAt}
+							<div
+								class="flex w-full items-center justify-between gap-2 text-xs group-data-[variant='sent']/chat-bubble:justify-end"
+							>
+								<span>{m.sentAt}</span>
+
+								{#if m.senderId === BOT_SENDER_ID && m.sessionId && m.sequenceNumber}
+									<div class="thumb-actions">
+										<div class="thumb-wrapper" class:visible={m.feedbackVote !== 'down'}>
+											<div class="thumb-inner">
+												<Button
+													type="button"
+													variant="ghost"
+													size="icon-sm"
+													class={cn(
+														'thumb-button group',
+														m.feedbackVote === 'up' && 'thumb-active'
+													)}
+													onclick={() => handleThumbVote(m, 'up')}
+													aria-label="Helpful response"
+												>
+													<ThumbsUp
+														class={cn(
+															'thumb-icon',
+															m.feedbackVote === 'up' ? 'text-foreground' : 'text-muted-foreground'
+														)}
+													/>
+												</Button>
+											</div>
+										</div>
+
+										<div class="thumb-wrapper" class:visible={m.feedbackVote !== 'up'}>
+											<div class="thumb-inner">
+												<Button
+													type="button"
+													variant="ghost"
+													size="icon-sm"
+													class={cn(
+														'thumb-button group',
+														m.feedbackVote === 'down' && 'thumb-active'
+													)}
+													onclick={() => handleThumbVote(m, 'down')}
+													aria-label="Unhelpful response"
+												>
+													<ThumbsDown
+														class={cn(
+															'thumb-icon',
+															m.feedbackVote === 'down'
+																? 'text-foreground'
+																: 'text-muted-foreground'
+														)}
+													/>
+												</Button>
+											</div>
+										</div>
+									</div>
+								{/if}
 							</div>
 						</Chat.BubbleMessage>
 					</Chat.Bubble>
@@ -315,5 +449,59 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: flex-end;
+	}
+
+	.thumb-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	.thumb-wrapper {
+		display: grid;
+		grid-template-columns: 0fr;
+		transition: grid-template-columns 0.2s ease-out;
+	}
+
+	.thumb-wrapper.visible {
+		grid-template-columns: 1fr;
+	}
+
+	.thumb-inner {
+		overflow: hidden;
+		display: flex;
+		opacity: 0;
+		transform: translateX(10px);
+		transition:
+			opacity 0.2s ease-out,
+			transform 0.2s ease-out;
+	}
+
+	.thumb-wrapper.visible .thumb-inner {
+		opacity: 1;
+		transform: translateX(0);
+	}
+
+	.thumb-button {
+		transition: background-color 0.2s ease-out;
+	}
+
+	.thumb-button:hover {
+		background-color: hsl(var(--muted));
+	}
+
+	.thumb-button.thumb-active {
+		background-color: hsl(var(--muted));
+	}
+
+	.thumb-button.thumb-active:hover {
+		background-color: hsl(var(--muted));
+	}
+
+	.thumb-icon {
+		transition:
+			transform 0.2s ease-out,
+			color 0.2s ease-out,
+			opacity 0.2s ease-out;
 	}
 </style>

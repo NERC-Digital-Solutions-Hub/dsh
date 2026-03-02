@@ -208,6 +208,7 @@ export type AiUprnChatbotEndpoints = {
 	healthRoute: string;
 	chatRoute: string;
 	chatStreamRoute: string;
+	feedbackRoute: string;
 };
 
 export type AiUprnChatbotHealthResponse = {
