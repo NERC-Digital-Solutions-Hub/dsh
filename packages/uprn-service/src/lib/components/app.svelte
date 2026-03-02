@@ -414,7 +414,7 @@
 		const anyDataSelected = dataSelectionStore.dataSelections.size > 0;
 
 		setTabProgress(
-			'areas-of-interest',
+			TabType.AreaOfInterest,
 			areaLayerSelected && anyAreaSelected
 				? TabProgress.Completed
 				: areaLayerSelected
@@ -422,10 +422,10 @@
 					: TabProgress.NotStarted
 		);
 
-		setTabProgress('select-data', anyDataSelected ? TabProgress.Completed : TabProgress.NotStarted);
+		setTabProgress(TabType.Data, anyDataSelected ? TabProgress.Completed : TabProgress.NotStarted);
 
 		setTabProgress(
-			'export',
+			TabType.Export,
 			anyAreaSelected && anyDataSelected
 				? TabProgress.Completed
 				: anyAreaSelected || anyDataSelected
