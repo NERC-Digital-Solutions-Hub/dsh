@@ -1,0 +1,23 @@
+.prose-home-intro-dialog :where(p) {
+	@apply mt-2 mb-2 text-foreground;
+}
+
+.prose-home-intro-dialog :where(h1) {
+	@apply mb-5 text-center text-3xl font-bold text-foreground;
+}
+
+.prose-home-intro-dialog :where(h2) {
+	@apply mt-6 mb-0 text-2xl text-foreground;
+}
+
+.prose-home-intro-dialog :where(h3) {
+	@apply mb-0 text-xl text-foreground;
+}
+
+.prose-home-intro-dialog :where(hr) {
+	@apply m-0 p-0;
+}
+
+.prose-home-intro-dialog :where(li) {
+	@apply m-0 p-0;
+}

@@ -1,8 +1,51 @@
 <script>
+	import { asset } from '$app/paths';
 	import IntroductionDialog from '$lib/components/introduction-dialog/introduction-dialog.svelte';
+	import { useFetchHomeLocalConfig } from '$lib/hooks/use-fetch-home-local-config.svelte';
+	import { useFetchHomeRemoteConfig } from '$lib/hooks/use-fetch-home-remote-config.svelte';
+	import { onMount } from 'svelte';
+
+	/** Fetches the home local configuration. */
+	const localConfig = useFetchHomeLocalConfig(asset('/config/home/config.json'));
+
+	/** Derived state for fetching the home remote configuration based on the local configuration. */
+	const remoteConfig = $derived.by(() => {
+		if (!localConfig || !localConfig.content) {
+			return null;
+		}
+
+		console.log('Local configuration content:', localConfig.content);
+		const { baseUrl, configurationPath } = localConfig.content;
+		const configUrl = new URL(configurationPath, baseUrl).toString();
+		const config = useFetchHomeRemoteConfig(configUrl);
+		config.fetch();
+		return config;
+	});
+
+	/** Derived state for extracting the introduction URL from the remote configuration. */
+	const introductionUrl = $derived.by(() => {
+		if (!localConfig || !localConfig.content || !remoteConfig || !remoteConfig.content) {
+			return null;
+		}
+
+		const baseUrl = localConfig.content.baseUrl;
+		const introductionUrl = remoteConfig.content.introductionPath;
+		console.log('Derived introduction URL:', introductionUrl);
+		if (!introductionUrl) {
+			return null;
+		}
+
+		return new URL(introductionUrl, baseUrl).toString();
+	});
+
+	onMount(() => {
+		localConfig.fetch();
+	});
 </script>
 
-<IntroductionDialog />
+{#if introductionUrl}
+	<IntroductionDialog {introductionUrl} />
+{/if}
 <div class="hero-section">
 	<h1 class="title">NERC Digital Solutions Hub</h1>
 	<p class="slogan">

@@ -13,16 +13,24 @@ const packages = [
 const projectRoot = process.cwd();
 const targetDir = path.resolve(projectRoot, 'static/config');
 
-if (fs.existsSync(targetDir)) {
-	// Clean up formatting/stale files
-	fs.rmSync(targetDir, { recursive: true, force: true });
-}
+const keepDirName = 'home';
+const keepDir = path.join(targetDir, keepDirName);
 
+// Ensure target exists
 fs.mkdirSync(targetDir, { recursive: true });
 
+// Delete everything in targetDir except "home"
+for (const entry of fs.readdirSync(targetDir, { withFileTypes: true })) {
+	if (entry.name === keepDirName) continue;
+
+	const entryPath = path.join(targetDir, entry.name);
+	fs.rmSync(entryPath, { recursive: true, force: true });
+}
+
+// Ensure home dir exists (optional)
+fs.mkdirSync(keepDir, { recursive: true });
+
 packages.forEach((pkg) => {
-	// Resolve path to the package's static/config folder
-	// Assumes folder structure: root/hub and root/packages
 	const srcDir = path.resolve(projectRoot, `../packages/${pkg}/static/config`);
 
 	if (fs.existsSync(srcDir)) {
