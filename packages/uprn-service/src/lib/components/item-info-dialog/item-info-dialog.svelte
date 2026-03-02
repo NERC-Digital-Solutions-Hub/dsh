@@ -443,44 +443,6 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<!--
-{#if layer && (hasLayerDef == false || (hasLayerDef == true && layerDef))}
-	<Dialog.Root bind:open={isOpen} onOpenChange={(open) => (isOpen = open)}>
-		<Dialog.Content
-			class="flex max-h-[80vh] min-h-0 flex-col gap-4 overflow-hidden sm:max-w-[700px]"
-		>
-			<Dialog.Header>
-				<Dialog.Title>{layer.title ?? 'Name not found'}</Dialog.Title>
-				<Dialog.Description>Dataset Information</Dialog.Description>
-			</Dialog.Header>
-			<div class="flex-1 min-h-0 overflow-y-auto pr-4">
-				<div class="flex flex-col gap-4">
-					<p class="mx-auto max-w-prose text-center text-sm italic text-muted-foreground">
-						WORK IN PROGRESS. The information that will be shown here includes metadata, source
-						details (e.g. organisation and contact information), and other relevant information to
-						help users understand the data.
-					</p>
-
-					{#if layerDescription}
-						<div>
-							<h4 class="text-lg font-semibold pb-2">Description</h4>
-							<p class="whitespace-pre-wrap text-sm leading-relaxed">{layerDescription}</p>
-						</div>
-					{/if}
-
-					{#if layerCopyright}
-						<div>
-							<h4 class="text-lg font-semibold pb-2">Copyright</h4>
-							<p class="whitespace-pre-wrap text-sm leading-relaxed">{layerCopyright}</p>
-						</div>
-					{/if}
-				</div>
-			</div>
-		</Dialog.Content>
-	</Dialog.Root>
-{/if}
--->
-
 <style>
 	:global(.svelte-lightbox-overlay) {
 		position: fixed;
