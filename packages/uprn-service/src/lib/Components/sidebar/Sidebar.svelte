@@ -17,7 +17,7 @@
 	import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Menu } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
 	import { onMount } from 'svelte';
-	import { SidebarPosition } from './sidebar-position';
+	import { SidebarPosition } from './SidebarPosition';
 
 	type SidebarPositionType = (typeof SidebarPosition)[keyof typeof SidebarPosition];
 

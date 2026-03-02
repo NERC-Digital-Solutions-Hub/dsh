@@ -16,7 +16,7 @@
 	 */
 	import type { Snippet } from 'svelte';
 	import Sidebar from './Sidebar.svelte';
-	import { SidebarPosition } from './sidebar-position';
+	import { SidebarPosition } from './SidebarPosition';
 	import type { Menu } from '@lucide/svelte';
 
 	type SidebarPositionType = (typeof SidebarPosition)[keyof typeof SidebarPosition];
