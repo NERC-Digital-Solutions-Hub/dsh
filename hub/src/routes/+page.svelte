@@ -1,3 +1,8 @@
+<script>
+	import IntroductionDialog from '$lib/components/introduction-dialog/introduction-dialog.svelte';
+</script>
+
+<IntroductionDialog />
 <div class="hero-section">
 	<h1 class="title">NERC Digital Solutions Hub</h1>
 	<p class="slogan">
