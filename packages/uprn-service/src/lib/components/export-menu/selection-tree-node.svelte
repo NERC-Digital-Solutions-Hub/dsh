@@ -27,7 +27,7 @@
 	import { getNodeStyles } from '$lib/components/Treeview/NodeContentStyles.js';
 	import type { Component, Snippet } from 'svelte';
 	import { cubicOut } from 'svelte/easing';
-	import { slide } from 'svelte/transition';
+	import { slide, type SlideParams, type TransitionConfig } from 'svelte/transition';
 	import Self from './selection-tree-node.svelte';
 
 	type Props = {
@@ -66,6 +66,25 @@
 	function handleRemove(event: MouseEvent) {
 		event.stopPropagation();
 		onRemove(node);
+	}
+
+	function safeSlide(node: Element, params: SlideParams = {}): TransitionConfig {
+		const transition = slide(node, params);
+		const css = transition.css;
+
+		if (!css) {
+			return transition;
+		}
+
+		return {
+			...transition,
+			css: (t, u) => {
+				const computedCss = css(t, u);
+				return computedCss.includes('NaN')
+					? `overflow: hidden; opacity: ${t}; transform: translateX(${(1 - t) * -4}px);`
+					: computedCss;
+			}
+		};
 	}
 </script>
 
@@ -118,8 +137,8 @@
 			<div class="tree-guide-line"></div>
 			<div
 				class="tree-children"
-				in:slide={{ duration: 200, easing: cubicOut }}
-				out:slide={{ duration: 150 }}
+				in:safeSlide={{ duration: 200, easing: cubicOut }}
+				out:safeSlide={{ duration: 150 }}
 			>
 				{#each node.children as child (child.id)}
 					<Self node={child} {onRemove} {actions} depth={depth + 1} />

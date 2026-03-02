@@ -2,7 +2,7 @@
 	import { TreeviewNode } from '$lib/Models/Treeview/Index.js';
 	import { type Snippet } from 'svelte';
 	import { cubicOut } from 'svelte/easing';
-	import { slide } from 'svelte/transition';
+	import { slide, type SlideParams, type TransitionConfig } from 'svelte/transition';
 
 	/**
 	 * Props for the NodeAnimation component.
@@ -22,6 +22,25 @@
 
 	/** Destructured props with defaults. */
 	const { isOpen = false, childNodes = null, content, childNode, duration = 300 }: Props = $props();
+
+	function safeSlide(node: Element, params: SlideParams = {}): TransitionConfig {
+		const transition = slide(node, params);
+		const css = transition.css;
+
+		if (!css) {
+			return transition;
+		}
+
+		return {
+			...transition,
+			css: (t, u) => {
+				const computedCss = css(t, u);
+				return computedCss.includes('NaN')
+					? `overflow: hidden; opacity: ${t}; transform: translateX(${(1 - t) * -4}px);`
+					: computedCss;
+			}
+		};
+	}
 </script>
 
 <div class="w-full">
@@ -33,7 +52,11 @@
 		<div class="relative ml-4 w-full">
 			<div class="tree-guide-line"></div>
 
-			<div class="tree-children" in:slide={{ duration, easing: cubicOut }} out:slide={{ duration }}>
+			<div
+				class="tree-children"
+				in:safeSlide={{ duration, easing: cubicOut }}
+				out:safeSlide={{ duration }}
+			>
 				{#each childNodes ?? [] as child}
 					{@render childNode?.(child)}
 				{/each}
