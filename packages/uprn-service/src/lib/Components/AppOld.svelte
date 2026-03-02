@@ -2,7 +2,7 @@
 	import { asset, base } from '$app/paths';
 	import AreaSelectionHoverCard from '$lib/Components/AreaSelectionHoverCard/AreaSelectionHoverCard.svelte';
 	import AreaSelectionToast from '$lib/Components/AreaSelectionToast/AreaSelectionToast.svelte';
-	import UprnChat from '$lib/Components/Chat/Chat.svelte';
+	import UprnChat from '$lib/Components/chat/chat.svelte';
 	import CollapsibleWindow from '$lib/Components/CollapsibleWindow/CollapsibleWindow.svelte';
 	import DownloadsMenu from '$lib/Components/DownloadsMenu/DownloadsMenu.svelte';
 	import ExportMenuFooter from '$lib/Components/ExportMenu/ExportMenuFooter.svelte';
