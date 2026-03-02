@@ -386,7 +386,8 @@
 			initializedNodeVisibility ||
 			!webMapStore?.isLoaded ||
 			!nodeVisibilityController ||
-			!treeviewNodes
+			!treeviewNodes ||
+			treeviewNodes.length === 0
 		) {
 			return;
 		}
@@ -607,6 +608,10 @@
 	 * Starts the application by fetching the app configuration and initializing the map view.
 	 */
 	function startApp() {
+		initializedNodeVisibility = false;
+		initializedSelectionsFromDb = false;
+		mapView = null;
+
 		appConfig.fetch();
 		const async = async () => {
 			const { default: MapView } = await import('@arcgis/core/views/MapView');
@@ -671,9 +676,28 @@
 	 * @return An object representing the current state of the application tabs, including the active tab and any relevant selections.
 	 */
 	function getTabState(): AppTabState {
+		const areaIds: string[] = [...areaSelectionStore.areaIds].map((id) => String(id));
+		const dataSelectionIds: string[] = [...dataSelectionStore.dataSelections.keys()];
+
+		let selections: string[] = [];
+		switch (currentTab) {
+			case TabType.AreaOfInterest:
+				selections = areaIds;
+				break;
+			case TabType.Data:
+				selections = dataSelectionIds;
+				break;
+			case TabType.Export:
+				selections = [...areaIds, ...dataSelectionIds];
+				break;
+			case TabType.Downloads:
+				selections = [];
+				break;
+		}
+
 		return {
 			tab: currentTab,
-			selections: []
+			selections: selections
 		};
 	}
 
@@ -740,8 +764,12 @@
 	 */
 	async function clearCache() {
 		console.log('[uprn/app] Clearing cache and restarting app');
-		await clearDatabase();
-		startApp();
+		try {
+			await clearDatabase();
+			startApp();
+		} catch (error) {
+			console.error('[uprn/app] Failed to clear cache', error);
+		}
 	}
 
 	/**

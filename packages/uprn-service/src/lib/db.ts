@@ -94,21 +94,23 @@ export const getSelection = async (portalItemId: string): Promise<DbUprnSelectio
 			areas: null,
 			data: []
 		};
-		await db.uprnSelections.add(selection);
+		await db.uprnSelections.put(selection);
 	}
 
 	return selection;
 };
 
 export const updateSelection = async (portalItemId: string, patch: Partial<DbUprnSelection>) => {
-	let current = await db.uprnSelections.get(portalItemId);
-
-	if (!current) {
-		current = { portalItemId: portalItemId, areas: null, data: [] };
-		await db.uprnSelections.add(current);
+	const updatedRows = await db.uprnSelections.update(portalItemId, patch);
+	if (updatedRows > 0) {
+		return;
 	}
 
-	await db.uprnSelections.update(portalItemId, patch);
+	await db.uprnSelections.put({
+		portalItemId,
+		areas: patch.areas ?? null,
+		data: patch.data ?? []
+	});
 };
 
 export const clearSelections = async (portalItemId: string) => {

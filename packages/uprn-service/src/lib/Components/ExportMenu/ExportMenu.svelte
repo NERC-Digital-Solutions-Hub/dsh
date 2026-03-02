@@ -55,7 +55,7 @@
 			areaSelectionInteractionStore.selectionViewState?.layerView?.layer?.title ?? 'Selected Areas';
 
 		const childNodes: SelectionTreeviewNodeType[] = areaInfos.map((area) => ({
-			id: String(area.HighlightAreaInfo.id),
+			id: String(area.HighlightAreaInfo?.id),
 			name: area.name,
 			isVariable: false,
 			isLeaf: true,
