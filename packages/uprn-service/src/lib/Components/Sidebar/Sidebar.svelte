@@ -360,8 +360,9 @@
 					: position === SidebarPosition.TOP
 						? 'bottom: 0; right: 0; transform: translateY(calc(100% - 4px));'
 						: 'top: 0; right: 0; transform: translateY(calc(-100% + 4px));'} transform-origin: top left;"
-			aria-label={isOpen ? 'Close sidebar' : 'Open sidebar'}
+			aria-label={isOpen ? 'Collapse sidebar' : 'Open sidebar'}
 			aria-expanded={isOpen}
+			title={isOpen ? 'Collapse sidebar' : 'Open sidebar'}
 		>
 			{#if isOpen}
 				{@const Icon = closeIcon()}
