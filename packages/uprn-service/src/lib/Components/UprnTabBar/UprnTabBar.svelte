@@ -45,6 +45,23 @@
 			progress: progressByValue[t.value]
 		}))
 	);
+
+	/**
+	 * Generates a title for the progress state of a tab trigger.
+	 * @param progress - The progress state of the tab trigger.
+	 * @returns A string title representing the progress state, or undefined if no progress is provided
+	 */
+	function getTitleForProgress(progress: TabProgress | undefined): string | undefined {
+		switch (progress) {
+			case TabProgress.NotStarted:
+				return 'Not Started';
+			case TabProgress.InProgress:
+				return 'In Progress';
+			case TabProgress.Completed:
+				return 'Completed';
+		}
+		return undefined;
+	}
 </script>
 
 <Tabs.Root {value} {onValueChange} class="flex h-full w-full flex-col">
@@ -54,7 +71,7 @@
 				<Tabs.Trigger {value} class="tab-trigger" title={tooltip}>
 					{@const progressValue = !progress ? TabProgress.NotStarted : progress}
 					{#if progressValue && (hasProgress == undefined || hasProgress)}
-						<span class="text-xs text-muted-foreground">
+						<span class="text-xs text-muted-foreground" title={getTitleForProgress(progress)}>
 							{#if progressValue === TabProgress.NotStarted}
 								<CircleDashed class="inline-block h-4 w-4" />
 							{:else if progressValue === TabProgress.InProgress}
