@@ -120,6 +120,9 @@
 	/** State to track whether initial node visibility has been set. */
 	let initializedNodeVisibility = $state(false);
 
+	/** State to manage the visibility of the sidebar. */
+	let sidebarOpen = $state(true);
+
 	/** State for managing the visibility of the item info dialog. */
 	let itemInfoDialogOpen: boolean = $state(false);
 
@@ -613,6 +616,13 @@
 	}
 
 	/**
+	 * Toggles the visibility of the sidebar by updating the sidebarOpen state.
+	 */
+	function toggleSidebar() {
+		sidebarOpen = !sidebarOpen;
+	}
+
+	/**
 	 * Recursively filters treeview nodes based on the specified treeview type and visibility settings.
 	 * @param nodes - The array of TreeviewNode instances to filter.
 	 * @param type - The TreeviewType to filter nodes by.
@@ -775,7 +785,12 @@
 	<AreaSelectionToast {areaSelectionInteractionStore} />
 {/if}
 
-<Sidebar.Root isOpen={true} minSize={sidebarMinSize} position={Sidebar.SidebarPosition.LEFT}>
+<Sidebar.Root
+	isOpen={sidebarOpen}
+	onToggle={toggleSidebar}
+	minSize={sidebarMinSize}
+	position={Sidebar.SidebarPosition.LEFT}
+>
 	{#snippet sidebarContent()}
 		<div
 			class="relative flex h-full w-full min-w-0 flex-col gap-1 overflow-visible bg-slate-200 pt-1 px-1"
