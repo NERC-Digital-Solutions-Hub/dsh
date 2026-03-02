@@ -74,16 +74,6 @@ export class AreaSelectionInteractionStore {
 		this.areaSelectionStore = areaSelectionStore;
 		this.layerViewProvider = layerViewProvider;
 		this.fieldInfos = fieldInfos;
-
-		$effect.root(() => {
-			$effect(() => {
-				this.refreshLayerView();
-			});
-
-			$effect(() => {
-				this.refreshAreas();
-			});
-		});
 	}
 
 	public async refreshLayerView(): Promise<void> {

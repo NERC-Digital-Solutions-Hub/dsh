@@ -20,7 +20,7 @@
 	import UprnMapView from '$lib/components/uprn-map-view/uprn-map-view.svelte';
 	import UprnTabBarContent from '$lib/components/uprn-tab-bar/uprn-tab-bar-content.svelte';
 	import UprnTabBar from '$lib/components/uprn-tab-bar/uprn-tab-bar.svelte';
-	import { updateSelection } from '$lib/db';
+	import { clearDatabase, updateSelection } from '$lib/db';
 	import { setItemInfoDialogEvents } from '$lib/Events/ItemInfoDialogEvents';
 	import { useAiChatbotHealth } from '$lib/Hooks/UseAiChatbotHealth.svelte';
 	import { useFetchAppConfig } from '$lib/Hooks/UseFetchAppConfig.svelte';
@@ -86,22 +86,22 @@
 	const resetActions: ResetAction[] = [
 		{
 			label: 'Clear Area Selections',
-			description: 'Remove all selected areas of interest from the map',
+			description: 'Remove all selected areas of interest from the map.',
 			onReset: clearAreaSelections
 		},
 		{
 			label: 'Clear Data Selections',
-			description: 'Remove all selected data layers for export',
+			description: 'Remove all selected data layers for export.',
 			onReset: clearDataSelections
 		},
 		{
 			label: 'Clear Downloads',
-			description: 'Remove all download history and pending jobs',
+			description: 'Remove all download history and pending jobs.',
 			onReset: clearDownloads
 		},
 		{
-			label: 'Clear All',
-			description: 'Removes all selections and download history',
+			label: 'Reset',
+			description: 'Resets the app to its initial state.',
 			onReset: clearAllSelections
 		}
 	];
@@ -374,12 +374,7 @@
 	);
 
 	onMount(() => {
-		appConfig.fetch();
-		const async = async () => {
-			const { default: MapView } = await import('@arcgis/core/views/MapView');
-			mapView = new MapView();
-		};
-		async();
+		startApp();
 	});
 
 	/** Effect to set initial visibility of treeview nodes based on their configurations when they are loaded. */
@@ -531,6 +526,28 @@
 	});
 
 	/**
+	 * Effect to refresh the area selection layer view when the map view or area selection interaction store is initialized.
+	 * */
+	$effect(() => {
+		if (!areaSelectionInteractionStore) {
+			return;
+		}
+
+		areaSelectionInteractionStore.refreshLayerView();
+	});
+
+	/**
+	 * Effect to refresh the area selection graphics on the map when the area selection interaction store is initialized.
+	 * */
+	$effect(() => {
+		if (!areaSelectionInteractionStore) {
+			return;
+		}
+
+		areaSelectionInteractionStore.refreshAreas();
+	});
+
+	/**
 	 * Effect to apply custom renderers to map layers based on the currently visible variable
 	 * nodes in the treeview.
 	 */
@@ -582,6 +599,18 @@
 			`[uprn/app] Applied custom renderer for variable node ${variableNode.id} on layer ${layer.id}`
 		);
 	});
+
+	/**
+	 * Starts the application by fetching the app configuration and initializing the map view.
+	 */
+	function startApp() {
+		appConfig.fetch();
+		const async = async () => {
+			const { default: MapView } = await import('@arcgis/core/views/MapView');
+			mapView = new MapView();
+		};
+		async();
+	}
 
 	/**
 	 * Recursively filters treeview nodes based on the specified treeview type and visibility settings.
@@ -697,14 +726,23 @@
 	}
 
 	/**
+	 * Clears the database cache and restarts the application.
+	 */
+	async function clearCache() {
+		await clearDatabase();
+		startApp();
+	}
+
+	/**
 	 * Clears all selections and downloads by invoking the respective clear functions for area selections, data
 	 * selections, and downloads.
 	 */
 	function clearAllSelections() {
-		console.log('[uprn/app] Clearing all selections');
+		console.log('[uprn/app] Clearing all');
 		clearAreaSelections();
 		clearDataSelections();
 		clearDownloads();
+		clearCache();
 	}
 
 	/**

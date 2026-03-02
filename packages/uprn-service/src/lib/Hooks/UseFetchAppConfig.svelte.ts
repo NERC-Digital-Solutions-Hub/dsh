@@ -37,6 +37,7 @@ export function useFetchAppConfig() {
 	const configBasePath = asset('/config/apps/uprn/config.json');
 
 	async function fetchAsync() {
+		content = null;
 		isLoading = true;
 		error = null;
 
