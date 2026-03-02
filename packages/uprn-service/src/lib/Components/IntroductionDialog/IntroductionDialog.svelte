@@ -27,6 +27,7 @@
 		return hook;
 	});
 
+	/** Derived state for processing the fetched introduction markdown content into HTML. */
 	let introductionHtml: Promise<string | null> = $derived.by(async () => {
 		if (!introduction || !introduction.content) {
 			return null;
@@ -43,7 +44,7 @@
 	});
 </script>
 
-<Dialog.Root bind:open={isOpen} onOpenChange={(open) => (isOpen = open)}>
+<Dialog.Root bind:open={isOpen} onOpenChange={(open: boolean) => (isOpen = open)}>
 	<Dialog.Content class="grid w-[400px] max-w-[400px] max-h-[400px] min-h-[400px] overflow-hidden">
 		{#await introductionHtml}
 			<p>Loading introduction...</p>
