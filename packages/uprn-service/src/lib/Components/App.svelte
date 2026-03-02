@@ -739,6 +739,7 @@
 	 * Clears the database cache and restarts the application.
 	 */
 	async function clearCache() {
+		console.log('[uprn/app] Clearing cache and restarting app');
 		await clearDatabase();
 		startApp();
 	}
