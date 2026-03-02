@@ -15,7 +15,7 @@
 	import { Toaster } from '$lib/Components/shadcn/sonner';
 	import * as SidebarLayout from '$lib/Components/SidebarLayout/index.js';
 	import * as Sidebar from '$lib/Components/Sidebar/index.js';
-	import { SidebarPosition } from '$lib/Components/sidebar/SidebarPosition.js';
+	import { SidebarPosition } from '$lib/Components/Sidebar/SidebarPosition.js';
 	import AreaSelectionTreeview from '$lib/Components/Treeview/Area/Treeview.svelte';
 	import DataSelectionTreeview from '$lib/Components/Treeview/Data/Treeview.svelte';
 	import UprnMapView from '$lib/Components/UprnMapView/UprnMapView.svelte';
