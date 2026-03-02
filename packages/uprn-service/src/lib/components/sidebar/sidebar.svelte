@@ -13,7 +13,7 @@
 	 * - openIcon: Icon component - Custom icon to display when sidebar is closed (default: Menu)
 	 * - children: Snippet - Content to render inside the sidebar
 	 */
-	import { Button } from '$lib/components/shadcn/button';
+	import { Button } from '$lib/Components/shadcn/button';
 	import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Menu } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
 	import { onMount } from 'svelte';

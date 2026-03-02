@@ -1,11 +1,11 @@
 <!-- Node.svelte -->
 <script lang="ts">
-	import InfoButton from '$lib/components/Treeview/Data/InfoButton.svelte';
-	import Node from '$lib/components/Treeview/Data/Node.svelte';
-	import NodeContent from '$lib/components/Treeview/Data/NodeContent.svelte';
-	import { getNodeIcon } from '$lib/components/Treeview/GetNodeIcon';
-	import NodeAnimation from '$lib/components/Treeview/NodeAnimation.svelte';
-	import VisibilityCheckbox from '$lib/components/visibility-checkbox/visibility-checkbox.svelte';
+	import InfoButton from '$lib/Components/Treeview/Data/InfoButton.svelte';
+	import Node from '$lib/Components/Treeview/Data/Node.svelte';
+	import NodeContent from '$lib/Components/Treeview/Data/NodeContent.svelte';
+	import { getNodeIcon } from '$lib/Components/Treeview/GetNodeIcon';
+	import NodeAnimation from '$lib/Components/Treeview/NodeAnimation.svelte';
+	import VisibilityCheckbox from '$lib/Components/VisibilityCheckbox/VisibilityCheckbox.svelte';
 	import { getTreeEvents } from '$lib/Events/DataTreeviewEvents';
 	import { NodeDrawState, TreeviewNode } from '$lib/Models/Treeview/Index.js';
 	import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';

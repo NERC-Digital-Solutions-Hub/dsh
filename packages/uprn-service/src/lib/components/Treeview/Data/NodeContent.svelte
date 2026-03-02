@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { Component, Snippet } from 'svelte';
-	import OpenIndicator from '$lib/components/open-indicator/open-indicator.svelte';
+	import OpenIndicator from '$lib/Components/OpenIndicator/OpenIndicator.svelte';
 	import { getNodeStyles } from '../NodeContentStyles.js';
-	import { Button } from '$lib/components/shadcn/button/index.js';
+	import { Button } from '$lib/Components/shadcn/button/index.js';
 	import type { TagDefinition } from '$lib/Types/Configuration.types.js';
 
 	/**

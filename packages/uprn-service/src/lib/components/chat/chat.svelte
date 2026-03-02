@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { Button } from '$lib/components/shadcn/button';
-	import * as Chat from '$lib/components/shadcn/chat';
-	import { Input } from '$lib/components/shadcn/input';
-	import ScrollArea from '$lib/components/shadcn/scroll-area/scroll-area.svelte';
+	import { Button } from '$lib/Components/shadcn/button';
+	import * as Chat from '$lib/Components/shadcn/chat';
+	import { Input } from '$lib/Components/shadcn/input';
+	import ScrollArea from '$lib/Components/shadcn/scroll-area/scroll-area.svelte';
 	import { useSubmitAiChatbotChat } from '$lib/Hooks/UseSubmitAiChatbotChat.svelte';
 	import type { AppTabState } from '$lib/Types/Chatbot.types';
 	import { cn } from '$lib/utils';

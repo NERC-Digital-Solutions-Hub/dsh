@@ -1,7 +1,7 @@
 <script lang="ts">
-	import OpenIndicator from '$lib/components/open-indicator/open-indicator.svelte';
-	import { Button } from '$lib/components/shadcn/button/index.js';
-	import { Toggle } from '$lib/components/shadcn/toggle/index.js';
+	import OpenIndicator from '$lib/Components/OpenIndicator/OpenIndicator.svelte';
+	import { Button } from '$lib/Components/shadcn/button/index.js';
+	import { Toggle } from '$lib/Components/shadcn/toggle/index.js';
 	import { Ban } from '@lucide/svelte';
 	import type { Component } from 'svelte';
 	import { accentBgStyles, defaultBgStyles, getNodeStyles } from '../NodeContentStyles.js';

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Root } from '$lib/components/shadcn/avatar';
+	import { Root } from '$lib/Components/shadcn/avatar';
 	import { Avatar as AvatarPrimitive } from 'bits-ui';
 	import { cn } from '$lib/utils.js';
 

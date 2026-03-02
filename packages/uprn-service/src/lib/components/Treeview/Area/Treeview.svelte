@@ -1,5 +1,5 @@
 <script lang="ts">
-	import * as TreeView from '$lib/components/shadcn/tree-view/index.js';
+	import * as TreeView from '$lib/Components/shadcn/tree-view/index.js';
 	import { DatasetTreeviewNode, NodeDrawState, TreeviewNode } from '$lib/Models/Treeview/Index.js';
 	import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 	import type { IAreaSelectionController } from '$lib/Services/IAreaSelectionController';

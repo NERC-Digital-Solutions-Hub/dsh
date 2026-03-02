@@ -1,5 +1,5 @@
 <script lang="ts">
-	import * as Collapsible from '$lib/components/shadcn/collapsible/index.js';
+	import * as Collapsible from '$lib/Components/shadcn/collapsible/index.js';
 	import FolderIcon from '@lucide/svelte/icons/folder';
 	import FolderOpenIcon from '@lucide/svelte/icons/folder-open';
 	import { cn } from '$lib/utils.js';

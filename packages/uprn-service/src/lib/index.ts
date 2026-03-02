@@ -1,1 +1,1 @@
-export { default as UprnServiceApp } from '$lib/components/app.svelte';
+export { default as UprnServiceApp } from '$lib/Components/App.svelte';

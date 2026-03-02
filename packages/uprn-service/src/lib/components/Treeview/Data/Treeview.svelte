@@ -1,6 +1,6 @@
 <script lang="ts">
-	import * as TreeView from '$lib/components/shadcn/tree-view/index.js';
-	import Node from '$lib/components/Treeview/Data/Node.svelte';
+	import * as TreeView from '$lib/Components/shadcn/tree-view/index.js';
+	import Node from '$lib/Components/Treeview/Data/Node.svelte';
 	import { setTreeEvents } from '$lib/Events/DataTreeviewEvents.js';
 	import { NodeDrawState, SelectionState, type TreeviewNode } from '$lib/Models/Treeview/Index.js';
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';

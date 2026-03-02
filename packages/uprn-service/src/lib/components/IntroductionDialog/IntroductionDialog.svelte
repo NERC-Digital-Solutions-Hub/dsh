@@ -1,5 +1,5 @@
 <script lang="ts">
-	import * as Dialog from '$lib/components/shadcn/dialog/index.js';
+	import * as Dialog from '$lib/Components/shadcn/dialog/index.js';
 	import { useFetchAppIntroductionMarkdown } from '$lib/Hooks/UseFetchAppIntroductionMarkdown.svelte';
 	import rehypeStringify from 'rehype-stringify';
 	import remarkGfm from 'remark-gfm';

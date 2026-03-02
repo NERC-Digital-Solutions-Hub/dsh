@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { cn } from '$lib/utils.js';
 	import { onMount } from 'svelte';
-	import { Button } from '$lib/components/shadcn/button';
+	import { Button } from '$lib/Components/shadcn/button';
 	import ArrowDownIcon from '@lucide/svelte/icons/arrow-down';
 	import { scale } from 'svelte/transition';
 	import { UseAutoScroll } from '$lib/Hooks/use-auto-scroll.svelte.js';

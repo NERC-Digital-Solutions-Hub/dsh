@@ -1,6 +1,6 @@
 <!-- Node.svelte -->
 <script lang="ts">
-	import VisibilityCheckbox from '$lib/components/visibility-checkbox/visibility-checkbox.svelte';
+	import VisibilityCheckbox from '$lib/Components/VisibilityCheckbox/VisibilityCheckbox.svelte';
 	import {
 		DatasetTreeviewNode,
 		NodeDrawState,
