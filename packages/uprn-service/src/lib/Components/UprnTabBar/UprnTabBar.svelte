@@ -4,6 +4,7 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import type { Component, Snippet } from 'svelte';
 	import { CircleDashed, CircleDot, CircleCheckBig } from '@lucide/svelte';
+	import * as HoverCard from '$lib/Components/shadcn/hover-card/index.js';
 
 	/**
 	 * Definition for a tab trigger.

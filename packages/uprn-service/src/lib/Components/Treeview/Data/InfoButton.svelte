@@ -2,6 +2,7 @@
 <script lang="ts">
 	import { InfoIcon } from '@lucide/svelte';
 	import { getItemInfoDialogEvents } from '$lib/Events/ItemInfoDialogEvents';
+	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 
 	/**
 	 * Props for the InfoButton component.
@@ -26,8 +27,17 @@
 	}
 </script>
 
-<button class="info-button" onclick={handleClick} title="Info">
-	<InfoIcon class="size-4" />
+<button class="info-button" onclick={handleClick} aria-label="Additional information">
+	<Tooltip.Provider>
+		<Tooltip.Root>
+			<Tooltip.Trigger>
+				<InfoIcon class="size-4" />
+			</Tooltip.Trigger>
+			<Tooltip.Content>
+				<p>Additional information</p>
+			</Tooltip.Content>
+		</Tooltip.Root>
+	</Tooltip.Provider>
 </button>
 
 <style>
@@ -39,7 +49,6 @@
 		align-items: center;
 		justify-content: center;
 		padding: 0.25rem;
-		margin-right: -0.3rem;
 
 		/* Appearance */
 		background: transparent;

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button, buttonVariants } from '$lib/Components/shadcn/button/index.js';
 	import * as Dialog from '$lib/Components/shadcn/dialog/index.js';
+	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 	import { cn } from '$lib/utils';
 	import { RotateCcw } from '@lucide/svelte';
 
@@ -25,8 +26,17 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Trigger title="Reset" class={cn(buttonVariants({ variant: 'outline' }), buttonClass)}>
-		<RotateCcw />
+	<Dialog.Trigger class={cn(buttonVariants({ variant: 'outline' }), buttonClass)}>
+		<Tooltip.Provider>
+			<Tooltip.Root>
+				<Tooltip.Trigger>
+					<RotateCcw />
+				</Tooltip.Trigger>
+				<Tooltip.Content>
+					<p>Reset options</p>
+				</Tooltip.Content>
+			</Tooltip.Root>
+		</Tooltip.Provider>
 	</Dialog.Trigger>
 	<Dialog.Content class="sm:max-w-[425px]">
 		<Dialog.Header>

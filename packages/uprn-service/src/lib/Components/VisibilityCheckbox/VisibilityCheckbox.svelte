@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Eye, EyeOff, Scale } from '@lucide/svelte';
-	import { cn } from '$lib/utils.js';
+	import { Eye, EyeOff } from '@lucide/svelte';
+	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 
 	let {
 		checked = $bindable(false),
@@ -16,6 +16,20 @@
 		onCheckedChange?: (checked: boolean) => void;
 		disabled?: boolean;
 	} = $props();
+
+	/**
+	 * Returns the appropriate tooltip content based on the current visibility state.
+	 * @returns A string representing the tooltip content.
+	 */
+	function getTooltipContent(): string {
+		if (checked && !indeterminate) {
+			return 'Visible';
+		} else if (indeterminate) {
+			return 'Zoom in/out to view layer';
+		} else {
+			return 'Not visible';
+		}
+	}
 
 	function handleClick() {
 		if (disabled) return;
@@ -44,23 +58,26 @@
 	}}
 	onkeydown={handleKeydown}
 	{disabled}
-	aria-pressed={checked}
 	role="switch"
-	aria-label={checked ? 'Hide layer' : 'Show layer'}
-	title={checked && !indeterminate
-		? 'Visible'
-		: indeterminate
-			? 'Zoom in/out to view layer'
-			: 'Not visible'}
+	aria-label={getTooltipContent()}
 	{...restProps}
 >
-	{#if checked}
-		<Eye class="size-4" />
-	{:else if indeterminate}
-		<Eye class="size-4" />
-	{:else}
-		<EyeOff class="size-4" />
-	{/if}
+	<Tooltip.Provider>
+		<Tooltip.Root>
+			<Tooltip.Trigger>
+				{#if checked}
+					<Eye class="size-4" />
+				{:else if indeterminate}
+					<Eye class="size-4" />
+				{:else}
+					<EyeOff class="size-4" />
+				{/if}
+			</Tooltip.Trigger>
+			<Tooltip.Content>
+				<p>{getTooltipContent()}</p>
+			</Tooltip.Content>
+		</Tooltip.Root>
+	</Tooltip.Provider>
 </button>
 
 <style>
@@ -122,5 +139,9 @@
 	.visibility-btn:focus-visible {
 		outline: 2px solid hsl(var(--ring));
 		outline-offset: 2px;
+	}
+
+	.visibility-btn :global(svg) {
+		transform: translateX(0.5px);
 	}
 </style>

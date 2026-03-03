@@ -239,27 +239,32 @@
 				{isOpen}
 			>
 				{#snippet children()}
-					<div class="flex items-center">
+					<div class="node-actions">
 						{#if nodeConfig?.metadataTabInfoUrl}
-							<div class="mr-2">
+							<span class="action-slot">
 								<InfoButton layerId={node.id} />
-							</div>
+							</span>
 						{/if}
+
 						{#if isDownloadable}
-							<div class="mr-2">
+							<span class="action-slot">
 								<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
-							</div>
+							</span>
 						{/if}
+
 						{#if showVisibility}
-							<div class="visibility-wrapper" class:visible={!isVisibilityAnimatingOut}>
-								<div class="visibility-inner">
+							<span
+								class="action-slot visibility-wrapper"
+								class:visible={!isVisibilityAnimatingOut}
+							>
+								<span class="visibility-inner">
 									<VisibilityCheckbox
 										checked={isChecked}
 										indeterminate={getNodeDrawState?.(node.id) === NodeDrawState.Suspended}
 										onCheckedChange={toggleVisible}
 									/>
-								</div>
-							</div>
+								</span>
+							</span>
 						{/if}
 					</div>
 				{/snippet}
@@ -274,23 +279,32 @@
 				{isFolder}
 			>
 				{#snippet children()}
-					<div class="flex items-center">
+					<div class="node-actions">
 						{#if nodeConfig?.metadataTabInfoUrl}
-							<div class="mr-2">
+							<span class="action-slot">
 								<InfoButton layerId={node.id} />
-							</div>
+							</span>
 						{/if}
+
 						{#if isDownloadable}
-							<div class="mr-2">
+							<span class="action-slot">
 								<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
-							</div>
+							</span>
 						{/if}
-						{#if hasVisibility}
-							<VisibilityCheckbox
-								checked={isChecked}
-								indeterminate={getNodeDrawState?.(node.id) === NodeDrawState.Suspended}
-								onCheckedChange={toggleVisible}
-							/>
+
+						{#if showVisibility}
+							<span
+								class="action-slot visibility-wrapper"
+								class:visible={!isVisibilityAnimatingOut}
+							>
+								<span class="visibility-inner">
+									<VisibilityCheckbox
+										checked={isChecked}
+										indeterminate={getNodeDrawState?.(node.id) === NodeDrawState.Suspended}
+										onCheckedChange={toggleVisible}
+									/>
+								</span>
+							</span>
 						{/if}
 					</div>
 				{/snippet}
@@ -315,6 +329,22 @@
 <NodeAnimation {isOpen} {content} childNodes={isFolder ? filteredChildren : null} {childNode} />
 
 <style>
+	.node-actions {
+		display: inline-flex;
+		align-items: center; /* same vertical axis */
+		gap: 0rem; /* same spacing between all */
+	}
+
+	/* every action gets the same “slot” so icons/checkbox align */
+	.action-slot {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 1rem; /* pick a value that matches your buttons */
+		width: 1.5rem; /* optional: makes spacing visually identical */
+	}
+
+	/* keep your animation, but don't break alignment */
 	.visibility-wrapper {
 		display: grid;
 		grid-template-columns: 0fr;
@@ -328,15 +358,18 @@
 	.visibility-inner {
 		overflow: hidden;
 		display: flex;
+		align-items: center;
+		justify-content: center;
 		opacity: 0;
 		transform: translateX(10px);
+		transform-origin: center;
 		transition:
-			opacity 0.4s ease-out,
+			opacity 0.2s ease-out,
 			transform 0.2s ease-out;
 	}
 
 	.visibility-wrapper.visible .visibility-inner {
 		opacity: 1;
-		transform: translateX(0);
+		transform: translateX(0px);
 	}
 </style>

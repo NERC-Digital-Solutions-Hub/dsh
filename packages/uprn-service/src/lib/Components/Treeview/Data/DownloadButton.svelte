@@ -2,6 +2,7 @@
 <script lang="ts">
 	import DownloadCheckbox from '$lib/Components/DownloadCheckbox/DownloadCheckbox.svelte';
 	import { SelectionState, type TreeviewNode } from '$lib/Models/Treeview/Index.js';
+	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 
 	/**
 	 * Props for the DownloadButton component.
@@ -24,6 +25,23 @@
 	let isIndeterminate = $derived(externalState === SelectionState.Indeterminate);
 
 	/**
+	 * Returns the tooltip content based on the current selection state.
+	 * @param state - The current selection state of the node.
+	 */
+	function getTooltipContent(state: SelectionState): string {
+		switch (state) {
+			case SelectionState.Active:
+				return 'Remove from download';
+			case SelectionState.Inactive:
+				return 'Add to download';
+			case SelectionState.Indeterminate:
+				return 'Partially selected for download';
+			default:
+				return '';
+		}
+	}
+
+	/**
 	 * Handles click events on the download button.
 	 * Toggles between active and inactive states.
 	 * @param event - The mouse event.
@@ -37,11 +55,18 @@
 	}
 </script>
 
-<div>
-	<DownloadCheckbox
-		checked={isChecked}
-		indeterminate={isIndeterminate}
-		onclick={handleClick}
-		title="Download"
-	/>
-</div>
+<Tooltip.Provider>
+	<Tooltip.Root>
+		<Tooltip.Trigger>
+			<DownloadCheckbox
+				checked={isChecked}
+				indeterminate={isIndeterminate}
+				onclick={handleClick}
+				aria-label={getTooltipContent(externalState)}
+			/>
+		</Tooltip.Trigger>
+		<Tooltip.Content>
+			<p>{getTooltipContent(externalState)}</p>
+		</Tooltip.Content>
+	</Tooltip.Root>
+</Tooltip.Provider>
