@@ -43,13 +43,13 @@
 	}
 </script>
 
-<div class="w-full">
+<div class="w-full" style="--tree-step: 1.5rem;">
 	<!-- Render the main node content (label, toggle, etc.) -->
 	{@render content?.()}
 
 	<!-- Children -->
 	{#if isOpen && childNodes}
-		<div class="relative ml-4 w-full">
+		<div class="relative w-full children-wrap" style="margin-left: var(--tree-step, 1.5rem);">
 			<div class="tree-guide-line"></div>
 
 			<div

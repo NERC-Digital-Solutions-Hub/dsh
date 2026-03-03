@@ -39,12 +39,12 @@
 	}: Props = $props();
 
 	/** The width to account for indentation. */
-	const widthCalc = $derived(`calc(100% - ${depth * 1}rem)`);
+	const width = $derived(`calc(100% - (${depth} * var(--tree-step, 1.5rem)))`);
 </script>
 
 <Button
 	class={`${getNodeStyles({ enhancedHover: true, includeFont: true })} relative w-full h-auto py-2 overflow-hidden`}
-	style="width: {widthCalc};"
+	style="width: {width};"
 	{onclick}
 >
 	{#if tagDefinitions && tagDefinitions.length > 0}
@@ -56,11 +56,13 @@
 	{/if}
 
 	<div class="grid w-full grid-cols-[auto_1fr_auto] items-center gap-x-2">
-		<div class="flex items-center gap-1">
+		<div class="node-icons">
 			{#if isFolder}
-				<OpenIndicator {isOpen} />
+				<span class="icon-slot">
+					<OpenIndicator {isOpen} />
+				</span>
 			{/if}
-			<span class="inline-block size-4 shrink-0" aria-hidden="true">
+			<span class="icon-slot">
 				{#if typeof icon === 'string'}
 					{@html icon}
 				{:else}
@@ -101,5 +103,19 @@
 		height: 100%;
 		box-sizing: border-box;
 		border-radius: 0;
+	}
+
+	.node-icons {
+		display: inline-flex;
+		align-items: center;
+		gap: 0rem;
+	}
+
+	.icon-slot {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 1rem;
+		width: var(--tree-step, 1.5rem);
 	}
 </style>
