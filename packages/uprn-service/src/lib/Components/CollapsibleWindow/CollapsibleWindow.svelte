@@ -3,6 +3,8 @@
 	import * as Card from '$lib/Components/shadcn/card/index.js';
 	import Button from '$lib/Components/shadcn/button/button.svelte';
 	import { cn } from '$lib/utils.js';
+	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
+
 	import { ChevronDown, ChevronUp, Maximize, Minimize } from '@lucide/svelte';
 
 	type Props = {
@@ -73,29 +75,47 @@
 				<div class="font-medium">Chat</div>
 				<div class="flex gap-1">
 					{#if isOpened}
-						<Button
-							class="size-6 border-1 bg-background hover:bg-accent focus-visible:border-ring"
-							onclick={onToggleMaximise}
-							title={isMaximised ? 'Compact' : 'Expand'}
-						>
-							{#if isMaximised}
-								<Minimize class="text-primary" />
-							{:else}
-								<Maximize class="text-primary" />
-							{/if}
-						</Button>
+						<Tooltip.Provider>
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<Button
+										class="size-6 border-1 bg-background hover:bg-accent focus-visible:border-ring"
+										onclick={onToggleMaximise}
+										aria-label={isMaximised ? 'Compact' : 'Expand'}
+									>
+										{#if isMaximised}
+											<Minimize class="text-primary" />
+										{:else}
+											<Maximize class="text-primary" />
+										{/if}
+									</Button>
+								</Tooltip.Trigger>
+								<Tooltip.Content>
+									<p>{isMaximised ? 'Compact' : 'Expand'}</p>
+								</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
 					{/if}
-					<Button
-						class="size-6 border-1 bg-background hover:bg-accent focus-visible:border-ring"
-						onclick={onToggleCollapse}
-						title={isOpened ? 'Hide' : 'Open'}
-					>
-						{#if !isOpened}
-							<ChevronUp class="text-primary" />
-						{:else}
-							<ChevronDown class="text-primary" />
-						{/if}
-					</Button>
+					<Tooltip.Provider>
+						<Tooltip.Root>
+							<Tooltip.Trigger>
+								<Button
+									class="size-6 border-1 bg-background hover:bg-accent focus-visible:border-ring"
+									onclick={onToggleCollapse}
+									aria-label={isOpened ? 'Hide' : 'Open'}
+								>
+									{#if !isOpened}
+										<ChevronUp class="text-primary" />
+									{:else}
+										<ChevronDown class="text-primary" />
+									{/if}
+								</Button>
+							</Tooltip.Trigger>
+							<Tooltip.Content>
+								<p>{isOpened ? 'Hide' : 'Open'}</p>
+							</Tooltip.Content>
+						</Tooltip.Root>
+					</Tooltip.Provider>
 				</div>
 			</div>
 		</Card.Header>

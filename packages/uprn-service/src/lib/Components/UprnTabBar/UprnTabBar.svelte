@@ -4,7 +4,7 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import type { Component, Snippet } from 'svelte';
 	import { CircleDashed, CircleDot, CircleCheckBig } from '@lucide/svelte';
-	import * as HoverCard from '$lib/Components/shadcn/hover-card/index.js';
+	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 
 	/**
 	 * Definition for a tab trigger.
@@ -69,20 +69,32 @@
 	<div class="tab-list-wrapper flex-shrink-0">
 		<Tabs.List class="tab-list">
 			{#each triggersWithProgress as { value, label, seperatorIcon, tooltip, progress, hasProgress }}
-				<Tabs.Trigger {value} class="tab-trigger" title={tooltip}>
-					{@const progressValue = !progress ? TabProgress.NotStarted : progress}
-					{#if progressValue && (hasProgress == undefined || hasProgress)}
-						<span class="text-xs text-muted-foreground" title={getTitleForProgress(progress)}>
-							{#if progressValue === TabProgress.NotStarted}
-								<CircleDashed class="inline-block h-4 w-4" />
-							{:else if progressValue === TabProgress.InProgress}
-								<CircleDot class="inline-block h-4 w-4 text-amber-600" />
-							{:else if progressValue === TabProgress.Completed}
-								<CircleCheckBig class="inline-block h-4 w-4 text-green-800" />
-							{/if}
-						</span>
-					{/if}
-					{label}
+				<Tabs.Trigger {value} class="tab-trigger">
+					<Tooltip.Provider>
+						<Tooltip.Root>
+							<Tooltip.Trigger>
+								{@const progressValue = !progress ? TabProgress.NotStarted : progress}
+								{#if progressValue && (hasProgress == undefined || hasProgress)}
+									<span class="text-xs text-muted-foreground">
+										{#if progressValue === TabProgress.NotStarted}
+											<CircleDashed class="inline-block h-4 w-4" />
+										{:else if progressValue === TabProgress.InProgress}
+											<CircleDot class="inline-block h-4 w-4 text-amber-600" />
+										{:else if progressValue === TabProgress.Completed}
+											<CircleCheckBig class="inline-block h-4 w-4 text-green-800" />
+										{/if}
+									</span>
+								{/if}
+								{label}
+							</Tooltip.Trigger>
+							<Tooltip.Content>
+								<p>
+									{tooltip}
+									{#if progress}({getTitleForProgress(progress)}){/if}
+								</p>
+							</Tooltip.Content>
+						</Tooltip.Root>
+					</Tooltip.Provider>
 				</Tabs.Trigger>
 				{#if value !== triggers[triggers.length - 1]?.value}
 					{#if seperatorIcon}

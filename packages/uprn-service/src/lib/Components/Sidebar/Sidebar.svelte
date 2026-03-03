@@ -14,6 +14,7 @@
 	 * - children: Snippet - Content to render inside the sidebar
 	 */
 	import { Button } from '$lib/Components/shadcn/button';
+	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 	import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Menu } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
 	import { onMount } from 'svelte';
@@ -362,15 +363,23 @@
 						: 'top: 0; right: 0; transform: translateY(calc(-100% + 4px));'} transform-origin: top left;"
 			aria-label={isOpen ? 'Collapse sidebar' : 'Open sidebar'}
 			aria-expanded={isOpen}
-			title={isOpen ? 'Collapse sidebar' : 'Open sidebar'}
 		>
-			{#if isOpen}
-				{@const Icon = closeIcon()}
-				<Icon class="h-6 w-6 text-primary" />
-			{:else}
-				{@const OpenIcon = openIcon}
-				<OpenIcon class="h-6 w-6 text-primary" />
-			{/if}
+			<Tooltip.Provider>
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						{#if isOpen}
+							{@const Icon = closeIcon()}
+							<Icon class="h-6 w-6 text-primary" />
+						{:else}
+							{@const OpenIcon = openIcon}
+							<OpenIcon class="h-6 w-6 text-primary" />
+						{/if}
+					</Tooltip.Trigger>
+					<Tooltip.Content>
+						<p>{isOpen ? 'Collapse' : 'Expand'}</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
+			</Tooltip.Provider>
 		</Button>
 	{/if}
 </div>
