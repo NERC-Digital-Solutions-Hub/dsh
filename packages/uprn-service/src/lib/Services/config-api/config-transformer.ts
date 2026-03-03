@@ -335,7 +335,7 @@ export class ConfigTransformer implements IConfigurationTransformer<
 					: undefined,
 			isHidden: !variable.isListed,
 			order: variable.order,
-			metadataTabInfoUrl: variable.metadataTabInfoUrl || undefined,
+			metadataTabInfoUrl: variable.tvMetadataConfigUrl || undefined,
 			layerId: dataset.wmId || undefined,
 			variableId: variable.tvVariableName || undefined,
 			children: []
