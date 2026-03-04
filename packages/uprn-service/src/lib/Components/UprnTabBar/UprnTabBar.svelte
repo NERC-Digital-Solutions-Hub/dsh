@@ -69,10 +69,10 @@
 	<div class="tab-list-wrapper flex-shrink-0">
 		<Tabs.List class="tab-list">
 			{#each triggersWithProgress as { value, label, seperatorIcon, tooltip, progress, hasProgress }}
-				<Tabs.Trigger {value} class="tab-trigger">
-					<Tooltip.Provider>
-						<Tooltip.Root>
-							<Tooltip.Trigger>
+				<Tooltip.Provider>
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<Tabs.Trigger {value} class="tab-trigger">
 								{@const progressValue = !progress ? TabProgress.NotStarted : progress}
 								{#if progressValue && (hasProgress == undefined || hasProgress)}
 									<span class="text-xs text-muted-foreground">
@@ -86,16 +86,18 @@
 									</span>
 								{/if}
 								{label}
-							</Tooltip.Trigger>
+							</Tabs.Trigger>
+						</Tooltip.Trigger>
+						<Tooltip.Portal>
 							<Tooltip.Content>
 								<p>
 									{tooltip}
 									{#if progress}({getTitleForProgress(progress)}){/if}
 								</p>
 							</Tooltip.Content>
-						</Tooltip.Root>
-					</Tooltip.Provider>
-				</Tabs.Trigger>
+						</Tooltip.Portal>
+					</Tooltip.Root>
+				</Tooltip.Provider>
 				{#if value !== triggers[triggers.length - 1]?.value}
 					{#if seperatorIcon}
 						{@const SeparatorIcon = seperatorIcon}

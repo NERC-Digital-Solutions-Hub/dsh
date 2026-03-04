@@ -27,18 +27,18 @@
 	}
 </script>
 
-<button class="info-button" onclick={handleClick} aria-label="Additional information">
-	<Tooltip.Provider>
-		<Tooltip.Root>
-			<Tooltip.Trigger>
+<Tooltip.Provider>
+	<Tooltip.Root>
+		<Tooltip.Trigger>
+			<button class="info-button" onclick={handleClick} aria-label="Additional information">
 				<InfoIcon class="size-4" />
-			</Tooltip.Trigger>
-			<Tooltip.Content>
-				<p>Additional information</p>
-			</Tooltip.Content>
-		</Tooltip.Root>
-	</Tooltip.Provider>
-</button>
+			</button>
+		</Tooltip.Trigger>
+		<Tooltip.Content>
+			<p>Additional information</p>
+		</Tooltip.Content>
+	</Tooltip.Root>
+</Tooltip.Provider>
 
 <style>
 	.info-button {

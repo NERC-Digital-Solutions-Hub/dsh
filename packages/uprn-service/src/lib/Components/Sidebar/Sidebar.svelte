@@ -353,7 +353,7 @@
 			onclick={onToggle}
 			variant="default"
 			size="icon"
-			class="absolute top-0 z-10 inline-flex size-7 items-center justify-center overflow-hidden rounded-md bg-background shadow-none outline-hidden select-none hover:bg-accent focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+			class="cursor-pointer absolute top-0 z-10 inline-flex size-7 items-center justify-center overflow-hidden rounded-md bg-background shadow-none outline-hidden select-none hover:bg-accent focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
 			style="{position === SidebarPosition.LEFT
 				? 'right: 0; transform: translateX(calc(100% - 4px));'
 				: position === SidebarPosition.RIGHT
@@ -366,18 +366,20 @@
 		>
 			<Tooltip.Provider>
 				<Tooltip.Root>
-					<Tooltip.Trigger>
+					<Tooltip.Trigger class="cursor-pointer">
 						{#if isOpen}
 							{@const Icon = closeIcon()}
-							<Icon class="h-6 w-6 text-primary" />
+							<Icon class="h-6 w-6 text-primary cursor-pointer" />
 						{:else}
 							{@const OpenIcon = openIcon}
-							<OpenIcon class="h-6 w-6 text-primary" />
+							<OpenIcon class="h-6 w-6 text-primary cursor-pointer" />
 						{/if}
 					</Tooltip.Trigger>
-					<Tooltip.Content>
-						<p>{isOpen ? 'Collapse' : 'Expand'}</p>
-					</Tooltip.Content>
+					<Tooltip.Portal>
+						<Tooltip.Content>
+							<p>{isOpen ? 'Collapse' : 'Expand'}</p>
+						</Tooltip.Content>
+					</Tooltip.Portal>
 				</Tooltip.Root>
 			</Tooltip.Provider>
 		</Button>
