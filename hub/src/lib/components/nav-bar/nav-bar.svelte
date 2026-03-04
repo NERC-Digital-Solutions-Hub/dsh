@@ -20,9 +20,9 @@
 				<NavigationMenu.Content>
 					<ul class="apps-menu-dropdown grid w-[300px] gap-4 p-2">
 						<li>
-							<!-- <NavigationMenu.Link
+							<NavigationMenu.Link
 								class="apps-menu-link"
-								href={`${base}/catalogues/dsh-catalogue`}
+								href="https://nercdsh.dev.azure.manchester.ac.uk/portal/apps/sites/#/dsh-catalogue/search"
 								title="Explore our data using a traditional approach to search."
 							>
 								<div class="font-medium">DSH Catalogue</div>
@@ -32,14 +32,14 @@
 							</NavigationMenu.Link>
 							<NavigationMenu.Link
 								class="apps-menu-link"
-								href={`${base}/catalogues/dsh-catalogue-arcgisonline`}
+								href="https://ndsh-uomanchester.hub.arcgis.com/search"
 								title="Explore our data using a traditional approach to search."
 							>
 								<div class="font-medium">DSH Catalogue (ArcGIS Online)</div>
 								<div class="apps-menu-description text-muted-foreground">
 									Explore our data using a traditional approach to search.
 								</div>
-							</NavigationMenu.Link> -->
+							</NavigationMenu.Link>
 							<NavigationMenu.Link
 								class="apps-menu-link"
 								href={`${base}/catalogues/ai`}
