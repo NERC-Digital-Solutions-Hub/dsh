@@ -20,7 +20,7 @@
 				<NavigationMenu.Content>
 					<ul class="apps-menu-dropdown grid w-[300px] gap-4 p-2">
 						<li>
-							<NavigationMenu.Link
+							<!-- <NavigationMenu.Link
 								class="apps-menu-link"
 								href={`${base}/catalogues/dsh-catalogue`}
 								title="Explore our data using a traditional approach to search."
@@ -39,7 +39,7 @@
 								<div class="apps-menu-description text-muted-foreground">
 									Explore our data using a traditional approach to search.
 								</div>
-							</NavigationMenu.Link>
+							</NavigationMenu.Link> -->
 							<NavigationMenu.Link
 								class="apps-menu-link"
 								href={`${base}/catalogues/ai`}
