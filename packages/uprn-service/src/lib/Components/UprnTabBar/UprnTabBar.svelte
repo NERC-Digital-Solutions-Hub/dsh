@@ -88,14 +88,12 @@
 								{label}
 							</Tabs.Trigger>
 						</Tooltip.Trigger>
-						<Tooltip.Portal>
-							<Tooltip.Content>
-								<p>
-									{tooltip}
-									{#if progress}({getTitleForProgress(progress)}){/if}
-								</p>
-							</Tooltip.Content>
-						</Tooltip.Portal>
+						<Tooltip.Content side="bottom">
+							<p>
+								{tooltip}
+								{#if progress}({getTitleForProgress(progress)}){/if}
+							</p>
+						</Tooltip.Content>
 					</Tooltip.Root>
 				</Tooltip.Provider>
 				{#if value !== triggers[triggers.length - 1]?.value}

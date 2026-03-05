@@ -375,11 +375,9 @@
 							<OpenIcon class="h-6 w-6 text-primary cursor-pointer" />
 						{/if}
 					</Tooltip.Trigger>
-					<Tooltip.Portal>
-						<Tooltip.Content>
-							<p>{isOpen ? 'Collapse' : 'Expand'}</p>
-						</Tooltip.Content>
-					</Tooltip.Portal>
+					<Tooltip.Content side="bottom">
+						<p>{isOpen ? 'Collapse' : 'Expand'}</p>
+					</Tooltip.Content>
 				</Tooltip.Root>
 			</Tooltip.Provider>
 		</Button>
