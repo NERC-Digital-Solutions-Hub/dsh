@@ -1,4 +1,4 @@
-import type { AppTabState } from '$lib/Types/Chatbot.types';
+import type { AiChatbotChatResponse, AppTabState } from '$lib/Types/Chatbot.types';
 import rehypeStringify from 'rehype-stringify';
 import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
@@ -12,15 +12,15 @@ import { unified } from 'unified';
  * @returns The loading, error, content states as well as a fetch method that accepts a query string.
  */
 export function useSubmitAiChatbotChat(url: string) {
-	let content = $state<string | null>(null);
+	let content = $state<AiChatbotChatResponse | null>(null);
 	let error = $state<unknown>(null);
 	let isLoading = $state(false);
 
-	const sessionId: string = crypto.randomUUID().toString();
+	const conversationId: string = crypto.randomUUID().toString();
 	let sequenceNumber: number = 1;
 
 	async function submit(query: string, tabState: AppTabState) {
-		content = '';
+		content = null;
 		isLoading = true;
 		error = null;
 
@@ -32,7 +32,7 @@ export function useSubmitAiChatbotChat(url: string) {
 				},
 				body: JSON.stringify({
 					query: query,
-					session_id: sessionId,
+					conversation_id: conversationId,
 					sequence_number: sequenceNumber,
 					state: tabState
 				})
@@ -42,7 +42,7 @@ export function useSubmitAiChatbotChat(url: string) {
 				throw new Error(`Failed to send chat query: ${response.statusText}`);
 			}
 
-			content = await getResponseBody(response, content);
+			content = (await response.json()) as AiChatbotChatResponse;
 			sequenceNumber++;
 		} catch (err) {
 			error = err;
@@ -61,8 +61,8 @@ export function useSubmitAiChatbotChat(url: string) {
 		get isLoading() {
 			return isLoading;
 		},
-		get sessionId() {
-			return sessionId;
+		get conversationId() {
+			return conversationId;
 		},
 		get sequenceNumber() {
 			return sequenceNumber;

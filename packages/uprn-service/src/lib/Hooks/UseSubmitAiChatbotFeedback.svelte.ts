@@ -10,7 +10,7 @@ export function useSubmitAiChatbotFeedback(url: string) {
 	let error = $state<unknown>(null);
 	let isLoading = $state(false);
 
-	async function submit(sessionId: string, sequenceNumber: number, feedback: string) {
+	async function submit(conversationId: string, sequenceNumber: number, feedback: string) {
 		content = null;
 		isLoading = true;
 		error = null;
@@ -22,7 +22,7 @@ export function useSubmitAiChatbotFeedback(url: string) {
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify({
-					session_id: sessionId,
+					conversation_id: conversationId,
 					sequence_number: sequenceNumber,
 					feedback_text: feedback,
 					feedback_type: AiChatbotFeedbackType.Complaint

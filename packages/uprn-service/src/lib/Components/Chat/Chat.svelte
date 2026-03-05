@@ -275,14 +275,14 @@
 
 		addMessage(userMessage, USER_SENDER_ID);
 
-		const responseSessionId = chat?.sessionId;
+		const responseSessionId = chat?.conversationId;
 		const responseSequenceNumber = chat?.sequenceNumber;
 
 		try {
 			await chat?.submit(userMessage, getTabState());
 
 			if (!chat?.error && chat?.content) {
-				addMessage(chat.content, BOT_SENDER_ID, {
+				addMessage(chat.content.answer, BOT_SENDER_ID, {
 					sessionId: responseSessionId,
 					sequenceNumber: responseSequenceNumber
 				});

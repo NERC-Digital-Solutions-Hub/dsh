@@ -7,9 +7,14 @@ export type AiChatbotHealthResponse = {
 
 export interface AiChatbotChatRequest {
 	query: string;
-	session_id: string;
+	conversation_id: string;
 	sequence_number: number;
 	state: AppTabState;
+}
+
+export interface AiChatbotChatResponse {
+	answer: string;
+	references: string[];
 }
 
 export interface AppTabState {
@@ -28,8 +33,8 @@ export enum AiChatbotFeedbackType {
  * Request model for submitting feedback.
  */
 export type AiChatbotFeedbackRequest = {
-	/** Session identifier (min length 1). */
-	session_id: string;
+	/** conversation identifier */
+	conversation_id: string;
 
 	/** Sequence number to provide feedback for (integer >= 1). */
 	sequence_number: number;
@@ -45,9 +50,9 @@ export type AiChatbotFeedbackRequest = {
 };
 
 export type AiChatbotFeedbackResponse = {
-  id: number;
-  session_id: string;
-  sequence_number: number;
-  created_at: string;
-  message: string;
+	id: number;
+	conversation_id: string;
+	sequence_number: number;
+	created_at: string;
+	message: string;
 };
