@@ -304,7 +304,7 @@
 							? 'Pending...'
 							: 'Failed to process export'}
 				>
-					{#if download.errorMessage}
+					{#if download.status === DownloadStatus.Failed && download.errorMessage}
 						<span class="text-sm text-red-600 italic ml-2" title={download.errorMessage}>
 							{download.errorMessage.length > 30
 								? `${download.errorMessage.slice(0, 30)}...`
