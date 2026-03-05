@@ -1,7 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/Components/shadcn/button/button.svelte';
-	import ClipboardIcon from '@lucide/svelte/icons/clipboard';
-	import ClipboardCheckIcon from '@lucide/svelte/icons/clipboard-check';
+	import { Copy, Check } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { cn } from '$lib/utils.js';
 
@@ -67,8 +66,8 @@
 
 <Button {variant} {size} class={cn(className)} disabled={!value} onclick={onCopy} {title}>
 	{#if copied}
-		<ClipboardCheckIcon size={iconSize} />
+		<Check size={iconSize} />
 	{:else}
-		<ClipboardIcon size={iconSize} />
+		<Copy size={iconSize} />
 	{/if}
 </Button>
