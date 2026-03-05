@@ -12,7 +12,7 @@ import { unified } from 'unified';
  * @returns The loading, error, content states as well as a fetch method that accepts a query string.
  */
 export function useSubmitAiChatbotChat(url: string) {
-	let content = $state<AiChatbotChatResponse | null>(null);
+	let content = $state<string | null>(null);
 	let error = $state<unknown>(null);
 	let isLoading = $state(false);
 
@@ -20,7 +20,7 @@ export function useSubmitAiChatbotChat(url: string) {
 	let sequenceNumber: number = 1;
 
 	async function submit(query: string, tabState: AppTabState) {
-		content = null;
+		content = '';
 		isLoading = true;
 		error = null;
 
@@ -42,7 +42,8 @@ export function useSubmitAiChatbotChat(url: string) {
 				throw new Error(`Failed to send chat query: ${response.statusText}`);
 			}
 
-			content = (await response.json()) as AiChatbotChatResponse;
+			const json = (await response.json()) as AiChatbotChatResponse;
+			content = await parseMarkdownToHtml(json.answer);
 			sequenceNumber++;
 		} catch (err) {
 			error = err;

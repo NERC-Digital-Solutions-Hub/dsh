@@ -282,7 +282,7 @@
 			await chat?.submit(userMessage, getTabState());
 
 			if (!chat?.error && chat?.content) {
-				addMessage(chat.content.answer, BOT_SENDER_ID, {
+				addMessage(chat.content, BOT_SENDER_ID, {
 					sessionId: responseSessionId,
 					sequenceNumber: responseSequenceNumber
 				});
