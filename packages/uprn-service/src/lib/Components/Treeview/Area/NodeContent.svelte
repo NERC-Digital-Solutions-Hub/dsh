@@ -46,7 +46,7 @@
 	}: Props = $props();
 
 	/** Calculate width to account for indentation. */
-	const widthCalc = $derived(`calc(100% - ${depth * 1}rem)`);
+	const width = $derived(`calc(100% - (${depth} * var(--tree-step, 1.5rem)))`);
 
 	const baseClass = getNodeStyles({ enhancedHover: true, includeFont: true });
 </script>
@@ -57,7 +57,7 @@
 		disabled={!isEnabled}
 		class={`${baseClass} w-full h-auto py-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-auto`}
 		variant="outline"
-		style="width: {widthCalc};"
+		style="width: {width};"
 		onPressedChange={() => {
 			if (!isEnabled) return;
 			onclick();
@@ -92,7 +92,7 @@
 {:else}
 	<Button
 		class={`${baseClass} w-full h-auto py-2 ${pressed ? accentBgStyles : defaultBgStyles}`}
-		style="width: {widthCalc};"
+		style="width: {width};"
 		{onclick}
 	>
 		<div class="grid w-full grid-cols-[auto_1fr_auto] items-center gap-x-2">
