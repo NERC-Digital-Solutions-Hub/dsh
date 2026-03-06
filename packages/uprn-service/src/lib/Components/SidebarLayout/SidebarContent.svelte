@@ -14,7 +14,7 @@
 <!-- Scrollable content section -->
 <div class={cn('w-full flex-1 overflow-hidden pr-1.5 pl-1.5', className)}>
 	<ScrollArea class="h-full w-full" type="always">
-		<div class="min-w-0 space-y-2 overflow-hidden">
+		<div class="min-w-0 space-y-2">
 			{#if children}
 				{@render children()}
 			{/if}

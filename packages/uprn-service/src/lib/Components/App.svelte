@@ -859,6 +859,18 @@
 					</div>
 				</SidebarLayout.Header>
 
+				<div hidden={currentTab !== TabType.AreaOfInterest}>
+					<p class="w-full text-xs text-muted-foreground text-right px-2 pr-4 pb-1">
+						{areaSelectionStore.areaIds.size} area(s) selected
+					</p>
+				</div>
+
+				<div hidden={currentTab !== TabType.Data}>
+					<p class="w-full text-xs text-muted-foreground text-right px-2 pr-4 pb-1">
+						{dataSelectionStore.dataSelections.size} dataset(s) selected
+					</p>
+				</div>
+
 				<SidebarLayout.Content>
 					<div hidden={currentTab !== TabType.AreaOfInterest}>
 						<UprnTabBarContent>
