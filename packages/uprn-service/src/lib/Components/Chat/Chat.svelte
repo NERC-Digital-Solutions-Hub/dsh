@@ -1,27 +1,16 @@
 <script lang="ts">
 	import ChatFeedbackDialog from '$lib/Components/Chat/ChatFeedbackDialog.svelte';
+	import ChatInput from '$lib/Components/Chat/ChatInput.svelte';
 	import { Button } from '$lib/Components/shadcn/button';
 	import * as Chat from '$lib/Components/shadcn/chat';
 	import { Input } from '$lib/Components/shadcn/input';
 	import ScrollArea from '$lib/Components/shadcn/scroll-area/scroll-area.svelte';
+	import { useFetchAiChatbotConfig } from '$lib/Hooks/UseFetchAiChatbotConfig.svelte';
 	import { useSubmitAiChatbotChat } from '$lib/Hooks/UseSubmitAiChatbotChat.svelte';
 	import type { AppTabState } from '$lib/Types/Chatbot.types';
 	import { cn } from '$lib/utils';
 	import { SendIcon, ThumbsUp, ThumbsDown } from '@lucide/svelte';
-
-	// ============================================================================
-	// Types
-	// ============================================================================
-
-	/**
-	 * Props interface for the chat component.
-	 */
-	type Props = {
-		chatEndpoint: string;
-		feedbackEndpoint: string;
-		getTabState: () => AppTabState;
-		class?: string;
-	};
+	import { onMount, tick } from 'svelte';
 
 	/**
 	 * Represents a single chat message in the conversation.
@@ -35,6 +24,10 @@
 		senderId: 1 | 2;
 		/** The text content of the message */
 		message: string;
+		/** The final complete text. */
+		fullMessage?: string;
+		/** Flag indicating if the message is currently streaming */
+		isStreaming?: boolean;
 		/** Formatted timestamp when the message was sent */
 		sentAt: string;
 		/** Current feedback vote for this message */
@@ -45,10 +38,23 @@
 		sequenceNumber?: number;
 	};
 
-	// ============================================================================
-	// Constants
-	// ============================================================================
+	type Props = {
+		configUrl: string;
+		chatEndpoint: string;
+		feedbackEndpoint: string;
+		getTabState: () => AppTabState;
+		class?: string;
+	};
 
+	const {
+		configUrl,
+		chatEndpoint,
+		feedbackEndpoint,
+		getTabState,
+		class: className
+	}: Props = $props();
+
+	/** Initial greeting message shown by the chatbot */
 	const FEEDBACK_OPTIONS = [
 		'Incorrect or incomplete',
 		'Not what I asked for',
@@ -67,44 +73,37 @@
 	/** Default error message shown when AI request fails */
 	const ERROR_MESSAGE = 'Sorry, I encountered an error processing your request.';
 
-	/** Initial greeting message from the bot */
-	const INITIAL_GREETING = `How can I help?`;
-
-	// ============================================================================
-	// Component Props
-	// ============================================================================
-
-	const { chatEndpoint, feedbackEndpoint, getTabState, class: className }: Props = $props();
+	const CHARACTERS_PER_SECOND = 15;
 
 	/** Hook for the AI UPRN chatbot streaming endpoint. */
 	const chat = $derived.by(() => {
 		return chatEndpoint ? useSubmitAiChatbotChat(chatEndpoint) : null;
 	});
 
-	// ============================================================================
-	// State
-	// ============================================================================
+	/** Hook for fetching the AI UPRN chatbot configuration. */
+	const config: ReturnType<typeof useFetchAiChatbotConfig> | null = $derived(
+		useFetchAiChatbotConfig(configUrl)
+	);
 
 	/** Current message being typed by the user */
-	let message = $state('');
+	let message: string = $state('');
 
 	/** State for managing the visibility of the feedback dialog */
-	let isFeedbackDialogOpen = $state(false);
+	let isFeedbackDialogOpen: boolean = $state(false);
 
 	/** Session id for the bot message currently being reported */
-	let selectedFeedbackSessionId = $state<string | null>(null);
+	let selectedFeedbackSessionId: string | null = $state(null);
 
 	/** Sequence number for the bot message currently being reported */
-	let selectedFeedbackSequenceNumber = $state<number | null>(null);
+	let selectedFeedbackSequenceNumber: number | null = $state(null);
 
 	/** Selected predefined feedback option for dialog */
-	let selectedFeedbackOption = $state<string | null>(null);
+	let selectedFeedbackOption: string | null = $state(null);
 
 	/** Reference to the scroll container element */
 	let scrollContainer: HTMLDivElement | null = $state(null);
 
-	/** Reference to the form input element */
-	let formElement: HTMLFormElement | null = $state(null);
+	let scrollViewport: HTMLElement | null = $state(null);
 
 	/** Reference to the input element */
 	let inputRef: HTMLInputElement | null = $state(null);
@@ -115,73 +114,23 @@
 	/** Array of all messages in the chat conversation */
 	let messageIdCounter = 1;
 
-	const messages = $state<ChatMessage[]>([
-		{
-			id: messageIdCounter++,
-			senderId: BOT_SENDER_ID,
-			message: INITIAL_GREETING,
-			sentAt: formatShortTime(new Date()),
-			feedbackVote: null
-		}
-	]);
+	const messages = $state<ChatMessage[]>([]);
 
-	// ============================================================================
-	// Dynamic Height Effect
-	// ============================================================================
-
-	/**
-	 * Updates the message wrapper's bottom padding based on the form's height.
-	 */
-	$effect(() => {
-		if (formElement && messageWrapper) {
-			// Capture references in local constants to satisfy TypeScript
-			const form = formElement;
-			const wrapper = messageWrapper;
-
-			const updatePadding = () => {
-				const formHeight = form.offsetHeight;
-				wrapper.style.paddingBottom = `${formHeight}px`;
-			};
-
-			// Initial update
-			updatePadding();
-
-			// Update on resize
-			const resizeObserver = new ResizeObserver(updatePadding);
-			resizeObserver.observe(form);
-
-			return () => {
-				resizeObserver.disconnect();
-			};
+	onMount(async () => {
+		await config.fetch();
+		console.log('Chatbot config loaded:', config.content);
+		if (config.content) {
+			await streamBotMessage(config.content.initialMessage);
 		}
 	});
 
-	// ============================================================================
-	// Auto-scroll Effect
-	// ============================================================================
-
-	/**
-	 * Automatically scrolls to the bottom when messages change or streaming updates occur.
-	 */
 	$effect(() => {
 		messages.length;
+		chat?.isLoading;
 		chat?.content;
 
-		// Scroll to bottom after a small delay to ensure DOM has updated
-		if (scrollContainer) {
-			setTimeout(() => {
-				// Find the viewport element within the ScrollArea
-				const viewport = scrollContainer?.querySelector('[data-slot="scroll-area-viewport"]');
-				if (viewport) {
-					viewport.scrollTop = viewport.scrollHeight;
-				}
-			}, 0);
-		}
+		scrollToBottom(true);
 	});
-
-	// ============================================================================
-	// Helper Functions
-	// ============================================================================
 
 	/**
 	 * Formats a Date object into a short time string with AM/PM indicator.
@@ -233,6 +182,149 @@
 		messages.push(createMessage(content, senderId, metadata));
 	}
 
+	async function streamBotMessage(
+		fullHtml: string,
+		metadata?: { sessionId?: string; sequenceNumber?: number }
+	): Promise<void> {
+		messages.push({
+			id: messageIdCounter++,
+			senderId: BOT_SENDER_ID,
+			message: '',
+			fullMessage: fullHtml,
+			isStreaming: true,
+			sentAt: formatShortTime(new Date()),
+			feedbackVote: null,
+			sessionId: metadata?.sessionId,
+			sequenceNumber: metadata?.sequenceNumber
+		});
+
+		const streamingMessage = messages[messages.length - 1];
+		const totalVisibleChars = getVisibleTextLength(fullHtml);
+
+		const tickMs = 15;
+		let visibleCharsShown = 0;
+
+		await scrollToBottom();
+
+		while (visibleCharsShown < totalVisibleChars) {
+			const charsThisTick = Math.max(1, Math.round((CHARACTERS_PER_SECOND * tickMs) / 1000));
+
+			visibleCharsShown = Math.min(totalVisibleChars, visibleCharsShown + charsThisTick);
+			streamingMessage.message = htmlUpToVisibleChars(fullHtml, visibleCharsShown);
+
+			await scrollToBottom(false);
+			await sleep(tickMs);
+		}
+
+		streamingMessage.message = fullHtml;
+		streamingMessage.isStreaming = false;
+	}
+
+	function getVisibleTextLength(fullHtml: string): number {
+		const parser = new DOMParser();
+		const doc = parser.parseFromString(fullHtml, 'text/html');
+		return doc.body.textContent?.length ?? 0;
+	}
+
+	function htmlUpToVisibleChars(fullHtml: string, visibleCharCount: number): string {
+		const parser = new DOMParser();
+		const doc = parser.parseFromString(fullHtml, 'text/html');
+
+		let remaining = visibleCharCount;
+
+		function walk(node: Node): string {
+			if (remaining <= 0) return '';
+
+			if (node.nodeType === Node.TEXT_NODE) {
+				const text = node.textContent ?? '';
+				if (text.length <= remaining) {
+					remaining -= text.length;
+					return escapeHtml(text);
+				}
+
+				const partial = text.slice(0, remaining);
+				remaining = 0;
+				return escapeHtml(partial);
+			}
+
+			if (node.nodeType !== Node.ELEMENT_NODE) {
+				return '';
+			}
+
+			const el = node as Element;
+			const tag = el.tagName.toLowerCase();
+
+			if (VOID_TAGS.has(tag)) {
+				return serializeOpenTag(el);
+			}
+
+			let html = serializeOpenTag(el);
+
+			for (const child of Array.from(el.childNodes)) {
+				if (remaining <= 0) break;
+				html += walk(child);
+			}
+
+			html += serializeCloseTag(el);
+			return html;
+		}
+
+		let result = '';
+		for (const child of Array.from(doc.body.childNodes)) {
+			if (remaining <= 0) break;
+			result += walk(child);
+		}
+
+		return result;
+	}
+
+	function escapeHtml(text: string): string {
+		return text
+			.replaceAll('&', '&amp;')
+			.replaceAll('<', '&lt;')
+			.replaceAll('>', '&gt;')
+			.replaceAll('"', '&quot;')
+			.replaceAll("'", '&#39;');
+	}
+
+	function escapeAttribute(text: string): string {
+		return escapeHtml(text);
+	}
+
+	function serializeOpenTag(el: Element): string {
+		const attrs = Array.from(el.attributes)
+			.map((attr) => ` ${attr.name}="${escapeAttribute(attr.value)}"`)
+			.join('');
+
+		return `<${el.tagName.toLowerCase()}${attrs}>`;
+	}
+
+	const VOID_TAGS = new Set([
+		'area',
+		'base',
+		'br',
+		'col',
+		'embed',
+		'hr',
+		'img',
+		'input',
+		'link',
+		'meta',
+		'param',
+		'source',
+		'track',
+		'wbr'
+	]);
+
+	function serializeCloseTag(el: Element): string {
+		const tag = el.tagName.toLowerCase();
+		return VOID_TAGS.has(tag) ? '' : `</${tag}>`;
+	}
+
+	function sleep(ms: number) {
+		return new Promise((resolve) => setTimeout(resolve, ms));
+	}
+
 	/**
 	 * Handles feedback thumb selection for a bot message.
 	 * Only one thumb can be active at a time, and clicking an active thumb clears it.
@@ -249,9 +341,16 @@
 		}
 	}
 
-	// ============================================================================
-	// Event Handlers
-	// ============================================================================
+	async function scrollToBottom(smooth = true) {
+		await tick();
+
+		if (!scrollViewport) return;
+
+		scrollViewport.scrollTo({
+			top: scrollViewport.scrollHeight,
+			behavior: smooth ? 'smooth' : 'auto'
+		});
+	}
 
 	/**
 	 * Handles the form submission when the user sends a message.
@@ -282,12 +381,12 @@
 			await chat?.submit(userMessage, getTabState());
 
 			if (!chat?.error && chat?.content) {
-				addMessage(chat.content, BOT_SENDER_ID, {
+				await streamBotMessage(chat.content, {
 					sessionId: responseSessionId,
 					sequenceNumber: responseSequenceNumber
 				});
 			} else {
-				addMessage(ERROR_MESSAGE, BOT_SENDER_ID);
+				await streamBotMessage(ERROR_MESSAGE);
 			}
 		} catch (error) {
 			console.error('Chat error:', error);
@@ -307,145 +406,125 @@
 	selectedOption={selectedFeedbackOption}
 />
 
-<!-- ============================================================================ -->
-<!-- Chat Container -->
-<!-- ============================================================================ -->
-
 <div class={cn('chat-container h-full w-full border border-border', className)}>
 	<div class="message-wrapper" bind:this={messageWrapper}>
-		<ScrollArea class="h-full w-full" bind:ref={scrollContainer}>
-			<Chat.List>
-				{#each messages as m (m.id)}
-					<Chat.Bubble variant={m.senderId === USER_SENDER_ID ? 'sent' : 'received'}>
-						<Chat.BubbleAvatar />
-						<Chat.BubbleMessage class="flex flex-col gap-1">
-							{@html m.message}
-							<div
-								class="flex w-full items-center justify-between gap-2 text-xs group-data-[variant='sent']/chat-bubble:justify-end"
-							>
-								<span>{m.sentAt}</span>
+		<ScrollArea class="h-full w-full" bind:ref={scrollContainer} bind:viewportRef={scrollViewport}>
+			<div class="chat-list-anchor">
+				<Chat.List>
+					{#each messages as m (m.id)}
+						<Chat.Bubble variant={m.senderId === USER_SENDER_ID ? 'sent' : 'received'}>
+							<Chat.BubbleMessage class="flex flex-col gap-1">
+								<div class="break-words whitespace-pre-wrap">
+									{@html m.message}
+								</div>
 
-								{#if m.senderId === BOT_SENDER_ID && m.sessionId && m.sequenceNumber}
-									<div class="thumb-actions">
-										<div class="thumb-wrapper" class:visible={m.feedbackVote !== 'down'}>
-											<div class="thumb-inner">
-												<Button
-													type="button"
-													variant="ghost"
-													size="icon-sm"
-													class={cn(
-														'thumb-button group',
-														m.feedbackVote === 'up' && 'thumb-active'
-													)}
-													onclick={() => handleThumbVote(m, 'up')}
-													aria-label="Helpful response"
-												>
-													<ThumbsUp
+								<div
+									class="flex w-full items-center justify-between gap-2 text-xs group-data-[variant='sent']/chat-bubble:justify-end"
+								>
+									<span>{m.sentAt}</span>
+
+									{#if m.senderId === BOT_SENDER_ID && m.sessionId && m.sequenceNumber}
+										<div class="thumb-actions">
+											<div class="thumb-wrapper" class:visible={m.feedbackVote !== 'down'}>
+												<div class="thumb-inner">
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon-sm"
 														class={cn(
-															'thumb-icon',
-															m.feedbackVote === 'up' ? 'text-foreground' : 'text-muted-foreground'
+															'thumb-button group',
+															m.feedbackVote === 'up' && 'thumb-active'
 														)}
-													/>
-												</Button>
+														onclick={() => handleThumbVote(m, 'up')}
+														aria-label="Helpful response"
+													>
+														<ThumbsUp
+															class={cn(
+																'thumb-icon',
+																m.feedbackVote === 'up'
+																	? 'text-foreground'
+																	: 'text-muted-foreground'
+															)}
+														/>
+													</Button>
+												</div>
+											</div>
+
+											<div class="thumb-wrapper" class:visible={m.feedbackVote !== 'up'}>
+												<div class="thumb-inner">
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon-sm"
+														class={cn(
+															'thumb-button group',
+															m.feedbackVote === 'down' && 'thumb-active'
+														)}
+														onclick={() => handleThumbVote(m, 'down')}
+														aria-label="Unhelpful response"
+													>
+														<ThumbsDown
+															class={cn(
+																'thumb-icon',
+																m.feedbackVote === 'down'
+																	? 'text-foreground'
+																	: 'text-muted-foreground'
+															)}
+														/>
+													</Button>
+												</div>
 											</div>
 										</div>
+									{/if}
+								</div>
+							</Chat.BubbleMessage>
+						</Chat.Bubble>
+					{/each}
 
-										<div class="thumb-wrapper" class:visible={m.feedbackVote !== 'up'}>
-											<div class="thumb-inner">
-												<Button
-													type="button"
-													variant="ghost"
-													size="icon-sm"
-													class={cn(
-														'thumb-button group',
-														m.feedbackVote === 'down' && 'thumb-active'
-													)}
-													onclick={() => handleThumbVote(m, 'down')}
-													aria-label="Unhelpful response"
-												>
-													<ThumbsDown
-														class={cn(
-															'thumb-icon',
-															m.feedbackVote === 'down'
-																? 'text-foreground'
-																: 'text-muted-foreground'
-														)}
-													/>
-												</Button>
-											</div>
-										</div>
-									</div>
-								{/if}
-							</div>
-						</Chat.BubbleMessage>
-					</Chat.Bubble>
-				{/each}
-
-				{#if chat?.isLoading}
-					<Chat.Bubble variant="received">
-						<Chat.BubbleAvatar />
-						<Chat.BubbleMessage class="flex flex-col gap-1">
-							{#if chat?.content}
-								<p class="break-words whitespace-pre-wrap">{@html chat.content}</p>
-							{:else}
+					{#if chat?.isLoading}
+						<Chat.Bubble variant="received">
+							<Chat.BubbleMessage class="flex flex-col gap-1">
 								<Chat.BubbleMessage typing />
-							{/if}
-						</Chat.BubbleMessage>
-					</Chat.Bubble>
-				{/if}
-			</Chat.List>
+							</Chat.BubbleMessage>
+						</Chat.Bubble>
+					{/if}
+				</Chat.List>
+			</div>
 		</ScrollArea>
 	</div>
 
 	<div class="input-wrapper">
-		<form
-			bind:this={formElement}
+		<ChatInput
+			bind:value={message}
+			disabled={chat?.isLoading}
 			onsubmit={handleSubmit}
-			class="flex shrink-0 items-center gap-2 border-t border-border bg-background p-2"
-		>
-			<Input
-				bind:ref={inputRef}
-				bind:value={message}
-				class="rounded-full"
-				placeholder="Type a message..."
-				disabled={chat?.isLoading}
-			/>
-			<Button
-				type="submit"
-				variant="default"
-				size="icon"
-				class="shrink-0 rounded-full"
-				disabled={message.trim() === '' || chat?.isLoading}
-			>
-				<SendIcon />
-			</Button>
-		</form>
+			exampleQuestions={config.content?.exampleQuestions}
+		/>
 	</div>
 </div>
 
 <style>
 	.chat-container {
-		position: relative;
+		display: flex;
+		flex-direction: column;
 		height: 100%;
 		min-height: 0;
 		overflow: hidden;
 	}
 
+	.message-wrapper {
+		flex: 1;
+		min-height: 0;
+		overflow: hidden;
+	}
+
 	.input-wrapper {
-		position: absolute;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		z-index: 10;
+		flex-shrink: 0;
 		background: inherit;
 	}
 
-	.message-wrapper {
-		position: absolute;
-		top: 0;
-		bottom: 0;
-		left: 0;
-		right: 0;
+	.chat-list-anchor {
+		min-height: 100%;
 		display: flex;
 		flex-direction: column;
 		justify-content: flex-end;

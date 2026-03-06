@@ -73,34 +73,6 @@ export function useSubmitAiChatbotChat(url: string) {
 }
 
 /**
- * Gets the response body from the response as a string.
- * @param response The response with the body.
- * @returns The parsed body.
- */
-async function getResponseBody(response: Response, content: string): Promise<string> {
-	const reader = response.body?.getReader();
-	if (!reader) {
-		throw new Error('No response body reader available');
-	}
-
-	const decoder = new TextDecoder();
-	let done = false;
-
-	while (!done) {
-		const { value, done: readerDone } = await reader.read();
-		done = readerDone;
-
-		if (value) {
-			const chunk = decoder.decode(value, { stream: !done });
-			content += chunk;
-			content = await parseMarkdownToHtml(content);
-		}
-	}
-
-	return content;
-}
-
-/**
  * Parses markdown into HTML.
  * @param markdown - The markdown as a string.
  * @returns The HTML representation of the markdown.

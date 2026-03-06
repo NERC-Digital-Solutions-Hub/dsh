@@ -50,3 +50,13 @@ export type TagDefinition = {
 	/** Color associated with the tag for visual representation */
 	color: string;
 };
+
+/**
+ * Configuration for the AI UPRN chatbot, including the initial message and example questions to guide users.
+ */
+export type ChatbotRemoteConfig = {
+	/** The initial message that the chatbot will display when a user starts a conversation */
+	initialMessage: string;
+	/** A list of example questions that users can ask the chatbot to understand its capabilities */
+	exampleQuestions: string[];
+};

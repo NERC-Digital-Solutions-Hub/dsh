@@ -215,6 +215,19 @@
 		return new URL(introductionPath, baseUrl).toString();
 	});
 
+	/** Derived state to compute the chatbot configuration URL based on the app configuration. */
+	const chatbotConfigUrl: string | null = $derived.by(() => {
+		if (
+			!appConfig.content?.contentConfig?.baseUrl ||
+			!appConfig.content.contentConfig.chatbotConfigPath
+		) {
+			return null;
+		}
+
+		const { baseUrl, chatbotConfigPath } = appConfig.content.contentConfig;
+		return new URL(chatbotConfigPath, baseUrl).toString();
+	});
+
 	/** The web map store instance. */
 	let webMapStore: WebMapStore | null = $derived.by(() => {
 		return appConfig.content
@@ -934,10 +947,10 @@
 					<p class="p-4 text-center text-sm text-gray-500">
 						AI UPRN Chatbot service is not available.
 					</p>
-				{:else if !!aiUprnChatbotHealth && aiUprnChatbotHealth.isAccessible && appConfig.content?.aiUprnChatbot}
+				{:else if !!aiUprnChatbotHealth && aiUprnChatbotHealth.isAccessible && chatbotConfigUrl && appConfig.content?.aiUprnChatbot}
 					{@const chatEndpoint = `${appConfig.content.aiUprnChatbot.baseUrl}${appConfig.content.aiUprnChatbot.chatRoute}`}
 					{@const feedbackEndpoint = `${appConfig.content.aiUprnChatbot.baseUrl}${appConfig.content.aiUprnChatbot.feedbackRoute}`}
-					<UprnChat {chatEndpoint} {feedbackEndpoint} {getTabState} />
+					<UprnChat configUrl={chatbotConfigUrl} {chatEndpoint} {feedbackEndpoint} {getTabState} />
 				{/if}
 			</CollapsibleWindow>
 		</div>

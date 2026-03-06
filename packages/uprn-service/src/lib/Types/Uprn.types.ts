@@ -13,6 +13,7 @@ export type ContentConfig = {
 	manifestPath: string;
 	climateJustRenderersPath: string;
 	introductionPath: string;
+	chatbotConfigPath: string;
 };
 
 export interface SidebarSize {
