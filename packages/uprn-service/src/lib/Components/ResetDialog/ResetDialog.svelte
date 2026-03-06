@@ -32,7 +32,7 @@
 				<Tooltip.Trigger>
 					<RotateCcw />
 				</Tooltip.Trigger>
-				<Tooltip.Content>
+				<Tooltip.Content side="bottom">
 					<p>Reset options</p>
 				</Tooltip.Content>
 			</Tooltip.Root>

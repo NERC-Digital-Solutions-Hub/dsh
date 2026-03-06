@@ -21,6 +21,7 @@
 	import RetryIcon from '@lucide/svelte/icons/rotate-ccw';
 	import XCircleIcon from '@lucide/svelte/icons/x-circle';
 	import { onMount } from 'svelte';
+	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 
 	/**
 	 * Props interface for the downloads menu component.
@@ -313,63 +314,99 @@
 					{/if}
 					<!-- <HourglassIcon color="#6b7280" /> -->
 					{@const cfg = getStatusCfg(download.status)}
-					<span title={cfg.text} class="inline-flex">
-						<Button
-							variant="ghost"
-							size="sm"
-							class="download-status-btn"
-							style="color: {cfg.color}"
-							disabled
-						>
-							{@const StatusIcon = cfg.icon}
-							<StatusIcon
-								size={cfg.iconSize ?? 14}
-								color={cfg.color}
-								class={download.status === 'in-progress' ? 'spinning' : ''}
-							/>
-						</Button>
+					<span class="inline-flex">
+						<Tooltip.Provider>
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<Button
+										variant="ghost"
+										size="sm"
+										class="download-status-btn"
+										style="color: {cfg.color}"
+										disabled
+									>
+										{@const StatusIcon = cfg.icon}
+										<StatusIcon
+											size={cfg.iconSize ?? 14}
+											color={cfg.color}
+											class={download.status === 'in-progress' ? 'spinning' : ''}
+										/>
+									</Button>
+								</Tooltip.Trigger>
+								<Tooltip.Content>
+									<p>{cfg.text}</p>
+								</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
 					</span>
 					{#if download.externalId}
-						<CopyToClipboardButton
-							value={getDownloadUrl(download.externalId!)}
-							class="download-clipboard-btn"
-							title="Copy URL to clipboard"
-							successMessage="URL copied to clipboard"
-							errorMessage="Failed to copy URL to clipboard"
-							iconSize={14}
-						/>
+						<Tooltip.Provider>
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<CopyToClipboardButton
+										value={getDownloadUrl(download.externalId!)}
+										class="download-clipboard-btn"
+										successMessage="URL copied to clipboard"
+										errorMessage="Failed to copy URL to clipboard"
+										iconSize={14}
+									/>
+								</Tooltip.Trigger>
+								<Tooltip.Content>Copy</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
 					{/if}
 					{#if download.externalId && download.status === 'completed'}
-						<Button
-							variant="ghost"
-							size="sm"
-							class="download-action-btn"
-							onclick={() => window.open(getDownloadUrl(download.externalId!), '_blank')}
-							title="Open download"
-						>
-							<Download />
-						</Button>
+						<Tooltip.Provider>
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<Button
+										variant="ghost"
+										size="sm"
+										class="download-action-btn"
+										onclick={() => window.open(getDownloadUrl(download.externalId!), '_blank')}
+										aria-label="Open download"
+									>
+										<Download />
+									</Button>
+								</Tooltip.Trigger>
+								<Tooltip.Content>Download</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
 					{/if}
 					{#if download.status === 'failed'}
-						<Button
-							variant="ghost"
-							size="sm"
-							class="download-retry-btn"
-							onclick={() => retryDownload(download.localId)}
-							title="Retry download"
-						>
-							<RetryIcon size={14} />
-						</Button>
+						<Tooltip.Provider>
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<Button
+										variant="ghost"
+										size="sm"
+										class="download-retry-btn"
+										onclick={() => retryDownload(download.localId)}
+										aria-label="Retry download"
+									>
+										<RetryIcon size={14} />
+									</Button>
+								</Tooltip.Trigger>
+								<Tooltip.Content>Retry</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
 					{/if}
-					<Button
-						variant="ghost"
-						size="sm"
-						class="download-remove-btn"
-						onclick={() => removeDownload(download.localId)}
-						title="Remove from queue"
-					>
-						×
-					</Button>
+					<Tooltip.Provider>
+						<Tooltip.Root>
+							<Tooltip.Trigger>
+								<Button
+									variant="ghost"
+									size="sm"
+									class="download-remove-btn"
+									onclick={() => removeDownload(download.localId)}
+									aria-label="Remove from queue"
+								>
+									×
+								</Button>
+							</Tooltip.Trigger>
+							<Tooltip.Content>Remove</Tooltip.Content>
+						</Tooltip.Root>
+					</Tooltip.Provider>
 				</SelectionEntryCard>
 			{/each}
 		</ul>
