@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
 	import {
 		Card,
 		CardContent,
@@ -67,22 +68,22 @@
 	};
 
 	type Props = {
-		content: string;
+		content: Extract<MetadataResolvedContent, { type: 'xmlKeyInfo' }>;
 	};
 
 	let { content }: Props = $props();
 
 	const metadata = $derived({
-		title: getXmlValue(content, paths.title),
-		abstract: getXmlValue(content, paths.abstract),
-		organisationName: getXmlValue(content, paths.organisationName),
-		creationDate: getXmlValue(content, paths.creationDate),
-		purpose: getXmlValue(content, paths.purpose),
-		credit: getXmlValue(content, paths.credit),
-		keywords: getXmlValues(content, paths.keyword),
-		contactEmail: getXmlValue(content, paths.contactEmail),
-		pointOfContactOrganisation: getXmlValue(content, paths.pointOfContactOrganisation),
-		pointOfContactEmail: getXmlValue(content, paths.pointOfContactEmail)
+		title: getXmlValue(content.text, paths.title),
+		abstract: getXmlValue(content.text, paths.abstract),
+		organisationName: getXmlValue(content.text, paths.organisationName),
+		creationDate: getXmlValue(content.text, paths.creationDate),
+		purpose: getXmlValue(content.text, paths.purpose),
+		credit: getXmlValue(content.text, paths.credit),
+		keywords: getXmlValues(content.text, paths.keyword),
+		contactEmail: getXmlValue(content.text, paths.contactEmail),
+		pointOfContactOrganisation: getXmlValue(content.text, paths.pointOfContactOrganisation),
+		pointOfContactEmail: getXmlValue(content.text, paths.pointOfContactEmail)
 	});
 
 	function parseXml(xmlString: string): XMLDocument {

@@ -1,11 +1,13 @@
 <script lang="ts">
+	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
+
 	type Props = {
-		content: string;
+		content: Extract<MetadataResolvedContent, { type: 'text' }>;
 	};
 
 	let { content }: Props = $props();
 </script>
 
 <p class="w-full max-w-prose self-stretch whitespace-pre-wrap text-sm leading-relaxed">
-	{content}
+	{content.text}
 </p>

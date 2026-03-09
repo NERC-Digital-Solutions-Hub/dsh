@@ -1,12 +1,13 @@
 <script lang="ts">
 	import CopyToClipboardButton from '$lib/Components/CopyToClipboardButton/CopyToClipboardButton.svelte';
+	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
 	import { Button } from '$lib/Components/shadcn/button/index.js';
 	import * as Card from '$lib/Components/shadcn/card/index.js';
 	import XmlTree from '$lib/Components/XmlTreeview/XmlTreeview.svelte';
 	import { ArrowDownToLine } from '@lucide/svelte';
 
 	type Props = {
-		content: string;
+		content: Extract<MetadataResolvedContent, { type: 'xml' }>;
 	};
 
 	let { content }: Props = $props();
@@ -28,14 +29,19 @@
 <Card.Root class="w-full self-stretch gap-1 py-2">
 	<Card.Header class="mb-0 mt-0 gap-0 pb-0 pt-0">
 		<div class="flex w-full items-center justify-end gap-2">
-			<CopyToClipboardButton value={content} variant="outline" />
+			<CopyToClipboardButton value={content.text} variant="outline" />
 
-			<Button variant="outline" size="sm" disabled={!content} onclick={() => downloadXml(content)}>
+			<Button
+				variant="outline"
+				size="sm"
+				disabled={!content.text}
+				onclick={() => downloadXml(content.text)}
+			>
 				<ArrowDownToLine />
 			</Button>
 		</div>
 	</Card.Header>
 	<Card.Content class="mt-0 pt-0">
-		<XmlTree xmlText={content} expandAll={true} />
+		<XmlTree xmlText={content.text} expandAll={true} />
 	</Card.Content>
 </Card.Root>

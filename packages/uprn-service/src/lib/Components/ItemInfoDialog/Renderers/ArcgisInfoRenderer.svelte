@@ -1,5 +1,6 @@
 <script lang="ts">
 	import esriRequest from '@arcgis/core/request.js';
+	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
 
 	type LayerDef = {
 		name?: string;
@@ -8,10 +9,11 @@
 	};
 
 	type Props = {
-		layer: __esri.Layer | __esri.Sublayer | null;
+		content: Extract<MetadataResolvedContent, { type: 'arcgisInfo' }>;
+		layer?: __esri.Layer | __esri.Sublayer | null;
 	};
 
-	let { layer }: Props = $props();
+	let { layer = null }: Props = $props();
 
 	let hasLayerDef: boolean | null = $state(null);
 	let layerDef: LayerDef | null = $state(null);

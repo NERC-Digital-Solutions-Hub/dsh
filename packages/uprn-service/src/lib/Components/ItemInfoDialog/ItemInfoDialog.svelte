@@ -3,6 +3,7 @@
 	import ScrollArea from '$lib/Components/shadcn/scroll-area/scroll-area.svelte';
 	import * as Tabs from '$lib/Components/shadcn/tabs/index.js';
 	import { useFetchMetadataContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
+	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
 	import { useFetchMetadataTabInfo } from '$lib/Hooks/UseFetchMetadataTabInfo.svelte';
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 	import type { IWebMapService } from '$lib/Services/IWebMapService';
@@ -171,6 +172,13 @@
 	function getRenderer(type: MetadataTabContentItem['type']) {
 		return metadataRenderers[type] ?? null;
 	}
+
+	function isMatchingResolvedType(
+		content: MetadataResolvedContent,
+		contentItem: MetadataTabContentItem
+	) {
+		return content.type === contentItem.type;
+	}
 </script>
 
 <Dialog.Root bind:open={isOpen} onOpenChange={(open) => (isOpen = open)}>
@@ -236,7 +244,13 @@
 											Error loading content: {formatHookError(contentHook.error)}
 										</p>
 									{:else if contentHook?.content && Renderer}
-										<Renderer {contentItem} content={contentHook.content} {index} {layer} />
+										{#if isMatchingResolvedType(contentHook.content, contentItem)}
+											<Renderer content={contentHook.content} {index} {layer} />
+										{:else}
+											<p class="w-full text-center text-sm italic text-muted-foreground">
+												Resolved content type mismatch: {contentHook.content.type}
+											</p>
+										{/if}
 									{:else}
 										<p class="w-full text-center text-sm italic text-muted-foreground">
 											Unsupported content type: {contentItem.type}

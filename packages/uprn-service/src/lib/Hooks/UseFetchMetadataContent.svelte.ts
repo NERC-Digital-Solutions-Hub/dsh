@@ -1,16 +1,98 @@
 import type { MetadataTabContentItem } from '$lib/Types/Metadata.types';
 import { SvelteSet } from 'svelte/reactivity';
 
+type ContentType = MetadataTabContentItem['type'];
+
+type MetadataContentItemByType = {
+	[K in ContentType]: Extract<MetadataTabContentItem, { type: K }>;
+};
+
+type MetadataResolvedContentByType = {
+	arcgisInfo: { type: 'arcgisInfo' };
+	text: { type: 'text'; text: string };
+	disclaimer: { type: 'disclaimer'; text: string };
+	image: { type: 'image'; url: string };
+	xml: { type: 'xml'; text: string };
+	xmlKeyInfo: { type: 'xmlKeyInfo'; text: string };
+	md: { type: 'md'; text: string };
+	docx: { type: 'docx'; name: string; url: string };
+	pdf: { type: 'pdf'; name: string; url: string };
+	slideshow: { type: 'slideshow'; urls: string[] };
+};
+
+export type MetadataResolvedContent = MetadataResolvedContentByType[ContentType];
+
+type FetcherUtils = {
+	fetchTextFromSource: (url: string) => Promise<string>;
+	fetchBlobAsObjectUrl: (url: string, contentType: string) => Promise<string>;
+};
+
+type ContentFetcher<TType extends ContentType> = (
+	item: MetadataContentItemByType[TType],
+	utils: FetcherUtils
+) => Promise<MetadataResolvedContentByType[TType]>;
+
+type ContentFetcherRegistry = {
+	[K in ContentType]: ContentFetcher<K>;
+};
+
+const fetchers: ContentFetcherRegistry = {
+	arcgisInfo: async () => ({ type: 'arcgisInfo' }),
+	text: async (item) => ({
+		type: 'text',
+		text: item.value
+	}),
+	disclaimer: async (item) => ({
+		type: 'disclaimer',
+		text: item.value
+	}),
+	image: async (item, utils) => ({
+		type: 'image',
+		url: await utils.fetchBlobAsObjectUrl(item.source, 'image')
+	}),
+	xml: async (item, utils) => ({
+		type: 'xml',
+		text: await utils.fetchTextFromSource(item.source)
+	}),
+	xmlKeyInfo: async (item, utils) => ({
+		type: 'xmlKeyInfo',
+		text: await utils.fetchTextFromSource(item.source)
+	}),
+	md: async (item, utils) => ({
+		type: 'md',
+		text: await utils.fetchTextFromSource(item.source)
+	}),
+	docx: async (item, utils) => ({
+		type: 'docx',
+		name: item.name ?? '',
+		url: await utils.fetchBlobAsObjectUrl(item.source, 'docx')
+	}),
+	pdf: async (item, utils) => ({
+		type: 'pdf',
+		name: item.name ?? '',
+		url: await utils.fetchBlobAsObjectUrl(item.source, 'pdf')
+	}),
+	slideshow: async (item, utils) => ({
+		type: 'slideshow',
+		urls: await Promise.all(
+			item.source.map((link) => utils.fetchBlobAsObjectUrl(link, 'slideshow'))
+		)
+	})
+};
+
+function resolveContent<TType extends ContentType>(
+	item: MetadataContentItemByType[TType],
+	utils: FetcherUtils
+) {
+	return fetchers[item.type](item, utils);
+}
+
 /**
  * Hook used to fetch a metadata content item. It manages loading state, any fetch errors,
- * and the resolved content payload.
- *
- * - text: resolves to string content
- * - image/docx/pdf: resolves to an object URL string
- * - slideshow: resolves to an array of object URL strings
+ * and a discriminated-union resolved content payload.
  */
 export function useFetchMetadataContent(contentItem: MetadataTabContentItem) {
-	let content = $state<string | string[] | null>(null);
+	let content = $state<MetadataResolvedContent | null>(null);
 	let error = $state<unknown>(null);
 	let isLoading = $state(false);
 
@@ -52,40 +134,10 @@ export function useFetchMetadataContent(contentItem: MetadataTabContentItem) {
 		try {
 			revokeObjectUrls();
 
-			switch (contentItem.type) {
-				case 'arcgisInfo':
-					content = 'placeholder';
-					break;
-				case 'text':
-					content = contentItem.value;
-					break;
-				case 'disclaimer':
-					content = contentItem.value;
-					break;
-				case 'image':
-					content = await fetchBlobAsObjectUrl(contentItem.source, 'image');
-					break;
-				case 'xmlKeyInfo':
-				case 'xml':
-				case 'md':
-					content = await fetchTextFromSource(contentItem.source);
-					break;
-				case 'docx':
-					content = await fetchBlobAsObjectUrl(contentItem.source, 'docx');
-					break;
-				case 'pdf':
-					content = await fetchBlobAsObjectUrl(contentItem.source, 'pdf');
-					break;
-				case 'slideshow': {
-					const urls = await Promise.all(
-						contentItem.source.map((link) => fetchBlobAsObjectUrl(link, 'slideshow'))
-					);
-					content = urls;
-					break;
-				}
-				default:
-					throw new Error(`Unsupported content type: ${contentItem}`);
-			}
+			content = await resolveContent(contentItem, {
+				fetchTextFromSource,
+				fetchBlobAsObjectUrl
+			});
 		} catch (err) {
 			error = err;
 			content = null;
