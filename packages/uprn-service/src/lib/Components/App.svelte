@@ -407,11 +407,17 @@
 
 		console.log('[uprn/app] Setting initial visibility for treeview nodes');
 
+		const nodesToSetVisible: TreeviewNode[] = [];
+
 		const setVisibility = (nodes: TreeviewNode[]) => {
 			nodes.forEach((node) => {
 				const config = treeviewConfigStore?.getConfig(node.id);
 				if (node) {
-					nodeVisibilityController.setVisibilityState(node, config?.isVisibleOnInit ?? false);
+					if (config?.isVisibleOnInit) {
+						nodesToSetVisible.push(node);
+					} else {
+						nodeVisibilityController.setVisibilityState(node, false);
+					}
 				}
 
 				if (node.children) {
@@ -421,6 +427,10 @@
 		};
 
 		setVisibility(treeviewNodes);
+		for (const node of nodesToSetVisible) {
+			nodeVisibilityController.setVisibilityState(node, true);
+		}
+
 		initializedNodeVisibility = true;
 	});
 
@@ -938,12 +948,13 @@
 
 				<SidebarLayout.Footer>
 					<div hidden={currentTab !== 'export'}>
-						{#if areaSelectionInteractionStore}
+						{#if areaSelectionInteractionStore && treeviewConfigStore}
 							<ExportMenuFooter
 								onExportSuccess={() => onTabValueChange('downloads')}
 								{areaSelectionInteractionStore}
 								{dataSelectionStore}
 								{downloadsStore}
+								nodeConfigProvider={treeviewConfigStore}
 							/>
 						{/if}
 					</div>
