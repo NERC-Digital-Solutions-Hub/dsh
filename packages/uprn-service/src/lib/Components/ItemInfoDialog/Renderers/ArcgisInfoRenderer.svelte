@@ -88,9 +88,7 @@
 {#if hasLayerDef === null}
 	<p class="w-full text-center text-sm italic text-muted-foreground">Loading layer details...</p>
 {:else if hasLayerDef === false}
-	<p class="w-full text-center text-sm italic text-muted-foreground">
-		No layer metadata available.
-	</p>
+	<p class="w-full text-center text-sm italic text-muted-foreground">Information not available.</p>
 {:else}
 	<div>
 		{#if layerSummary}
