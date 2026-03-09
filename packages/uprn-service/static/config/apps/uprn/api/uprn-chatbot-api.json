@@ -2,5 +2,6 @@
     "baseUrl": "https://dshapitest.xyz/uprn-chatbot",
     "healthRoute": "/healthz",
     "chatRoute": "/chat",
-    "chatStreamRoute": "/chat_stream"
+    "chatStreamRoute": "/chat_stream",
+    "feedbackRoute": "/feedbacks"
 }
