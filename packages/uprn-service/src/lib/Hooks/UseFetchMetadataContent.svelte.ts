@@ -15,8 +15,8 @@ type MetadataResolvedContentByType = {
 	xml: { type: 'xml'; text: string };
 	xmlKeyInfo: { type: 'xmlKeyInfo'; text: string };
 	md: { type: 'md'; text: string };
-	docx: { type: 'docx'; name: string; url: string };
-	pdf: { type: 'pdf'; name: string; url: string };
+	docx: { type: 'docx'; name: string; description: string; url: string };
+	pdf: { type: 'pdf'; name: string; description: string; url: string };
 	slideshow: { type: 'slideshow'; urls: string[] };
 };
 
@@ -65,11 +65,13 @@ const fetchers: ContentFetcherRegistry = {
 	docx: async (item, utils) => ({
 		type: 'docx',
 		name: item.name ?? '',
+		description: item.description ?? '',
 		url: await utils.fetchBlobAsObjectUrl(item.source, 'docx')
 	}),
 	pdf: async (item, utils) => ({
 		type: 'pdf',
 		name: item.name ?? '',
+		description: item.description ?? '',
 		url: await utils.fetchBlobAsObjectUrl(item.source, 'pdf')
 	}),
 	slideshow: async (item, utils) => ({

@@ -66,11 +66,13 @@ export type MarkdownContent = {
 export type DocxContent = {
 	type: 'docx';
 	name?: string;
+	description?: string;
 	source: string;
 };
 
 export type PdfContent = {
 	type: 'pdf';
 	name?: string;
+	description?: string;
 	source: string;
 };

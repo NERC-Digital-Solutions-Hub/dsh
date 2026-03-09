@@ -19,6 +19,9 @@
 		{@html PdfIcon}
 	</span>
 	<span>{content.name || 'Open PDF'}</span>
+	{#if content.description}
+		<p>{content.description}</p>
+	{/if}
 </a>
 
 <style>

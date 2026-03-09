@@ -19,6 +19,9 @@
 		{@html DocxIcon}
 	</span>
 	<span>{content.name || 'Open DOCX'}</span>
+	{#if content.description}
+		<p>{content.description}</p>
+	{/if}
 </a>
 
 <style>
