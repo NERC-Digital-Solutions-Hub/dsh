@@ -16,9 +16,11 @@ export type MetadataTabContentItem =
 	| TextContent
 	| DisclaimerContent
 	| ArcGISInformationContent
+	| XmlInformationContent
 	| ImageContent
 	| SlideshowContent
 	| XmlContent
+	| MarkdownContent
 	| DocxContent
 	| PdfContent;
 
@@ -36,6 +38,11 @@ export type ArcGISInformationContent = {
 	type: 'arcgisInfo';
 };
 
+export type XmlInformationContent = {
+	type: 'xmlKeyInfo';
+	source: string;
+};
+
 export type ImageContent = {
 	type: 'image';
 	source: string;
@@ -51,12 +58,19 @@ export type XmlContent = {
 	source: string;
 };
 
+export type MarkdownContent = {
+	type: 'md';
+	source: string;
+};
+
 export type DocxContent = {
 	type: 'docx';
+	name?: string;
 	source: string;
 };
 
 export type PdfContent = {
 	type: 'pdf';
+	name?: string;
 	source: string;
 };

@@ -65,7 +65,9 @@ export function useFetchMetadataContent(contentItem: MetadataTabContentItem) {
 				case 'image':
 					content = await fetchBlobAsObjectUrl(contentItem.source, 'image');
 					break;
+				case 'xmlKeyInfo':
 				case 'xml':
+				case 'md':
 					content = await fetchTextFromSource(contentItem.source);
 					break;
 				case 'docx':

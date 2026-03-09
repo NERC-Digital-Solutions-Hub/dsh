@@ -159,6 +159,8 @@ export type UprnDownloadJobRequestResponse = {
 	type: JobRequestResponseType;
 	guid: string;
 	message?: string;
+	queueId: number;
+	queuePosition: number;
 };
 
 export const JobRequestResponseType = Object.freeze({
