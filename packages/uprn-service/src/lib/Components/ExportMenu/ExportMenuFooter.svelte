@@ -2,9 +2,11 @@
 	import ClearSelectionsButton from '$lib/Components/ClearSelectionsButton/ClearSelectionsButton.svelte';
 	import Button from '$lib/Components/shadcn/button/button.svelte';
 	import Spinner from '$lib/Components/shadcn/spinner/spinner.svelte';
+	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 	import type { AreaSelectionInteractionStore } from '$lib/Stores/AreaSelectionInteractionStore.svelte';
 	import { DataSelectionStore } from '$lib/Stores/DataSelectionStore.svelte';
 	import type DownloadsStore from '$lib/Stores/DownloadsStore.svelte';
+	import { TreeviewNodeLayerType } from '$lib/Types/Treeview.types';
 	import {
 		DownloadStatus,
 		type AreaFieldInfoWithCode,
@@ -19,13 +21,15 @@
 		areaSelectionInteractionStore: AreaSelectionInteractionStore;
 		dataSelectionStore: DataSelectionStore;
 		downloadsStore: DownloadsStore;
+		nodeConfigProvider: INodeConfigProvider;
 	};
 
 	const {
 		onExportSuccess,
 		areaSelectionInteractionStore,
 		dataSelectionStore,
-		downloadsStore
+		downloadsStore,
+		nodeConfigProvider
 	}: Props = $props();
 
 	const areRequirementsMet = $derived.by(() => {
@@ -91,12 +95,35 @@
 
 			const dataSelections: DataSelectionInfo[] = dataSelectionStore
 				.getAllSelections()
-				.map((selection) => {
-					return {
-						layerId: selection.nodeId,
-						fields: Array.from(selection.selectedFieldIds)
-					};
-				});
+				.flatMap((selection) => {
+					const config = nodeConfigProvider.getConfig(selection.nodeId);
+					if (!config) {
+						return [];
+					}
+
+					if (config.type === TreeviewNodeLayerType.MapImageLayer) {
+						// Expand each field into its own synthetic layer selection
+						return Array.from(selection.selectedFieldIds).map((fieldId) => ({
+							nodeId: `${selection.nodeId}-${fieldId}`,
+							selectedFieldIds: new Set([fieldId])
+						}));
+					}
+
+					if (config.type === TreeviewNodeLayerType.TileLayer) {
+						// Expand each field into its own synthetic layer selection
+						return Array.from(selection.selectedFieldIds).map((fieldId) => ({
+							nodeId: `${selection.nodeId}-${fieldId}`,
+							selectedFieldIds: new Set([fieldId])
+						}));
+					}
+
+					// Keep all other selections unchanged
+					return [selection];
+				})
+				.map((selection) => ({
+					layerId: selection.nodeId,
+					fields: Array.from(selection.selectedFieldIds)
+				}));
 
 			const localId = crypto.randomUUID();
 			downloadsStore.addDownload({
