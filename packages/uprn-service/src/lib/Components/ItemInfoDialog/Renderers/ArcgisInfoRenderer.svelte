@@ -58,6 +58,7 @@
 
 		hasLayerDef = null;
 		const load = async (url: string) => {
+			console.log('[ArcgisInfoRenderer] Loading layer metadata from URL:', url);
 			try {
 				const { data } = await esriRequest(url, {
 					query: { f: 'json' },
