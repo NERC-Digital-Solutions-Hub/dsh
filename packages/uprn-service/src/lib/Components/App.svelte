@@ -57,6 +57,7 @@
 	import { Plus } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
+	import Example from './Example/Example.svelte';
 
 	const tabBarTriggers = [
 		{
@@ -836,6 +837,8 @@
 	<AreaSelectionHoverCard {areaSelectionInteractionStore} />
 	<AreaSelectionToast {areaSelectionInteractionStore} />
 {/if}
+
+<Example />
 
 <Sidebar.Root
 	isOpen={sidebarOpen}
