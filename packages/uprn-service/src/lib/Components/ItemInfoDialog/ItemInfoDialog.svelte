@@ -230,8 +230,8 @@
 				</div>
 				{#each flattenedTabs as tab}
 					<Tabs.Content value={tab.title} class="flex-1 min-h-0 overflow-hidden">
-						<ScrollArea class="h-full w-full" type="always">
-							<div class="mx-auto flex w-full max-w-3xl flex-col items-center gap-6 py-1">
+						<ScrollArea class="h-full w-full" type="auto">
+							<div class="mx-auto flex w-full max-w-3xl flex-col items-center gap-6">
 								{#each tab.content as contentItem, index}
 									{@const contentHook = getHook(tab.title, index, contentItem)}
 									{@const Renderer = getRenderer(contentItem.type)}

@@ -5,6 +5,7 @@
 	import * as Card from '$lib/Components/shadcn/card/index.js';
 	import XmlTree from '$lib/Components/XmlTreeview/XmlTreeview.svelte';
 	import { ArrowDownToLine } from '@lucide/svelte';
+	import ScrollArea from '$lib/Components/shadcn/scroll-area/scroll-area.svelte';
 
 	type Props = {
 		content: Extract<MetadataResolvedContent, { type: 'xml' }>;
@@ -26,22 +27,24 @@
 	}
 </script>
 
-<Card.Root class="w-full self-stretch gap-1 py-2">
-	<Card.Header class="mb-0 mt-0 gap-0 pb-0 pt-0">
-		<div class="flex w-full items-center justify-end gap-2">
-			<CopyToClipboardButton value={content.text} variant="outline" />
+<Card.Root class="w-full h-100 self-stretch gap-1 py-2">
+	<ScrollArea class="h-full w-full">
+		<Card.Header class="mb-0 mt-0 gap-0 pb-0 pt-0">
+			<div class="flex w-full items-center justify-end gap-2">
+				<CopyToClipboardButton value={content.text} variant="outline" />
 
-			<Button
-				variant="outline"
-				size="sm"
-				disabled={!content.text}
-				onclick={() => downloadXml(content.text)}
-			>
-				<ArrowDownToLine />
-			</Button>
-		</div>
-	</Card.Header>
-	<Card.Content class="mt-0 pt-0">
-		<XmlTree xmlText={content.text} expandAll={true} />
-	</Card.Content>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={!content.text}
+					onclick={() => downloadXml(content.text)}
+				>
+					<ArrowDownToLine />
+				</Button>
+			</div>
+		</Card.Header>
+		<Card.Content class="mt-0 pt-0">
+			<XmlTree xmlText={content.text} expandAll={true} />
+		</Card.Content>
+	</ScrollArea>
 </Card.Root>
