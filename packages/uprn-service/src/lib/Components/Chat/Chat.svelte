@@ -1,7 +1,7 @@
 <script lang="ts">
 	import ChatFeedbackDialog from '$lib/Components/Chat/ChatFeedbackDialog.svelte';
 	import ChatInput from '$lib/Components/Chat/ChatInput.svelte';
-	import { Button } from '$lib/Components/shadcn/button';
+	import Button from '$lib/Components/shadcn/button/button.svelte';
 	import * as Chat from '$lib/Components/shadcn/chat';
 	import { Input } from '$lib/Components/shadcn/input';
 	import ScrollArea from '$lib/Components/shadcn/scroll-area/scroll-area.svelte';
@@ -9,14 +9,12 @@
 	import { useSubmitAiChatbotChat } from '$lib/Hooks/UseSubmitAiChatbotChat.svelte';
 	import type { AppTabState } from '$lib/Types/Chatbot.types';
 	import { cn } from '$lib/utils';
-	import { SendIcon, ThumbsUp, ThumbsDown } from '@lucide/svelte';
+	import { SendIcon, Flag } from '@lucide/svelte';
 	import { onMount, tick } from 'svelte';
 
 	/**
 	 * Represents a single chat message in the conversation.
 	 */
-	type FeedbackVote = 'up' | 'down' | null;
-
 	type ChatMessage = {
 		/** Unique identifier for the message */
 		id: number;
@@ -30,8 +28,6 @@
 		isStreaming?: boolean;
 		/** Formatted timestamp when the message was sent */
 		sentAt: string;
-		/** Current feedback vote for this message */
-		feedbackVote: FeedbackVote;
 		/** Session identifier used for feedback submission */
 		sessionId?: string;
 		/** Sequence number used for feedback submission */
@@ -162,7 +158,6 @@
 			message: content,
 			senderId,
 			sentAt: formatShortTime(new Date()),
-			feedbackVote: null,
 			sessionId: metadata?.sessionId,
 			sequenceNumber: metadata?.sequenceNumber
 		};
@@ -193,7 +188,6 @@
 			fullMessage: fullHtml,
 			isStreaming: true,
 			sentAt: formatShortTime(new Date()),
-			feedbackVote: null,
 			sessionId: metadata?.sessionId,
 			sequenceNumber: metadata?.sequenceNumber
 		});
@@ -325,20 +319,11 @@
 		return new Promise((resolve) => setTimeout(resolve, ms));
 	}
 
-	/**
-	 * Handles feedback thumb selection for a bot message.
-	 * Only one thumb can be active at a time, and clicking an active thumb clears it.
-	 */
-	function handleThumbVote(message: ChatMessage, vote: Exclude<FeedbackVote, null>): void {
-		const nextVote: FeedbackVote = message.feedbackVote === vote ? null : vote;
-		message.feedbackVote = nextVote;
-
-		if (nextVote === 'down' && message.sessionId && message.sequenceNumber) {
-			selectedFeedbackSessionId = message.sessionId;
-			selectedFeedbackSequenceNumber = message.sequenceNumber;
-			selectedFeedbackOption = null;
-			isFeedbackDialogOpen = true;
-		}
+	function handleReport(msg: ChatMessage): void {
+		selectedFeedbackSessionId = msg.sessionId ?? null;
+		selectedFeedbackSequenceNumber = msg.sequenceNumber ?? null;
+		selectedFeedbackOption = null;
+		isFeedbackDialogOpen = true;
 	}
 
 	async function scrollToBottom(smooth = true) {
@@ -423,58 +408,15 @@
 								>
 									<span>{m.sentAt}</span>
 
-									{#if m.senderId === BOT_SENDER_ID && m.sessionId && m.sequenceNumber}
-										<div class="thumb-actions">
-											<div class="thumb-wrapper" class:visible={m.feedbackVote !== 'down'}>
-												<div class="thumb-inner">
-													<Button
-														type="button"
-														variant="ghost"
-														size="icon-sm"
-														class={cn(
-															'thumb-button group',
-															m.feedbackVote === 'up' && 'thumb-active'
-														)}
-														onclick={() => handleThumbVote(m, 'up')}
-														aria-label="Helpful response"
-													>
-														<ThumbsUp
-															class={cn(
-																'thumb-icon',
-																m.feedbackVote === 'up'
-																	? 'text-foreground'
-																	: 'text-muted-foreground'
-															)}
-														/>
-													</Button>
-												</div>
-											</div>
-
-											<div class="thumb-wrapper" class:visible={m.feedbackVote !== 'up'}>
-												<div class="thumb-inner">
-													<Button
-														type="button"
-														variant="ghost"
-														size="icon-sm"
-														class={cn(
-															'thumb-button group',
-															m.feedbackVote === 'down' && 'thumb-active'
-														)}
-														onclick={() => handleThumbVote(m, 'down')}
-														aria-label="Unhelpful response"
-													>
-														<ThumbsDown
-															class={cn(
-																'thumb-icon',
-																m.feedbackVote === 'down'
-																	? 'text-foreground'
-																	: 'text-muted-foreground'
-															)}
-														/>
-													</Button>
-												</div>
-											</div>
-										</div>
+									{#if m.senderId === BOT_SENDER_ID && !m.isStreaming && m.sessionId && m.sequenceNumber}
+										<Button
+											variant="link"
+											class="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+											onclick={() => handleReport(m)}
+										>
+											<span>Report</span>
+											<Flag class="h-3 w-3" />
+										</Button>
 									{/if}
 								</div>
 							</Chat.BubbleMessage>
@@ -528,59 +470,5 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: flex-end;
-	}
-
-	.thumb-actions {
-		display: flex;
-		align-items: center;
-		gap: 0.25rem;
-	}
-
-	.thumb-wrapper {
-		display: grid;
-		grid-template-columns: 0fr;
-		transition: grid-template-columns 0.2s ease-out;
-	}
-
-	.thumb-wrapper.visible {
-		grid-template-columns: 1fr;
-	}
-
-	.thumb-inner {
-		overflow: hidden;
-		display: flex;
-		opacity: 0;
-		transform: translateX(10px);
-		transition:
-			opacity 0.2s ease-out,
-			transform 0.2s ease-out;
-	}
-
-	.thumb-wrapper.visible .thumb-inner {
-		opacity: 1;
-		transform: translateX(0);
-	}
-
-	.thumb-button {
-		transition: background-color 0.2s ease-out;
-	}
-
-	.thumb-button:hover {
-		background-color: hsl(var(--muted));
-	}
-
-	.thumb-button.thumb-active {
-		background-color: hsl(var(--muted));
-	}
-
-	.thumb-button.thumb-active:hover {
-		background-color: hsl(var(--muted));
-	}
-
-	.thumb-icon {
-		transition:
-			transform 0.2s ease-out,
-			color 0.2s ease-out,
-			opacity 0.2s ease-out;
 	}
 </style>
