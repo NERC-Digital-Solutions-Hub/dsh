@@ -17,7 +17,8 @@
 		dateStamp: '//*[local-name()="dateStamp"]/*',
 		creationDate:
 			'//*[local-name()="CI_Citation"]/*[local-name()="date"]/*[local-name()="CI_Date"][*[local-name()="dateType"]/*[local-name()="CI_DateTypeCode"]/@codeListValue="creation"]/*[local-name()="date"]/*[1]',
-
+		publicationDate:
+			'//*[local-name()="CI_Citation"]/*[local-name()="date"]/*[local-name()="CI_Date"][*[local-name()="dateType"]/*[local-name()="CI_DateTypeCode"]/@codeListValue="publication"]/*[local-name()="date"]/*[1]',
 		title:
 			'//*[local-name()="identificationInfo"]//*[local-name()="citation"]/*[local-name()="CI_Citation"]/*[local-name()="title"]/*[local-name()="CharacterString"]',
 		alternateTitle:
@@ -79,6 +80,7 @@
 		abstract: getXmlValue(content.text, paths.abstract),
 		organisationName: getXmlValue(content.text, paths.organisationName),
 		creationDate: getXmlValue(content.text, paths.creationDate),
+		publicationDate: getXmlValue(content.text, paths.publicationDate),
 		purpose: getXmlValue(content.text, paths.purpose),
 		credit: getXmlValue(content.text, paths.credit),
 		keywords: getXmlValues(content.text, paths.keyword),
@@ -172,7 +174,18 @@
 			<div class="grid gap-4 sm:grid-cols-2">
 				<div class="rounded-lg border p-4">
 					<div class="text-sm font-medium text-muted-foreground">Date</div>
-					<div class="mt-1 text-sm">{formatDate(metadata.creationDate)}</div>
+					{#if metadata.creationDate}
+						<div class="inline-flex gap-1 mt-1 text-sm">
+							{formatDate(metadata.creationDate)}
+							<p class="text-xs text-muted-foreground">(Creation)</p>
+						</div>
+					{/if}
+					{#if metadata.publicationDate}
+						<div class="inline-flex gap-1 mt-1 text-sm">
+							{formatDate(metadata.publicationDate)}
+							<p class="text-xs text-muted-foreground">(Publication)</p>
+						</div>
+					{/if}
 				</div>
 
 				<div class="rounded-lg border p-4">
