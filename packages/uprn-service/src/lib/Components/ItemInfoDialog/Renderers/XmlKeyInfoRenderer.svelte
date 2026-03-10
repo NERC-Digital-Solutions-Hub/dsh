@@ -156,7 +156,7 @@
 	}
 </script>
 
-<Card class="w-full h-100">
+<Card class="w-full h-full">
 	<ScrollArea class="h-full w-full">
 		<CardHeader class="space-y-3">
 			<CardTitle class="text-2xl leading-tight">

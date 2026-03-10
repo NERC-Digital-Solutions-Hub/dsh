@@ -1,6 +1,5 @@
 <script lang="ts">
 	import * as Dialog from '$lib/Components/shadcn/dialog/index.js';
-	import ScrollArea from '$lib/Components/shadcn/scroll-area/scroll-area.svelte';
 	import * as Tabs from '$lib/Components/shadcn/tabs/index.js';
 	import { useFetchMetadataContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
 	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
@@ -183,7 +182,7 @@
 
 <Dialog.Root bind:open={isOpen} onOpenChange={(open) => (isOpen = open)}>
 	<Dialog.Content
-		class="grid h-[80vh] min-h-0 min-w-[850px] grid-rows-[auto_1fr] overflow-hidden"
+		class="grid h-[95vh] min-h-0 min-w-[70vw] grid-rows-[auto_1fr] overflow-hidden"
 		onInteractOutside={(e) => {
 			const overlay = document.querySelector('.svelte-lightbox-overlay');
 			if (overlay && overlay.contains(e.target as Node)) e.preventDefault();
@@ -229,36 +228,35 @@
 					{/each}
 				</div>
 				{#each flattenedTabs as tab}
-					<Tabs.Content value={tab.title} class="flex-1 min-h-0 overflow-hidden">
-						<ScrollArea class="h-full w-full" type="auto">
-							<div class="mx-auto flex w-full max-w-3xl flex-col items-center gap-6">
-								{#each tab.content as contentItem, index}
-									{@const contentHook = getHook(tab.title, index, contentItem)}
-									{@const Renderer = getRenderer(contentItem.type)}
-									{#if contentHook?.isLoading}
-										<p class="w-full text-center text-sm italic text-muted-foreground">
-											Loading content...
-										</p>
-									{:else if contentHook?.error}
-										<p class="w-full text-center text-sm italic text-destructive">
-											Error loading content: {formatHookError(contentHook.error)}
-										</p>
-									{:else if contentHook?.content && Renderer}
-										{#if isMatchingResolvedType(contentHook.content, contentItem)}
-											<Renderer content={contentHook.content} {index} {layer} />
-										{:else}
-											<p class="w-full text-center text-sm italic text-muted-foreground">
-												Resolved content type mismatch: {contentHook.content.type}
-											</p>
-										{/if}
-									{:else}
-										<p class="w-full text-center text-sm italic text-muted-foreground">
-											Unsupported content type: {contentItem.type}
-										</p>
-									{/if}
-								{/each}
-							</div>
-						</ScrollArea>
+					<Tabs.Content
+						value={tab.title}
+						class="flex flex-col flex-1 min-h-0 px-6 items-center gap-4 overflow-y-auto"
+					>
+						{#each tab.content as contentItem, index}
+							{@const contentHook = getHook(tab.title, index, contentItem)}
+							{@const Renderer = getRenderer(contentItem.type)}
+							{#if contentHook?.isLoading}
+								<p class="w-full text-center text-sm italic text-muted-foreground">
+									Loading content...
+								</p>
+							{:else if contentHook?.error}
+								<p class="w-full text-center text-sm italic text-destructive">
+									Error loading content: {formatHookError(contentHook.error)}
+								</p>
+							{:else if contentHook?.content && Renderer}
+								{#if isMatchingResolvedType(contentHook.content, contentItem)}
+									<Renderer content={contentHook.content} {index} {layer} />
+								{:else}
+									<p class="w-full text-center text-sm italic text-muted-foreground">
+										Resolved content type mismatch: {contentHook.content.type}
+									</p>
+								{/if}
+							{:else}
+								<p class="w-full text-center text-sm italic text-muted-foreground">
+									Unsupported content type: {contentItem.type}
+								</p>
+							{/if}
+						{/each}
 					</Tabs.Content>
 				{/each}
 			</Tabs.Root>

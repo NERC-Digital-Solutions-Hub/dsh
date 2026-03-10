@@ -27,24 +27,23 @@
 	}
 </script>
 
-<Card.Root class="w-full h-100 self-stretch gap-1 py-2">
-	<ScrollArea class="h-full w-full">
-		<Card.Header class="mb-0 mt-0 gap-0 pb-0 pt-0">
-			<div class="flex w-full items-center justify-end gap-2">
-				<CopyToClipboardButton value={content.text} variant="outline" />
+<Card.Root class="w-full h-full gap-0 py-0">
+	<Card.Content class="relative h-full overflow-hidden p-4">
+		<div class="absolute top-4 right-4 z-10 flex gap-2 opacity-60">
+			<CopyToClipboardButton value={content.text} variant="outline" />
 
-				<Button
-					variant="outline"
-					size="sm"
-					disabled={!content.text}
-					onclick={() => downloadXml(content.text)}
-				>
-					<ArrowDownToLine />
-				</Button>
-			</div>
-		</Card.Header>
-		<Card.Content class="mt-0 pt-0">
+			<Button
+				variant="outline"
+				size="sm"
+				disabled={!content.text}
+				onclick={() => downloadXml(content.text)}
+			>
+				<ArrowDownToLine />
+			</Button>
+		</div>
+
+		<ScrollArea class="h-full w-full">
 			<XmlTree xmlText={content.text} expandAll={true} />
-		</Card.Content>
-	</ScrollArea>
+		</ScrollArea>
+	</Card.Content>
 </Card.Root>
