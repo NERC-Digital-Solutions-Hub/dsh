@@ -148,7 +148,7 @@
 	<div class="export-footer__right">
 		<Button
 			variant={areRequirementsMet ? 'default' : 'outline'}
-			disabled={coolingDown}
+			disabled={coolingDown || !areRequirementsMet}
 			onclick={handleExportClick}
 			title="Export"
 		>
