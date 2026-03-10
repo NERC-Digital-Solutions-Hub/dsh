@@ -27,7 +27,7 @@
 	}
 </script>
 
-<Tooltip.Provider>
+<Tooltip.Provider disableHoverableContent>
 	<Tooltip.Root>
 		<Tooltip.Trigger>
 			<button class="info-button" onclick={handleClick} aria-label="Additional information">

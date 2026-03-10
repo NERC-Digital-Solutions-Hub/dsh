@@ -27,7 +27,7 @@
 
 <Dialog.Root bind:open>
 	<Dialog.Trigger class={cn(buttonVariants({ variant: 'outline' }), buttonClass)}>
-		<Tooltip.Provider>
+		<Tooltip.Provider disableHoverableContent>
 			<Tooltip.Root>
 				<Tooltip.Trigger>
 					<RotateCcw />

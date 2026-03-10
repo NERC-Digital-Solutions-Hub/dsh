@@ -62,7 +62,7 @@
 	aria-label={getTooltipContent()}
 	{...restProps}
 >
-	<Tooltip.Provider>
+	<Tooltip.Provider disableHoverableContent>
 		<Tooltip.Root>
 			<Tooltip.Trigger>
 				{#if checked}

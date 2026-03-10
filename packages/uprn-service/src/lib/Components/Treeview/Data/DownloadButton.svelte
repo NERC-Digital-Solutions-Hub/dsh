@@ -55,7 +55,7 @@
 	}
 </script>
 
-<Tooltip.Provider>
+<Tooltip.Provider disableHoverableContent>
 	<Tooltip.Root>
 		<Tooltip.Trigger>
 			<DownloadCheckbox

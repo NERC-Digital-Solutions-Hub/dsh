@@ -22,6 +22,12 @@
 	import XCircleIcon from '@lucide/svelte/icons/x-circle';
 	import { onMount } from 'svelte';
 	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
+	import { SvelteMap } from 'svelte/reactivity';
+
+	type QueueItem = {
+		queueId: number;
+		queuePosition: number;
+	};
 
 	/**
 	 * Props interface for the downloads menu component.
@@ -41,7 +47,11 @@
 	/** Hook for checking job statuses. */
 	const jobStatusesHook = $derived.by(() => useUprnDownloadJobStatuses(jobStatusesUrl));
 
+	/** The list of downloads from the store. */
 	const downloads = $derived.by(() => downloadsStore.getDownloads());
+
+	/** Map to track the position of each download in the queue. */
+	const queuePositions: Map<string, QueueItem> = $state(new SvelteMap());
 
 	/**
 	 * Status configuration for downloads, mapping status to colors, text, and icons.
@@ -72,7 +82,7 @@
 
 		const interval = setInterval(() => {
 			checkJobStatuses();
-		}, 30000); // Check every 30 seconds
+		}, 10000); // Check every 30 seconds
 
 		return () => {
 			clearInterval(interval);
@@ -210,23 +220,37 @@
 					case JobStatusType.Submitted:
 						download.status = DownloadStatus.Submitted;
 						download.errorMessage = undefined; // Clear any previous error message
+						queuePositions.set(job.guid, {
+							queueId: job.queueId,
+							queuePosition: job.queuePosition
+						});
 						break; // still pending
 					case JobStatusType.Queued:
 						download.status = DownloadStatus.Queued;
 						download.errorMessage = undefined; // Clear any previous error message
+						queuePositions.set(job.guid, {
+							queueId: job.queueId,
+							queuePosition: job.queuePosition
+						});
 						break; // still pending
 					case JobStatusType.Processing:
 						download.status = DownloadStatus.InProgress;
 						download.errorMessage = undefined; // Clear any previous error message
+						queuePositions.set(job.guid, {
+							queueId: job.queueId,
+							queuePosition: job.queuePosition
+						});
 						break;
 					case JobStatusType.Completed:
 						download.status = DownloadStatus.Completed;
 						download.errorMessage = undefined; // Clear any previous error message
+						queuePositions.delete(job.guid);
 						break;
 					case JobStatusType.Error:
 						download.status = DownloadStatus.Failed;
 						download.errorMessage =
 							job.status.message || 'An unknown error occurred during processing on the server.';
+						queuePositions.delete(job.guid);
 						break;
 					default:
 						console.warn('[downloads-menu] Unknown job status type:', job.status.type);
@@ -260,33 +284,6 @@
 		downloadsStore.removeDownload(localId);
 	}
 
-	/**
-	 * Gets the color associated with a download status.
-	 * @param status - The download status.
-	 * @returns The color string.
-	 */
-	function getStatusColor(status: string) {
-		return statusConfig[status as keyof typeof statusConfig]?.color ?? statusConfig.pending.color;
-	}
-
-	/**
-	 * Gets the display text for a download status.
-	 * @param status - The download status.
-	 * @returns The status text.
-	 */
-	function getStatusText(status: string) {
-		return statusConfig[status as keyof typeof statusConfig]?.text ?? statusConfig.pending.text;
-	}
-
-	/**
-	 * Gets the icon component for a download status.
-	 * @param status - The download status.
-	 * @returns The icon component.
-	 */
-	function getStatusIcon(status: string) {
-		return statusConfig[status as keyof typeof statusConfig]?.icon ?? statusConfig.pending.icon;
-	}
-
 	function getDownloadUrl(externalId: string): string {
 		const base = downloadBaseUrl.replace(/\/+$/, '');
 		return `${base}/${encodeURIComponent(externalId)}`;
@@ -312,10 +309,18 @@
 								: download.errorMessage}
 						</span>
 					{/if}
+					{#if download.externalId}
+						{@const queueItem = queuePositions.get(download.externalId)}
+						{#if queueItem}
+							<p class="text-sm text-gray-500 italic ml-2">
+								Queue position: {queueItem.queuePosition} (Queue ID: {queueItem.queueId})
+							</p>
+						{/if}
+					{/if}
 					<!-- <HourglassIcon color="#6b7280" /> -->
 					{@const cfg = getStatusCfg(download.status)}
 					<span class="inline-flex">
-						<Tooltip.Provider>
+						<Tooltip.Provider disableHoverableContent>
 							<Tooltip.Root>
 								<Tooltip.Trigger>
 									<Button
@@ -340,7 +345,7 @@
 						</Tooltip.Provider>
 					</span>
 					{#if download.externalId}
-						<Tooltip.Provider>
+						<Tooltip.Provider disableHoverableContent>
 							<Tooltip.Root>
 								<Tooltip.Trigger>
 									<CopyToClipboardButton
@@ -356,7 +361,7 @@
 						</Tooltip.Provider>
 					{/if}
 					{#if download.externalId && download.status === 'completed'}
-						<Tooltip.Provider>
+						<Tooltip.Provider disableHoverableContent>
 							<Tooltip.Root>
 								<Tooltip.Trigger>
 									<Button
@@ -374,7 +379,7 @@
 						</Tooltip.Provider>
 					{/if}
 					{#if download.status === 'failed'}
-						<Tooltip.Provider>
+						<Tooltip.Provider disableHoverableContent>
 							<Tooltip.Root>
 								<Tooltip.Trigger>
 									<Button
@@ -391,7 +396,7 @@
 							</Tooltip.Root>
 						</Tooltip.Provider>
 					{/if}
-					<Tooltip.Provider>
+					<Tooltip.Provider disableHoverableContent>
 						<Tooltip.Root>
 							<Tooltip.Trigger>
 								<Button

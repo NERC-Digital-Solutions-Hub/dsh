@@ -69,7 +69,7 @@
 	<div class="tab-list-wrapper flex-shrink-0">
 		<Tabs.List class="tab-list">
 			{#each triggersWithProgress as { value, label, seperatorIcon, tooltip, progress, hasProgress }}
-				<Tooltip.Provider>
+				<Tooltip.Provider disableHoverableContent>
 					<Tooltip.Root>
 						<Tooltip.Trigger>
 							<Tabs.Trigger {value} class="tab-trigger">

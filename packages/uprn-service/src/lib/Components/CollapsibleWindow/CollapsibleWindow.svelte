@@ -75,7 +75,7 @@
 				<div class="font-medium">Chat</div>
 				<div class="flex gap-1">
 					{#if isOpened}
-						<Tooltip.Provider>
+						<Tooltip.Provider disableHoverableContent>
 							<Tooltip.Root>
 								<Tooltip.Trigger>
 									<Button
@@ -96,7 +96,7 @@
 							</Tooltip.Root>
 						</Tooltip.Provider>
 					{/if}
-					<Tooltip.Provider>
+					<Tooltip.Provider disableHoverableContent>
 						<Tooltip.Root>
 							<Tooltip.Trigger>
 								<Button

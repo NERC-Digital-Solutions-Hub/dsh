@@ -364,7 +364,7 @@
 			aria-label={isOpen ? 'Collapse sidebar' : 'Open sidebar'}
 			aria-expanded={isOpen}
 		>
-			<Tooltip.Provider>
+			<Tooltip.Provider disableHoverableContent>
 				<Tooltip.Root>
 					<Tooltip.Trigger class="cursor-pointer">
 						{#if isOpen}
