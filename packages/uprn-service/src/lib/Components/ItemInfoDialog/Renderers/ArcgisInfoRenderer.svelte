@@ -1,5 +1,13 @@
 <script lang="ts">
 	import esriRequest from '@arcgis/core/request.js';
+	import {
+		Card,
+		CardContent,
+		CardDescription,
+		CardHeader,
+		CardTitle
+	} from '$lib/Components/shadcn/card';
+	import { ScrollArea } from '$lib/Components/shadcn/scroll-area';
 	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
 
 	type LayerDef = {
@@ -88,27 +96,47 @@
 	});
 </script>
 
-{#if hasLayerDef === null}
-	<p class="w-full text-center text-sm italic text-muted-foreground">Loading layer details...</p>
-{:else if hasLayerDef === false}
-	<p class="w-full text-center text-sm italic text-muted-foreground">Information not available.</p>
-{:else}
-	<div>
-		{#if layerSummary}
-			<div>
-				<h4 class="pb-2 text-lg font-semibold">Summary</h4>
-				<p>{layerSummary}</p>
+<Card class="h-full w-full">
+	<ScrollArea class="h-full w-full">
+		{#if hasLayerDef === null}
+			<div class="p-6">
+				<p class="w-full text-center text-sm italic text-muted-foreground">
+					Loading layer details...
+				</p>
 			</div>
+		{:else if hasLayerDef === false}
+			<div class="p-6">
+				<p class="w-full text-center text-sm italic text-muted-foreground">
+					Information not available.
+				</p>
+			</div>
+		{:else}
+			<CardHeader class="space-y-3">
+				<CardTitle class="text-2xl leading-tight">{layerSummary ?? 'Layer information'}</CardTitle>
+				{#if layerDescription}
+					<CardDescription class="text-sm text-muted-foreground">
+						ArcGIS service metadata and attribution details.
+					</CardDescription>
+				{/if}
+			</CardHeader>
+
+			<CardContent class="space-y-6">
+				<section class="space-y-2">
+					<h2 class="text-base font-semibold">Description</h2>
+					<p class="text-sm leading-6 text-muted-foreground">
+						{layerDescription ?? 'No description available.'}
+					</p>
+				</section>
+
+				<section class="space-y-3 border-t pt-6">
+					<div class="rounded-lg bg-muted/40 p-4">
+						<h2 class="text-base font-semibold">Credits</h2>
+						<p class="mt-2 text-sm leading-6 text-muted-foreground">
+							{layerCredits ?? 'No credits available.'}
+						</p>
+					</div>
+				</section>
+			</CardContent>
 		{/if}
-
-		<div>
-			<h4 class="pb-2 text-lg font-semibold">Description</h4>
-			<p>{layerDescription ?? 'No description available.'}</p>
-		</div>
-
-		<div>
-			<h4 class="pb-2 text-lg font-semibold">Credits</h4>
-			<p>{layerCredits ?? 'No credits available.'}</p>
-		</div>
-	</div>
-{/if}
+	</ScrollArea>
+</Card>
