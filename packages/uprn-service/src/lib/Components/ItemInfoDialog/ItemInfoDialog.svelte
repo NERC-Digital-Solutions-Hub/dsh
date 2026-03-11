@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as Dialog from '$lib/Components/shadcn/dialog/index.js';
+	import ScrollArea from '$lib/Components/shadcn/scroll-area/scroll-area.svelte';
 	import * as Tabs from '$lib/Components/shadcn/tabs/index.js';
 	import { useFetchMetadataContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
 	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
@@ -178,7 +179,52 @@
 	) {
 		return content.type === contentItem.type;
 	}
+
+	type ContentPlacement = 'fixedTop' | 'scroll';
+
+	const contentPlacementByType: Partial<Record<MetadataTabContentItem['type'], ContentPlacement>> =
+		{
+			disclaimer: 'fixedTop'
+		};
+
+	function getContentPlacement(type: MetadataTabContentItem['type']): ContentPlacement {
+		return contentPlacementByType[type] ?? 'scroll';
+	}
+
+	function getTabContentEntries(tab: MetadataTab, placement: ContentPlacement) {
+		return tab.content
+			.map((contentItem, index) => ({ contentItem, index }))
+			.filter(({ contentItem }) => getContentPlacement(contentItem.type) === placement);
+	}
 </script>
+
+{#snippet renderTabContentItem(
+	tabTitle: string,
+	contentItem: MetadataTabContentItem,
+	index: number
+)}
+	{@const contentHook = getHook(tabTitle, index, contentItem)}
+	{@const Renderer = getRenderer(contentItem.type)}
+	{#if contentHook?.isLoading}
+		<p class="w-full text-center text-sm italic text-muted-foreground">Loading content...</p>
+	{:else if contentHook?.error}
+		<p class="w-full text-center text-sm italic text-destructive">
+			Error loading content: {formatHookError(contentHook.error)}
+		</p>
+	{:else if contentHook?.content && Renderer}
+		{#if isMatchingResolvedType(contentHook.content, contentItem)}
+			<Renderer content={contentHook.content} {index} {layer} />
+		{:else}
+			<p class="w-full text-center text-sm italic text-muted-foreground">
+				Resolved content type mismatch: {contentHook.content.type}
+			</p>
+		{/if}
+	{:else}
+		<p class="w-full text-center text-sm italic text-muted-foreground">
+			Unsupported content type: {contentItem.type}
+		</p>
+	{/if}
+{/snippet}
 
 <Dialog.Root bind:open={isOpen} onOpenChange={(open) => (isOpen = open)}>
 	<Dialog.Content
@@ -228,35 +274,37 @@
 					{/each}
 				</div>
 				{#each flattenedTabs as tab}
-					<Tabs.Content
-						value={tab.title}
-						class="flex flex-col flex-1 min-h-0 px-6 items-center gap-4 overflow-y-auto"
-					>
-						{#each tab.content as contentItem, index}
-							{@const contentHook = getHook(tab.title, index, contentItem)}
-							{@const Renderer = getRenderer(contentItem.type)}
-							{#if contentHook?.isLoading}
-								<p class="w-full text-center text-sm italic text-muted-foreground">
-									Loading content...
-								</p>
-							{:else if contentHook?.error}
-								<p class="w-full text-center text-sm italic text-destructive">
-									Error loading content: {formatHookError(contentHook.error)}
-								</p>
-							{:else if contentHook?.content && Renderer}
-								{#if isMatchingResolvedType(contentHook.content, contentItem)}
-									<Renderer content={contentHook.content} {index} {layer} />
-								{:else}
-									<p class="w-full text-center text-sm italic text-muted-foreground">
-										Resolved content type mismatch: {contentHook.content.type}
-									</p>
-								{/if}
-							{:else}
-								<p class="w-full text-center text-sm italic text-muted-foreground">
-									Unsupported content type: {contentItem.type}
-								</p>
-							{/if}
-						{/each}
+					<Tabs.Content value={tab.title} class="flex flex-1 min-h-0 flex-col px-6">
+						{@const fixedTopEntries = getTabContentEntries(tab, 'fixedTop')}
+						{@const scrollEntries = getTabContentEntries(tab, 'scroll')}
+
+						{#if fixedTopEntries.length > 0}
+							<div class="shrink-0 border-b pb-3">
+								<div class="flex flex-col items-center gap-2 pt-1">
+									{#each fixedTopEntries as entry}
+										{@render renderTabContentItem(tab.title, entry.contentItem, entry.index)}
+									{/each}
+								</div>
+							</div>
+						{/if}
+
+						{#if scrollEntries.length === 1}
+							{@render renderTabContentItem(
+								tab.title,
+								scrollEntries[0].contentItem,
+								scrollEntries[0].index
+							)}
+						{:else if scrollEntries.length > 1}
+							<div class="flex-1 min-h-0 overflow-y-auto">
+								<ScrollArea class="w-full h-full">
+									<div class="flex flex-col items-center gap-4 py-2">
+										{#each scrollEntries as entry}
+											{@render renderTabContentItem(tab.title, entry.contentItem, entry.index)}
+										{/each}
+									</div>
+								</ScrollArea>
+							</div>
+						{/if}
 					</Tabs.Content>
 				{/each}
 			</Tabs.Root>
