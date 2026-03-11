@@ -129,6 +129,14 @@
 	/** State for tracking the currently active layer ID in the item info dialog. */
 	let itemInfoDialogActiveLayerId: string | null = $state(null);
 
+	/** Anchor used to resolve the page-level parent element for dialog portalling. */
+	let dialogPortalAnchor: HTMLElement | null = $state(null);
+
+	/** The page-level element above App used as the dialog portal target. */
+	const itemInfoDialogPortalTarget: Element | null = $derived.by(() => {
+		return dialogPortalAnchor?.parentElement ?? null;
+	});
+
 	/** State for managing the visibility of the reset dialog. */
 	let resetDialogOpen: boolean = $state(false);
 
@@ -823,11 +831,14 @@
 
 <IntroductionDialog contentUrl={introductionUrl} />
 
+<span bind:this={dialogPortalAnchor} aria-hidden="true" class="sr-only"></span>
+
 <Toaster />
 {#if webMapStore?.isLoaded && treeviewConfigStore}
 	<ItemInfoDialog
 		bind:isOpen={itemInfoDialogOpen}
 		bind:activeLayerId={itemInfoDialogActiveLayerId}
+		portalTarget={itemInfoDialogPortalTarget}
 		webmapService={webMapStore}
 		nodeConfigProvider={treeviewConfigStore}
 	/>
