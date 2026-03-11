@@ -31,6 +31,8 @@
 			'//*[local-name()="identificationInfo"]//*[local-name()="status"]/*[local-name()="MD_ProgressCode"]/@codeListValue',
 		credit:
 			'//*[local-name()="identificationInfo"]//*[local-name()="credit"]/*[local-name()="CharacterString"]',
+		lineage:
+			'//*[local-name()="dataQualityInfo"]//*[local-name()="lineage"]//*[local-name()="statement"]/*[local-name()="CharacterString"]',
 		keyword:
 			'//*[local-name()="identificationInfo"]//*[local-name()="descriptiveKeywords"]//*[local-name()="keyword"]/*[local-name()="CharacterString"]',
 		topicCategory:
@@ -83,6 +85,7 @@
 		publicationDate: getXmlValue(content.text, paths.publicationDate),
 		purpose: getXmlValue(content.text, paths.purpose),
 		credit: getXmlValue(content.text, paths.credit),
+		lineage: getXmlValue(content.text, paths.lineage),
 		keywords: getXmlValues(content.text, paths.keyword),
 		contactEmail: getXmlValue(content.text, paths.contactEmail),
 		pointOfContactOrganisation: getXmlValue(content.text, paths.pointOfContactOrganisation),
@@ -225,6 +228,17 @@
 					</div>
 				</div>
 			</section>
+
+			{#if metadata.lineage}
+				<section class="space-y-2">
+					<h2 class="text-base font-semibold">Lineage</h2>
+					<div class="rounded-lg border p-4">
+						<p class="text-sm leading-6 text-muted-foreground">
+							{metadata.lineage}
+						</p>
+					</div>
+				</section>
+			{/if}
 
 			<section class="space-y-4 border-t pt-6">
 				{#if metadata.credit}
