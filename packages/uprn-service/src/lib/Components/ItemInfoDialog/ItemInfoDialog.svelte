@@ -17,15 +17,13 @@
 		nodeConfigProvider: INodeConfigProvider;
 		isOpen: boolean;
 		activeLayerId: string | null;
-		portalTarget?: Element | string | null;
 	};
 
 	let {
 		webmapService,
 		nodeConfigProvider,
 		isOpen = $bindable(),
-		activeLayerId = $bindable(),
-		portalTarget = null
+		activeLayerId = $bindable()
 	}: Props = $props();
 
 	const layer: __esri.Layer | __esri.Sublayer | null = $derived.by(() => {
@@ -230,9 +228,8 @@
 
 <Dialog.Root bind:open={isOpen} onOpenChange={(open) => (isOpen = open)}>
 	<Dialog.Content
-		class="grid h-[85%] min-h-0 min-w-[70%] grid-rows-[auto_1fr] overflow-hidden"
-		portalProps={portalTarget ? { to: portalTarget } : undefined}
-		onInteractOutside={(e: any) => {
+		class="grid h-[75%] min-h-0 min-w-[70%] grid-rows-[auto_1fr] overflow-hidden"
+		onInteractOutside={(e) => {
 			const overlay = document.querySelector('.svelte-lightbox-overlay');
 			if (overlay && overlay.contains(e.target as Node)) e.preventDefault();
 		}}

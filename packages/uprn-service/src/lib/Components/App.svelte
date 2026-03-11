@@ -129,9 +129,6 @@
 	/** State for tracking the currently active layer ID in the item info dialog. */
 	let itemInfoDialogActiveLayerId: string | null = $state(null);
 
-	/** App-level host element used as the dialog portal target. */
-	let itemInfoDialogPortalTarget: HTMLDivElement | null = $state(null);
-
 	/** State for managing the visibility of the reset dialog. */
 	let resetDialogOpen: boolean = $state(false);
 
@@ -826,14 +823,11 @@
 
 <IntroductionDialog contentUrl={introductionUrl} />
 
-<div bind:this={itemInfoDialogPortalTarget} style="display: contents;"></div>
-
 <Toaster />
 {#if webMapStore?.isLoaded && treeviewConfigStore}
 	<ItemInfoDialog
 		bind:isOpen={itemInfoDialogOpen}
 		bind:activeLayerId={itemInfoDialogActiveLayerId}
-		portalTarget={itemInfoDialogPortalTarget}
 		webmapService={webMapStore}
 		nodeConfigProvider={treeviewConfigStore}
 	/>
