@@ -288,13 +288,13 @@
 							</div>
 						{/if}
 
-						{#if scrollEntries.length === 1}
+						{#if fixedTopEntries.length === 0 && scrollEntries.length === 1}
 							{@render renderTabContentItem(
 								tab.title,
 								scrollEntries[0].contentItem,
 								scrollEntries[0].index
 							)}
-						{:else if scrollEntries.length > 1}
+						{:else}
 							<div class="flex-1 min-h-0 overflow-y-auto">
 								<ScrollArea class="w-full h-full">
 									<div class="flex flex-col items-center gap-4 py-2">
