@@ -182,7 +182,7 @@
 
 <Dialog.Root bind:open={isOpen} onOpenChange={(open) => (isOpen = open)}>
 	<Dialog.Content
-		class="grid h-[95vh] min-h-0 min-w-[70vw] grid-rows-[auto_1fr] overflow-hidden"
+		class="grid h-[95%] min-h-0 min-w-[70%] grid-rows-[auto_1fr] overflow-hidden"
 		onInteractOutside={(e) => {
 			const overlay = document.querySelector('.svelte-lightbox-overlay');
 			if (overlay && overlay.contains(e.target as Node)) e.preventDefault();
