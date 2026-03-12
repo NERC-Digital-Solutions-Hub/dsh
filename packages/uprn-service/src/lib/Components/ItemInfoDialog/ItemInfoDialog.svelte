@@ -83,6 +83,7 @@
 			case 'disclaimer':
 				return `${activeLayerId ?? 'none'}::${tabTitle}::${index}::${contentItem.type}::${contentItem.value}`;
 			case 'isoMetadata':
+			case 'portalPage':
 			case 'image':
 			case 'xml':
 			case 'md':

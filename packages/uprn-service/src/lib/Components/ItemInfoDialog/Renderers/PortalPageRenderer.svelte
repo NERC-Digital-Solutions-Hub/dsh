@@ -38,6 +38,8 @@
 	}
 </script>
 
+{@html content.text}
+
 <Card class="w-full h-full">
 	<ScrollArea class="h-full w-full">
 		<CardHeader class="space-y-3">
