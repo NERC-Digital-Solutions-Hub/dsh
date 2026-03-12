@@ -76,7 +76,6 @@
 		"dexie": "^4.2.1",
 		"embla-carousel-svelte": "^8.6.0",
 		"lottie-web": "^5.13.0",
-		"svelte-lightbox": "^1.1.7",
 		"rehype-autolink-headings": "^7.1.0",
 		"rehype-external-links": "^3.0.0",
 		"rehype-raw": "^7.0.0",
@@ -86,6 +85,8 @@
 		"remark-gfm": "^4.0.1",
 		"remark-parse": "^11.0.0",
 		"remark-rehype": "^11.1.2",
-		"unified": "^11.0.5"
+		"svelte-lightbox": "^1.1.7",
+		"unified": "^11.0.5",
+		"unist-util-visit": "^5.0.0"
 	}
 }
