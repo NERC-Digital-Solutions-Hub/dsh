@@ -33,8 +33,8 @@
 	type Props = {
 		/** The selection tree node to render */
 		node: SelectionTreeviewNode;
-		/** Callback when a node's remove button is clicked */
-		onRemove: (node: SelectionTreeviewNode) => void;
+		/** Callback when a node's remove button is clicked. If omitted, the remove button is hidden. */
+		onRemove?: (node: SelectionTreeviewNode) => void;
 		/** Optional snippet for additional actions on leaf nodes */
 		actions?: Snippet<[SelectionTreeviewNode]>;
 		/** Current depth for indentation */
@@ -65,7 +65,7 @@
 
 	function handleRemove(event: MouseEvent) {
 		event.stopPropagation();
-		onRemove(node);
+		onRemove?.(node);
 	}
 
 	function safeSlide(node: Element, params: SlideParams = {}): TransitionConfig {
@@ -117,7 +117,7 @@
 				{#if actions && node.isLeaf}
 					{@render actions(node)}
 				{/if}
-				{#if node.isLeaf}
+				{#if onRemove && node.isLeaf}
 					<Button
 						variant="ghost"
 						size="sm"
