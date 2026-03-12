@@ -184,12 +184,15 @@ export type UprnDownloadJobStatus = {
 	type: JobStatusType;
 	fileSize: number | undefined;
 	message: string | undefined;
-	index: number | undefined;
+	queueId: number;
+	queuePosition: number;
 };
 
 export type UprnDownloadJobStatusItem = {
 	guid: string; // UUID
 	status: UprnDownloadJobStatus;
+	queueId: number;
+	queuePosition: number;
 };
 
 export type UprnDownloadGetJobStatusesResponse = {
