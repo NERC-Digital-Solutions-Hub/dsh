@@ -255,30 +255,32 @@
 <h2>Export Options</h2>
 
 <div class="section">
-	<h4>Selected Areas</h4>
+	<div class="section-header">
+		<h4>Selected Areas</h4>
+		<p class="count">{areaInfos.length} area(s) selected</p>
+	</div>
 	{#if areaSelectionTree.length > 0}
 		<div class="selection-tree">
 			{#each areaSelectionTree as node (node.id)}
 				<SelectionTreeviewNode {node} onRemove={removeArea} />
 			{/each}
 		</div>
-		<p class="count">
-			{areaInfos.length} area(s) selected
-		</p>
 	{:else}
 		<p class="no-selection">No areas selected</p>
 	{/if}
 </div>
 
 <div class="section">
-	<h4>Selected Data</h4>
+	<div class="section-header">
+		<h4>Selected Data</h4>
+		<p class="count">{dataSelectionStore.getAllSelections().length} dataset(s) selected</p>
+	</div>
 	{#if dataSelectionTree.length > 0}
 		<div class="selection-tree">
 			{#each dataSelectionTree as node (node.id)}
 				<SelectionTreeviewNode {node} onRemove={removeDataSelection} />
 			{/each}
 		</div>
-		<p class="count">{dataSelectionStore.getAllSelections().length} data layer(s) selected</p>
 	{:else}
 		<p class="no-selection">No data selected</p>
 	{/if}
@@ -300,8 +302,16 @@
 		margin-bottom: 0;
 	}
 
+	.section-header {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.75rem;
+		margin-bottom: 0.5rem;
+	}
+
 	h4 {
-		margin: 0 0 0.5rem 0;
+		margin: 0;
 		font-size: 1rem;
 		font-weight: 500;
 		color: #374151;
