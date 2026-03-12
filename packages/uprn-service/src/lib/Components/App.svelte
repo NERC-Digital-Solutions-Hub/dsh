@@ -759,9 +759,13 @@
 	 */
 	function clearAreaSelections() {
 		console.log('[uprn/app] Clearing area selections');
+		if (areaTreeviewStore && areaSelectionStore.layerId) {
+			areaTreeviewStore.setVisibilityState(areaSelectionStore.layerId, false);
+		}
+
 		areaSelectionStore.setAreaSelectionLayer(null);
 		areaSelectionStore.clearSelectedAreas();
-		areaSelectionInteractionStore?.cleanup();
+		areaSelectionInteractionStore?.clearSelections();
 		mapView?.graphics.removeAll();
 	}
 
