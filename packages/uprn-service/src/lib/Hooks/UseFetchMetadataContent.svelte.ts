@@ -13,7 +13,7 @@ type MetadataResolvedContentByType = {
 	disclaimer: { type: 'disclaimer'; text: string };
 	image: { type: 'image'; url: string };
 	xml: { type: 'xml'; text: string };
-	xmlKeyInfo: { type: 'xmlKeyInfo'; text: string };
+	isoMetadata: { type: 'isoMetadata'; text: string };
 	md: { type: 'md'; text: string };
 	docx: { type: 'docx'; name: string; description: string; url: string };
 	pdf: { type: 'pdf'; name: string; description: string; url: string };
@@ -54,8 +54,8 @@ const fetchers: ContentFetcherRegistry = {
 		type: 'xml',
 		text: await utils.fetchTextFromSource(item.source)
 	}),
-	xmlKeyInfo: async (item, utils) => ({
-		type: 'xmlKeyInfo',
+	isoMetadata: async (item, utils) => ({
+		type: 'isoMetadata',
 		text: await utils.fetchTextFromSource(item.source)
 	}),
 	md: async (item, utils) => ({

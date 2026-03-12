@@ -72,7 +72,7 @@
 	};
 
 	type Props = {
-		content: Extract<MetadataResolvedContent, { type: 'xmlKeyInfo' }>;
+		content: Extract<MetadataResolvedContent, { type: 'isoMetadata' }>;
 	};
 
 	let { content }: Props = $props();

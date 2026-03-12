@@ -10,7 +10,7 @@ import PdfRenderer from './Renderers/PdfRenderer.svelte';
 import SlideshowRenderer from './Renderers/SlideshowRenderer.svelte';
 import TextRenderer from './Renderers/TextRenderer.svelte';
 import XmlRenderer from './Renderers/XmlRenderer.svelte';
-import XmlKeyInfoRenderer from '$lib/Components/ItemInfoDialog/Renderers/XmlKeyInfoRenderer.svelte';
+import IsoMetadataRenderer from '$lib/Components/ItemInfoDialog/Renderers/IsoMetadataRenderer.svelte';
 import MarkdownRenderer from '$lib/Components/ItemInfoDialog/Renderers/MarkdownRenderer.svelte';
 
 type MetadataContentType = MetadataTabContentItem['type'];
@@ -23,7 +23,7 @@ type MetadataRendererComponent = Component<{
 
 export const metadataRenderers: Record<MetadataContentType, MetadataRendererComponent> = {
 	arcgisInfo: ArcgisInfoRenderer as MetadataRendererComponent,
-	xmlKeyInfo: XmlKeyInfoRenderer as MetadataRendererComponent,
+	isoMetadata: IsoMetadataRenderer as MetadataRendererComponent,
 	text: TextRenderer as MetadataRendererComponent,
 	disclaimer: DisclaimerRenderer as MetadataRendererComponent,
 	image: ImageRenderer as MetadataRendererComponent,

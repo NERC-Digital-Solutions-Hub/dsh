@@ -82,7 +82,7 @@
 			case 'text':
 			case 'disclaimer':
 				return `${activeLayerId ?? 'none'}::${tabTitle}::${index}::${contentItem.type}::${contentItem.value}`;
-			case 'xmlKeyInfo':
+			case 'isoMetadata':
 			case 'image':
 			case 'xml':
 			case 'md':
