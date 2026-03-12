@@ -9,6 +9,7 @@ type MetadataContentItemByType = {
 
 type MetadataResolvedContentByType = {
 	arcgisInfo: { type: 'arcgisInfo' };
+	portalPage: { type: 'portalPage'; text: string };
 	text: { type: 'text'; text: string };
 	disclaimer: { type: 'disclaimer'; text: string };
 	image: { type: 'image'; url: string };
@@ -38,6 +39,10 @@ type ContentFetcherRegistry = {
 
 const fetchers: ContentFetcherRegistry = {
 	arcgisInfo: async () => ({ type: 'arcgisInfo' }),
+	portalPage: async (item, utils) => ({
+		type: 'portalPage',
+		text: await utils.fetchTextFromSource(item.source)
+	}),
 	text: async (item) => ({
 		type: 'text',
 		text: item.value

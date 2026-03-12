@@ -12,6 +12,7 @@ import TextRenderer from './Renderers/TextRenderer.svelte';
 import XmlRenderer from './Renderers/XmlRenderer.svelte';
 import IsoMetadataRenderer from '$lib/Components/ItemInfoDialog/Renderers/IsoMetadataRenderer.svelte';
 import MarkdownRenderer from '$lib/Components/ItemInfoDialog/Renderers/MarkdownRenderer.svelte';
+import PortalPageRenderer from '$lib/Components/ItemInfoDialog/Renderers/PortalPageRenderer.svelte';
 
 type MetadataContentType = MetadataTabContentItem['type'];
 
@@ -23,6 +24,7 @@ type MetadataRendererComponent = Component<{
 
 export const metadataRenderers: Record<MetadataContentType, MetadataRendererComponent> = {
 	arcgisInfo: ArcgisInfoRenderer as MetadataRendererComponent,
+	portalPage: PortalPageRenderer as MetadataRendererComponent,
 	isoMetadata: IsoMetadataRenderer as MetadataRendererComponent,
 	text: TextRenderer as MetadataRendererComponent,
 	disclaimer: DisclaimerRenderer as MetadataRendererComponent,

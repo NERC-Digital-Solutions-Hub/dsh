@@ -16,7 +16,8 @@ export type MetadataTabContentItem =
 	| TextContent
 	| DisclaimerContent
 	| ArcGISInformationContent
-	| XmlInformationContent
+	| PortalPageContent
+	| IsoMetadataContent
 	| ImageContent
 	| SlideshowContent
 	| XmlContent
@@ -38,8 +39,13 @@ export type ArcGISInformationContent = {
 	type: 'arcgisInfo';
 };
 
-export type XmlInformationContent = {
-	type: 'xmlKeyInfo';
+export type PortalPageContent = {
+	type: 'portalPage';
+	source: string;
+};
+
+export type IsoMetadataContent = {
+	type: 'isoMetadata';
 	source: string;
 };
 
