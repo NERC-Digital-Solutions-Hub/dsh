@@ -87,21 +87,25 @@
 		{
 			label: 'Clear Area Selections',
 			description: 'Remove all selected areas of interest from the map.',
+			variant: 'outline',
 			onReset: clearAreaSelections
 		},
 		{
 			label: 'Clear Data Selections',
 			description: 'Remove all selected data layers for export.',
+			variant: 'outline',
 			onReset: clearDataSelections
 		},
 		{
 			label: 'Clear Downloads',
 			description: 'Remove all download history and pending jobs.',
+			variant: 'outline',
 			onReset: clearDownloads
 		},
 		{
 			label: 'Reset',
 			description: 'Resets the app to its initial state.',
+			variant: 'destructive',
 			onReset: clearAllSelections
 		}
 	];

@@ -1,13 +1,15 @@
 <script lang="ts">
 	import { Button, buttonVariants } from '$lib/Components/shadcn/button/index.js';
+	import * as Alert from '$lib/Components/shadcn/alert/index.js';
 	import * as Dialog from '$lib/Components/shadcn/dialog/index.js';
 	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 	import { cn } from '$lib/utils';
-	import { RotateCcw } from '@lucide/svelte';
+	import { AlertCircleIcon, RotateCcw } from '@lucide/svelte';
 
 	export type ResetAction = {
 		label: string;
 		description: string;
+		variant: 'default' | 'destructive' | 'outline';
 		onReset: () => void;
 	};
 
@@ -22,6 +24,10 @@
 	function handleAction(action: ResetAction) {
 		action.onReset();
 		open = false;
+	}
+
+	function getActionButtonVariant(action: ResetAction): ResetAction['variant'] {
+		return action.variant === 'destructive' ? 'outline' : action.variant;
 	}
 </script>
 
@@ -46,19 +52,27 @@
 		<div class="flex flex-col gap-2 py-2">
 			{#each actions as action (action.label)}
 				<Button
-					variant="outline"
+					variant={getActionButtonVariant(action)}
 					class="h-auto w-full justify-start gap-3 px-4 py-3 text-left"
 					onclick={() => handleAction(action)}
 				>
-					<div class="flex flex-col items-start">
-						<span class="text-sm font-medium">{action.label}</span>
-						<span class="text-xs text-muted-foreground">{action.description}</span>
-					</div>
+					{#if action.variant === 'destructive'}
+						<Alert.Root
+							variant="destructive"
+							class="w-full border-0 bg-transparent p-0 text-left shadow-none"
+						>
+							<AlertCircleIcon />
+							<Alert.Title class="text-sm">{action.label}</Alert.Title>
+							<Alert.Description class="text-xs">{action.description}</Alert.Description>
+						</Alert.Root>
+					{:else}
+						<div class="flex flex-col items-start">
+							<span class="text-sm font-medium text-foreground">{action.label}</span>
+							<span class="text-xs text-muted-foreground">{action.description}</span>
+						</div>
+					{/if}
 				</Button>
 			{/each}
 		</div>
-		<Dialog.Footer class="sm:justify-end">
-			<Button variant="ghost" onclick={() => (open = false)}>Cancel</Button>
-		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
