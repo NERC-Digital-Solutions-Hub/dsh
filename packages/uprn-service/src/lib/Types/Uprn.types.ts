@@ -100,13 +100,29 @@ export type JobStatusType = (typeof JobStatusType)[keyof typeof JobStatusType];
  * Includes the unique ID and current status of the download.
  * Used in the DownloadsStore to manage user downloads.
  */
+export type DownloadDisplayInfoNode = {
+	id: string;
+	name: string;
+	isVariable: boolean;
+	isLeaf: boolean;
+	children: DownloadDisplayInfoNode[];
+	typology?: string;
+};
+
+export type DownloadDisplayInfo = {
+	areaTree: DownloadDisplayInfoNode[];
+	dataTree: DownloadDisplayInfoNode[];
+};
+
 export type DownloadEntry = {
 	localId: string;
 	externalId?: string;
 	status: DownloadStatus;
 	errorMessage?: string;
+	fileSize?: number;
 	areaSelection: AreaSelectionInfoWithCode;
 	dataSelections: DataSelectionInfo[];
+	displayInfo?: DownloadDisplayInfo;
 };
 
 export type UprnDownloadEndpoints = {

@@ -36,6 +36,7 @@ export default class DownloadsStore {
 			entry.externalId,
 			entry.status,
 			entry.errorMessage,
+			entry.fileSize,
 			entry.areaSelection,
 			entry.dataSelections
 		);
@@ -69,6 +70,7 @@ export default class DownloadsStore {
 				externalId: download.externalId,
 				status: download.status,
 				errorMessage: download.errorMessage,
+				fileSize: download.fileSize,
 				areaSelection: download.areaSelection,
 				dataSelections: download.dataSelections
 			});

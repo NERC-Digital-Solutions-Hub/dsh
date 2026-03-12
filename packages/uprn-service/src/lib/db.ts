@@ -139,6 +139,7 @@ export const updateUserDownload = async (
 	externalId?: string,
 	status?: DownloadStatus,
 	errorMessage?: string,
+	fileSize?: number,
 	areaSelection?: AreaSelectionInfoWithCode,
 	dataSelections?: DataSelectionInfo[]
 ) => {
@@ -146,9 +147,9 @@ export const updateUserDownload = async (
 	if (externalId !== undefined) update.externalId = externalId;
 	if (status !== undefined) update.status = status;
 	if (errorMessage !== undefined) update.errorMessage = errorMessage;
+	if (fileSize !== undefined) update.fileSize = fileSize;
 	if (areaSelection !== undefined) update.areaSelection = areaSelection;
 	if (dataSelections !== undefined) update.dataSelections = dataSelections;
-
 	if (Object.keys(update).length === 0) {
 		return;
 	}
