@@ -11,12 +11,14 @@
 		DownloadStatus,
 		JobRequestResponseType,
 		JobStatusType,
+		type DownloadEntry,
 		type UprnDownloadGetJobStatusesRequest,
 		type UprnDownloadGetJobStatusesResponse,
 		type UprnDownloadJobRequest
 	} from '$lib/Types/Uprn.types';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
 	import Download from '@lucide/svelte/icons/download';
+	import InfoIcon from '@lucide/svelte/icons/info';
 	import LoaderIcon from '@lucide/svelte/icons/loader';
 	import RetryIcon from '@lucide/svelte/icons/rotate-ccw';
 	import XCircleIcon from '@lucide/svelte/icons/x-circle';
@@ -37,9 +39,16 @@
 		requestJobUrl: string;
 		jobStatusesUrl: string;
 		downloadBaseUrl: string;
+		onOpenInfoDialog: (download: DownloadEntry) => void;
 	};
 
-	const { downloadsStore, requestJobUrl, jobStatusesUrl, downloadBaseUrl }: Props = $props();
+	const {
+		downloadsStore,
+		requestJobUrl,
+		jobStatusesUrl,
+		downloadBaseUrl,
+		onOpenInfoDialog
+	}: Props = $props();
 
 	/** Hook for submitting download job requests. */
 	const requestJobHook = $derived.by(() => useUprnDownloadRequestJob(requestJobUrl));
@@ -60,9 +69,9 @@
 		completed: { color: '#059669', text: 'Completed', icon: CheckCircleIcon, iconSize: 14 },
 		'in-progress': { color: '#2563eb', text: 'In Progress', icon: LoaderIcon, iconSize: 14 },
 		failed: { color: '#dc2626', text: 'Failed', icon: XCircleIcon, iconSize: 14 },
-		pending: { color: '#6b7280', text: 'Pending', icon: Spinner, iconSize: 14 },
+		pending: { color: '#6b7280', text: 'Pending', icon: HourglassIcon, iconSize: 22 },
 		queued: { color: '#6b7280', text: 'Queued', icon: HourglassIcon, iconSize: 22 },
-		submitted: { color: '#6b7280', text: 'Submitted', icon: Spinner, iconSize: 14 }
+		submitted: { color: '#6b7280', text: 'Submitted', icon: HourglassIcon, iconSize: 22 }
 	} satisfies Record<
 		string,
 		{
@@ -108,7 +117,7 @@
 				continue;
 			}
 
-			download.status = DownloadStatus.InProgress;
+			download.status = DownloadStatus.Submitted;
 			downloadsStore.updateDownloadStatus(download);
 
 			const request: UprnDownloadJobRequest = {
@@ -220,6 +229,7 @@
 					case JobStatusType.Submitted:
 						download.status = DownloadStatus.Submitted;
 						download.errorMessage = undefined; // Clear any previous error message
+						download.fileSize = undefined;
 						queuePositions.set(job.guid, {
 							queueId: job.queueId,
 							queuePosition: job.queuePosition
@@ -228,6 +238,7 @@
 					case JobStatusType.Queued:
 						download.status = DownloadStatus.Queued;
 						download.errorMessage = undefined; // Clear any previous error message
+						download.fileSize = undefined; // Clear any previous file size
 						queuePositions.set(job.guid, {
 							queueId: job.queueId,
 							queuePosition: job.queuePosition
@@ -236,20 +247,20 @@
 					case JobStatusType.Processing:
 						download.status = DownloadStatus.InProgress;
 						download.errorMessage = undefined; // Clear any previous error message
-						queuePositions.set(job.guid, {
-							queueId: job.queueId,
-							queuePosition: job.queuePosition
-						});
+						download.fileSize = undefined;
+						queuePositions.delete(job.guid);
 						break;
 					case JobStatusType.Completed:
 						download.status = DownloadStatus.Completed;
 						download.errorMessage = undefined; // Clear any previous error message
+						download.fileSize = job.status.fileSize;
 						queuePositions.delete(job.guid);
 						break;
 					case JobStatusType.Error:
 						download.status = DownloadStatus.Failed;
 						download.errorMessage =
 							job.status.message || 'An unknown error occurred during processing on the server.';
+						download.fileSize = undefined;
 						queuePositions.delete(job.guid);
 						break;
 					default:
@@ -272,6 +283,7 @@
 			download.status = DownloadStatus.Pending;
 			download.externalId = undefined; // Clear external ID to force new submission
 			download.errorMessage = undefined; // Clear error message
+			download.fileSize = undefined; // Clear file size
 			downloadsStore.updateDownloadStatus(download);
 		}
 	}
@@ -291,7 +303,12 @@
 </script>
 
 <div class="section">
-	<h4>Download Queue</h4>
+	<div class="section-header">
+		<h4>Download Queue</h4>
+		{#if downloads.length > 0}
+			<p class="count">{downloads.length} download(s)</p>
+		{/if}
+	</div>
 	{#if downloads.length > 0}
 		<ul class="selected-list">
 			{#each downloads as download}
@@ -344,6 +361,22 @@
 							</Tooltip.Root>
 						</Tooltip.Provider>
 					</span>
+					<Tooltip.Provider disableHoverableContent>
+						<Tooltip.Root>
+							<Tooltip.Trigger>
+								<Button
+									variant="ghost"
+									size="sm"
+									class="download-info-btn"
+									onclick={() => onOpenInfoDialog(download)}
+									aria-label="View download details"
+								>
+									<InfoIcon size={14} />
+								</Button>
+							</Tooltip.Trigger>
+							<Tooltip.Content>Details</Tooltip.Content>
+						</Tooltip.Root>
+					</Tooltip.Provider>
 					{#if download.externalId}
 						<Tooltip.Provider disableHoverableContent>
 							<Tooltip.Root>
@@ -353,10 +386,11 @@
 										class="download-clipboard-btn"
 										successMessage="URL copied to clipboard"
 										errorMessage="Failed to copy URL to clipboard"
+										title=""
 										iconSize={14}
 									/>
 								</Tooltip.Trigger>
-								<Tooltip.Content>Copy</Tooltip.Content>
+								<Tooltip.Content>Copy download URL</Tooltip.Content>
 							</Tooltip.Root>
 						</Tooltip.Provider>
 					{/if}
@@ -374,7 +408,11 @@
 										<Download />
 									</Button>
 								</Tooltip.Trigger>
-								<Tooltip.Content>Download</Tooltip.Content>
+								{@const fileSizeBytes = download.fileSize ?? 0}
+								{@const fileSizeMB = (fileSizeBytes / (1024 * 1024)).toFixed(2)}
+								{@const downloadTooltip =
+									fileSizeBytes > 0 ? `Download (${fileSizeMB} MB)` : 'Download'}
+								<Tooltip.Content>{downloadTooltip}</Tooltip.Content>
 							</Tooltip.Root>
 						</Tooltip.Provider>
 					{/if}
@@ -415,7 +453,6 @@
 				</SelectionEntryCard>
 			{/each}
 		</ul>
-		<p class="count">{downloads.length} download(s) in queue</p>
 	{:else}
 		<p class="no-selection">No downloads in queue</p>
 	{/if}
@@ -430,8 +467,15 @@
 		margin-bottom: 0;
 	}
 
-	h4 {
+	.section-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 		margin: 0 0 0.5rem 0;
+	}
+
+	h4 {
+		margin: 0;
 		font-size: 1rem;
 		font-weight: 500;
 		color: #374151;
@@ -458,6 +502,7 @@
 	:global(.download-action-btn),
 	:global(.download-clipboard-btn),
 	:global(.download-status-btn),
+	:global(.download-info-btn),
 	:global(.download-retry-btn),
 	:global(.download-remove-btn) {
 		height: 1.5rem;
@@ -481,6 +526,10 @@
 
 	:global(.download-action-btn:hover) {
 		color: #059669;
+	}
+
+	:global(.download-info-btn:hover) {
+		color: #2563eb;
 	}
 
 	:global(.download-clipboard-btn:hover) {

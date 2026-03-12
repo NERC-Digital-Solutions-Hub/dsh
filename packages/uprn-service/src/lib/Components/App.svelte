@@ -4,6 +4,7 @@
 	import UprnChat from '$lib/Components/Chat/Chat.svelte';
 	import CollapsibleWindow from '$lib/Components/CollapsibleWindow/CollapsibleWindow.svelte';
 	import DownloadsMenu from '$lib/Components/DownloadsMenu/DownloadsMenu.svelte';
+	import DownloadInfoDialog from '$lib/Components/DownloadsMenu/DownloadInfoDialog.svelte';
 	import ExportMenuFooter from '$lib/Components/ExportMenu/ExportMenuFooter.svelte';
 	import ExportMenu from '$lib/Components/ExportMenu/ExportMenu.svelte';
 	import IntroductionDialog from '$lib/Components/IntroductionDialog/IntroductionDialog.svelte';
@@ -52,7 +53,7 @@
 	import { WebMapStore } from '$lib/Stores/WebMapStore.svelte';
 	import type { AppTabState } from '$lib/Types/Chatbot.types';
 	import { TreeviewType } from '$lib/Types/Treeview.types';
-	import { TabProgress, TabType } from '$lib/Types/Uprn.types';
+	import { TabProgress, TabType, type DownloadEntry } from '$lib/Types/Uprn.types';
 	import { createTreeviewNodes } from '$lib/Utilities/CreateTreeviewNodes';
 	import { Plus } from '@lucide/svelte';
 	import { onMount } from 'svelte';
@@ -135,6 +136,12 @@
 
 	/** State for managing the visibility of the reset dialog. */
 	let resetDialogOpen: boolean = $state(false);
+
+	/** State for managing the visibility of the download info dialog. */
+	let downloadInfoDialogOpen: boolean = $state(false);
+
+	/** State for tracking the selected download shown in the download info dialog. */
+	let activeDownloadInfo: DownloadEntry | null = $state(null);
 
 	/** State for managing the current active tab. */
 	let currentTab: TabType = $state(TabType.AreaOfInterest);
@@ -824,6 +831,11 @@
 		itemInfoDialogOpen = true;
 	}
 
+	function onOpenDownloadInfoDialog(download: DownloadEntry): void {
+		activeDownloadInfo = download;
+		downloadInfoDialogOpen = true;
+	}
+
 	setItemInfoDialogEvents({
 		onOpenInfoDialog
 	});
@@ -837,6 +849,12 @@
 		bind:isOpen={itemInfoDialogOpen}
 		bind:activeLayerId={itemInfoDialogActiveLayerId}
 		webmapService={webMapStore}
+		nodeConfigProvider={treeviewConfigStore}
+	/>
+	<DownloadInfoDialog
+		bind:isOpen={downloadInfoDialogOpen}
+		download={activeDownloadInfo}
+		nodeProvider={treeviewNodeProvider!}
 		nodeConfigProvider={treeviewConfigStore}
 	/>
 {/if}
@@ -948,6 +966,7 @@
 									{requestJobUrl}
 									jobStatusesUrl={requestJobStatusUrl}
 									{downloadBaseUrl}
+									onOpenInfoDialog={onOpenDownloadInfoDialog}
 								/>
 							{/if}
 						</UprnTabBarContent>
