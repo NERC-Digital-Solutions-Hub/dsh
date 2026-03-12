@@ -1,102 +1,283 @@
-/* Background Image (Scoped outside the panel to cover the screen) */
+/* =========================
+Variables & Base
+========================= */
+:root {
+    --nav-h: 56px; /* updated by JS updateChrome() */
+    --footer-h: 0px; /* set >0 only if you enable a fixed footer */
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+    font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    color: var(--color-text);
+    background-color: var(--color-bg); /* fallback behind bg-image layer */
+    padding-top: var(--nav-h); /* space for fixed-top navbar */
+    overflow-y: auto;
+}
+
+/* =========================
+Navbar (fixed, on top)
+========================= */
+#site-navbar {
+    position: fixed; /* Bootstrap fixed-top sets this too */
+    top: 0; left: 0; right: 0;
+    z-index: 1100 !important; /* above bg-image and content */
+    background-color: var(--color-primary-strong) !important;
+}
+
+.navbar .navbar-brand,
+.navbar .nav-link { color: #fff; }
+
+.navbar .nav-link.active { color: var(--color-accent); }
+
+/* =========================
+Background Image Layer
+========================= */
 .bg-image {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-image: url('/bridge.jpg'); /* Make sure to add a bridge.jpg to your static folder */
+    inset: 0;
+    z-index: 0;                 /* below content */
+    pointer-events: none;       /* never block clicks */
+    /* Default gradient + safe default image */
+    background:
+        linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,.15)),
+        url("https://www.digital-solutions.uk/wp-content/uploads/2022/09/Carousel_Images-01-scaled.jpg");
     background-size: cover;
     background-position: center;
-    z-index: -1;
+    background-repeat: no-repeat;
+    background-color: #DEE3E8;  /* light base so no black flash */
 }
 
-/* Base Panel Styling */
+.bg-image::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.10);
+}
+
+/* =========================
+Main Layout
+========================= */
+.iframe-wrapper {
+    position: relative;
+    z-index: 1;
+    min-height: calc(100vh - var(--nav-h) - var(--footer-h));
+}
+
+@supports (height: 100dvh) {
+    .iframe-wrapper { min-height: calc(100dvh - var(--nav-h) - var(--footer-h)); }
+}
+
+/* Home panel and iframe fill the wrapper */
+#home-panel, #main-frame { width: 100%; height: 100%; border: 0; }
+
+/* Home panel container */
 #home-panel {
-    font-family: 'Inter', sans-serif;
-    padding: 2rem 1rem;
+    display: block;
+    padding: 2rem 1rem; /* space around the panel */
+    background: transparent; /* keep bg image visible */
+    min-height: 100%;
 }
 
-#home-panel .home-inner {
-    max-width: 900px;
+/* The card-like surface */
+.home-inner {
+    width: 100%;
+    max-width: 1100px;
     margin: 0 auto;
-    background: rgba(255, 255, 255, 0.95);
     padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    border-radius: 1.25rem;
+    background: rgba(255, 255, 255, 0.92); /* readable panel */
+    backdrop-filter: blur(2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .10);
 }
 
-/* Card Overrides */
-#home-panel .compact-card {
-    border: 1px solid #eaeaea;
-    border-radius: 12px;
-    box-shadow: none !important;
+/* Tweak spacing on small screens */
+@media (max-width: 576px) {
+    #home-panel { padding: 1rem; }
+    .home-inner { padding: 1rem; border-radius: 0.75rem; }
 }
 
-/* Icons */
-#home-panel .section-icon { font-size: 1.25rem; }
-#home-panel .section-icon--primary { color: var(--nerc-primary); }
-#home-panel .section-icon--accent { color: var(--nerc-accent); }
-#home-panel .section-icon--success { color: var(--nerc-success); }
-#home-panel .section-icon--warning { color: var(--nerc-warning); }
-#home-panel .section-icon--danger { color: var(--nerc-danger); }
+/* Iframe hidden until a use-case opens */
+#main-frame {
+    display: none;
+    width: 100%;
+    height: calc(100vh - var(--nav-h) - var(--footer-h));
+    border: 0;
+    background: #fff;
+}
 
-/* Lists */
-#home-panel .icon-list {
+/* =========================
+Cards & Badges
+========================= */
+.card {
+    background-color: var(--color-surface);
+    border: 1.5px solid var(--clr-purple-light);
+    border-radius: 1rem;
+}
+
+.badge { font-weight: 600; letter-spacing: .2px; }
+.badge-secondary { background: var(--clr-purple-light); color: #fff; }
+.badge-accent { background: var(--clr-yellow); color: #1E1E1E; }
+.badge-feedback {
+    background: var(--clr-yellow-light);
+    color: #1E1E1E;
+    text-decoration: none;
+    padding: .35rem .5rem;
+    border-radius: .5rem;
+}
+
+/* Buttons */
+.btn-primary, .btn-success {
+    background-color: var(--color-success);
+    border-color: var(--color-success);
+    color: #fff;
+}
+.btn-primary:hover, .btn-success:hover {
+    background-color: var(--color-success-weak);
+    border-color: var(--color-success-weak);
+    color: #fff;
+}
+.btn-outline-secondary { color: var(--color-muted); border-color: var(--color-border); }
+.btn-outline-secondary:disabled { color: #888; }
+
+/* Card text */
+.card .card-text { color: var(--color-muted); }
+
+/* Dividers */
+hr { border-color: var(--color-border); }
+
+/* =========================
+Footer (if enabled)
+========================= */
+footer {
+    background-color: var(--color-primary-strong);
+    color: var(--clr-yellow);
+    padding: 20px 0;
+    text-align: center;
+    font-size: .9rem;
+}
+footer a { color: #fff; margin: 0 8px; text-decoration: none; }
+footer a:hover { color: var(--clr-yellow-light); }
+
+/* =========================
+Accessibility / Motion
+========================= */
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+/* ------------------------------------------
+   Landing page polish: icons, dividers, cards
+------------------------------------------- */
+
+/* Icon alignment + baseline polish */
+.bi { vertical-align: -0.125em; }
+
+/* Section divider */
+.section-divider{
+    border: 0;
+    height: 1px;
+    margin: 1.25rem 0;
+    background: linear-gradient(90deg, transparent, rgba(0,0,0,0.14), transparent);
+}
+
+/* Icon sizing + â€œbadgeâ€ look */
+.section-icon{
+    font-size: 1.1rem;
+    opacity: 0.95;
+}
+
+/* Colour coding (safe fallbacks if your tokens arenâ€™t defined) */
+.section-icon--primary { color: var(--bs-primary, #0d6efd); }
+.section-icon--accent  { color: var(--hcc-hot-pink-214c, #EC008C); } /* your palette token */
+.section-icon--success { color: var(--bs-success, #198754); }
+.section-icon--warning { color: var(--bs-warning, #ffc107); }
+.section-icon--danger  { color: var(--bs-danger, #dc3545); }
+
+/* Icon lists: remove bullets, align icon + text nicely */
+.icon-list{
     list-style: none;
     padding-left: 0;
-}
-#home-panel .icon-list li {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
     margin-bottom: 1rem;
 }
 
-#home-panel .section-divider {
-    border-top: 1px solid #eaeaea;
-    margin: 1.5rem 0;
+.icon-list li{
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.35rem 0;
 }
 
-/* Step Cards Matrix */
-#home-panel .step-card {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 1rem;
-    border: 1px solid #eaeaea;
-    border-radius: 8px;
-    height: 100%;
-    background-color: #ffffff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+.icon-list li i{
+    margin-top: 0.2rem;
+    flex: 0 0 auto;
 }
-#home-panel .step-card__icon {
-    font-size: 1.5rem;
-    color: var(--nerc-primary);
-    background: #f0f7ff;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
+
+.icon-list li span{
+    display: inline-block;
 }
-#home-panel .step-card__title {
+
+/* Step cards for â€œWhat we want you to doâ€ */
+.step-card{
+    display: flex;
+    gap: 0.85rem;
+    padding: 0.9rem 0.95rem;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.step-card__icon{
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: rgba(13,110,253,0.12); /* uses bootstrap primary â€œfeelâ€ without hard-coding theme */
+}
+
+.step-card__icon i{
+    font-size: 1.25rem;
+    color: var(--bs-primary, #0d6efd);
+}
+
+.step-card__title{
     font-weight: 600;
-    font-size: 0.95rem;
-    color: #333;
-}
-#home-panel .step-card__text {
-    font-size: 0.85rem;
-    color: #666;
-    margin-top: 2px;
+    margin-bottom: 0.1rem;
 }
 
-/* Bottom Callout */
-#home-panel .callout {
-    background-color: #fdf2f8;
-    color: #be185d;
-    padding: 1rem;
-    border-radius: 8px;
+.step-card__text{
+    opacity: 0.86;
+    line-height: 1.35;
+}
+
+/* Hover lift + subtle icon bounce */
+.step-card:hover{
+    transform: translateY(-2px);
+    border-color: rgba(0,0,0,0.14);
+    box-shadow: 0 10px 26px rgba(0,0,0,0.10);
+}
+
+.step-card:hover .step-card__icon{
+    transform: scale(1.03);
+    transition: transform 180ms ease;
+}
+
+/* Callout box for closing line */
+.callout{
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 0.95rem;
+    border-radius: 14px;
+    background: rgba(236,0,140,0.08); /* your hot pink */
+    border: 1px solid rgba(236,0,140,0.18);
     font-weight: 500;
+}
+
+.callout .bi{
+    color: var(--hcc-hot-pink-214c, #EC008C);
 }

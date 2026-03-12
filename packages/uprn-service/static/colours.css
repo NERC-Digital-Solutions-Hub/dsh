@@ -1,7 +1,30 @@
 :root {
-    --nerc-primary: #0d6efd; /* Blue */
-    --nerc-accent: #d63384;  /* Pink/Magenta */
-    --nerc-success: #198754; /* Green */
-    --nerc-warning: #ffc107; /* Yellow */
-    --nerc-danger:  #dc3545; /* Red */
+    /* Accessible, calming palette (purple + yellow + green) */
+    --clr-purple: #5E3A9C; /* primary brand accent */
+    --clr-purple-light: #7E5EC1;
+    --clr-purple-dark: #422773;
+
+    --clr-yellow: #E3B341; /* accent highlight */
+    --clr-yellow-light: #F5D36B;
+
+    --clr-green: #2E7D58; /* action / success */
+    --clr-green-light: #4DA97B;
+
+    --clr-bg: #F6F6F8; /* app background */
+    --clr-surface: #FFFFFF; /* cards / panels */
+    --clr-text: #212529; /* primary text */
+    --clr-muted: #555555; /* secondary text */
+    --clr-border: #DDDDDD; /* dividers */
+
+    /* Semantic tokens (use these in components) */
+    --color-primary: var(--clr-purple);
+    --color-primary-strong: var(--clr-purple-dark);
+    --color-accent: var(--clr-yellow);
+    --color-success: var(--clr-green);
+    --color-success-weak: var(--clr-green-light);
+    --color-bg: var(--clr-bg);
+    --color-surface: var(--clr-surface);
+    --color-text: var(--clr-text);
+    --color-muted: var(--clr-muted);
+    --color-border: var(--clr-border);
 }
