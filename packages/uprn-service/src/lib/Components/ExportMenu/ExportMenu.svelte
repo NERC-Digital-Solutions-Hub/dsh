@@ -10,7 +10,9 @@
 		AreaSelectionInteractionStore
 	} from '$lib/Stores/AreaSelectionInteractionStore.svelte';
 	import type { DataSelectionStore } from '$lib/Stores/DataSelectionStore.svelte';
-	import { TreeviewNodeTypology } from '$lib/Types/Treeview.types.js';
+	import DatabaseIcon from '@lucide/svelte/icons/database';
+	import MapPinIcon from '@lucide/svelte/icons/map-pin';
+	import { TreeviewNodeTypology, type TreeviewNodeConfig } from '$lib/Types/Treeview.types.js';
 	import SelectionTreeviewNode, {
 		type SelectionTreeviewNode as SelectionTreeviewNodeType
 	} from './SelectionTreeviewNode.svelte';
@@ -90,7 +92,7 @@
 			const existing = nodeMap.get(node.id);
 			if (existing) return existing;
 
-			const nodeConfig = nodeConfigProvider.getConfig(node.id);
+			const nodeConfig: TreeviewNodeConfig | undefined = nodeConfigProvider.getConfig(node.id);
 			if (!nodeConfig) return null;
 
 			const created: SelectionTreeviewNodeTypeWithParent = {
@@ -256,7 +258,10 @@
 
 <div class="section">
 	<div class="section-header">
-		<h4>Selected Areas</h4>
+		<div class="section-title">
+			<MapPinIcon size={16} class="text-gray-500" />
+			<h4>Selected Areas</h4>
+		</div>
 		<p class="count">{areaInfos.length} area(s) selected</p>
 	</div>
 	{#if areaSelectionTree.length > 0}
@@ -272,7 +277,10 @@
 
 <div class="section">
 	<div class="section-header">
-		<h4>Selected Data</h4>
+		<div class="section-title">
+			<DatabaseIcon size={16} class="text-gray-500" />
+			<h4>Selected Data</h4>
+		</div>
 		<p class="count">{dataSelectionStore.getAllSelections().length} dataset(s) selected</p>
 	</div>
 	{#if dataSelectionTree.length > 0}
@@ -315,6 +323,12 @@
 		font-size: 1rem;
 		font-weight: 500;
 		color: #374151;
+	}
+
+	.section-title {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 	}
 
 	.selection-tree {
