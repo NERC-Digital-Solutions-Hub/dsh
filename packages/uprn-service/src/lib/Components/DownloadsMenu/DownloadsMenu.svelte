@@ -27,7 +27,7 @@
 	import * as Alert from '$lib/Components/shadcn/alert/index.js';
 	import { SvelteMap } from 'svelte/reactivity';
 	import QueueStatus from '$lib/Components/DownloadsMenu/QueueStatus.svelte';
-	import { AlertCircleIcon } from '@lucide/svelte';
+	import { AlertCircleIcon, DownloadIcon } from '@lucide/svelte';
 
 	type QueueItem = {
 		queueId: number;
@@ -315,7 +315,10 @@
 
 <div class="section">
 	<div class="section-header">
-		<h4>Downloads</h4>
+		<div class="section-title">
+			<DownloadIcon size={16} class="text-gray-500" />
+			<h4>Downloads</h4>
+		</div>
 		{#if downloads.length > 0}
 			<p class="count">{downloads.length} download(s)</p>
 		{/if}
@@ -487,9 +490,10 @@
 
 	.section-header {
 		display: flex;
-		align-items: center;
+		align-items: baseline;
 		justify-content: space-between;
-		margin: 0 0 0.5rem 0;
+		gap: 0.75rem;
+		margin-bottom: 0.5rem;
 	}
 
 	h4 {
@@ -497,6 +501,12 @@
 		font-size: 1rem;
 		font-weight: 500;
 		color: #374151;
+	}
+
+	.section-title {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 	}
 
 	.selected-list {
