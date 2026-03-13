@@ -161,7 +161,7 @@
 		padding: 0.75rem 1rem;
 		background: #fff;
 		border-bottom: 1px solid #e5e7eb;
-		z-index: 100;
+		z-index: 40;
 		position: relative;
 		height: var(--header-height, 64px);
 	}
