@@ -12,6 +12,5 @@
 
 <Alert.Root>
 	<AlertCircleIcon />
-	<Alert.Title>Disclaimer</Alert.Title>
 	<Alert.Description>{content.text}</Alert.Description>
 </Alert.Root>
