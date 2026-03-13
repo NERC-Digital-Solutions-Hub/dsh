@@ -59,7 +59,7 @@
 }
 
 .prose-chat-markdown :where(p) {
-	@apply mb-2 leading-7 text-foreground;
+	@apply mb-2 leading-7;
 }
 
 .prose-chat-markdown :where(ul, ol) {
