@@ -254,8 +254,6 @@
 	}
 </script>
 
-<h2>Export Options</h2>
-
 <div class="section">
 	<div class="section-header">
 		<div class="section-title">
