@@ -69,7 +69,7 @@
 	/** Default error message shown when AI request fails */
 	const ERROR_MESSAGE = 'Sorry, I encountered an error processing your request.';
 
-	const CHARACTERS_PER_SECOND = 15;
+	const CHARACTERS_PER_SECOND = 25;
 
 	/** Hook for the AI UPRN chatbot streaming endpoint. */
 	const chat = $derived.by(() => {
