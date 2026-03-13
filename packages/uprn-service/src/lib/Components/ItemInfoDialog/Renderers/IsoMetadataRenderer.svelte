@@ -200,7 +200,7 @@
 				</section>
 			{/if}
 
-			<div class="grid gap-4 sm:grid-cols-2">
+			<!-- <div class="grid gap-4 sm:grid-cols-2">
 				<div class="rounded-lg border p-4">
 					<div class="text-sm font-medium text-muted-foreground">Date</div>
 					<div class="mt-1 space-y-1 text-sm">
@@ -223,7 +223,7 @@
 					<div class="text-sm font-medium text-muted-foreground">Organisation</div>
 					<div class="mt-1 text-sm">{metadata.organisationName ?? 'Not provided'}</div>
 				</div>
-			</div>
+			</div> -->
 
 			<section class="space-y-2">
 				<h2 class="text-base font-semibold">Description</h2>
