@@ -31,7 +31,7 @@ export enum TabType {
 	AreaOfInterest = 'area',
 	Data = 'data',
 	Export = 'export',
-	Downloads = 'downloads'
+	Downloads = 'download'
 }
 
 /**
