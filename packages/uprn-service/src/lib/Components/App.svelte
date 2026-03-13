@@ -709,29 +709,47 @@
 	 * for chatbot interactions.
 	 * @return An object representing the current state of the application tabs, including the active tab and any relevant selections.
 	 */
-	function getTabState(): AppTabState {
-		const areaIds: string[] = [...areaSelectionStore.areaIds].map((id) => String(id));
-		const dataSelectionIds: string[] = [...dataSelectionStore.dataSelections.keys()];
+	async function getTabState(): Promise<AppTabState> {
+		const areaPaths: string[] = [];
 
-		let selections: string[] = [];
-		switch (currentTab) {
-			case TabType.AreaOfInterest:
-				selections = areaIds;
-				break;
-			case TabType.Data:
-				selections = dataSelectionIds;
-				break;
-			case TabType.Export:
-				selections = [...areaIds, ...dataSelectionIds];
-				break;
-			case TabType.Downloads:
-				selections = [];
-				break;
+		const layerId = areaSelectionStore.layerId;
+		if (layerId && areaTreeviewStore && areaSelectionInteractionStore) {
+			const layerPath = areaTreeviewStore.getNodePathById(layerId);
+			if (layerPath) {
+				const areaIds = [...areaSelectionStore.areaIds];
+				const areaNames = await areaSelectionInteractionStore.getAreaNamesById(areaIds);
+				for (const areaName of areaNames) {
+					if (areaName) {
+						areaPaths.push(`${layerPath}/${areaName}`);
+					}
+				}
+			}
 		}
+
+		const dataPaths: string[] = [];
+		if (dataTreeviewStore) {
+			for (const nodeId of dataSelectionStore.dataSelections.keys()) {
+				const path = dataTreeviewStore.getNodePathById(nodeId);
+				if (path) {
+					dataPaths.push(path);
+				}
+			}
+		}
+
+		console.log('[uprn/app] Retrieved tab state', {
+			tab: currentTab,
+			selections: {
+				area: areaPaths,
+				data: dataPaths
+			}
+		});
 
 		return {
 			tab: currentTab,
-			selections: selections
+			selections: {
+				area: areaPaths,
+				data: dataPaths
+			}
 		};
 	}
 

@@ -17,10 +17,15 @@ export interface AiChatbotChatResponse {
 	references: string[];
 }
 
-export interface AppTabState {
+export type AppTabState = {
 	tab: TabType;
-	selections: string[];
-}
+	selections: AppStateSelections;
+};
+
+export type AppStateSelections = {
+	area: string[];
+	data: string[];
+};
 
 /**
  * Types of user feedback.

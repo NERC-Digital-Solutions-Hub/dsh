@@ -38,7 +38,7 @@
 		configUrl: string;
 		chatEndpoint: string;
 		feedbackEndpoint: string;
-		getTabState: () => AppTabState;
+		getTabState: () => Promise<AppTabState>;
 		class?: string;
 	};
 
@@ -363,7 +363,7 @@
 		const responseSequenceNumber = chat?.sequenceNumber;
 
 		try {
-			await chat?.submit(userMessage, getTabState());
+			await chat?.submit(userMessage, await getTabState());
 
 			if (!chat?.error && chat?.content) {
 				await streamBotMessage(chat.content, {

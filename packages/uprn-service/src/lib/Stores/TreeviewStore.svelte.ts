@@ -6,6 +6,7 @@ import {
 } from '$lib/Models/Treeview/Index.js';
 import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
+import type { INodePathResolver } from '$lib/Services/INodePathResolver';
 import type { INodeProvider } from '$lib/Services/INodeProvider';
 import type { INodeSelectionController } from '$lib/Services/INodeSelectionController';
 import type { INodeTagProvider } from '$lib/Services/INodeTagProvider';
@@ -13,7 +14,9 @@ import type { INodeVisibilityController } from '$lib/Services/INodeVisibilityCon
 import { TreeviewType } from '$lib/Types/Treeview.types.js';
 import { SvelteMap } from 'svelte/reactivity';
 
-export class TreeviewStore implements INodeTagProvider, INodeSelectionController {
+export class TreeviewStore
+	implements INodeTagProvider, INodeSelectionController, INodePathResolver
+{
 	readonly #treeviewType: TreeviewType;
 
 	readonly #nodeProvider: INodeProvider;
@@ -176,6 +179,45 @@ export class TreeviewStore implements INodeTagProvider, INodeSelectionController
 	/** @inheritdoc */
 	public getTags(nodeId: string): string[] {
 		return this.#nodeTagProvider?.getTags(nodeId) ?? [];
+	}
+
+	/** @inheritdoc */
+	public getNodePathById(nodeId: string): string | undefined {
+		const node = this.#nodeProvider.getTreeviewNode(nodeId);
+		if (!node) {
+			return undefined;
+		}
+
+		return this.#buildNodePath(node);
+	}
+
+	/** @inheritdoc */
+	public getNodeIdByPath(nodePath: string): string | undefined {
+		const segments = nodePath.split('/');
+		const roots = this.#nodeProvider.getAllTreeviewNodes();
+
+		let current: TreeviewNode | undefined;
+		let candidates = roots;
+
+		for (const segment of segments) {
+			current = candidates.find((n) => n.name === segment);
+			if (!current) {
+				return undefined;
+			}
+			candidates = current.children;
+		}
+
+		return current?.id;
+	}
+
+	#buildNodePath(node: TreeviewNode): string {
+		const parts: string[] = [];
+		let current: TreeviewNode | null = node;
+		while (current) {
+			parts.push(current.name);
+			current = current.parent;
+		}
+		return parts.reverse().join('/');
 	}
 
 	#getNonHiddenNodes(nodes: TreeviewNode[]): TreeviewNode[] {
