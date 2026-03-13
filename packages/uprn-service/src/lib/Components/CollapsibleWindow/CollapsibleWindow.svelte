@@ -13,60 +13,58 @@
 		children?: Snippet;
 	};
 
-	const { isOpenedOnInit: isOpenedOnInit = false, class: className, children }: Props = $props();
-	let isInitialised = $state<boolean>(false);
+	const { isOpenedOnInit = false, class: className, children }: Props = $props();
+	let isInitialised = false;
 	let isOpened = $state<boolean>(false);
 	let isMaximised = $state<boolean>(false);
+	let canAnimate = $state<boolean>(false);
 
-	let cardElement = $state<HTMLElement | undefined>();
-	let lastExpandedWindowHeight: string = '300px';
-	let collapsedWindowHeight: string = '45px';
+	const collapsedHeight = '45px';
+	const normalHeight = '300px';
+	let lastExpandedHeight = normalHeight;
+	let currentHeight = $state<string>(collapsedHeight);
 
 	$effect(() => {
-		if (isInitialised || !cardElement) {
-			return;
-		}
+		if (isInitialised) return;
+		isInitialised = true;
 
 		if (isOpenedOnInit) {
 			isOpened = true;
-			cardElement.style.height = lastExpandedWindowHeight;
+			currentHeight = normalHeight;
 		}
 
-		isInitialised = true;
+		requestAnimationFrame(() => {
+			canAnimate = true;
+		});
 	});
 
 	function onToggleCollapse() {
-		if (!cardElement) {
-			return;
-		}
-
 		isOpened = !isOpened;
 		isMaximised = false;
 		if (isOpened) {
-			// Restore to last normal height when expanding
-			collapsedWindowHeight = cardElement.style.height;
-			cardElement.style.height = lastExpandedWindowHeight;
+			currentHeight = lastExpandedHeight;
 		} else {
-			cardElement.style.height = collapsedWindowHeight;
+			currentHeight = collapsedHeight;
 		}
 	}
 
 	function onToggleMaximise() {
-		if (!cardElement) {
-			return;
-		}
-
 		isMaximised = !isMaximised;
 		if (isMaximised) {
-			lastExpandedWindowHeight = cardElement.style.height;
-			cardElement.style.height = '100%';
+			lastExpandedHeight = currentHeight;
+			currentHeight = '100%';
 		} else {
-			cardElement.style.height = lastExpandedWindowHeight;
+			currentHeight = lastExpandedHeight;
 		}
 	}
 </script>
 
-<div bind:this={cardElement} class={cn(className)}>
+<div
+	class={cn(className)}
+	style="height: {currentHeight}; overflow: hidden;{canAnimate
+		? ' transition: height 0.15s ease-in-out;'
+		: ''}"
+>
 	<Card.Root
 		class="h-full w-full rounded-tl-md rounded-tr-md rounded-br-none rounded-bl-none gap-0 py-0 pt-0 pb-0 border-0 border-t border-t-border"
 	>
@@ -119,7 +117,7 @@
 				</div>
 			</div>
 		</Card.Header>
-		<Card.Content class="h-full min-h-[10px] w-full p-0" hidden={!isOpened}>
+		<Card.Content class="h-full min-h-[10px] w-full p-0">
 			{@render children?.()}
 		</Card.Content>
 	</Card.Root>
