@@ -328,7 +328,7 @@
 			<section class="space-y-2">
 				<h2 class="text-base font-semibold">Description</h2>
 				{#if metadata.description && containsHtml(metadata.description)}
-					<article class="prose prose-info-markdown text-sm text-muted-foreground max-w-none">
+					<article class="prose-info-markdown text-sm text-muted-foreground max-w-none">
 						{@html metadata.description}
 					</article>
 				{:else}
