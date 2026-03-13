@@ -43,13 +43,61 @@
 }
 
 .prose-info-markdown :where(h1) {
-	@apply mb-5 text-center text-3xl font-bold text-foreground;
+	@apply mb-4 text-center text-3xl font-bold text-foreground;
 }
 
 .prose-info-markdown :where(h2) {
-	@apply mb-4 text-2xl font-bold text-foreground;
+	@apply mb-3 text-2xl font-bold text-foreground;
 }
 
 .prose-info-markdown :where(h3) {
 	@apply mb-3 text-xl font-bold text-foreground;
+}
+
+.prose-chat-markdown :where(p) {
+	@apply mb-2 leading-7 text-foreground;
+}
+
+.prose-chat-markdown :where(ul, ol) {
+	@apply my-2 pl-6;
+}
+
+.prose-chat-markdown :where(ul) {
+	@apply list-disc;
+}
+
+.prose-chat-markdown :where(ol) {
+	@apply list-decimal;
+}
+
+.prose-chat-markdown :where(li) {
+	@apply mb-1 leading-7 text-foreground;
+}
+
+.prose-chat-markdown :where(li > p) {
+	@apply mb-1;
+}
+
+.prose-chat-markdown :where(a) {
+	@apply text-blue-600 underline underline-offset-2 transition-colors;
+}
+
+.prose-chat-markdown :where(a:hover) {
+	@apply text-blue-700;
+}
+
+.prose-chat-markdown :where(h1) {
+	@apply mt-1 mb-3 text-center text-2xl font-bold tracking-tight text-foreground;
+}
+
+.prose-chat-markdown :where(h2) {
+	@apply mt-4 mb-1 text-xl font-semibold tracking-tight text-foreground;
+}
+
+.prose-chat-markdown :where(h3) {
+	@apply mt-4 mb-1 text-lg font-semibold text-foreground;
+}
+
+.prose-chat-markdown :where(*:last-child) {
+	@apply mb-0;
 }

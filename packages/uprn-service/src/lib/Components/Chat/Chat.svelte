@@ -399,9 +399,10 @@
 					{#each messages as m (m.id)}
 						<Chat.Bubble variant={m.senderId === USER_SENDER_ID ? 'sent' : 'received'}>
 							<Chat.BubbleMessage class="flex flex-col gap-1">
-								<div class="break-words whitespace-pre-wrap">
+								<article class="prose prose-chat-markdown">
+									{console.log('Rendering message:', m.message)}
 									{@html m.message}
-								</div>
+								</article>
 
 								<div
 									class="flex w-full items-center justify-between gap-2 text-xs group-data-[variant='sent']/chat-bubble:justify-end"
