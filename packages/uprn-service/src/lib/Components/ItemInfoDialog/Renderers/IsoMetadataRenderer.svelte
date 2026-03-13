@@ -231,7 +231,7 @@
 					{#await abstractHtml}
 						<p>Loading...</p>
 					{:then html}
-						<article class="prose prose-info-markdown">
+						<article class="prose-info-markdown">
 							{@html html}
 						</article>
 					{:catch error}
