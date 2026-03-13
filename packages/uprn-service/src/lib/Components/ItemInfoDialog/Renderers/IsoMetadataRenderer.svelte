@@ -1,13 +1,13 @@
 <script lang="ts">
 	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
-	import {
-		Card,
-		CardContent,
-		CardDescription,
-		CardHeader,
-		CardTitle
-	} from '$lib/Components/shadcn/card';
+	import { Card, CardContent, CardHeader, CardTitle } from '$lib/Components/shadcn/card';
 	import { ScrollArea } from '$lib/Components/shadcn/scroll-area';
+	import rehypeStringify from 'rehype-stringify';
+	import remarkGfm from 'remark-gfm';
+	import remarkParse from 'remark-parse';
+	import remarkRehype from 'remark-rehype';
+	import { unified } from 'unified';
+	import rehypeReferences from '$lib/Components/ItemInfoDialog/Renderers/Rehype/RehypeReferences';
 
 	const paths = {
 		fileIdentifier: '//*[local-name()="fileIdentifier"]/*[local-name()="CharacterString"]',
@@ -92,6 +92,27 @@
 		pointOfContactEmail: getXmlValue(content.text, paths.pointOfContactEmail)
 	});
 
+	/** Derived state for processing the fetched abstract content into HTML. */
+	let abstractHtml: Promise<string | null> = $derived.by(async () => {
+		if (!metadata.abstract) {
+			return null;
+		}
+
+		const cleanedAbstract = removeTabs(metadata.abstract);
+
+		const htmlRaw = await unified()
+			.use(remarkParse)
+			.use(remarkGfm)
+			.use(remarkRehype)
+			.use(rehypeReferences)
+			.use(rehypeStringify)
+			.process(cleanedAbstract);
+
+		console.log('Processed HTML:', htmlRaw.toString());
+
+		return htmlRaw.toString();
+	});
+
 	function parseXml(xmlString: string): XMLDocument {
 		const doc = new DOMParser().parseFromString(xmlString, 'application/xml');
 
@@ -157,38 +178,45 @@
 		const date = new Date(value);
 		return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
 	}
+
+	function removeTabs(value: string): string {
+		return value.replace(/\t/g, '');
+	}
 </script>
 
-<Card class="w-full h-full">
+<Card class="w-full h-full p-2">
 	<ScrollArea class="h-full w-full">
 		<CardHeader class="space-y-3">
-			<CardTitle class="text-2xl leading-tight">
+			<!-- <CardTitle class="text-2xl leading-tight">
 				{metadata.title ?? 'Untitled dataset'}
-			</CardTitle>
-
-			{#if metadata.purpose}
-				<CardDescription class="text-sm text-muted-foreground">
-					{metadata.purpose}
-				</CardDescription>
-			{/if}
+			</CardTitle> -->
 		</CardHeader>
 
 		<CardContent class="space-y-6">
+			{#if metadata.purpose}
+				<section class="rounded-lg border p-4 text-sm text-muted-foreground">
+					<span class="font-semibold text-foreground">Purpose:</span>
+					{' '}{metadata.purpose}
+				</section>
+			{/if}
+
 			<div class="grid gap-4 sm:grid-cols-2">
 				<div class="rounded-lg border p-4">
 					<div class="text-sm font-medium text-muted-foreground">Date</div>
-					{#if metadata.creationDate}
-						<div class="inline-flex gap-1 mt-1 text-sm">
-							{formatDate(metadata.creationDate)}
-							<p class="text-xs text-muted-foreground">(Creation)</p>
-						</div>
-					{/if}
-					{#if metadata.publicationDate}
-						<div class="inline-flex gap-1 mt-1 text-sm">
-							{formatDate(metadata.publicationDate)}
-							<p class="text-xs text-muted-foreground">(Publication)</p>
-						</div>
-					{/if}
+					<div class="mt-1 space-y-1 text-sm">
+						{#if metadata.creationDate}
+							<div class="flex items-baseline gap-1">
+								{formatDate(metadata.creationDate)}
+								<p class="text-xs text-muted-foreground">(Creation)</p>
+							</div>
+						{/if}
+						{#if metadata.publicationDate}
+							<div class="flex items-baseline gap-1">
+								{formatDate(metadata.publicationDate)}
+								<p class="text-xs text-muted-foreground">(Publication)</p>
+							</div>
+						{/if}
+					</div>
 				</div>
 
 				<div class="rounded-lg border p-4">
@@ -198,10 +226,22 @@
 			</div>
 
 			<section class="space-y-2">
-				<h2 class="text-base font-semibold">Abstract</h2>
-				<p class="text-sm leading-6 text-muted-foreground">
-					{metadata.abstract ?? 'No abstract available.'}
-				</p>
+				<h2 class="text-base font-semibold">Description</h2>
+				{#if abstractHtml}
+					{#await abstractHtml}
+						<p>Loading...</p>
+					{:then html}
+						<article class="prose prose-info-markdown">
+							{@html html}
+						</article>
+					{:catch error}
+						<p>Error loading content: {error.message}</p>
+					{/await}
+				{:else}
+					<p class="text-sm leading-6 text-muted-foreground">
+						{metadata.abstract ? removeTabs(metadata.abstract) : 'No description available.'}
+					</p>
+				{/if}
 			</section>
 
 			<section class="space-y-3">
@@ -252,7 +292,7 @@
 
 				{#if metadata.keywords.length > 0}
 					<div class="space-y-3">
-						<h2 class="text-base font-semibold">Keywords</h2>
+						<h2 class="text-base font-semibold">Tags</h2>
 
 						<div class="flex flex-wrap gap-2">
 							{#each metadata.keywords as keyword}

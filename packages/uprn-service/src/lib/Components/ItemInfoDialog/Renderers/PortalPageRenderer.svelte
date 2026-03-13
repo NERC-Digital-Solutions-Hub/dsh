@@ -1,13 +1,10 @@
 <script lang="ts">
 	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
-	import {
-		Card,
-		CardContent,
-		CardDescription,
-		CardHeader,
-		CardTitle
-	} from '$lib/Components/shadcn/card';
+	import { Card, CardContent, CardHeader } from '$lib/Components/shadcn/card';
 	import { ScrollArea } from '$lib/Components/shadcn/scroll-area';
+	import { Button } from '$lib/Components/shadcn/button';
+	import * as Tooltip from '$lib/Components/shadcn/tooltip';
+	import { ExternalLink } from '@lucide/svelte';
 
 	type Props = {
 		content: Extract<MetadataResolvedContent, { type: 'portalPage' }>;
@@ -17,7 +14,7 @@
 
 	type PortalMetadata = {
 		title: string | null;
-		abstract: string | null;
+		description: string | null;
 		organisationName: string | null;
 		creationDate: string | null;
 		publicationDate: string | null;
@@ -25,6 +22,10 @@
 		credit: string | null;
 		lineage: string | null;
 		keywords: string[];
+		tags: string[];
+		categories: string[];
+		licenseInfo: string | null;
+		sourceUrl: string | null;
 		contactEmail: string | null;
 		pointOfContactOrganisation: string | null;
 		pointOfContactEmail: string | null;
@@ -137,12 +138,7 @@
 
 			if (Array.isArray(node)) {
 				for (const item of node) {
-					const value = normalizeString(item);
-					if (value) {
-						values.push(value);
-					} else {
-						queue.push(item);
-					}
+					queue.push(item);
 				}
 				continue;
 			}
@@ -183,13 +179,19 @@
 		}
 	}
 
+	function normalizeCategoryLabel(value: string): string {
+		if (!value.includes('/')) return value;
+		const parts = value.split('/').filter(Boolean);
+		return parts.at(-1) ?? value;
+	}
+
 	const metadata = $derived.by(() => {
 		const parsed = parsePortalJson(content.text);
 
 		if (!parsed) {
 			return {
 				title: null,
-				abstract: null,
+				description: null,
 				organisationName: null,
 				creationDate: null,
 				publicationDate: null,
@@ -197,6 +199,10 @@
 				credit: null,
 				lineage: null,
 				keywords: [],
+				tags: [],
+				categories: [],
+				licenseInfo: null,
+				sourceUrl: null,
 				contactEmail: null,
 				pointOfContactOrganisation: null,
 				pointOfContactEmail: null
@@ -205,7 +211,7 @@
 
 		return {
 			title: findFirstByKeys(parsed, ['title', 'name', 'datasetTitle']),
-			abstract: findFirstByKeys(parsed, ['abstract', 'description', 'snippet', 'summary']),
+			description: findFirstByKeys(parsed, ['abstract', 'description', 'snippet', 'summary']),
 			organisationName: findFirstByKeys(parsed, [
 				'organisationName',
 				'organisation',
@@ -221,9 +227,20 @@
 				'dateUpdated'
 			]),
 			purpose: findFirstByKeys(parsed, ['purpose', 'objective', 'snippet']),
-			credit: findFirstByKeys(parsed, ['credit', 'credits', 'accessInformation', 'licenseInfo']),
+			credit: findFirstByKeys(parsed, ['credit', 'credits', 'accessInformation']),
 			lineage: findFirstByKeys(parsed, ['lineage', 'provenance', 'methodology']),
-			keywords: collectStringsByKeys(parsed, ['keywords', 'keyword', 'tags', 'themeKeywords']),
+			keywords: collectStringsByKeys(parsed, [
+				'keywords',
+				'keyword',
+				'themeKeywords',
+				'typeKeywords'
+			]),
+			tags: collectStringsByKeys(parsed, ['tags', 'tag']),
+			categories: collectStringsByKeys(parsed, ['categories', 'category']).map(
+				normalizeCategoryLabel
+			),
+			licenseInfo: findFirstByKeys(parsed, ['licenseInfo', 'license', 'licence']),
+			sourceUrl: findFirstByKeys(parsed, ['url', 'privateUrl', 'itemUrl']),
 			contactEmail: findFirstByKeys(parsed, ['contactEmail', 'email']),
 			pointOfContactOrganisation: findFirstByKeys(parsed, [
 				'pointOfContactOrganisation',
@@ -245,38 +262,61 @@
 		if (!value) return false;
 		return /<\s*\/?[a-z][^>]*>/i.test(value);
 	}
+
+	function openSourceLink(url: string) {
+		window.open(url, '_blank', 'noopener,noreferrer');
+	}
 </script>
 
-<Card class="w-full h-full">
-	<ScrollArea class="h-full w-full">
-		<CardHeader class="space-y-3">
-			<CardTitle class="text-2xl leading-tight">
-				{metadata.title ?? 'Untitled dataset'}
-			</CardTitle>
+<Card class="w-full h-full relative p-2">
+	<div class="absolute top-4 right-4 z-10 opacity-60">
+		{#if metadata.sourceUrl}
+			<Tooltip.Provider disableHoverableContent>
+				<Tooltip.Root>
+					<Tooltip.Trigger class="cursor-pointer">
+						<Button
+							variant="outline"
+							size="sm"
+							aria-label="Open source page"
+							onclick={() => metadata.sourceUrl && openSourceLink(metadata.sourceUrl)}
+						>
+							<ExternalLink />
+						</Button>
+					</Tooltip.Trigger>
+					<Tooltip.Content side="top">Open source</Tooltip.Content>
+				</Tooltip.Root>
+			</Tooltip.Provider>
+		{/if}
+	</div>
 
-			{#if metadata.purpose}
-				<CardDescription class="text-sm text-muted-foreground">
-					{metadata.purpose}
-				</CardDescription>
-			{/if}
-		</CardHeader>
+	<ScrollArea class="h-full w-full">
+		<CardHeader class="space-y-3 pr-14" />
 
 		<CardContent class="space-y-6">
+			{#if metadata.purpose}
+				<section class="rounded-lg border p-4 text-sm text-muted-foreground">
+					<span class="font-semibold text-foreground">Purpose:</span>
+					{' '}{metadata.purpose}
+				</section>
+			{/if}
+
 			<div class="grid gap-4 sm:grid-cols-2">
 				<div class="rounded-lg border p-4">
 					<div class="text-sm font-medium text-muted-foreground">Date</div>
-					{#if metadata.creationDate}
-						<div class="inline-flex gap-1 mt-1 text-sm">
-							{formatDate(metadata.creationDate)}
-							<p class="text-xs text-muted-foreground">(Creation)</p>
-						</div>
-					{/if}
-					{#if metadata.publicationDate}
-						<div class="inline-flex gap-1 mt-1 text-sm">
-							{formatDate(metadata.publicationDate)}
-							<p class="text-xs text-muted-foreground">(Publication)</p>
-						</div>
-					{/if}
+					<div class="mt-1 space-y-1 text-sm">
+						{#if metadata.creationDate}
+							<div class="flex items-baseline gap-1">
+								{formatDate(metadata.creationDate)}
+								<p class="text-xs text-muted-foreground">(Creation)</p>
+							</div>
+						{/if}
+						{#if metadata.publicationDate}
+							<div class="flex items-baseline gap-1">
+								{formatDate(metadata.publicationDate)}
+								<p class="text-xs text-muted-foreground">(Publication)</p>
+							</div>
+						{/if}
+					</div>
 				</div>
 
 				<div class="rounded-lg border p-4">
@@ -286,14 +326,14 @@
 			</div>
 
 			<section class="space-y-2">
-				<h2 class="text-base font-semibold">Abstract</h2>
-				{#if metadata.abstract && containsHtml(metadata.abstract)}
+				<h2 class="text-base font-semibold">Description</h2>
+				{#if metadata.description && containsHtml(metadata.description)}
 					<article class="prose prose-info-markdown text-sm text-muted-foreground max-w-none">
-						{@html metadata.abstract}
+						{@html metadata.description}
 					</article>
 				{:else}
 					<p class="text-sm leading-6 text-muted-foreground">
-						{metadata.abstract ?? 'No abstract available.'}
+						{metadata.description ?? 'No description available.'}
 					</p>
 				{/if}
 			</section>
@@ -334,6 +374,23 @@
 				</section>
 			{/if}
 
+			{#if metadata.licenseInfo}
+				<section class="space-y-2">
+					<h2 class="text-base font-semibold">License</h2>
+					<div class="rounded-lg border p-4">
+						{#if containsHtml(metadata.licenseInfo)}
+							<article class="prose prose-info-markdown text-sm text-muted-foreground max-w-none">
+								{@html metadata.licenseInfo}
+							</article>
+						{:else}
+							<p class="text-sm leading-6 text-muted-foreground">
+								{metadata.licenseInfo}
+							</p>
+						{/if}
+					</div>
+				</section>
+			{/if}
+
 			<section class="space-y-4 border-t pt-6">
 				{#if metadata.credit}
 					<div class="rounded-lg bg-muted/40 p-4">
@@ -354,6 +411,38 @@
 									class="inline-flex items-center rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground"
 								>
 									{keyword}
+								</span>
+							{/each}
+						</div>
+					</div>
+				{/if}
+
+				{#if metadata.categories.length > 0}
+					<div class="space-y-3">
+						<h2 class="text-base font-semibold">Categories</h2>
+
+						<div class="flex flex-wrap gap-2">
+							{#each metadata.categories as category}
+								<span
+									class="inline-flex items-center rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground"
+								>
+									{category}
+								</span>
+							{/each}
+						</div>
+					</div>
+				{/if}
+
+				{#if metadata.tags.length > 0}
+					<div class="space-y-3">
+						<h2 class="text-base font-semibold">Tags</h2>
+
+						<div class="flex flex-wrap gap-2">
+							{#each metadata.tags as tag}
+								<span
+									class="inline-flex items-center rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground"
+								>
+									{tag}
 								</span>
 							{/each}
 						</div>
