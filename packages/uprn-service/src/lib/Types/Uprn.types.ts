@@ -207,8 +207,6 @@ export type UprnDownloadJobStatus = {
 export type UprnDownloadJobStatusItem = {
 	guid: string; // UUID
 	status: UprnDownloadJobStatus;
-	queueId: number;
-	queuePosition: number;
 };
 
 export type UprnDownloadGetJobStatusesResponse = {

@@ -5,12 +5,14 @@
 	type Props = {
 		title?: string;
 		children?: Snippet;
+		footer?: Snippet;
+		hasFooter?: boolean;
 	};
 
-	const { title = '', children }: Props = $props();
+	const { title = '', children, footer, hasFooter = false }: Props = $props();
 </script>
 
-<Card class="data-item-card">
+<Card class="data-item-card gap-0">
 	<div class="data-item">
 		<span class="data-name" {title}>
 			{title}
@@ -19,6 +21,11 @@
 			{@render children?.()}
 		</div>
 	</div>
+	{#if hasFooter && footer}
+		<div class="data-item-footer">
+			{@render footer()}
+		</div>
+	{/if}
 </Card>
 
 <style>
@@ -52,5 +59,9 @@
 		gap: 0.5rem; /* 8px gap between filter and remove buttons */
 		flex-shrink: 0; /* Prevent buttons from shrinking */
 		margin-left: 0.5rem;
+	}
+
+	.data-item-footer {
+		padding: 0 0.5rem 0.5rem;
 	}
 </style>

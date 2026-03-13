@@ -24,7 +24,10 @@
 	import XCircleIcon from '@lucide/svelte/icons/x-circle';
 	import { onMount } from 'svelte';
 	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
+	import * as Alert from '$lib/Components/shadcn/alert/index.js';
 	import { SvelteMap } from 'svelte/reactivity';
+	import QueueStatus from '$lib/Components/DownloadsMenu/QueueStatus.svelte';
+	import { AlertCircleIcon } from '@lucide/svelte';
 
 	type QueueItem = {
 		queueId: number;
@@ -181,12 +184,12 @@
 			jobs: downloadsToCheck
 		};
 
-		console.log(
-			'[downloads-menu] Checking job statuses with request:',
-			request,
-			'downloads:',
-			downloads
-		);
+		// console.log(
+		// 	'[downloads-menu] Checking job statuses with request:',
+		// 	request,
+		// 	'downloads:',
+		// 	downloads
+		// );
 		if (request.jobs.length === 0) {
 			if (downloadsToCheck.length > 0) {
 				console.warn(
@@ -211,6 +214,7 @@
 		console.log('[downloads-menu] Checking job statuses for downloads:', request);
 		await jobStatusesHook.fetch(request);
 		const response = jobStatusesHook.content as UprnDownloadGetJobStatusesResponse | undefined;
+		console.log('[downloads-menu] Received job statuses response:', response, queuePositions);
 
 		if (!response || jobStatusesHook.error) {
 			console.error('[downloads-menu] Failed to get job statuses.', response);
@@ -230,18 +234,15 @@
 						download.status = DownloadStatus.Submitted;
 						download.errorMessage = undefined; // Clear any previous error message
 						download.fileSize = undefined;
-						queuePositions.set(job.guid, {
-							queueId: job.queueId,
-							queuePosition: job.queuePosition
-						});
+						queuePositions.delete(job.guid);
 						break; // still pending
 					case JobStatusType.Queued:
 						download.status = DownloadStatus.Queued;
 						download.errorMessage = undefined; // Clear any previous error message
 						download.fileSize = undefined; // Clear any previous file size
 						queuePositions.set(job.guid, {
-							queueId: job.queueId,
-							queuePosition: job.queuePosition
+							queueId: job.status.queueId,
+							queuePosition: job.status.queuePosition
 						});
 						break; // still pending
 					case JobStatusType.Processing:
@@ -271,6 +272,16 @@
 				downloadsStore.updateDownloadStatus(download);
 			}
 		}
+	}
+
+	/**
+	 * Determines whether to show the error message for a download based on its status and the presence
+	 * of an error message.
+	 * @param download - The download entry to check.
+	 * @return True if the error message should be shown, false otherwise.
+	 */
+	function showErrorMessage(download: DownloadEntry): boolean {
+		return download.status === DownloadStatus.Failed && !!download.errorMessage;
 	}
 
 	/**
@@ -304,7 +315,7 @@
 
 <div class="section">
 	<div class="section-header">
-		<h4>Download Queue</h4>
+		<h4>Downloads</h4>
 		{#if downloads.length > 0}
 			<p class="count">{downloads.length} download(s)</p>
 		{/if}
@@ -312,145 +323,152 @@
 	{#if downloads.length > 0}
 		<ul class="selected-list">
 			{#each downloads as download}
-				<SelectionEntryCard
-					title={download.externalId
-						? download.externalId
-						: download.status !== DownloadStatus.Failed
-							? 'Pending...'
-							: 'Failed to process export'}
-				>
-					{#if download.status === DownloadStatus.Failed && download.errorMessage}
-						<span class="text-sm text-red-600 italic ml-2" title={download.errorMessage}>
-							{download.errorMessage.length > 30
-								? `${download.errorMessage.slice(0, 30)}...`
-								: download.errorMessage}
-						</span>
-					{/if}
-					{#if download.externalId}
-						{@const queueItem = queuePositions.get(download.externalId)}
-						{#if queueItem}
-							<p class="text-sm text-gray-500 italic ml-2">
-								Queue position: {queueItem.queuePosition} (Queue ID: {queueItem.queueId})
-							</p>
+				<li class="download-item">
+					<SelectionEntryCard
+						title={download.externalId
+							? download.externalId
+							: download.status !== DownloadStatus.Failed
+								? 'Pending...'
+								: 'Failed to process export'}
+						hasFooter={showErrorMessage(download)}
+					>
+						{#if download.externalId && download.status === DownloadStatus.Queued}
+							{@const queueItem: QueueItem | undefined = queuePositions.get(download.externalId!)}
+							{#if queueItem}
+								<QueueStatus queueId={queueItem.queueId} queuePosition={queueItem.queuePosition} />
+							{/if}
 						{/if}
-					{/if}
-					<!-- <HourglassIcon color="#6b7280" /> -->
-					{@const cfg = getStatusCfg(download.status)}
-					<span class="inline-flex">
+						<!-- <HourglassIcon color="#6b7280" /> -->
+						{@const cfg = getStatusCfg(download.status)}
+						<span class="inline-flex">
+							<Tooltip.Provider disableHoverableContent>
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										<Button
+											variant="ghost"
+											size="sm"
+											class="download-status-btn"
+											style="color: {cfg.color}"
+											disabled
+										>
+											{@const StatusIcon = cfg.icon}
+											<StatusIcon
+												size={cfg.iconSize ?? 14}
+												color={cfg.color}
+												class={download.status === 'in-progress' ? 'spinning' : ''}
+											/>
+										</Button>
+									</Tooltip.Trigger>
+									<Tooltip.Content>
+										<p>{cfg.text}</p>
+									</Tooltip.Content>
+								</Tooltip.Root>
+							</Tooltip.Provider>
+						</span>
 						<Tooltip.Provider disableHoverableContent>
 							<Tooltip.Root>
 								<Tooltip.Trigger>
 									<Button
 										variant="ghost"
 										size="sm"
-										class="download-status-btn"
-										style="color: {cfg.color}"
-										disabled
+										class="download-info-btn"
+										onclick={() => onOpenInfoDialog(download)}
+										aria-label="View download details"
 									>
-										{@const StatusIcon = cfg.icon}
-										<StatusIcon
-											size={cfg.iconSize ?? 14}
-											color={cfg.color}
-											class={download.status === 'in-progress' ? 'spinning' : ''}
+										<InfoIcon size={14} />
+									</Button>
+								</Tooltip.Trigger>
+								<Tooltip.Content>Details</Tooltip.Content>
+							</Tooltip.Root>
+						</Tooltip.Provider>
+						{#if download.externalId}
+							<Tooltip.Provider disableHoverableContent>
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										<CopyToClipboardButton
+											value={getDownloadUrl(download.externalId!)}
+											class="download-clipboard-btn"
+											successMessage="URL copied to clipboard"
+											errorMessage="Failed to copy URL to clipboard"
+											title=""
+											iconSize={14}
 										/>
-									</Button>
-								</Tooltip.Trigger>
-								<Tooltip.Content>
-									<p>{cfg.text}</p>
-								</Tooltip.Content>
-							</Tooltip.Root>
-						</Tooltip.Provider>
-					</span>
-					<Tooltip.Provider disableHoverableContent>
-						<Tooltip.Root>
-							<Tooltip.Trigger>
-								<Button
-									variant="ghost"
-									size="sm"
-									class="download-info-btn"
-									onclick={() => onOpenInfoDialog(download)}
-									aria-label="View download details"
-								>
-									<InfoIcon size={14} />
-								</Button>
-							</Tooltip.Trigger>
-							<Tooltip.Content>Details</Tooltip.Content>
-						</Tooltip.Root>
-					</Tooltip.Provider>
-					{#if download.externalId}
-						<Tooltip.Provider disableHoverableContent>
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									<CopyToClipboardButton
-										value={getDownloadUrl(download.externalId!)}
-										class="download-clipboard-btn"
-										successMessage="URL copied to clipboard"
-										errorMessage="Failed to copy URL to clipboard"
-										title=""
-										iconSize={14}
-									/>
-								</Tooltip.Trigger>
-								<Tooltip.Content>Copy download URL</Tooltip.Content>
-							</Tooltip.Root>
-						</Tooltip.Provider>
-					{/if}
-					{#if download.externalId && download.status === 'completed'}
-						<Tooltip.Provider disableHoverableContent>
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									<Button
-										variant="ghost"
-										size="sm"
-										class="download-action-btn"
-										onclick={() => window.open(getDownloadUrl(download.externalId!), '_blank')}
-										aria-label="Open download"
-									>
-										<Download />
-									</Button>
-								</Tooltip.Trigger>
-								{@const fileSizeBytes = download.fileSize ?? 0}
-								{@const fileSizeMB = (fileSizeBytes / (1024 * 1024)).toFixed(2)}
-								{@const downloadTooltip =
-									fileSizeBytes > 0 ? `Download (${fileSizeMB} MB)` : 'Download'}
-								<Tooltip.Content>{downloadTooltip}</Tooltip.Content>
-							</Tooltip.Root>
-						</Tooltip.Provider>
-					{/if}
-					{#if download.status === 'failed'}
+									</Tooltip.Trigger>
+									<Tooltip.Content>Copy download URL</Tooltip.Content>
+								</Tooltip.Root>
+							</Tooltip.Provider>
+						{/if}
+						{#if download.externalId && download.status === 'completed'}
+							<Tooltip.Provider disableHoverableContent>
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										<Button
+											variant="ghost"
+											size="sm"
+											class="download-action-btn"
+											onclick={() => window.open(getDownloadUrl(download.externalId!), '_blank')}
+											aria-label="Open download"
+										>
+											<Download />
+										</Button>
+									</Tooltip.Trigger>
+									{@const fileSizeBytes = download.fileSize ?? 0}
+									{@const fileSizeMB = (fileSizeBytes / (1024 * 1024)).toFixed(2)}
+									{@const downloadTooltip =
+										fileSizeBytes > 0 ? `Download (${fileSizeMB} MB)` : 'Download'}
+									<Tooltip.Content>{downloadTooltip}</Tooltip.Content>
+								</Tooltip.Root>
+							</Tooltip.Provider>
+						{/if}
+						{#if download.status === 'failed'}
+							<Tooltip.Provider disableHoverableContent>
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										<Button
+											variant="ghost"
+											size="sm"
+											class="download-retry-btn"
+											onclick={() => retryDownload(download.localId)}
+											aria-label="Retry download"
+										>
+											<RetryIcon size={14} />
+										</Button>
+									</Tooltip.Trigger>
+									<Tooltip.Content>Retry</Tooltip.Content>
+								</Tooltip.Root>
+							</Tooltip.Provider>
+						{/if}
 						<Tooltip.Provider disableHoverableContent>
 							<Tooltip.Root>
 								<Tooltip.Trigger>
 									<Button
 										variant="ghost"
 										size="sm"
-										class="download-retry-btn"
-										onclick={() => retryDownload(download.localId)}
-										aria-label="Retry download"
+										class="download-remove-btn"
+										onclick={() => removeDownload(download.localId)}
+										aria-label="Remove from queue"
 									>
-										<RetryIcon size={14} />
+										×
 									</Button>
 								</Tooltip.Trigger>
-								<Tooltip.Content>Retry</Tooltip.Content>
+								<Tooltip.Content>Remove</Tooltip.Content>
 							</Tooltip.Root>
 						</Tooltip.Provider>
-					{/if}
-					<Tooltip.Provider disableHoverableContent>
-						<Tooltip.Root>
-							<Tooltip.Trigger>
-								<Button
-									variant="ghost"
-									size="sm"
-									class="download-remove-btn"
-									onclick={() => removeDownload(download.localId)}
-									aria-label="Remove from queue"
-								>
-									×
-								</Button>
-							</Tooltip.Trigger>
-							<Tooltip.Content>Remove</Tooltip.Content>
-						</Tooltip.Root>
-					</Tooltip.Provider>
-				</SelectionEntryCard>
+						{#snippet footer()}
+							{#if showErrorMessage(download)}
+								{@const errorMessage = download.errorMessage ?? 'An unknown error occurred.'}
+								<Alert.Root variant="destructive" class="download-error-alert">
+									<AlertCircleIcon />
+									<Alert.Description title={errorMessage}
+										>{errorMessage.length > 60
+											? `${errorMessage.slice(0, 60)}..`
+											: errorMessage}</Alert.Description
+									>
+								</Alert.Root>
+							{/if}
+						{/snippet}
+					</SelectionEntryCard>
+				</li>
 			{/each}
 		</ul>
 	{:else}
@@ -484,6 +502,16 @@
 	.selected-list {
 		list-style: none;
 		padding: 0;
+		margin: 0;
+	}
+
+	.download-item {
+		margin: 0;
+	}
+
+	:global(.download-error-alert) {
+		padding-top: 0.25rem;
+		padding-bottom: 0.25rem;
 	}
 
 	:global(.download-status-btn .spinning) {
