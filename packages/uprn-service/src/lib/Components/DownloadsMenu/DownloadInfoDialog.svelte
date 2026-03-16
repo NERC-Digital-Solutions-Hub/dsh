@@ -259,7 +259,7 @@
 								<MapPinIcon size={16} class="text-muted-foreground" />
 								<h4 class="text-sm font-semibold">Areas</h4>
 							</div>
-							<p class="text-xs text-muted-foreground">
+							<p class="text-xs text-muted-foreground" hidden={true}>
 								{download.areaSelection.areaFieldInfos.length} area(s)
 							</p>
 						</div>
@@ -282,7 +282,7 @@
 								<DatabaseIcon size={16} class="text-muted-foreground" />
 								<h4 class="text-sm font-semibold">Data Selections</h4>
 							</div>
-							<p class="text-xs text-muted-foreground">
+							<p class="text-xs text-muted-foreground" hidden={true}>
 								{download.dataSelections.length} dataset(s)
 							</p>
 						</div>
