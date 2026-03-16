@@ -1,12 +1,14 @@
 <script lang="ts">
 	import ClearSelectionsButton from '$lib/Components/ClearSelectionsButton/ClearSelectionsButton.svelte';
 	import Button from '$lib/Components/shadcn/button/button.svelte';
+	import Card from '$lib/Components/shadcn/card/card.svelte';
 	import Spinner from '$lib/Components/shadcn/spinner/spinner.svelte';
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 	import type { AreaSelectionInteractionStore } from '$lib/Stores/AreaSelectionInteractionStore.svelte';
 	import { DataSelectionStore } from '$lib/Stores/DataSelectionStore.svelte';
 	import type DownloadsStore from '$lib/Stores/DownloadsStore.svelte';
 	import { TreeviewNodeLayerType } from '$lib/Types/Treeview.types';
+	import { Check, TriangleAlert } from '@lucide/svelte';
 	import {
 		DownloadStatus,
 		type AreaFieldInfoWithCode,
@@ -15,6 +17,7 @@
 	} from '$lib/Types/Uprn.types';
 	import { onDestroy } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 
 	type Props = {
 		onExportSuccess?: () => void;
@@ -140,71 +143,53 @@
 	}
 </script>
 
-<div class="export-footer">
-	<div class="export-footer__left">
-		<p class="text-sm text-muted-foreground">Click "Export" to begin the download.</p>
-	</div>
-
-	<div class="export-footer__right">
-		<Button
-			variant={areRequirementsMet ? 'default' : 'outline'}
-			disabled={coolingDown || !areRequirementsMet}
-			onclick={handleExportClick}
-			title="Export"
-		>
-			{#if coolingDown}
-				<Spinner />
+<Card class="m-1 p-2 py-1 shadow-none">
+	<div class="flex w-full items-center justify-between gap-3">
+		<div class="flex min-w-0 items-center gap-2">
+			{#if !areRequirementsMet}
+				<TriangleAlert class="h-4 w-4 shrink-0 text-amber-600" />
 			{:else}
-				Export
+				<Check class="h-4 w-4 shrink-0 text-green-600" />
 			{/if}
-		</Button>
+
+			{#if areaSelectionInteractionStore.selectionViewState?.areaHandles.size === 0}
+				<p class="text-sm text-muted-foreground">Please select at least one area to export.</p>
+			{:else if dataSelectionStore.getAllSelections().length === 0}
+				<p class="text-sm text-muted-foreground">Please select at least one dataset to export.</p>
+			{:else}
+				<p class="text-sm text-muted-foreground">Click 'Export' to begin the download.</p>
+			{/if}
+		</div>
+
+		<Tooltip.Provider disableHoverableContent>
+			<Tooltip.Root>
+				<Tooltip.Trigger>
+					<Button
+						variant={areRequirementsMet ? 'default' : 'outline'}
+						disabled={coolingDown || !areRequirementsMet}
+						onclick={handleExportClick}
+						title="Export"
+						class="shrink-0"
+					>
+						{#if coolingDown}
+							<Spinner />
+						{:else}
+							Export
+						{/if}
+					</Button>
+				</Tooltip.Trigger>
+				<Tooltip.Content side="top">
+					{#if areaSelectionInteractionStore.selectionViewState?.areaHandles.size === 0}
+						Please select at least one area to export.
+					{:else if dataSelectionStore.getAllSelections().length === 0}
+						Please select at least one dataset to export.
+					{:else if coolingDown}
+						Please wait a moment before starting another export.
+					{:else}
+						Export the selected areas and datasets.
+					{/if}
+				</Tooltip.Content>
+			</Tooltip.Root>
+		</Tooltip.Provider>
 	</div>
-</div>
-
-<style>
-	.export-footer {
-		border-top: 1px solid rgba(0, 0, 0, 0.2);
-		background: var(--background);
-		display: grid;
-		grid-template-columns: 1fr 1fr; /* two equal columns */
-		padding-right: 1rem;
-		gap: 0.5rem;
-		align-items: center; /* vertically center content in each column */
-		width: 100%;
-	}
-
-	.export-footer__left,
-	.export-footer__right {
-		display: flex;
-		align-items: center; /* vertical center */
-		min-height: 48px; /* ensure a reasonable hit area */
-	}
-
-	/* Left column: horizontally center its content within the left half */
-	.export-footer__left {
-		text-align: left;
-		margin-left: 1rem;
-	}
-
-	/* Right column: keep the button at the right edge and vertically centered */
-	.export-footer__right {
-		justify-content: flex-end;
-	}
-
-	/* Reset paragraph default margins so centering is exact */
-	.export-footer__left p {
-		margin: 0;
-	}
-
-	/* Responsive: stack columns on small screens and center both */
-	@media (max-width: 480px) {
-		.export-footer {
-			grid-template-columns: 1fr;
-			gap: 0.25rem;
-		}
-
-		.export-footer__right {
-			justify-content: center;
-		}
-	}
-</style>
+</Card>
