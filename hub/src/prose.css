@@ -1,5 +1,5 @@
 .prose-home-intro-dialog :where(p) {
-	@apply mt-2 mb-2 text-foreground;
+	@apply mt-2 mb-2;
 }
 
 .prose-home-intro-dialog :where(h1) {
