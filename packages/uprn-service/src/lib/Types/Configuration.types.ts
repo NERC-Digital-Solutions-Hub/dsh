@@ -1,26 +1,90 @@
 import type { TreeviewConfig } from '$lib/Types/Treeview.types';
-import type {
-	AiUprnChatbotEndpoints,
-	ContentConfig,
-	UprnDownloadEndpoints
-} from '$lib/Types/Uprn.types';
+import type { AiUprnChatbotEndpoints, UprnDownloadEndpoints } from '$lib/Types/Uprn.types';
 
-export type AppsUprnConfig = {
-	map: PortalItemConfig;
-	contentConfig: ContentConfig;
-
-	uprnDownload: UprnDownloadEndpoints;
-	aiUprnChatbot: AiUprnChatbotEndpoints;
-	mainSidebarSizes?: SizeConfig[];
+export type RemoteSiteConfig = {
+	environment: string;
 };
 
-export type PortalItemConfig = {
+/**
+ * Files exposed by dsh-content manifest for the /apps/uprn-service route.
+ */
+export type AppsUprnServiceGeneratedCsvConfigFiles = {
+	datasets: string;
+	domains: string;
+	folders: string;
+	mdUris: string;
+	variables: string;
+};
+
+export type AppsUprnServiceGeneratedFiles = {
+	csv: {
+		config: AppsUprnServiceGeneratedCsvConfigFiles;
+	};
+	manifest: string;
+};
+
+export type AppsUprnServiceManifestFiles = {
+	chatbot: string;
+	cjBackend: string;
+	climatejustRenderers: string;
+	config: string;
+	config2: string;
+	generated: AppsUprnServiceGeneratedFiles;
+	infoDescriptions: string;
+	introduction: string;
+};
+
+export type ManifestPage = {
+	route: string;
+};
+
+/**
+ * Single page entry for /apps/uprn-service within manifest.testing.json.
+ */
+export type AppsUprnServiceManifestPage = {
+	route: '/apps/uprn-service';
+	files: AppsUprnServiceManifestFiles;
+} & ManifestPage;
+
+/**
+ * Represets the site manifest for content served from the dsh-content repository.
+ */
+export type SiteManifest = {
+	version: string;
+	environment: string;
+	pages: ManifestPage[];
+};
+
+export type AppUprnContentConfig = {
+	baseUrl: string;
+	sitePath: string;
+};
+
+export type AppUprnContent = {
+	baseUrl: string;
+	manifest: AppsUprnServiceManifestPage;
+};
+
+export type LocalAppsUprnConfig = {
+	content: AppUprnContentConfig;
+	uprnDownload: UprnDownloadEndpoints;
+	aiUprnChatbot: AiUprnChatbotEndpoints;
+	mapConfig: MapConfig;
+};
+
+export type AppsUprnConfig = {
+	map: MapConfig;
+	content: AppUprnContent;
+	uprnDownload: UprnDownloadEndpoints;
+	aiUprnChatbot: AiUprnChatbotEndpoints;
+	treeviewConfig: TreeviewConfig;
+};
+
+export type MapConfig = {
 	_name?: string;
 	title: string;
 	portalUrl?: string | null;
 	portalItemId: string;
-	proxy?: Proxy | null;
-	customRenderers?: string;
 	treeview?: TreeviewConfig;
 	tagDefinitions?: TagDefinition[];
 	selectableLayers?: { _name: string; id: string; nameField: string; codeField: string }[];
@@ -29,12 +93,6 @@ export type PortalItemConfig = {
 export type Proxy = {
 	urlPrefix: string;
 	proxyUrl: string;
-};
-
-export type SizeConfig = {
-	breakpoint: number;
-	originalSize: string;
-	minSize: string;
 };
 
 /**

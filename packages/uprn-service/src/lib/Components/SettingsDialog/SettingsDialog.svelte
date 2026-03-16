@@ -2,13 +2,13 @@
 	import { Button, buttonVariants } from '$lib/Components/shadcn/button/index.js';
 	import * as Dialog from '$lib/Components/shadcn/dialog/index.js';
 	import * as RadioGroup from '$lib/Components/shadcn/radio-group/index.js';
-	import type { PortalItemConfig } from '$lib/Types/Configuration.types';
+	import type { MapConfig } from '$lib/Types/Configuration.types';
 	import { Settings } from '@lucide/svelte';
 	import { Label } from '$lib/Components/shadcn/label/index.js';
 	import { cn } from '$lib/utils';
 
 	type Props = {
-		maps: PortalItemConfig[];
+		maps: MapConfig[];
 		currentMapIndex: number;
 		onSelectMap: (mapIndex: number) => void;
 		buttonClass?: string;

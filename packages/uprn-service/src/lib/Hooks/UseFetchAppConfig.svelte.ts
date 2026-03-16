@@ -1,16 +1,15 @@
 import { asset } from '$app/paths';
 import { getCachedConfig, putCachedConfig } from '$lib/db';
+import { useFetchUprnServiceManifest } from '$lib/Hooks/UseFetchUprnServiceManifest.svelte';
 import { ConfigTransformer } from '$lib/Services/config-api/config-transformer';
 import { CsvConfigFetcher } from '$lib/Services/config-api/csv-config-fetcher';
-import { uprnConfigStore } from '$lib/Stores/UprnStore.svelte';
-import type { AppsUprnConfig, PortalItemConfig } from '$lib/Types/Configuration.types';
-import type { TreeviewNodeConfig } from '$lib/Types/Treeview.types';
 import type {
-	AiUprnChatbotEndpoints,
-	ContentConfig,
-	UprnDownloadEndpoints,
-	UprnServiceConfigManifest
-} from '$lib/Types/Uprn.types';
+	AppsUprnConfig,
+	AppsUprnServiceManifestPage,
+	LocalAppsUprnConfig
+} from '$lib/Types/Configuration.types';
+import type { TreeviewNodeConfig } from '$lib/Types/Treeview.types';
+import type { UprnServiceConfigManifest } from '$lib/Types/Uprn.types';
 import { SvelteURL } from 'svelte/reactivity';
 
 /**
@@ -34,7 +33,7 @@ export function useFetchAppConfig() {
 	let error = $state<unknown>(null);
 	let isLoading = $state(false);
 
-	const configBasePath = asset('/config/apps/uprn/config.json');
+	const localConfigPath = asset('/config/apps/uprn/config.json');
 
 	async function fetchAsync() {
 		content = null;
@@ -42,50 +41,82 @@ export function useFetchAppConfig() {
 		error = null;
 
 		try {
-			await uprnConfigStore.load(configBasePath);
+			const response = await fetch(localConfigPath);
+			if (!response.ok) {
+				throw new Error(`Failed to fetch local config: ${response.status} ${response.statusText}`);
+			}
 
-			const portalItemConfigs: PortalItemConfig[] =
-				uprnConfigStore.instance?.mapsConfig
-					.map((m) => m.value)
-					.filter((v): v is PortalItemConfig => v !== undefined) ?? [];
+			const localConfig: LocalAppsUprnConfig = await response.json();
+			console.log('Fetched local config', { localConfig });
 
-			const baseUrl = uprnConfigStore.instance?.contentConfig.baseUrl ?? '';
-			const manifestPath = uprnConfigStore.instance?.contentConfig.manifestPath ?? '';
+			const fetchUprnServiceManifest = useFetchUprnServiceManifest(localConfig.content);
+			await fetchUprnServiceManifest.fetch();
 
+			if (fetchUprnServiceManifest.error) {
+				throw new Error(`Failed to fetch UPRN service manifest: ${fetchUprnServiceManifest.error}`);
+			}
+
+			const manifest: AppsUprnServiceManifestPage | null = fetchUprnServiceManifest.content;
+			if (!manifest) {
+				throw new Error('UPRN service manifest content is null');
+			}
+
+			// await uprnConfigStore.load(localConfigPath);
+
+			// const portalItemConfigs: MapConfig[] =
+			// 	uprnConfigStore.instance?.mapsConfig
+			// 		.map((m) => m.value)
+			// 		.filter((v): v is MapConfig => v !== undefined) ?? [];
+
+			const baseUrl = new SvelteURL('pages/', localConfig.content.baseUrl).toString();
+			console.log('Base URL for config:', baseUrl);
+			const manifestPath = manifest.files.generated.manifest;
 			const treeviewNodeConfigs = await fetchAndTransformConfig(baseUrl, manifestPath);
 
-			const map: PortalItemConfig = {
-				...portalItemConfigs[0],
-				treeview: { ...portalItemConfigs[0].treeview, layers: [...treeviewNodeConfigs] }
-			};
-
-			const contentConfig: ContentConfig | undefined = uprnConfigStore.instance?.contentConfig;
-			if (!contentConfig) {
-				console.error('Content configuration is missing');
-				throw new Error('Content configuration is missing');
-			}
-
-			const uprnChatbotApiConfig: AiUprnChatbotEndpoints | undefined =
-				uprnConfigStore.instance?.uprnChatbotApiConfig.value;
-			if (!uprnChatbotApiConfig) {
-				console.error('AI UPRN chatbot API configuration is missing');
-				throw new Error('AI UPRN chatbot API configuration is missing');
-			}
-
-			const uprnDownloadApiConfig: UprnDownloadEndpoints | undefined =
-				uprnConfigStore.instance?.uprnDownloadApiConfig.value;
-			if (!uprnDownloadApiConfig) {
-				console.error('UPRN download API configuration is missing');
-				throw new Error('UPRN download API configuration is missing');
-			}
-
 			content = {
-				map,
-				contentConfig: contentConfig,
-				aiUprnChatbot: uprnChatbotApiConfig,
-				uprnDownload: uprnDownloadApiConfig
+				map: localConfig.mapConfig,
+				content: {
+					baseUrl: baseUrl,
+					manifest
+				},
+				uprnDownload: localConfig.uprnDownload,
+				aiUprnChatbot: localConfig.aiUprnChatbot,
+				treeviewConfig: { ...localConfig.mapConfig.treeview, layers: [...treeviewNodeConfigs] }
 			};
+
+			// const map: MapConfig = {
+			// 	...portalItemConfigs[0],
+			// 	treeview: { ...portalItemConfigs[0].treeview, layers: [...treeviewNodeConfigs] }
+			// };
+
+			// const contentConfig: ContentConfig | undefined = uprnConfigStore.instance?.contentConfig;
+			// if (!contentConfig) {
+			// 	console.error('Content configuration is missing');
+			// 	throw new Error('Content configuration is missing');
+			// }
+
+			// const uprnChatbotApiConfig: AiUprnChatbotEndpoints | undefined =
+			// 	uprnConfigStore.instance?.uprnChatbotApiConfig.value;
+			// if (!uprnChatbotApiConfig) {
+			// 	console.error('AI UPRN chatbot API configuration is missing');
+			// 	throw new Error('AI UPRN chatbot API configuration is missing');
+			// }
+
+			// const uprnDownloadApiConfig: UprnDownloadEndpoints | undefined =
+			// 	uprnConfigStore.instance?.uprnDownloadApiConfig.value;
+			// if (!uprnDownloadApiConfig) {
+			// 	console.error('UPRN download API configuration is missing');
+			// 	throw new Error('UPRN download API configuration is missing');
+			// }
+
+			// content = {
+			// 	map,
+			// 	contentConfig: contentConfig,
+			// 	aiUprnChatbot: uprnChatbotApiConfig,
+			// 	uprnDownload: uprnDownloadApiConfig
+			// };
 		} catch (err) {
+			console.error('Error fetching app config', err);
 			error = err;
 		} finally {
 			isLoading = false;
@@ -161,7 +192,11 @@ async function fetchAndTransformConfig(
 	);
 
 	// Fetch CSVs and transform.
-	const layers = await fetchAndTransformCsvs(baseUrl, manifest);
+	const base = new SvelteURL(baseUrl);
+
+	// remove trailing /pages/ if present
+	base.pathname = base.pathname.replace(/\/pages\/?$/, '/');
+	const layers = await fetchAndTransformCsvs(base.toString(), manifest);
 
 	// Persist the transformed result.
 	await putCachedConfig(manifestUrl, manifest.version, [...layers]);

@@ -1,20 +1,20 @@
 import type { SvelteSet } from 'svelte/reactivity';
 
-export interface UprnConfiguration {
-	contentConfig: ContentConfig;
-	uprnDownloadApiConfig: ConfigurationItemInfo;
-	aiUprnChatbotApiConfig: ConfigurationItemInfo;
-	mapsConfig: ConfigurationItemInfo[];
-	mainSidebarSizes?: SidebarSize[];
-}
+// export interface UprnConfiguration {
+// 	contentConfig: ContentConfig;
+// 	uprnDownloadApiConfig: ConfigurationItemInfo;
+// 	aiUprnChatbotApiConfig: ConfigurationItemInfo;
+// 	mapsConfig: ConfigurationItemInfo[];
+// 	mainSidebarSizes?: SidebarSize[];
+// }
 
-export type ContentConfig = {
-	baseUrl: string;
-	manifestPath: string;
-	climateJustRenderersPath: string;
-	introductionPath: string;
-	chatbotConfigPath: string;
-};
+// export type ContentConfig = {
+// 	baseUrl: string;
+// 	manifestPath: string;
+// 	climateJustRenderersPath: string;
+// 	introductionPath: string;
+// 	chatbotConfigPath: string;
+// };
 
 export interface SidebarSize {
 	breakpoint: number;

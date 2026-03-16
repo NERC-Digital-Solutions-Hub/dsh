@@ -198,15 +198,15 @@
 	/** Hook to fetch custom renderers for the map based on the app configuration. */
 	const customRenderers = $derived.by(() => {
 		if (
-			!appConfig.content?.contentConfig?.baseUrl ||
-			!appConfig.content.contentConfig.climateJustRenderersPath
+			!appConfig.content?.content.baseUrl ||
+			!appConfig.content.content.manifest.files.climatejustRenderers
 		) {
 			return null;
 		}
 
 		const url: string = new URL(
-			appConfig.content.contentConfig.climateJustRenderersPath,
-			appConfig.content.contentConfig.baseUrl
+			appConfig.content.content.manifest.files.climatejustRenderers,
+			appConfig.content.content.baseUrl
 		).toString();
 		const renderers = useFetchCustomRenderers(url);
 		renderers.fetch();
@@ -216,27 +216,28 @@
 	/** Derived state to compute the introduction content URL based on the app configuration. */
 	const introductionUrl: string | null = $derived.by(() => {
 		if (
-			!appConfig.content?.contentConfig?.baseUrl ||
-			!appConfig.content.contentConfig.introductionPath
+			!appConfig.content?.content.baseUrl ||
+			!appConfig.content.content.manifest.files.introduction
 		) {
 			return null;
 		}
 
-		const { baseUrl, introductionPath } = appConfig.content.contentConfig;
-		return new URL(introductionPath, baseUrl).toString();
+		return new URL(
+			appConfig.content.content.manifest.files.introduction,
+			appConfig.content.content.baseUrl
+		).toString();
 	});
 
 	/** Derived state to compute the chatbot configuration URL based on the app configuration. */
 	const chatbotConfigUrl: string | null = $derived.by(() => {
-		if (
-			!appConfig.content?.contentConfig?.baseUrl ||
-			!appConfig.content.contentConfig.chatbotConfigPath
-		) {
+		if (!appConfig.content?.content.baseUrl || !appConfig.content.content.manifest.files.chatbot) {
 			return null;
 		}
 
-		const { baseUrl, chatbotConfigPath } = appConfig.content.contentConfig;
-		return new URL(chatbotConfigPath, baseUrl).toString();
+		return new URL(
+			appConfig.content.content.manifest.files.chatbot,
+			appConfig.content.content.baseUrl
+		).toString();
 	});
 
 	/** The web map store instance. */
@@ -245,7 +246,7 @@
 			? new WebMapStore({
 					portalUrl: appConfig.content.map.portalUrl,
 					itemId: appConfig.content.map.portalItemId || '',
-					proxy: appConfig.content.map.proxy
+					proxy: undefined
 				})
 			: null;
 	});
@@ -264,8 +265,8 @@
 
 	/** The treeview configuration store. */
 	let treeviewConfigStore: TreeviewConfigStore | null = $derived.by(() => {
-		return appConfig.content && appConfig.content.map.treeview
-			? new TreeviewConfigStore(appConfig.content.map.treeview)
+		return appConfig.content && appConfig.content.treeviewConfig
+			? new TreeviewConfigStore(appConfig.content.treeviewConfig)
 			: null;
 	});
 

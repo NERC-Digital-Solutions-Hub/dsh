@@ -1,40 +1,143 @@
 {
-    "contentConfig": {
+    "content": {
         "baseUrl": "https://nerc-digital-solutions-hub.github.io/dsh-content/",
-        "manifestPath": "pages/apps/uprn-service/generated/manifest.json",
-        "climateJustRenderersPath": "pages/apps/uprn-service/climatejust-renderers.json",
-        "introductionPath": "pages/apps/uprn-service/introduction.md",
-        "chatbotConfigPath": "pages/apps/uprn-service/chatbot.json"
+        "sitePath": "site.json"
     },
-    "uprnDownloadApiConfig": {
-        "itemType": "url",
-        "path": "/config/apps/uprn/api/uprn-download-api.json"
+    "uprnDownload": {
+        "baseUrl": "https://dshapitest.xyz/uprn-download/api/v1",
+        "healthRoute": "/healthz",
+        "requestJobRoute": "/request-job",
+        "requestJobStatusesRoute": "/request-job-statuses",
+        "getAreaSelectionLimitsRoute": "/get-area-selection-limits",
+        "fetchDownloadRoute": "/fetch-download"
     },
-    "aiUprnChatbotApiConfig": {
-        "itemType": "url",
-        "path": "/config/apps/uprn/api/uprn-chatbot-api.json"
+    "aiUprnChatbot": {
+        "baseUrl": "https://dshapitest.xyz/uprn-chatbot",
+        "healthRoute": "/healthz",
+        "chatRoute": "/chat",
+        "chatStreamRoute": "/chat_stream",
+        "feedbackRoute": "/feedbacks"
     },
-    "mapsConfig": [
-        {
-            "itemType": "url",
-            "path": "/config/apps/uprn/maps/uprn-poc-uk-web-map-v1.7-new.json"
-        }
-    ],
-    "mainSidebarSizes": [
-        {
-            "breakpoint": 1280,
-            "originalSize": "700px",
-            "minSize": "500px"
+    "mapConfig": {
+        "title": "UPRN PoC UK Web Map v1.7",
+        "portalUrl": "https://nercdsh.dev.azure.manchester.ac.uk/portal",
+        "portalItemId": "8f476de7ee4244e7894be2ed2d6dbaca",
+        "treeview": {
+            "visibilityGroups": [
+                {
+                    "id": "group:area",
+                    "maxVisibleLayers": 1
+                },
+                {
+                    "id": "group:uprn",
+                    "maxVisibleLayers": 1
+                },
+                {
+                    "id": "group:main",
+                    "maxVisibleLayers": 1
+                }
+            ]
         },
-        {
-            "breakpoint": 1024,
-            "originalSize": "500px",
-            "minSize": "250px"
-        },
-        {
-            "breakpoint": 768,
-            "originalSize": "400px",
-            "minSize": "200px"
-        }
-    ]
+        "tagDefinitions": [
+            {
+                "id": "environment",
+                "label": "Environment",
+                "color": "#7EAD80"
+            },
+            {
+                "id": "health",
+                "label": "Health",
+                "color": "#ED745E"
+            },
+            {
+                "id": "housing",
+                "label": "Housing",
+                "color": "#D8B07A"
+            },
+            {
+                "id": "flooding",
+                "label": "Flooding",
+                "color": "#75A6F4"
+            }
+        ],
+        "selectableLayers": [
+            {
+                "_name": "Built Up Areas (Dec 22) GB",
+                "id": "948081273f1c4a33a7a7a940d6b541e8",
+                "nameField": "bua22nm",
+                "codeField": "bua22cd"
+            },
+            {
+                "_name": "Lower layer Super Output Areas (Dec 21) - EW Boundaries Fully Clipped V8",
+                "id": "a2814ce7b8d84409886e0c41504d2379",
+                "nameField": "lsoa21nm",
+                "codeField": "lsoa21cd"
+            },
+            {
+                "_name": "Middle layer Super Output Areas (Dec 21) - EW Boundaries Fully Clipped V6",
+                "id": "4f3a8ce39da34dbbb3ee96a8ccb56585",
+                "nameField": "msoa21nm",
+                "codeField": "msoa21cd"
+            },
+            {
+                "_name": "Wards (Dec 23) - UK Boundaries Fully Clipped",
+                "id": "f2dceb074ec443e5b4cba5dd11ac6317",
+                "nameField": "wd23nm",
+                "codeField": "wd23cd"
+            },
+            {
+                "_name": "Counties and Unitary Authorities (Dec 23) - UK Boundaries Fully Clipped",
+                "id": "edbd54d7848e434f98cbf8e215e2f635",
+                "nameField": "ctyua23nm",
+                "codeField": "ctyua23cd"
+            },
+            {
+                "_name": "Upper Tier Local Authorities (Dec 22) - UK Boundaries Fully Clipped",
+                "id": "3204a583d5ac4ad2ab640330f48dc3a5",
+                "nameField": "utla22nm",
+                "codeField": "utla22cd"
+            },
+            {
+                "_name": "Tiles 1 km",
+                "id": "1b956b17dc014bcdb91cbe74217df309",
+                "nameField": "tilename",
+                "codeField": "tilename"
+            },
+            {
+                "_name": "Tiles 5 km",
+                "id": "d982df779ff24651950a9e5db51d59c1",
+                "nameField": "tilename",
+                "codeField": "tilename"
+            },
+            {
+                "_name": "Tiles 10 km",
+                "id": "561625be6b7b40f38e208332094de823",
+                "nameField": "tilename",
+                "codeField": "tilename"
+            },
+            {
+                "_name": "Tiles 20 km",
+                "id": "d3b8bd8921f445b38605c9e1eb1a653f",
+                "nameField": "tilename",
+                "codeField": "tilename"
+            },
+            {
+                "_name": "Tiles 50 km",
+                "id": "150d132868d34501bbebe3900cb2f972",
+                "nameField": "tilename",
+                "codeField": "tilename"
+            },
+            {
+                "_name": "Tiles 100 km",
+                "id": "e5490860f2524b25bc97b4f6889d00a8",
+                "nameField": "tilename",
+                "codeField": "tilename"
+            },
+            {
+                "_name": "BNG Outline",
+                "id": "11ce6f0462bb4d85876c86392a62c60c",
+                "codeField": "objectid"
+            }
+        ]
+    }
 }

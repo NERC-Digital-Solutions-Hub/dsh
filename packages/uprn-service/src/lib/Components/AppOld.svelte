@@ -40,7 +40,7 @@
 	import { TreeviewConfigStore } from '$lib/Stores/TreeviewConfigStore';
 	import { uprnConfigStore } from '$lib/Stores/UprnStore.svelte';
 	import { WebMapStore } from '$lib/Stores/WebMapStore.svelte';
-	import type { PortalItemConfig, SizeConfig } from '$lib/Types/Configuration.types';
+	import type { MapConfig, SizeConfig } from '$lib/Types/Configuration.types';
 	import type { TreeviewConfig } from '$lib/Types/Treeview.types.js';
 	import { TabProgress } from '$lib/Types/Uprn.types';
 	import { Plus } from '@lucide/svelte';
@@ -83,13 +83,13 @@
 	const fieldFilterMenuStore: FieldFilterMenuStore = new FieldFilterMenuStore();
 
 	// Maps state management
-	let maps: PortalItemConfig[] = $derived(
+	let maps: MapConfig[] = $derived(
 		uprnConfigStore.instance?.mapsConfig
 			.map((m) => m.value)
-			.filter((v): v is PortalItemConfig => v !== undefined) ?? []
+			.filter((v): v is MapConfig => v !== undefined) ?? []
 	);
 	let currentMapIndex: number = $state(0);
-	let currentMap: PortalItemConfig = $derived(maps[currentMapIndex]);
+	let currentMap: MapConfig = $derived(maps[currentMapIndex]);
 
 	let currentTab: string = $state('areas-of-interest');
 	const dataSelectionStore: DataSelectionStore = new DataSelectionStore();
