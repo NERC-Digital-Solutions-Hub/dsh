@@ -399,7 +399,7 @@
 					{#each messages as m (m.id)}
 						<Chat.Bubble variant={m.senderId === USER_SENDER_ID ? 'sent' : 'received'}>
 							<Chat.BubbleMessage class="flex flex-col gap-1">
-								<article class="prose prose-chat-markdown">
+								<article class="prose-chat-markdown">
 									{@html m.message}
 								</article>
 
