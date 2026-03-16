@@ -13,6 +13,7 @@
 	let { content }: Props = $props();
 
 	type PortalMetadata = {
+		id: string | null;
 		title: string | null;
 		description: string | null;
 		organisationName: string | null;
@@ -190,6 +191,7 @@
 
 		if (!parsed) {
 			return {
+				id: null,
 				title: null,
 				description: null,
 				organisationName: null,
@@ -210,6 +212,7 @@
 		}
 
 		return {
+			id: findFirstByKeys(parsed, ['id', 'itemId']),
 			title: findFirstByKeys(parsed, ['title', 'name', 'datasetTitle']),
 			description: findFirstByKeys(parsed, ['abstract', 'description', 'snippet', 'summary']),
 			organisationName: findFirstByKeys(parsed, [
@@ -264,7 +267,10 @@
 	}
 
 	function openSourceLink(url: string) {
-		window.open(url, '_blank', 'noopener,noreferrer');
+		const baseUrl = url.split('/server')[0];
+		const portalUrl = `${baseUrl}/portal/home/item.html?id=${metadata.id}`;
+
+		window.open(portalUrl, '_blank', 'noopener,noreferrer');
 	}
 </script>
 
