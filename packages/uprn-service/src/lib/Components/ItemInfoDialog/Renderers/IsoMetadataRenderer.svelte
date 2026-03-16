@@ -98,7 +98,7 @@
 			return null;
 		}
 
-		const cleanedAbstract = removeTabs(metadata.abstract);
+		const cleanedAbstract = normalizeMarkdown(metadata.abstract);
 
 		const htmlRaw = await unified()
 			.use(remarkParse)
@@ -179,8 +179,34 @@
 		return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
 	}
 
-	function removeTabs(value: string): string {
-		return value.replace(/\t/g, '');
+	function normalizeMarkdown(value: string): string {
+		const untabbed = value.replace(/\t/g, ' ');
+		const lines = untabbed.split(/\r?\n/);
+
+		while (lines.length > 0 && lines[0].trim() === '') lines.shift();
+		while (lines.length > 0 && lines[lines.length - 1].trim() === '') lines.pop();
+
+		const nonEmptyLines = lines.filter((line) => line.trim().length > 0);
+		const minIndent = nonEmptyLines.reduce((min, line) => {
+			const match = line.match(/^ +/);
+			const indent = match ? match[0].length : 0;
+			return Math.min(min, indent);
+		}, Number.POSITIVE_INFINITY);
+
+		const sharedIndent = Number.isFinite(minIndent) ? minIndent : 0;
+
+		return lines
+			.map((line) => {
+				const dedented =
+					sharedIndent > 0 ? line.replace(new RegExp(`^ {0,${sharedIndent}}`), '') : line;
+
+				// Markdown treats 4+ leading spaces as an indented code block.
+				// ISO XML often carries pretty-print indentation that is not semantic markdown.
+				const safeIndent = dedented.replace(/^ {4,}/, '');
+
+				return safeIndent.replace(/[ \t]+$/, '');
+			})
+			.join('\n');
 	}
 </script>
 
@@ -239,35 +265,37 @@
 					{/await}
 				{:else}
 					<p class="text-sm leading-6 text-muted-foreground">
-						{metadata.abstract ? removeTabs(metadata.abstract) : 'No description available.'}
+						{metadata.abstract ? normalizeMarkdown(metadata.abstract) : 'No description available.'}
 					</p>
 				{/if}
 			</section>
 
-			<section class="space-y-3">
-				<h2 class="text-base font-semibold">Contact</h2>
+			{#if metadata.contactEmail || metadata.pointOfContactEmail || metadata.organisationName || metadata.pointOfContactOrganisation}
+				<section class="space-y-3">
+					<h2 class="text-base font-semibold">Contact</h2>
 
-				<div class="rounded-lg border p-4 space-y-2 text-sm">
-					<div>
-						<span class="font-medium">Point of contact: </span>
-						{metadata.pointOfContactOrganisation ?? metadata.organisationName ?? 'Not provided'}
-					</div>
+					<div class="rounded-lg border p-4 space-y-2 text-sm">
+						<div>
+							<span class="font-medium font-semibold">Point of Contact: </span>
+							{metadata.pointOfContactOrganisation ?? metadata.organisationName ?? 'Not provided'}
+						</div>
 
-					<div>
-						<span class="font-medium">Email: </span>
-						{#if metadata.pointOfContactEmail ?? metadata.contactEmail}
-							<a
-								class="text-primary underline underline-offset-4"
-								href={`mailto:${metadata.pointOfContactEmail ?? metadata.contactEmail}`}
-							>
-								{metadata.pointOfContactEmail ?? metadata.contactEmail}
-							</a>
-						{:else}
-							<span>Not provided</span>
-						{/if}
+						<div>
+							<span class="font-medium font-semibold">Email: </span>
+							{#if metadata.pointOfContactEmail ?? metadata.contactEmail}
+								<a
+									class="text-primary underline underline-offset-4"
+									href={`mailto:${metadata.pointOfContactEmail ?? metadata.contactEmail}`}
+								>
+									{metadata.pointOfContactEmail ?? metadata.contactEmail}
+								</a>
+							{:else}
+								<span>Not provided</span>
+							{/if}
+						</div>
 					</div>
-				</div>
-			</section>
+				</section>
+			{/if}
 
 			{#if metadata.lineage}
 				<section class="space-y-2">
