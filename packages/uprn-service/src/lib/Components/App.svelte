@@ -55,10 +55,11 @@
 	import { TreeviewType } from '$lib/Types/Treeview.types';
 	import { TabProgress, TabType, type DownloadEntry } from '$lib/Types/Uprn.types';
 	import { createTreeviewNodes } from '$lib/Utilities/CreateTreeviewNodes';
-	import { Plus } from '@lucide/svelte';
+	import { InfoIcon, Plus } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { useUprnDownloadSelectionAreaLimits } from '$lib/Hooks/UseUprnDownloadSelectionAreaLimits.svelte';
+	import Button from '$lib/Components/shadcn/button/button.svelte';
 
 	const tabBarTriggers = [
 		{
@@ -128,6 +129,9 @@
 
 	/** State to manage the visibility of the sidebar. */
 	let sidebarOpen = $state(true);
+
+	/** State for managing the visibility of the introduction dialog. */
+	let introductionDialogOpen = $state(true);
 
 	/** State for managing the visibility of the item info dialog. */
 	let itemInfoDialogOpen: boolean = $state(false);
@@ -891,7 +895,7 @@
 	});
 </script>
 
-<IntroductionDialog contentUrl={introductionUrl} />
+<IntroductionDialog bind:isOpen={introductionDialogOpen} contentUrl={introductionUrl} />
 
 <Toaster />
 {#if webMapStore?.isLoaded && treeviewConfigStore}
@@ -940,6 +944,13 @@
 									actions={resetActions}
 									buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
 								/>
+								<Button
+									class="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
+									variant="outline"
+									onclick={() => (introductionDialogOpen = true)}
+								>
+									<InfoIcon class="w-5 h-5" />
+								</Button>
 							</UprnTabBar>
 						</div>
 					</div>

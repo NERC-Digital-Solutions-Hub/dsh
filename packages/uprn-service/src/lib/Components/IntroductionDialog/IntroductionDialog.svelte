@@ -8,13 +8,11 @@
 	import { unified } from 'unified';
 
 	type Props = {
+		isOpen: boolean;
 		contentUrl: string | null;
 	};
 
-	let { contentUrl }: Props = $props();
-
-	/** State for managing the visibility of the dialog. */
-	let isOpen = $state(true);
+	let { isOpen = $bindable(true), contentUrl }: Props = $props();
 
 	/** Derived state for fetching the introduction content based on the provided URL. */
 	let introduction = $derived.by(() => {
