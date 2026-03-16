@@ -86,10 +86,20 @@ export class NodeVisibilityController implements INodeVisibilityController {
 
 		const visibilityState = this.visibilityStates.get(node.id);
 		if (visibilityState) {
+			if (this.anyDescendantNodeSuspended(node)) {
+				return NodeDrawState.Suspended;
+			}
 			return NodeDrawState.Visible;
 		}
 
-		return this.anyDescendantNodeVisible(node) ? NodeDrawState.Visible : NodeDrawState.Hidden;
+		if (this.anyDescendantNodeVisible(node)) {
+			if (this.anyDescendantNodeSuspended(node)) {
+				return NodeDrawState.Suspended;
+			}
+			return NodeDrawState.Visible;
+		}
+
+		return NodeDrawState.Hidden;
 	}
 
 	/** @inheritdoc */
@@ -539,6 +549,19 @@ export class NodeVisibilityController implements INodeVisibilityController {
 		return node.children.some(
 			(child) => this.visibilityStates.get(child.id) || this.anyDescendantNodeVisible(child)
 		);
+	}
+
+	/**
+	 * Checks if any descendant nodes of a given treeview node have a suspended draw state.
+	 * @param node The treeview node to check.
+	 * @returns True if any descendant nodes are suspended, false otherwise.
+	 */
+	private anyDescendantNodeSuspended(node: TreeviewNode): boolean {
+		if (this.drawStates.get(node.id) === NodeDrawState.Suspended) {
+			return true;
+		}
+
+		return !!node.children?.some((child) => this.anyDescendantNodeSuspended(child));
 	}
 
 	/**

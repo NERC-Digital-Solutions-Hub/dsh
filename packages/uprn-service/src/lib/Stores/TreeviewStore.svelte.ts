@@ -166,7 +166,29 @@ export class TreeviewStore
 	}
 
 	public getNodeDrawState(nodeId: string): NodeDrawState {
-		return this.#drawStates.get(nodeId) ?? NodeDrawState.Hidden;
+		const directState = this.#drawStates.get(nodeId);
+		if (directState !== undefined) {
+			return directState;
+		}
+
+		const node = this.#nodeProvider.getTreeviewNode(nodeId);
+		if (!node?.children?.length) {
+			return NodeDrawState.Hidden;
+		}
+
+		if (this.#anyDescendantSuspended(node)) {
+			return NodeDrawState.Suspended;
+		}
+
+		return this.#visibilityStates.get(nodeId) ? NodeDrawState.Visible : NodeDrawState.Hidden;
+	}
+
+	#anyDescendantSuspended(node: TreeviewNode): boolean {
+		if (this.#drawStates.get(node.id) === NodeDrawState.Suspended) {
+			return true;
+		}
+
+		return !!node.children?.some((child) => this.#anyDescendantSuspended(child));
 	}
 
 	public reset(): void {

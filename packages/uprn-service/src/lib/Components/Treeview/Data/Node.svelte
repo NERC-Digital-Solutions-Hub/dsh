@@ -264,6 +264,9 @@
 										onCheckedChange={toggleVisible}
 									/>
 								</span>
+								{#if getNodeDrawState?.(node.id) === NodeDrawState.Suspended}
+									<span class="indeterminate-label text-muted-foreground">zoom</span>
+								{/if}
 							</span>
 						{/if}
 					</div>
@@ -304,6 +307,9 @@
 										onCheckedChange={toggleVisible}
 									/>
 								</span>
+								{#if getNodeDrawState?.(node.id) === NodeDrawState.Suspended}
+									<span class="indeterminate-label text-muted-foreground">zoom</span>
+								{/if}
 							</span>
 						{/if}
 					</div>
@@ -346,9 +352,11 @@
 
 	/* keep your animation, but don't break alignment */
 	.visibility-wrapper {
+		position: relative;
 		display: grid;
 		grid-template-columns: 0fr;
 		transition: grid-template-columns 0.2s ease-out;
+		overflow: visible;
 	}
 
 	.visibility-wrapper.visible {
@@ -371,5 +379,18 @@
 	.visibility-wrapper.visible .visibility-inner {
 		opacity: 1;
 		transform: translateX(0px);
+	}
+
+	.indeterminate-label {
+		position: absolute;
+		top: 90%;
+		left: 50%;
+		transform: translateX(-50%);
+		font-size: 0.55rem;
+		line-height: 1;
+		white-space: nowrap;
+		pointer-events: none;
+		opacity: 0.7;
+		z-index: 100;
 	}
 </style>
