@@ -147,8 +147,11 @@ export const EndpointHealthStatus = Object.freeze({
 export type EndpointHealthStatus = (typeof EndpointHealthStatus)[keyof typeof EndpointHealthStatus];
 
 export type UrpnDownloadAreaSelectionLimitResponse = {
-	layerName: string;
-	index: number;
+	layers: UprnDownloadAreaSelectionLimit[];
+};
+
+export type UprnDownloadAreaSelectionLimit = {
+	layerId: string;
 	areaLimit: number;
 };
 

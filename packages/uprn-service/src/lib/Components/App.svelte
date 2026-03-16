@@ -58,6 +58,7 @@
 	import { Plus } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
+	import { useUprnDownloadSelectionAreaLimits } from '$lib/Hooks/UseUprnDownloadSelectionAreaLimits.svelte';
 
 	const tabBarTriggers = [
 		{
@@ -211,6 +212,36 @@
 		const renderers = useFetchCustomRenderers(url);
 		renderers.fetch();
 		return renderers;
+	});
+
+	/** Hook to fetch area selection limits for the UPRN download service. */
+	const areaSelectionLimits = $derived.by(() => {
+		if (!appConfig.content?.uprnDownload || !appConfig.content.map.selectableLayers) {
+			return null;
+		}
+
+		const url: string = `${appConfig.content.uprnDownload.baseUrl}${appConfig.content.uprnDownload.getAreaSelectionLimitsRoute}`;
+
+		const layerIds = appConfig.content.map.selectableLayers
+			? appConfig.content.map.selectableLayers.map((layer) => layer.id)
+			: [];
+
+		const limits = useUprnDownloadSelectionAreaLimits(url, layerIds);
+		limits.fetch();
+		return limits;
+	});
+
+	/** Derived state to create a map of area selection limits by layer ID for easy lookup. */
+	const areaSelectionLimitsMap: Map<string, number> = $derived.by(() => {
+		if (!areaSelectionLimits || !areaSelectionLimits.content) {
+			return new Map<string, number>();
+		}
+
+		const map = new Map<string, number>();
+		areaSelectionLimits.content.layers.forEach((limit) => {
+			map.set(limit.layerId, limit.areaLimit);
+		});
+		return map;
 	});
 
 	/** Derived state to compute the introduction content URL based on the app configuration. */
@@ -998,9 +1029,11 @@
 							<ExportMenuFooter
 								onExportSuccess={() => onTabValueChange('downloads')}
 								{areaSelectionInteractionStore}
+								{areaSelectionStore}
 								{dataSelectionStore}
 								{downloadsStore}
 								nodeConfigProvider={treeviewConfigStore}
+								areaSelectionLimits={areaSelectionLimitsMap}
 							/>
 						{/if}
 					</div>

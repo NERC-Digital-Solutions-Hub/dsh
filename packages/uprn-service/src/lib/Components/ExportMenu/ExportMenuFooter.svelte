@@ -18,27 +18,33 @@
 	import { onDestroy } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
+	import { AreaSelectionStore } from '$lib/Stores/AreaSelectionStore.svelte';
 
 	type Props = {
 		onExportSuccess?: () => void;
 		areaSelectionInteractionStore: AreaSelectionInteractionStore;
+		areaSelectionStore: AreaSelectionStore;
 		dataSelectionStore: DataSelectionStore;
 		downloadsStore: DownloadsStore;
 		nodeConfigProvider: INodeConfigProvider;
+		areaSelectionLimits: Map<string, number>;
 	};
 
 	const {
 		onExportSuccess,
 		areaSelectionInteractionStore,
+		areaSelectionStore,
 		dataSelectionStore,
 		downloadsStore,
-		nodeConfigProvider
+		nodeConfigProvider,
+		areaSelectionLimits
 	}: Props = $props();
 
 	const areRequirementsMet = $derived.by(() => {
 		return (
 			areaSelectionInteractionStore.selectionViewState?.areaHandles.size > 0 &&
-			dataSelectionStore.getAllSelections().length > 0
+			dataSelectionStore.getAllSelections().length > 0 &&
+			!exceedsAreaSelectionLimits()
 		);
 	});
 
@@ -52,6 +58,23 @@
 			clearTimeout(cooldownTimer);
 		}
 	});
+
+	/**
+	 * Checks if the current area selection exceeds the defined limits for export.
+	 * @returns True if the selection exceeds limits, false otherwise.
+	 */
+	function exceedsAreaSelectionLimits(): boolean {
+		if (!areaSelectionStore.layerId) {
+			return false;
+		}
+
+		const limit = areaSelectionLimits.get(areaSelectionStore.layerId);
+		if (limit === undefined) {
+			return false;
+		}
+
+		return areaSelectionStore.areaIds.size > limit;
+	}
 
 	// TODO: Add onExport function prop to handle export completion externally
 
@@ -152,7 +175,13 @@
 				<Check class="h-4 w-4 shrink-0 text-green-600" />
 			{/if}
 
-			{#if areaSelectionInteractionStore.selectionViewState?.areaHandles.size === 0}
+			{#if areaSelectionStore.layerId && exceedsAreaSelectionLimits()}
+				{@const limit = areaSelectionLimits.get(areaSelectionStore.layerId)}
+				<p class="text-sm text-muted-foreground">
+					The current area selection exceeds the maximum allowed for export. The limit for the
+					selected area layer is {limit} areas.
+				</p>
+			{:else if areaSelectionInteractionStore.selectionViewState?.areaHandles.size === 0}
 				<p class="text-sm text-muted-foreground">Please select at least one area to export.</p>
 			{:else if dataSelectionStore.getAllSelections().length === 0}
 				<p class="text-sm text-muted-foreground">Please select at least one dataset to export.</p>
@@ -168,7 +197,6 @@
 						variant={areRequirementsMet ? 'default' : 'outline'}
 						disabled={coolingDown || !areRequirementsMet}
 						onclick={handleExportClick}
-						title="Export"
 						class="shrink-0"
 					>
 						{#if coolingDown}
@@ -179,7 +207,11 @@
 					</Button>
 				</Tooltip.Trigger>
 				<Tooltip.Content side="top">
-					{#if areaSelectionInteractionStore.selectionViewState?.areaHandles.size === 0}
+					{#if areaSelectionStore.layerId && exceedsAreaSelectionLimits()}
+						{@const limit = areaSelectionLimits.get(areaSelectionStore.layerId)}
+						The current area selection exceeds the maximum allowed for export. The limit for the selected
+						area layer is {limit} areas.
+					{:else if areaSelectionInteractionStore.selectionViewState?.areaHandles.size === 0}
 						Please select at least one area to export.
 					{:else if dataSelectionStore.getAllSelections().length === 0}
 						Please select at least one dataset to export.

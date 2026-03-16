@@ -4,10 +4,11 @@ import type { UrpnDownloadAreaSelectionLimitResponse } from '$lib/Types/Uprn.typ
  * Hook used to fetch the selection area limits for different layers from the UPRN download service.
  * It manages the loading state, any errors that occur during fetching, and the resolved area selection limits.
  * @param url The URL to the UPRN download area selection limits endpoint.
+ * @param layerIds The list of layer IDs for which to fetch the area selection limits.
  * @returns The loading, error, content states as well as a fetch method.
  */
-export function useUprnDownloadSelectionAreaLimits(url: string) {
-	let content = $state<UrpnDownloadAreaSelectionLimitResponse[] | null>(null);
+export function useUprnDownloadSelectionAreaLimits(url: string, layerIds: string[]) {
+	let content = $state<UrpnDownloadAreaSelectionLimitResponse | null>(null);
 	let error = $state<unknown>(null);
 	let isLoading = $state(false);
 
@@ -16,13 +17,22 @@ export function useUprnDownloadSelectionAreaLimits(url: string) {
 		error = null;
 
 		try {
-			const response = await fetch(url, { credentials: 'include' });
+			const response = await fetch(url, {
+				method: 'POST',
+				credentials: 'include',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					layers: layerIds
+				})
+			});
 
 			if (!response.ok) {
 				throw new Error(`Failed to get selection area limits: ${response.statusText}`);
 			}
 
-			content = (await response.json()) as UrpnDownloadAreaSelectionLimitResponse[];
+			content = (await response.json()) as UrpnDownloadAreaSelectionLimitResponse;
 		} catch (err) {
 			error = err;
 		} finally {
