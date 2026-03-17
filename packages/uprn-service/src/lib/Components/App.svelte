@@ -1038,7 +1038,7 @@
 					<div hidden={currentTab !== 'export'}>
 						{#if areaSelectionInteractionStore && treeviewConfigStore}
 							<ExportMenuFooter
-								onExportSuccess={() => onTabValueChange('downloads')}
+								onExportSuccess={() => onTabValueChange('download')}
 								{areaSelectionInteractionStore}
 								{areaSelectionStore}
 								{dataSelectionStore}
