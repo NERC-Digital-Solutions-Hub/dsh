@@ -256,11 +256,11 @@
 
 <div class="section">
 	<div class="section-header">
-		<div class="section-title">
+		<div class="section-title ml-1">
 			<MapPinIcon size={16} class="text-gray-500" />
 			<h4>Selected Areas</h4>
 		</div>
-		<p class="count">{areaInfos.length} area(s) selected</p>
+		<p class="count mr-0.5">{areaInfos.length} area(s) selected</p>
 	</div>
 	{#if areaSelectionTree.length > 0}
 		<div class="selection-tree">
@@ -275,11 +275,11 @@
 
 <div class="section">
 	<div class="section-header">
-		<div class="section-title">
+		<div class="section-title ml-1">
 			<DatabaseIcon size={16} class="text-gray-500" />
 			<h4>Selected Data</h4>
 		</div>
-		<p class="count">{dataSelectionStore.getAllSelections().length} dataset(s) selected</p>
+		<p class="count mr-0.5">{dataSelectionStore.getAllSelections().length} dataset(s) selected</p>
 	</div>
 	{#if dataSelectionTree.length > 0}
 		<div class="selection-tree">
@@ -313,7 +313,6 @@
 		align-items: baseline;
 		justify-content: space-between;
 		gap: 0.75rem;
-		margin-bottom: 0.5rem;
 	}
 
 	h4 {
@@ -334,7 +333,6 @@
 	}
 
 	.count {
-		margin: 0;
 		font-size: 0.75rem;
 		font-weight: 500;
 		color: #6b7280;

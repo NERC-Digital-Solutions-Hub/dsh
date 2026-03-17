@@ -12,7 +12,7 @@
 	const { title = '', children, footer, hasFooter = false }: Props = $props();
 </script>
 
-<Card class="data-item-card gap-0">
+<Card class="data-item-card gap-0 rounded-md">
 	<div class="data-item">
 		<span class="data-name" {title}>
 			{title}

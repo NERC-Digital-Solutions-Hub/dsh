@@ -315,12 +315,12 @@
 
 <div class="section">
 	<div class="section-header">
-		<div class="section-title">
+		<div class="section-title ml-1">
 			<DownloadIcon size={16} class="text-gray-500" />
 			<h4>Downloads</h4>
 		</div>
 		{#if downloads.length > 0}
-			<p class="count">{downloads.length} download(s)</p>
+			<p class="count mr-0.5">{downloads.length} download(s)</p>
 		{/if}
 	</div>
 	{#if downloads.length > 0}
@@ -493,7 +493,6 @@
 		align-items: baseline;
 		justify-content: space-between;
 		gap: 0.75rem;
-		margin-bottom: 0.5rem;
 	}
 
 	h4 {
@@ -589,7 +588,6 @@
 	}
 
 	.count {
-		margin: 0;
 		font-size: 0.75rem;
 		font-weight: 500;
 		color: #6b7280;
