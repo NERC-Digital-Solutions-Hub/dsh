@@ -2,6 +2,7 @@
 	import OpenIndicator from '$lib/Components/OpenIndicator/OpenIndicator.svelte';
 	import { Button } from '$lib/Components/shadcn/button/index.js';
 	import { Toggle } from '$lib/Components/shadcn/toggle/index.js';
+	import { Badge } from '$lib/Components/shadcn/badge/index.js';
 	import { Ban } from '@lucide/svelte';
 	import type { Component } from 'svelte';
 	import { accentBgStyles, defaultBgStyles, getNodeStyles } from '../NodeContentStyles.js';
@@ -63,7 +64,6 @@
 			onclick();
 		}}
 	>
-		{console.log('reason', disabledReason)}
 		<div class="grid w-full grid-cols-[auto_1fr_auto] items-center gap-x-2">
 			<div class="flex items-center gap-1">
 				<span class="inline-block size-4 shrink-0" aria-hidden="true">
@@ -77,7 +77,14 @@
 			</div>
 
 			<span class="min-w-0 whitespace-normal break-words text-left leading-snug">{name}</span>
-
+			{#if !isEnabled}
+				<Badge
+					variant="destructive"
+					class="w-fit px-1.5 py-0.5 text-[10px] leading-tight whitespace-nowrap"
+				>
+					Not available in beta
+				</Badge>
+			{/if}
 			<div class="justify-self-end">
 				{@render children?.()}
 			</div>
