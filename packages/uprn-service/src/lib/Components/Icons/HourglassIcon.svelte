@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import lottie, { type AnimationItem } from 'lottie-web';
 	import { cn } from '$lib/utils';
+	import { asset } from '$app/paths';
 
 	type Props = {
 		class?: string;
@@ -13,13 +14,7 @@
 		colorClass?: string;
 	};
 
-	const {
-		class: className = '',
-		size = 22,
-		speed = 0.6,
-		color,
-		colorClass
-	}: Props = $props();
+	const { class: className = '', size = 22, speed = 0.6, color, colorClass }: Props = $props();
 
 	let container: HTMLDivElement;
 	let anim: AnimationItem | null = null;
@@ -30,7 +25,7 @@
 			renderer: 'svg',
 			loop: true,
 			autoplay: true,
-			path: '/animations/hourglass.json'
+			path: asset('/animations/hourglass.json')
 		});
 
 		anim.setSpeed(speed);
