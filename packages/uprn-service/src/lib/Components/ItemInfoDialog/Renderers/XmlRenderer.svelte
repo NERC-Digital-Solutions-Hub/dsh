@@ -28,9 +28,11 @@
 	}
 </script>
 
-<Card.Root class="w-full h-full gap-0 py-0">
+<Card.Root class="group w-full h-full gap-0 py-0">
 	<Card.Content class="relative h-full overflow-hidden py-4 px-0">
-		<div class="absolute top-4 right-4 z-10 flex gap-2 opacity-60">
+		<div
+			class="absolute top-4 right-4 z-10 flex gap-2 opacity-0 pointer-events-none transition-opacity duration-150 group-hover:opacity-60 group-hover:pointer-events-auto group-focus-within:opacity-60 group-focus-within:pointer-events-auto"
+		>
 			<Tooltip.Provider disableHoverableContent>
 				<Tooltip.Root>
 					<Tooltip.Trigger class="cursor-pointer">
