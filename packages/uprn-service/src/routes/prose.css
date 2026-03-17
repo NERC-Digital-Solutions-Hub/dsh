@@ -54,6 +54,10 @@
 	@apply mb-3 text-xl font-bold text-foreground;
 }
 
+.prose-info-markdown :where(h4, h5, h6, h7) {
+	@apply mb-3 text-lg font-bold text-foreground;
+}
+
 .prose-chat-markdown :where(p) {
 	@apply mb-2 leading-7;
 }
