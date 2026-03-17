@@ -10,25 +10,14 @@
 	import { unified } from 'unified';
 
 	type Props = {
-		introductionUrl: string;
+		introduction: string | null;
 	};
 
-	let { introductionUrl }: Props = $props();
-
-	/** Derived state for fetching the introduction content based on the provided URL. */
-	let introduction = $derived.by(() => {
-		if (!introductionUrl) {
-			return null;
-		}
-
-		const hook = useFetchHomeIntroductionMarkdown(introductionUrl);
-		hook.fetch();
-		return hook;
-	});
+	let { introduction }: Props = $props();
 
 	/** Derived state for processing the fetched introduction markdown content into HTML. */
 	let introductionHtml: Promise<string | null> = $derived.by(async () => {
-		if (!introduction || !introduction.content) {
+		if (!introduction) {
 			return null;
 		}
 
@@ -37,13 +26,13 @@
 			.use(remarkGfm)
 			.use(remarkRehype)
 			.use(rehypeStringify)
-			.process(introduction.content);
+			.process(introduction);
 
 		return htmlRaw.toString();
 	});
 </script>
 
-{#if introduction?.content}
+{#if introduction}
 	<Dialog.Root open={true}>
 		<Dialog.Portal>
 			<Dialog.Overlay class="fixed inset-0 z-[9998] bg-black/50" />

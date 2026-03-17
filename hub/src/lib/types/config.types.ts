@@ -1,8 +1,33 @@
 export type HomeLocalConfig = {
 	baseUrl: string;
-	configurationPath: string;
+	sitePath: string;
 };
 
-export type HomeRemoteConfig = {
-	introductionPath?: string;
+export type RemoteSiteConfig = {
+	environment: string;
+};
+
+export type RootManifestFiles = {
+	introduction: string;
+};
+
+export type ManifestPage = {
+	route: string;
+};
+
+/**
+ * Single page entry for /apps/uprn-service within manifest.testing.json.
+ */
+export type RootManifestPage = {
+	route: '/';
+	files: RootManifestFiles;
+} & ManifestPage;
+
+/**
+ * Represets the site manifest for content served from the dsh-content repository.
+ */
+export type SiteManifest = {
+	version: string;
+	environment: string;
+	pages: ManifestPage[];
 };
