@@ -43,7 +43,7 @@
 </script>
 
 <Dialog.Root bind:open={isOpen} onOpenChange={(open: boolean) => (isOpen = open)}>
-	<Dialog.Content class="grid w-[400px] max-w-[400px] max-h-[450px] min-h-[450px] overflow-hidden">
+	<Dialog.Content class="grid w-[700px] max-w-[700px] h-auto max-h-[80vh] overflow-y-auto">
 		{#await introductionHtml}
 			<p>Loading introduction...</p>
 		{:then html}
