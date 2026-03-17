@@ -43,11 +43,11 @@
 </script>
 
 <Dialog.Root bind:open={isOpen} onOpenChange={(open: boolean) => (isOpen = open)}>
-	<Dialog.Content class="grid w-[400px] max-w-[400px] max-h-[400px] min-h-[400px] overflow-hidden">
+	<Dialog.Content class="grid w-[400px] max-w-[400px] max-h-[450px] min-h-[450px] overflow-hidden">
 		{#await introductionHtml}
 			<p>Loading introduction...</p>
 		{:then html}
-			<article class="prose prose-intro-dialog">
+			<article class="prose-info-markdown">
 				{@html html}
 			</article>
 		{:catch error}
