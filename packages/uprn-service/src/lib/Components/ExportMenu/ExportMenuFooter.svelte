@@ -178,7 +178,7 @@
 			{#if areaSelectionStore.layerId && exceedsAreaSelectionLimits()}
 				{@const limit = areaSelectionLimits.get(areaSelectionStore.layerId)}
 				<p class="text-sm text-muted-foreground">
-					The current area selection exceeds the maximum allowed for export. The limit for the
+					The current area selection exceeds the maximum allowed for export. The Beta2 limit for the
 					selected area layer is {limit} areas.
 				</p>
 			{:else if areaSelectionInteractionStore.selectionViewState?.areaHandles.size === 0}
@@ -209,8 +209,8 @@
 				<Tooltip.Content side="top">
 					{#if areaSelectionStore.layerId && exceedsAreaSelectionLimits()}
 						{@const limit = areaSelectionLimits.get(areaSelectionStore.layerId)}
-						The current area selection exceeds the maximum allowed for export. The limit for the selected
-						area layer is {limit} areas.
+						The current area selection exceeds the maximum allowed for export. The Beta2 limit for the
+						selected area layer is {limit} areas.
 					{:else if areaSelectionInteractionStore.selectionViewState?.areaHandles.size === 0}
 						Please select at least one area to export.
 					{:else if dataSelectionStore.getAllSelections().length === 0}
