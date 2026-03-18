@@ -343,7 +343,7 @@
 			<h4>Downloads</h4>
 		</div>
 		{#if downloads.length > 0}
-			<p class="count mr-1">{downloads.length} download(s)</p>
+			<p class="text-xs text-muted-foreground mr-1">{downloads.length} download(s)</p>
 		{/if}
 	</div>
 	{#if downloads.length > 0}
