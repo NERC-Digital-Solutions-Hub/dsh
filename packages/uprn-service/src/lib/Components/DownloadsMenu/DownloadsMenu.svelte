@@ -85,21 +85,36 @@
 		}
 	>;
 
+	const jobStatusImmediateCheckInterval = 10000; // 10 seconds
+	const jobStatusCheckInterval = 30000; // 30 seconds
+	let statusCheckTimeout: ReturnType<typeof setTimeout> | undefined;
+
 	function getStatusCfg(status: string) {
 		return statusConfig[status as keyof typeof statusConfig] ?? statusConfig.pending;
 	}
 
 	onMount(() => {
 		submitRequests();
-
-		const interval = setInterval(() => {
-			checkJobStatuses();
-		}, 10000); // Check every 30 seconds
+		scheduleNextStatusCheck(jobStatusCheckInterval);
 
 		return () => {
-			clearInterval(interval);
+			if (statusCheckTimeout) {
+				clearTimeout(statusCheckTimeout);
+			}
 		};
 	});
+
+	function scheduleNextStatusCheck(delayMs: number) {
+		if (statusCheckTimeout) {
+			clearTimeout(statusCheckTimeout);
+		}
+
+		statusCheckTimeout = setTimeout(async () => {
+			await checkJobStatuses();
+			// After any one-off immediate check, return to the normal polling cadence.
+			scheduleNextStatusCheck(jobStatusCheckInterval);
+		}, delayMs);
+	}
 
 	$effect(() => {
 		if (!downloads) {
@@ -115,11 +130,14 @@
 	});
 
 	async function submitRequests() {
+		let submittedAnyRequest = false;
+
 		for (const download of downloads) {
 			if (download.externalId || download.status !== DownloadStatus.Pending) {
 				continue;
 			}
 
+			submittedAnyRequest = true;
 			download.status = DownloadStatus.Submitted;
 			downloadsStore.updateDownloadStatus(download);
 
@@ -163,6 +181,11 @@
 
 			download.externalId = response.guid;
 			downloadsStore.updateDownloadStatus(download);
+		}
+
+		if (submittedAnyRequest) {
+			// Speed up only the next status check after submitting new jobs.
+			scheduleNextStatusCheck(jobStatusImmediateCheckInterval);
 		}
 	}
 
@@ -214,7 +237,7 @@
 		console.log('[downloads-menu] Checking job statuses for downloads:', request);
 		await jobStatusesHook.fetch(request);
 		const response = jobStatusesHook.content as UprnDownloadGetJobStatusesResponse | undefined;
-		console.log('[downloads-menu] Received job statuses response:', response, queuePositions);
+		console.warn('[downloads-menu] Received job statuses response:', response, queuePositions);
 
 		if (!response || jobStatusesHook.error) {
 			console.error('[downloads-menu] Failed to get job statuses.', response);
