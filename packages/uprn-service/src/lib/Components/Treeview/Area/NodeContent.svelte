@@ -5,6 +5,7 @@
 	import { Badge } from '$lib/Components/shadcn/badge/index.js';
 	import { Ban } from '@lucide/svelte';
 	import type { Component } from 'svelte';
+	import { fly } from 'svelte/transition';
 	import { accentBgStyles, defaultBgStyles, getNodeStyles } from '../NodeContentStyles.js';
 
 	/**
@@ -50,15 +51,22 @@
 	const width = $derived(`calc(100% - (${depth} * var(--tree-step, 1.5rem)))`);
 
 	const baseClass = getNodeStyles({ enhancedHover: true, includeFont: true });
+	let isHovered = $state(false);
 </script>
 
 {#if isTogglable}
 	<Toggle
 		{pressed}
 		disabled={!isEnabled}
-		class={`${baseClass} w-full h-auto py-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-auto`}
+		class={`${baseClass} relative w-full h-auto py-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-auto`}
 		variant="outline"
 		style="width: {width};"
+		onmouseenter={() => {
+			isHovered = true;
+		}}
+		onmouseleave={() => {
+			isHovered = false;
+		}}
 		onPressedChange={() => {
 			if (!isEnabled) return;
 			onclick();
@@ -77,18 +85,25 @@
 			</div>
 
 			<span class="min-w-0 whitespace-normal break-words text-left leading-snug">{name}</span>
-			{#if !isEnabled}
+			<div class="justify-self-end">
+				{@render children?.()}
+			</div>
+		</div>
+
+		{#if !isEnabled && isHovered}
+			<span
+				in:fly={{ x: 10, duration: 160 }}
+				out:fly={{ x: 10, duration: 120 }}
+				class="pointer-events-none absolute top-1/2 right-8 z-10 -translate-y-1/2"
+			>
 				<Badge
 					variant="outline"
 					class="w-fit px-1.5 py-0.5 text-[10px] leading-tight whitespace-nowrap"
 				>
 					Not available in beta
 				</Badge>
-			{/if}
-			<div class="justify-self-end">
-				{@render children?.()}
-			</div>
-		</div>
+			</span>
+		{/if}
 
 		{#if !isEnabled}
 			<div title={disabledReason} class="pointer-events-auto">
