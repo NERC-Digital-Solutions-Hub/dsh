@@ -79,7 +79,7 @@
 			<span class="min-w-0 whitespace-normal break-words text-left leading-snug">{name}</span>
 			{#if !isEnabled}
 				<Badge
-					variant="destructive"
+					variant="outline"
 					class="w-fit px-1.5 py-0.5 text-[10px] leading-tight whitespace-nowrap"
 				>
 					Not available in beta
