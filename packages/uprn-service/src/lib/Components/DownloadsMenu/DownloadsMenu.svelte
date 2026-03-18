@@ -284,6 +284,9 @@
 						download.status = DownloadStatus.Failed;
 						download.errorMessage =
 							job.status.message || 'An unknown error occurred during processing on the server.';
+						if (download.errorMessage && download.errorMessage.toLowerCase().includes('timeout')) {
+							download.errorMessage = "Download timed out. This is a beta limitation for large downloads but we're working on improving this in the future.";
+						}
 						download.fileSize = undefined;
 						queuePositions.delete(job.guid);
 						break;
