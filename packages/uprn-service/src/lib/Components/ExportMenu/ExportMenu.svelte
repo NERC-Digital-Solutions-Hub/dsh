@@ -255,12 +255,12 @@
 </script>
 
 <div class="section">
-	<div class="section-header">
-		<div class="section-title ml-1">
+	<div class="section-header pb-1">
+		<div class="section-title ml-2">
 			<MapPinIcon size={16} class="text-gray-500" />
 			<h4>Selected Areas</h4>
 		</div>
-		<p class="text-xs text-muted-foreground mr-1">{areaInfos.length} area(s) selected</p>
+		<p class="text-xs text-muted-foreground mr-2">{areaInfos.length} area(s) selected</p>
 	</div>
 	{#if areaSelectionTree.length > 0}
 		<div class="selection-tree">
@@ -274,12 +274,12 @@
 </div>
 
 <div class="section">
-	<div class="section-header">
-		<div class="section-title ml-1">
+	<div class="section-header pb-1">
+		<div class="section-title ml-2">
 			<DatabaseIcon size={16} class="text-gray-500" />
 			<h4>Selected Data</h4>
 		</div>
-		<p class="text-xs text-muted-foreground mr-1">
+		<p class="text-xs text-muted-foreground mr-2">
 			{dataSelectionStore.getAllSelections().length} dataset(s) selected
 		</p>
 	</div>

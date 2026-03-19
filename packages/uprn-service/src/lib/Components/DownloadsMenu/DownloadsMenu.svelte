@@ -361,13 +361,13 @@
 </script>
 
 <div class="section">
-	<div class="section-header">
-		<div class="section-title ml-1">
+	<div class="section-header pb-1">
+		<div class="section-title ml-2">
 			<DownloadIcon size={16} class="text-gray-500" />
 			<h4>Downloads</h4>
 		</div>
 		{#if downloads.length > 0}
-			<p class="text-xs text-muted-foreground mr-1">{downloads.length} download(s)</p>
+			<p class="text-xs text-muted-foreground mr-2">{downloads.length} download(s)</p>
 		{/if}
 	</div>
 	{#if downloads.length > 0}
