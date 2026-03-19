@@ -61,13 +61,6 @@ export function useFetchAppConfig() {
 				throw new Error('UPRN service manifest content is null');
 			}
 
-			// await uprnConfigStore.load(localConfigPath);
-
-			// const portalItemConfigs: MapConfig[] =
-			// 	uprnConfigStore.instance?.mapsConfig
-			// 		.map((m) => m.value)
-			// 		.filter((v): v is MapConfig => v !== undefined) ?? [];
-
 			const baseUrl = new SvelteURL('pages/', localConfig.content.baseUrl).toString();
 			console.log('Base URL for config:', baseUrl);
 			const manifestPath = manifest.files.generated.manifest;
@@ -84,37 +77,6 @@ export function useFetchAppConfig() {
 				treeviewConfig: { ...localConfig.mapConfig.treeview, layers: [...treeviewNodeConfigs] }
 			};
 
-			// const map: MapConfig = {
-			// 	...portalItemConfigs[0],
-			// 	treeview: { ...portalItemConfigs[0].treeview, layers: [...treeviewNodeConfigs] }
-			// };
-
-			// const contentConfig: ContentConfig | undefined = uprnConfigStore.instance?.contentConfig;
-			// if (!contentConfig) {
-			// 	console.error('Content configuration is missing');
-			// 	throw new Error('Content configuration is missing');
-			// }
-
-			// const uprnChatbotApiConfig: AiUprnChatbotEndpoints | undefined =
-			// 	uprnConfigStore.instance?.uprnChatbotApiConfig.value;
-			// if (!uprnChatbotApiConfig) {
-			// 	console.error('AI UPRN chatbot API configuration is missing');
-			// 	throw new Error('AI UPRN chatbot API configuration is missing');
-			// }
-
-			// const uprnDownloadApiConfig: UprnDownloadEndpoints | undefined =
-			// 	uprnConfigStore.instance?.uprnDownloadApiConfig.value;
-			// if (!uprnDownloadApiConfig) {
-			// 	console.error('UPRN download API configuration is missing');
-			// 	throw new Error('UPRN download API configuration is missing');
-			// }
-
-			// content = {
-			// 	map,
-			// 	contentConfig: contentConfig,
-			// 	aiUprnChatbot: uprnChatbotApiConfig,
-			// 	uprnDownload: uprnDownloadApiConfig
-			// };
 		} catch (err) {
 			console.error('Error fetching app config', err);
 			error = err;

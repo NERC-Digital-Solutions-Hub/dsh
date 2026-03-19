@@ -1,3 +1,4 @@
+import { asset } from '$app/paths';
 import type {
 	HomeLocalConfig,
 	RemoteSiteConfig,
@@ -22,7 +23,7 @@ export function useFetchHomeIntroductionMarkdown(config: HomeLocalConfig) {
 		error = null;
 
 		try {
-			const siteUrl = new SvelteURL(config.sitePath, config.baseUrl).toString();
+			const siteUrl = asset('site.json');
 
 			const siteConfig = await fetchSiteConfig(siteUrl);
 

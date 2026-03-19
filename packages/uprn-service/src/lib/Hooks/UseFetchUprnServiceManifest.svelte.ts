@@ -1,3 +1,4 @@
+import { asset } from '$app/paths';
 import type {
 	RemoteSiteConfig,
 	AppUprnContentConfig,
@@ -21,11 +22,7 @@ export function useFetchUprnServiceManifest(contentConfig: AppUprnContentConfig)
 		error = null;
 
 		try {
-			const siteConfigUrl: string = new SvelteURL(
-				contentConfig.sitePath,
-				contentConfig.baseUrl
-			).toString();
-
+			const siteConfigUrl = asset('site.json');
 			const siteConfig: RemoteSiteConfig = await fetchSiteConfig(siteConfigUrl);
 			const manifestPage: AppsUprnServiceManifestPage = await fetchUprnServiceManifestPage(
 				contentConfig.baseUrl,
