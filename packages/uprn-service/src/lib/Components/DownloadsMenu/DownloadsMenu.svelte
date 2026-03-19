@@ -384,7 +384,7 @@
 					>
 						{#if download.externalId && download.status === DownloadStatus.Queued}
 							{@const queueItem: QueueItem | undefined = queuePositions.get(download.externalId!)}
-							{#if queueItem}
+							{#if queueItem && queueItem.queuePosition}
 								<QueueStatus queueId={queueItem.queueId} queuePosition={queueItem.queuePosition} />
 							{/if}
 						{/if}
