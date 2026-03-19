@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Dialog from '$lib/Components/shadcn/dialog/index.js';
 	import { useFetchAppIntroductionMarkdown } from '$lib/Hooks/UseFetchAppIntroductionMarkdown.svelte';
+	import { rehypeGithubAlerts, rehypeInlineTextAdjacentSvgIcons } from '@dsh/common';
 	import rehypeStringify from 'rehype-stringify';
 	import remarkGfm from 'remark-gfm';
 	import remarkParse from 'remark-parse';
@@ -35,6 +36,8 @@
 			.use(remarkParse)
 			.use(remarkGfm)
 			.use(remarkRehype)
+			.use(rehypeGithubAlerts)
+			.use(rehypeInlineTextAdjacentSvgIcons)
 			.use(rehypeStringify)
 			.process(introduction.content);
 
