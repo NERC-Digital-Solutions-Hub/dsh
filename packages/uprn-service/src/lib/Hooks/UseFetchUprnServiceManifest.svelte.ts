@@ -22,7 +22,8 @@ export function useFetchUprnServiceManifest(contentConfig: AppUprnContentConfig)
 		error = null;
 
 		try {
-			const siteConfigUrl = asset('site.json');
+			const siteConfigUrl = asset('/site.json');
+			console.log('Fetching site config from', siteConfigUrl);
 			const siteConfig: RemoteSiteConfig = await fetchSiteConfig(siteConfigUrl);
 			const manifestPage: AppsUprnServiceManifestPage = await fetchUprnServiceManifestPage(
 				contentConfig.baseUrl,

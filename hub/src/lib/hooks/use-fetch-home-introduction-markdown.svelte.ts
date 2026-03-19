@@ -23,7 +23,7 @@ export function useFetchHomeIntroductionMarkdown(config: HomeLocalConfig) {
 		error = null;
 
 		try {
-			const siteUrl = asset('site.json');
+			const siteUrl = asset('/site.json');
 
 			const siteConfig = await fetchSiteConfig(siteUrl);
 
