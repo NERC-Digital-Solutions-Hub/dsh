@@ -282,11 +282,9 @@
 						break;
 					case JobStatusType.Error:
 						download.status = DownloadStatus.Failed;
-						download.errorMessage =
-							job.status.message || 'An unknown error occurred during processing on the server.';
-						if (download.errorMessage && download.errorMessage.toLowerCase().includes('timeout')) {
-							download.errorMessage = "Download timed out. This is a beta limitation for large downloads but we're working on improving this in the future.";
-						}
+						download.errorMessage = getDisplayErrorMessage(
+							job.status.message ?? 'An unknown error occurred.'
+						);
 						download.fileSize = undefined;
 						queuePositions.delete(job.guid);
 						break;
@@ -298,6 +296,29 @@
 				downloadsStore.updateDownloadStatus(download);
 			}
 		}
+	}
+
+	/**
+	 * Returns a user-friendly error message based on the provided error message string.
+	 * @param errorMessage - The original error message to evaluate.
+	 * @return A user-friendly error message.
+	 */
+	function getDisplayErrorMessage(errorMessage: string): string {
+		const lowerMessage = errorMessage.toLowerCase();
+		if (
+			lowerMessage.includes('timedout') ||
+			lowerMessage.includes('timeout') ||
+			lowerMessage.includes('timed out') ||
+			lowerMessage.includes('time out')
+		) {
+			return "Error: Download timed out. This is a beta limitation for large downloads but we're working on improving this in the future.";
+		}
+
+		if (lowerMessage.includes('outofmemoryexception')) {
+			return 'Error: Out of memory. This is a beta limitation for large downloads or when the service is under heavy load. Please try again.';
+		}
+
+		return errorMessage;
 	}
 
 	/**
