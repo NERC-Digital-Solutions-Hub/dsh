@@ -29,11 +29,11 @@
 		<Tooltip.Trigger>
 			<div class="inline-flex items-center rounded-md px-1 py-1 border-gray-100 border-1">
 				{#if queueId === 1}
+					<span class="text-xs text-muted-foreground">{queuePosition}</span>
 					<ChevronsDown class="w-4 h-4 text-muted-foreground" />
-					<span class="text-xs text-muted-foreground">{queuePosition}</span>
 				{:else}
-					<ChevronsUp class="w-4 h-4 text-muted-foreground" />
 					<span class="text-xs text-muted-foreground">{queuePosition}</span>
+					<ChevronsUp class="w-4 h-4 text-muted-foreground" />
 				{/if}
 			</div>
 		</Tooltip.Trigger>
