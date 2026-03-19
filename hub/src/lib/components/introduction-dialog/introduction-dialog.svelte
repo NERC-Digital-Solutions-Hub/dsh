@@ -2,12 +2,7 @@
 	import * as Dialog from '$lib/components/shadcn/dialog/index.js';
 	import ScrollArea from '$lib/components/shadcn/scroll-area/scroll-area.svelte';
 	import { Spinner } from '$lib/components/shadcn/spinner';
-	import { useFetchHomeIntroductionMarkdown } from '$lib/hooks/use-fetch-home-introduction-markdown.svelte';
-	import rehypeStringify from 'rehype-stringify';
-	import remarkGfm from 'remark-gfm';
-	import remarkParse from 'remark-parse';
-	import remarkRehype from 'remark-rehype';
-	import { unified } from 'unified';
+	import { renderHomeIntroductionMarkdown } from '$lib/markdown/render-home-introduction-markdown';
 
 	type Props = {
 		introduction: string | null;
@@ -21,14 +16,7 @@
 			return null;
 		}
 
-		const htmlRaw = await unified()
-			.use(remarkParse)
-			.use(remarkGfm)
-			.use(remarkRehype)
-			.use(rehypeStringify)
-			.process(introduction);
-
-		return htmlRaw.toString();
+		return await renderHomeIntroductionMarkdown(introduction);
 	});
 </script>
 

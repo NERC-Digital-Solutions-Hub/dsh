@@ -75,6 +75,7 @@
 	},
 	"dependencies": {
 		"@dsh/ai-catalogue": "workspace:*",
+		"@dsh/common": "workspace:*",
 		"@dsh/ai-where-to-build": "workspace:*",
 		"@dsh/maps-page": "workspace:*",
 		"@dsh/research-page": "workspace:*",

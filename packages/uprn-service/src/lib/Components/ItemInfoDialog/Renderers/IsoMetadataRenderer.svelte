@@ -7,7 +7,7 @@
 	import remarkParse from 'remark-parse';
 	import remarkRehype from 'remark-rehype';
 	import { unified } from 'unified';
-	import rehypeReferences from '$lib/Components/ItemInfoDialog/Renderers/Rehype/RehypeReferences';
+	import { rehypeReferences } from '@dsh/common';
 
 	const paths = {
 		fileIdentifier: '//*[local-name()="fileIdentifier"]/*[local-name()="CharacterString"]',

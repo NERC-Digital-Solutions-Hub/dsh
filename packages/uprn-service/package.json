@@ -73,6 +73,7 @@
 		"svelte"
 	],
 	"dependencies": {
+		"@dsh/common": "workspace:*",
 		"dexie": "^4.2.1",
 		"embla-carousel-svelte": "^8.6.0",
 		"lottie-web": "^5.13.0",

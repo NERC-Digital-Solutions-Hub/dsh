@@ -11,7 +11,7 @@
 	import ScrollArea from '$lib/Components/shadcn/scroll-area/scroll-area.svelte';
 	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 	import { unified } from 'unified';
-	import rehypeReferences from '$lib/Components/ItemInfoDialog/Renderers/Rehype/RehypeReferences';
+	import { rehypeReferences } from '@dsh/common';
 
 	type Props = {
 		content: Extract<MetadataResolvedContent, { type: 'md' }>;
