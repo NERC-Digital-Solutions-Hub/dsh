@@ -10,6 +10,8 @@
 
 @import '@dsh/research-page/styles.css';
 
+@import '@dsh/common/styles.css';
+
 @import './prose.css';
 
 @custom-variant dark (&:is(.dark *));

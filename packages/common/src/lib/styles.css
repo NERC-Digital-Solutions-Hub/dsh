@@ -1,1 +1,45 @@
 @source './components'; /* this is needed so tailwind applies the app styling when this package is added as a dependency! */
+
+.svg-icon {
+	display: inline-block;
+	width: 1em;
+	height: 1em;
+	flex: 0 0 auto;
+	background-color: currentColor;
+	vertical-align: -0.125em;
+
+	-webkit-mask-image: var(--svg-icon-url);
+	-webkit-mask-repeat: no-repeat;
+	-webkit-mask-position: center;
+	-webkit-mask-size: contain;
+
+	mask-image: var(--svg-icon-url);
+	mask-repeat: no-repeat;
+	mask-position: center;
+	mask-size: contain;
+}
+
+.inline-svg-icon {
+	margin-inline-end: 0.35em;
+}
+
+/* closer to the screenshot / original HTML render */
+.svg-icon--accent {
+	color: #e83e8c;
+}
+
+.svg-icon--primary {
+	color: #3b82f6;
+}
+
+.svg-icon--success {
+	color: #198754;
+}
+
+.svg-icon--warning {
+	color: #f0ad00;
+}
+
+.svg-icon--danger {
+	color: #dc3545;
+}
