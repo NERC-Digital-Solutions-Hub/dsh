@@ -186,7 +186,6 @@ export class NodeVisibilityController implements INodeVisibilityController {
 		}
 
 		layerView.visible = true;
-		this.setInitialDrawState(node, layerView);
 		this.updateParentLayerVisibility(layerView.layer, true);
 
 		const reactiveUtils = await import('@arcgis/core/core/reactiveUtils.js');
@@ -203,6 +202,7 @@ export class NodeVisibilityController implements INodeVisibilityController {
 			}
 		);
 
+		this.setInitialDrawState(node, layerView);
 		this.#drawStateHandles.set(node.id, handle);
 	}
 
@@ -452,6 +452,9 @@ export class NodeVisibilityController implements INodeVisibilityController {
 
 		if (layerView.suspended) {
 			this.drawStates.set(node.id, NodeDrawState.Suspended);
+			console.warn(
+				`Layer view for node ${node.id} is initially suspended, setting draw state to Suspended`
+			);
 		} else {
 			this.drawStates.set(node.id, NodeDrawState.Visible);
 		}
