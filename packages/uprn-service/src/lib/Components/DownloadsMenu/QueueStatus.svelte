@@ -11,12 +11,12 @@
 
 	/**
 	 * Generates tooltip content based on the queue ID and position.
-	 * @param queueId - The ID of the queue (1 for low priority, 2 for high priority).
+	 * @param queueId - The ID of the queue (0 for low priority, 1 for high priority).
 	 * @param queuePosition - The position of the item in the queue.
 	 * @returns A string containing the tooltip content.
 	 */
 	function getTooltipContent(queueId: number, queuePosition: number): string {
-		if (queueId === 1) {
+		if (queueId === 0) {
 			return `Queue position: ${queuePosition} (Low Priority)`;
 		} else {
 			return `Queue position: ${queuePosition} (High Priority)`;
@@ -28,7 +28,7 @@
 	<Tooltip.Root>
 		<Tooltip.Trigger>
 			<div class="inline-flex items-center rounded-md px-1 py-1 border-gray-100 border-1">
-				{#if queueId === 1}
+				{#if queueId === 0}
 					<span class="text-xs text-muted-foreground">{queuePosition}</span>
 					<ChevronsDown class="w-4 h-4 text-muted-foreground" />
 				{:else}
