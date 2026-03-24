@@ -98,7 +98,7 @@
 			>
 				<Badge
 					variant="outline"
-					class="w-fit px-1.5 py-0.5 text-[10px] leading-tight whitespace-nowrap bg-background opacity-100"
+					class="w-fit px-1.5 py-0.5 text-[10px] leading-tight whitespace-nowrap bg-pink-100 border-pink-400 opacity-100"
 				>
 					Not available in beta
 				</Badge>
