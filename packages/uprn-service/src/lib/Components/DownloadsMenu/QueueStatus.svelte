@@ -21,6 +21,8 @@
 		} else if (queueId === 2) {
 			return `Queue position: ${queuePosition} (High Priority)`;
 		}
+
+		throw new Error(`Invalid queueId: ${queueId}. Expected 1 or 2.`);
 	}
 </script>
 
