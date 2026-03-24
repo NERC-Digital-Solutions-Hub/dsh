@@ -16,9 +16,9 @@
 	 * @returns A string containing the tooltip content.
 	 */
 	function getTooltipContent(queueId: number, queuePosition: number): string {
-		if (queueId === 1) {
+		if (queueId === 2) {
 			return `Queue position: ${queuePosition} (Low Priority)`;
-		} else if (queueId === 2) {
+		} else if (queueId === 1) {
 			return `Queue position: ${queuePosition} (High Priority)`;
 		}
 
@@ -30,10 +30,10 @@
 	<Tooltip.Root>
 		<Tooltip.Trigger>
 			<div class="inline-flex items-center rounded-md px-1 py-1 border-gray-100 border-1">
-				{#if queueId === 1}
+				{#if queueId === 2}
 					<span class="text-xs text-muted-foreground">{queuePosition}</span>
 					<ChevronsDown class="w-4 h-4 text-muted-foreground" />
-				{:else if queueId === 2}
+				{:else if queueId === 1}
 					<span class="text-xs text-muted-foreground">{queuePosition}</span>
 					<ChevronsUp class="w-4 h-4 text-muted-foreground" />
 				{/if}
