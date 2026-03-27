@@ -20,7 +20,7 @@
 	<Dialog.Content
 		class="item-dialog h-[92vh] min-h-0 w-[80vw] max-w-[80vw] sm:max-w-[80vw] grid-rows-[auto_1fr] overflow-hidden p-0"
 	>
-		<div class="item-dialog__header-wrap">
+		<!-- <div class="item-dialog__header-wrap">
 			<div class="item-dialog__actions">
 				<Tooltip.Provider disableHoverableContent>
 					<Tooltip.Root>
@@ -38,7 +38,7 @@
 						<Tooltip.Content side="bottom">Open item page</Tooltip.Content>
 					</Tooltip.Root>
 				</Tooltip.Provider>
-			</div>
+			</div> -->
 
 			<Dialog.Header class="border-b px-12 py-8 pb-6 pr-24">
 				<Dialog.Title class="text-left text-2xl leading-tight">{item.title}</Dialog.Title>
