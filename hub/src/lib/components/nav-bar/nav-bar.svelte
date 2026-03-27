@@ -30,7 +30,7 @@
 									Explore our data using a traditional approach to search.
 								</div>
 							</NavigationMenu.Link>
-							<NavigationMenu.Link
+							<!-- <NavigationMenu.Link
 								class="apps-menu-link"
 								href="https://ndsh-uomanchester.hub.arcgis.com/search"
 								title="Explore our data using a traditional approach to search."
@@ -39,7 +39,7 @@
 								<div class="apps-menu-description text-muted-foreground">
 									Explore our data using a traditional approach to search.
 								</div>
-							</NavigationMenu.Link>
+							</NavigationMenu.Link> -->
 							<NavigationMenu.Link
 								class="apps-menu-link"
 								href={`${base}/catalogues/ai`}
