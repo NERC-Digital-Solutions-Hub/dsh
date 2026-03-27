@@ -213,11 +213,8 @@
 												</Card>
 
 												<Card class="border shadow-none">
-													<CardHeader class="pb-4">
-														<CardTitle>Additional information</CardTitle>
-														<CardDescription
-															>Credits and licence details for this resource.</CardDescription
-														>
+													<CardHeader>
+														<CardTitle>Additional Information</CardTitle>
 													</CardHeader>
 													<CardContent class="flex flex-col gap-5 pt-0">
 														<section class="flex flex-col gap-3">
