@@ -1,69 +1,72 @@
 <script lang="ts">
-	import type { CatalogueSearchStore } from '$lib/stores/catalogue/catalogue-search-store.svelte';
 	import ResultsTableItem from './results-table-item/results-table-item.svelte';
+	import type { CatalogueResultCardRecord } from '$lib/utils/catalogue-ui';
 
 	interface Props {
-		catalogueStore: CatalogueSearchStore;
+		records: CatalogueResultCardRecord[];
+		searchTerm?: string | null;
+		hasMore?: boolean;
+		isLoadingMore?: boolean;
+		onLoadMore?: () => void | Promise<void>;
 	}
 
-	let { catalogueStore }: Props = $props();
+	let {
+		records,
+		searchTerm = null,
+		hasMore = false,
+		isLoadingMore = false,
+		onLoadMore
+	}: Props = $props();
 
-	let loadMoreTrigger: HTMLDivElement | undefined = $state();
+	const trimmedSearchTerm = $derived(searchTerm?.trim() ?? null);
+	let loadMoreTrigger = $state<HTMLDivElement | null>(null);
 
-	// Set up intersection observer for infinite scroll
 	$effect(() => {
-		if (loadMoreTrigger && catalogueStore) {
-			const observer = new IntersectionObserver(
-				(entries) => {
-					const entry = entries[0];
-					if (entry.isIntersecting && catalogueStore?.hasMore && !catalogueStore?.isLoadingMore) {
-						catalogueStore?.loadMore();
-					}
-				},
-				{
-					root: null,
-					rootMargin: '100px',
-					threshold: 0.1
-				}
-			);
-
-			observer.observe(loadMoreTrigger);
-
-			return () => {
-				observer.disconnect();
-			};
+		if (!loadMoreTrigger || !onLoadMore) {
+			return;
 		}
-	});
 
-	function handleViewItem(fileIdentifier: string) {
-		console.log('View item:', fileIdentifier);
-		// TODO: Implement view details functionality
-	}
+		const observer = new IntersectionObserver(
+			(entries) => {
+				const entry = entries[0];
+				if (entry?.isIntersecting && hasMore && !isLoadingMore) {
+					void onLoadMore();
+				}
+			},
+			{
+				root: null,
+				rootMargin: '200px',
+				threshold: 0.1
+			}
+		);
+
+		observer.observe(loadMoreTrigger);
+
+		return () => {
+			observer.disconnect();
+		};
+	});
 </script>
 
 <div class="results-container">
-	{#if catalogueStore.getResults().records.length > 0}
+	{#if records.length > 0}
 		<div class="results-list">
-			{#each catalogueStore.getResults().records as record, index (`${record.fileIdentifier}-${index}`)}
-				<ResultsTableItem {record} onView={() => handleViewItem(record.fileIdentifier)} />
+			{#each records as record, index (`${record.fileIdentifier ?? record.title ?? 'result'}-${index}`)}
+				<ResultsTableItem {record} />
 			{/each}
 		</div>
-
-		<!-- Infinite scroll trigger -->
 		<div bind:this={loadMoreTrigger} class="load-more-trigger">
-			{#if catalogueStore?.isLoadingMore}
-				<div class="loading-more">
-					<p>Loading more results...</p>
-				</div>
-			{:else if !catalogueStore?.hasMore}
-				<div class="no-more-results">
-					<p>No more results to load</p>
-				</div>
+			{#if isLoadingMore}
+				<p class="load-more-message">Loading more results...</p>
+			{:else if !hasMore}
+				<p class="load-more-message load-more-message--muted">No more results to load.</p>
 			{/if}
 		</div>
 	{:else}
 		<div class="no-results">
-			<p>No results found.</p>
+			<p>
+				{trimmedSearchTerm ? `No results found for "${trimmedSearchTerm}".` : 'No results found.'}
+			</p>
 		</div>
 	{/if}
 </div>
@@ -82,29 +85,6 @@
 		margin-bottom: 2rem;
 	}
 
-	.load-more-trigger {
-		min-height: 50px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		margin-top: 1rem;
-	}
-
-	.loading-more {
-		text-align: center;
-		padding: 1rem;
-		color: hsl(var(--muted-foreground));
-		font-size: 0.875rem;
-	}
-
-	.no-more-results {
-		text-align: center;
-		padding: 1rem;
-		color: hsl(var(--muted-foreground));
-		font-size: 0.875rem;
-		opacity: 0.7;
-	}
-
 	.no-results {
 		text-align: center;
 		margin-top: 3rem;
@@ -112,7 +92,23 @@
 		font-size: 1rem;
 	}
 
-	/* Responsive adjustments */
+	.load-more-trigger {
+		min-height: 3rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.load-more-message {
+		margin: 0;
+		font-size: 0.875rem;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.load-more-message--muted {
+		opacity: 0.7;
+	}
+
 	@media (max-width: 768px) {
 		.results-list {
 			gap: 1rem;

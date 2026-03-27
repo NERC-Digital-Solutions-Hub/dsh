@@ -38,7 +38,6 @@
 	let mapView: MapView | null | undefined = $derived(mapViewComponent?.getMapView());
 
 	function onBoundingBoxAdded() {
-		console.log('[map-section] Bounding box added');
 		zoomToBoundingBox();
 	}
 

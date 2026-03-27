@@ -103,7 +103,6 @@
 
 			// Wait for the map to load
 			await mapView.when();
-			console.log('Map loaded successfully');
 		} catch (error) {
 			console.error('Error loading map:', error);
 

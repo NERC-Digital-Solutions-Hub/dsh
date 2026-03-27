@@ -1,13 +1,13 @@
 <script lang="ts">
-	import * as InputGroup from '$lib/components/shadcn/input-group/index.js';
-	import SearchIcon from '@lucide/svelte/icons/search';
-	import FilterIcon from '@lucide/svelte/icons/filter';
-	import { onMount } from 'svelte';
-	import { CatalogueSearchStore } from '$lib/stores/catalogue-search-store.svelte';
+	import { asset } from '$app/paths';
 	import SearchFilter from '$lib/components/search-filter/search-filter.svelte';
 	import ResultsTable from '$lib/components/results-table/results-table.svelte';
-	import SortSelector from '$lib/components/sort-selector/sort-selector.svelte';
 	import ServiceUnavailable from '$lib/components/service-unavailable/service-unavailable.svelte';
+	import SortSelector from '$lib/components/sort-selector/sort-selector.svelte';
+	import * as Alert from '$lib/components/shadcn/alert/index.js';
+	import * as InputGroup from '$lib/components/shadcn/input-group/index.js';
+	import { onMount } from 'svelte';
+	import { useFetchFormats, useFetchResourceTypes, useQueryMetadata } from '$lib';
 	import {
 		Sidebar,
 		SidebarContent,
@@ -15,46 +15,264 @@
 		SidebarProvider,
 		SidebarTrigger
 	} from '$lib/components/shadcn/sidebar/index.js';
-	import { asset } from '$app/paths';
+	import type { ApiRequestError } from '$lib/hooks/_api-request';
+	import type { AiCatalogueApiEndpoints, QueryRequest, QuerySortBy } from '$lib/types/api.types';
 	import type { CatalogueConfig } from '$lib/types/config';
+	import type { ValueCount } from '$lib/types/metadata';
+	import { adaptQueryRecords, SortByCriteria } from '$lib/utils/catalogue-ui';
+	import AlertCircleIcon from '@lucide/svelte/icons/alert-circle';
+	import FilterIcon from '@lucide/svelte/icons/filter';
+	import SearchIcon from '@lucide/svelte/icons/search';
 
-	let catalogueStore: CatalogueSearchStore | undefined = $state<CatalogueSearchStore | undefined>(
-		undefined
+	const PAGE_SIZE = 20;
+
+	let searchTerm = $state(null);
+	let submittedSearchTerm = $state(null);
+	let startDate = $state<string | null>(null);
+	let endDate = $state<string | null>(null);
+	let selectedResourceTypes = $state<string[]>([]);
+	let selectedFormats = $state<string[]>([]);
+	let sortBy = $state(SortByCriteria.Relevance);
+	let isAscending = $state(true);
+	let configError = $state<unknown>(null);
+	let initialLoadError = $state<unknown>(null);
+	let isConfigLoading = $state(true);
+	let isLoadingMore = $state(false);
+	let hasMore = $state(true);
+	let hasInitialQueryCompleted = $state(false);
+	let metadataQuery = $state<ReturnType<typeof useQueryMetadata> | null>(null);
+	let resourceTypesQuery = $state<ReturnType<typeof useFetchResourceTypes> | null>(null);
+	let formatsQuery = $state<ReturnType<typeof useFetchFormats> | null>(null);
+	let currentPageIndex = $state(0);
+	let activeRequestBase = $state<Omit<QueryRequest, 'pagination'> | null>(null);
+
+	const apiRecords = $derived(metadataQuery?.content?.payload ?? []);
+	const records = $derived(adaptQueryRecords(apiRecords));
+	const resourceTypes = $derived(toValueCounts(resourceTypesQuery?.content?.results));
+	const formats = $derived(toValueCounts(formatsQuery?.content?.results));
+	const isServiceUnavailable = $derived(Boolean(configError) || Boolean(initialLoadError));
+	const canSearch = $derived(
+		Boolean(metadataQuery) && !isConfigLoading && !isServiceUnavailable && !metadataQuery?.isLoading
 	);
+	const queryErrorMessage = $derived(getApiErrorMessage(metadataQuery?.error));
 
-	let initialLoadCompleted = $state(false);
+	onMount(() => {
+		void initialise();
+	});
 
-	onMount(async () => {
-		const path = asset('/config/catalogues/ai/api.json');
-		const response = await fetch(path);
-		const apiConfig: CatalogueConfig = await response.json();
-		catalogueStore = new CatalogueSearchStore(apiConfig.catalogueApiUrl);
+	function buildEndpoints(baseUrl: string): AiCatalogueApiEndpoints {
+		const normalisedBaseUrl = baseUrl.replace(/\/+$/, '');
+
+		return {
+			baseUrl: normalisedBaseUrl,
+			getArchetypesRoute: `${normalisedBaseUrl}/archetypes`,
+			queryMetadataRoute: `${normalisedBaseUrl}/metadata/query`,
+			getResourceTypesRoute: `${normalisedBaseUrl}/metadata/resource-types`,
+			getFormatsRoute: `${normalisedBaseUrl}/metadata/formats`
+		};
+	}
+
+	$effect(() => {
+		const availableResourceTypes = new Set(resourceTypes.map((resourceType) => resourceType.value));
+		const nextSelectedResourceTypes = selectedResourceTypes.filter((resourceType) =>
+			availableResourceTypes.has(resourceType)
+		);
+
+		if (nextSelectedResourceTypes.length !== selectedResourceTypes.length) {
+			selectedResourceTypes = nextSelectedResourceTypes;
+		}
 	});
 
 	$effect(() => {
-		if (initialLoadCompleted || !catalogueStore || !catalogueStore.isServiceLoaded) {
-			return;
+		const availableFormats = new Set(formats.map((format) => format.value));
+		const nextSelectedFormats = selectedFormats.filter((format) => availableFormats.has(format));
+
+		if (nextSelectedFormats.length !== selectedFormats.length) {
+			selectedFormats = nextSelectedFormats;
 		}
-
-		const init = async () => {
-			if (!catalogueStore) {
-				return;
-			}
-
-			initialLoadCompleted = true;
-			await catalogueStore.submit();
-		};
-
-		init();
 	});
 
-	async function onSearch() {
-		console.log('Search clicked');
-		if (!catalogueStore) {
+	async function initialise() {
+		isConfigLoading = true;
+		configError = null;
+		initialLoadError = null;
+
+		try {
+			const path = asset('/config/catalogues/ai/api.json');
+			const response = await fetch(path);
+
+			if (!response.ok) {
+				throw new Error(`Unable to load catalogue configuration: ${response.statusText}`);
+			}
+
+			const apiConfig = (await response.json()) as CatalogueConfig;
+			const serviceEndpoints = buildEndpoints(apiConfig.catalogueApiUrl);
+			metadataQuery = useQueryMetadata(serviceEndpoints.queryMetadataRoute);
+			resourceTypesQuery = useFetchResourceTypes(serviceEndpoints.getResourceTypesRoute);
+			formatsQuery = useFetchFormats(serviceEndpoints.getFormatsRoute);
+
+			await Promise.allSettled([resourceTypesQuery.fetch(), formatsQuery.fetch()]);
+			await executeSearch();
+
+			if (metadataQuery.error && records.length === 0) {
+				initialLoadError = metadataQuery.error;
+			}
+		} catch (error) {
+			configError = error;
+		} finally {
+			isConfigLoading = false;
+		}
+	}
+
+	async function executeSearch(nextSearchTerm = submittedSearchTerm) {
+		if (!metadataQuery) {
 			return;
 		}
 
-		await catalogueStore.submit();
+		const requestBase = buildRequestBase(nextSearchTerm);
+		activeRequestBase = requestBase;
+		currentPageIndex = 0;
+		hasMore = true;
+		isLoadingMore = false;
+
+		await metadataQuery.fetch(
+			{
+				...requestBase,
+				pagination: {
+					index: currentPageIndex,
+					size: PAGE_SIZE
+				}
+			},
+			{ append: false }
+		);
+
+		hasMore = (metadataQuery.content?.payload?.length ?? 0) >= PAGE_SIZE;
+		hasInitialQueryCompleted = true;
+	}
+
+	async function loadMoreResults() {
+		if (
+			!metadataQuery ||
+			!activeRequestBase ||
+			metadataQuery.isLoading ||
+			isLoadingMore ||
+			!hasMore
+		) {
+			return;
+		}
+
+		const nextPageIndex = currentPageIndex + 1;
+		isLoadingMore = true;
+
+		try {
+			await metadataQuery.fetch(
+				{
+					...activeRequestBase,
+					pagination: {
+						index: nextPageIndex,
+						size: PAGE_SIZE
+					}
+				},
+				{ append: true }
+			);
+
+			const existingRecords = metadataQuery.content?.payload ?? [];
+			const previousRecordCount =
+				currentPageIndex === 0 ? PAGE_SIZE : currentPageIndex * PAGE_SIZE + PAGE_SIZE;
+			const returnedRecordCount = existingRecords.length - previousRecordCount;
+
+			currentPageIndex = nextPageIndex;
+			hasMore = returnedRecordCount >= PAGE_SIZE;
+		} catch {
+			hasMore = false;
+		} finally {
+			isLoadingMore = false;
+		}
+	}
+
+	async function onSearch(event: SubmitEvent) {
+		event.preventDefault();
+
+		if (!metadataQuery || isServiceUnavailable) {
+			return;
+		}
+
+		submittedSearchTerm = searchTerm;
+		await executeSearch(searchTerm);
+	}
+
+	async function rerunActiveSearch() {
+		if (!hasInitialQueryCompleted || isServiceUnavailable) {
+			return;
+		}
+
+		await executeSearch(submittedSearchTerm);
+	}
+
+	function normaliseSearchTerm(term?: string | null): string | null {
+		return term ? term.trim() || null : null;
+	}
+
+	function handleSortChange(nextSortBy: SortByCriteria) {
+		sortBy = nextSortBy;
+		void rerunActiveSearch();
+	}
+
+	function handleToggleSortOrder() {
+		isAscending = !isAscending;
+		void rerunActiveSearch();
+	}
+
+	function buildRequestBase(nextSearchTerm: string | null): Omit<QueryRequest, 'pagination'> {
+		const request: Omit<QueryRequest, 'pagination'> = {
+			searchTerm: normaliseSearchTerm(nextSearchTerm),
+			resourceTypes: selectedResourceTypes.length > 0 ? selectedResourceTypes : null,
+			formats: selectedFormats.length > 0 ? selectedFormats : null,
+			sortBy: Number(sortBy) as QuerySortBy,
+			isDescending: !isAscending
+		};
+
+		if (startDate || endDate) {
+			request.dateRange = {
+				start: startDate,
+				end: endDate
+			};
+		}
+
+		return request;
+	}
+
+	function toValueCounts(
+		values?: Array<{ value?: string | null; count?: number }> | null
+	): ValueCount[] {
+		return (values ?? [])
+			.filter((entry): entry is { value?: string | null; count?: number } => Boolean(entry?.value))
+			.map((entry) => ({
+				value: entry.value?.trim() ?? '',
+				count: entry.count ?? 0
+			}))
+			.filter((entry) => entry.value.length > 0);
+	}
+
+	function getApiErrorMessage(error: unknown) {
+		if (!error) {
+			return undefined;
+		}
+
+		const apiError = error as Partial<ApiRequestError>;
+		const validationProblem = apiError.validationProblem;
+
+		if (validationProblem?.errors) {
+			return Object.values(validationProblem.errors).flat().filter(Boolean).join(' ');
+		}
+
+		return (
+			validationProblem?.detail ||
+			validationProblem?.title ||
+			apiError.bodyText ||
+			apiError.message ||
+			'Something went wrong while searching the catalogue.'
+		);
 	}
 </script>
 
@@ -63,9 +281,18 @@
 	<Sidebar side="left" variant="sidebar" collapsible="offcanvas">
 		<SidebarContent>
 			<div class="sidebar-offset p-4">
-				{#if catalogueStore}
-					<SearchFilter catalogueSearchStore={catalogueStore} />
-				{/if}
+				<SearchFilter
+					{startDate}
+					{endDate}
+					{selectedResourceTypes}
+					{selectedFormats}
+					{resourceTypes}
+					{formats}
+					onStartDateChange={(date) => (startDate = date)}
+					onEndDateChange={(date) => (endDate = date)}
+					onResourceTypesChange={(values) => (selectedResourceTypes = values)}
+					onFormatsChange={(values) => (selectedFormats = values)}
+				/>
 			</div>
 		</SidebarContent>
 	</Sidebar>
@@ -78,51 +305,67 @@
 
 		<div class="flex-1 p-4">
 			<!-- Search Controls -->
-			<div class="search-container">
+			<form class="search-container" onsubmit={onSearch}>
 				<div class="search-controls">
 					<InputGroup.Root class="search-bar">
 						<InputGroup.Input
-							placeholder="Search..."
-							value={catalogueStore?.getSearchTerm()}
-							oninput={(e: InputEvent) => catalogueStore?.setSearchTerm((e.target as HTMLInputElement).value)}
+							placeholder="Search catalogue metadata..."
+							bind:value={searchTerm}
+							disabled={isConfigLoading || isServiceUnavailable}
 						/>
 						<InputGroup.Addon>
 							<SearchIcon />
 						</InputGroup.Addon>
 						<InputGroup.Addon align="inline-end">
-							<InputGroup.Button onclick={onSearch}>Search</InputGroup.Button>
+							<InputGroup.Button type="submit" disabled={!canSearch}>
+								{metadataQuery?.isLoading ? 'Searching...' : 'Search'}
+							</InputGroup.Button>
 						</InputGroup.Addon>
 					</InputGroup.Root>
-				</div>
-			</div>
 
-			<!-- Sort and Results Count -->
-			{#if catalogueStore}
+					{#if queryErrorMessage}
+						<Alert.Root variant="destructive">
+							<AlertCircleIcon />
+							<Alert.Title>Search failed</Alert.Title>
+							<Alert.Description>{queryErrorMessage}</Alert.Description>
+						</Alert.Root>
+					{/if}
+				</div>
+			</form>
+
+			{#if isServiceUnavailable}
+				<ServiceUnavailable />
+			{:else}
 				<div class="controls-container">
 					<div class="controls-box">
 						<div class="text-sm text-muted-foreground">
-							{catalogueStore.getResults().totalCount} results
+							{records.length} results
 						</div>
-						<SortSelector {catalogueStore} />
+						<SortSelector
+							{sortBy}
+							{isAscending}
+							onSortChange={handleSortChange}
+							onToggleSortOrder={handleToggleSortOrder}
+						/>
 					</div>
 				</div>
-			{/if}
 
-			{#if catalogueStore?.isServiceLoaded === false}
-				<ServiceUnavailable />
-			{:else if catalogueStore?.isServiceLoaded === undefined}
-				<div class="no-results">
-					<p>Loading service information...</p>
-				</div>
-			{:else if catalogueStore?.isServiceLoaded === true}
-				<!-- Results -->
 				<div class="results-section">
-					{#if catalogueStore?.isLoading}
+					{#if !hasInitialQueryCompleted}
 						<div class="no-results">
-							<p>Loading...</p>
+							<p>Loading catalogue results...</p>
 						</div>
-					{:else if catalogueStore}
-						<ResultsTable {catalogueStore} />
+					{:else}
+						{#if metadataQuery?.isLoading}
+							<div class="results-status">Updating results...</div>
+						{/if}
+						<ResultsTable
+							{records}
+							searchTerm={submittedSearchTerm}
+							{hasMore}
+							{isLoadingMore}
+							onLoadMore={loadMoreResults}
+						/>
 					{/if}
 				</div>
 			{/if}
@@ -171,6 +414,13 @@
 		text-align: center;
 		margin-top: 3rem;
 		color: #6b7280;
+	}
+
+	.results-status {
+		max-width: 1200px;
+		margin: 0 auto 1rem;
+		font-size: 0.875rem;
+		color: hsl(var(--muted-foreground));
 	}
 
 	.sidebar-offset {

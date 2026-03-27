@@ -2,16 +2,16 @@
 	import { Button } from '$lib/components/shadcn/button';
 	import * as DropdownMenu from '$lib/components/shadcn/dropdown-menu';
 	import { ArrowUpDown, ArrowUp, ArrowDown, Check } from '@lucide/svelte';
-	import {
-		SortByCriteria,
-		type CatalogueSearchStore
-	} from '$lib/stores/catalogue-search-store.svelte';
+	import { SortByCriteria } from '$lib/utils/catalogue-ui';
 
 	interface Props {
-		catalogueStore: CatalogueSearchStore;
+		sortBy: SortByCriteria;
+		isAscending: boolean;
+		onSortChange: (sortBy: SortByCriteria) => void | Promise<void>;
+		onToggleSortOrder: () => void | Promise<void>;
 	}
 
-	let { catalogueStore }: Props = $props();
+	let { sortBy, isAscending, onSortChange, onToggleSortOrder }: Props = $props();
 
 	const sortOptions = [
 		{ value: SortByCriteria.Relevance, label: 'Relevance' },
@@ -20,20 +20,17 @@
 		{ value: SortByCriteria.RevisionDate, label: 'Revision Date' }
 	];
 
-	const currentSort = $derived(catalogueStore.getSortBy());
+	const currentSort = $derived(sortBy);
 	const currentSortLabel = $derived(
 		sortOptions.find((opt) => opt.value === currentSort)?.label || 'Relevance'
 	);
-	const isAscending = $derived(catalogueStore.getIsAscending());
 
 	async function handleSortChange(sortBy: SortByCriteria) {
-		catalogueStore.setSortBy(sortBy);
-		await catalogueStore.submit();
+		await onSortChange(sortBy);
 	}
 
 	async function handleToggleSortOrder() {
-		catalogueStore.toggleSortOrder();
-		await catalogueStore.submit();
+		await onToggleSortOrder();
 	}
 </script>
 

@@ -37,12 +37,6 @@
 	});
 	// Update bounding box when props change
 	$effect(() => {
-		console.log(
-			'[map-bounding-box] Props changed - boundingBox:',
-			boundingBox,
-			'visible:',
-			visible
-		);
 		if (browser && mapView && isInitialized) {
 			updateBoundingBox();
 		}
@@ -107,7 +101,6 @@
 
 				mapView.graphics.add(boundingBoxGraphic);
 				onBoundingBoxAdded?.();
-				console.log('Bounding box added to map');
 			} catch (error) {
 				console.error('Error adding bounding box:', error);
 			}

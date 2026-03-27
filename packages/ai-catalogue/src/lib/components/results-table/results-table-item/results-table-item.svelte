@@ -1,38 +1,36 @@
 <script lang="ts">
+	import ItemDialog from '$lib/components/item-dialog/item-dialog.svelte';
 	import {
 		Card,
-		CardContent,
 		CardDescription,
+		CardContent,
 		CardFooter,
 		CardHeader,
 		CardTitle
 	} from '$lib/components/shadcn/card';
 	import { Button } from '$lib/components/shadcn/button';
 	import MapSection from '$lib/components/map-view/map-section.svelte';
-	import type { MetadataCommonDto } from '$lib/types/metadata';
+	import type { CatalogueResultCardRecord } from '$lib/utils/catalogue-ui';
 
 	interface Props {
-		record: MetadataCommonDto;
-		onView?: () => void;
+		record: CatalogueResultCardRecord;
 	}
 
-	let { record, onView }: Props = $props();
+	let { record }: Props = $props();
 
 	let isExpanded = $state(false);
+	let isItemDialogOpen = $state(false);
 
-	// Truncate abstract to a reasonable length when not expanded
-	const PREVIEW_LENGTH = 500;
+	const PREVIEW_LENGTH = 320;
 
-	const truncatedAbstract = $derived(
-		record.abstract.length > PREVIEW_LENGTH
-			? record.abstract.substring(0, PREVIEW_LENGTH) + '...'
-			: record.abstract
+	const description = $derived(record.abstract?.trim() ?? '');
+	const truncatedDescription = $derived(
+		description.length > PREVIEW_LENGTH
+			? `${description.slice(0, PREVIEW_LENGTH).trimEnd()}...`
+			: description
 	);
-
-	const displayAbstract = $derived(isExpanded ? record.abstract : truncatedAbstract);
-	const shouldShowExpandButton = $derived(record.abstract.length > PREVIEW_LENGTH);
-
-	// Convert BoundingBoxDto to map bounding box format
+	const displayDescription = $derived(isExpanded ? description : truncatedDescription);
+	const shouldShowExpandButton = $derived(description.length > PREVIEW_LENGTH);
 	const mapBoundingBox = $derived(
 		record.boundingBox
 			? {
@@ -45,38 +43,33 @@
 			: null
 	);
 
+	function formatDate(dateString: string): string {
+		const parsedDate = new Date(dateString);
+
+		if (Number.isNaN(parsedDate.getTime())) {
+			return dateString;
+		}
+
+		return parsedDate.toLocaleDateString('en-GB', {
+			year: 'numeric',
+			month: 'long',
+			day: 'numeric'
+		});
+	}
+
 	function toggleExpanded() {
 		if (shouldShowExpandButton) {
 			isExpanded = !isExpanded;
 		}
 	}
-
-	function handleView() {
-		onView?.();
-	}
-
-	function formatDate(dateString: string): string {
-		try {
-			console.log('date', dateString);
-			const date = new Date(dateString);
-			return date.toLocaleDateString('en-US', {
-				year: 'numeric',
-				month: 'long',
-				day: 'numeric'
-			});
-		} catch {
-			return dateString;
-		}
-	}
 </script>
 
 <Card
-	class="flex cursor-pointer transition-all duration-200 hover:shadow-lg {isExpanded
+	class="result-card flex cursor-pointer transition-all duration-200 hover:shadow-lg {isExpanded
 		? 'h-auto'
 		: 'min-h-[300px]'}"
 >
-	<div class="flex w-full flex-row">
-		<!-- Map Section (Left Side) -->
+	<div class="result-card__layout">
 		{#if mapBoundingBox}
 			<div class="map-preview">
 				<MapSection
@@ -88,18 +81,22 @@
 			</div>
 		{/if}
 
-		<!-- Content Section (Right Side) -->
-		<div class="flex flex-1 flex-col" onclick={toggleExpanded}>
+		<div class="result-card__content">
 			<CardHeader class="pb-3">
-				<CardTitle class="line-clamp-2 text-lg font-semibold">{record.title}</CardTitle>
-				<div class="text-sm text-muted-foreground">
-					Published: {formatDate(record.publicationDate ?? record.revisionDate ?? 'N/A')}
+				<CardTitle class="line-clamp-2 text-lg font-semibold">
+					{record.title}
+				</CardTitle>
+
+				<div class="result-card__meta">
+					<span>
+						Published: {formatDate(record.publicationDate ?? record.revisionDate ?? 'N/A')}
+					</span>
 				</div>
 			</CardHeader>
 
-			<CardContent class="flex-1 pb-2">
+			<CardContent class="flex-1 pb-2" onclick={toggleExpanded}>
 				<CardDescription class="text-sm leading-relaxed {isExpanded ? '' : 'line-clamp-6'}">
-					{displayAbstract}
+					{displayDescription}
 				</CardDescription>
 				{#if shouldShowExpandButton && !isExpanded}
 					<div class="mt-2 text-xs text-muted-foreground">Click to read more...</div>
@@ -111,9 +108,9 @@
 					variant="default"
 					size="sm"
 					class="w-full"
-					onclick={(e) => {
-						e.stopPropagation();
-						handleView();
+					onclick={(event) => {
+						event.stopPropagation();
+						isItemDialogOpen = true;
 					}}
 				>
 					View Details
@@ -123,7 +120,30 @@
 	</div>
 </Card>
 
+<ItemDialog bind:open={isItemDialogOpen} item={record.detailItem} />
+
 <style>
+	:global(.result-card) {
+		overflow: hidden;
+	}
+
+	.result-card__layout {
+		display: flex;
+		width: 100%;
+	}
+
+	.result-card__content {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		min-width: 0;
+	}
+
+	.result-card__meta {
+		font-size: 0.875rem;
+		color: hsl(var(--muted-foreground));
+	}
+
 	.map-preview {
 		width: 300px;
 		min-width: 300px;
@@ -131,12 +151,16 @@
 		min-height: 300px;
 		border-right: 1px solid hsl(var(--border));
 		overflow: hidden;
-		pointer-events: none; /* Completely disable all mouse interactions */
-		user-select: none; /* Prevent text selection */
+		pointer-events: none;
+		user-select: none;
 		padding-left: 1rem;
 	}
 
 	@media (max-width: 768px) {
+		.result-card__layout {
+			flex-direction: row;
+		}
+
 		.map-preview {
 			width: 200px;
 			min-width: 200px;

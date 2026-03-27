@@ -1,65 +1,62 @@
 <script lang="ts">
 	import DateSelector from '$lib/components/date-selector/date-selector.svelte';
 	import { Combobox, type ComboboxOption } from '$lib/components/combobox';
-	import type { CatalogueSearchStore } from '$lib/stores/catalogue-search-store.svelte';
+	import type { ValueCount } from '$lib/types/metadata';
 
 	type Props = {
-		catalogueSearchStore: CatalogueSearchStore;
+		startDate: string | null;
+		endDate: string | null;
+		selectedResourceTypes: string[];
+		selectedFormats: string[];
+		resourceTypes: ValueCount[];
+		formats: ValueCount[];
+		onStartDateChange: (date: string | null) => void;
+		onEndDateChange: (date: string | null) => void;
+		onResourceTypesChange: (values: string[]) => void;
+		onFormatsChange: (values: string[]) => void;
 	};
 
-	let { catalogueSearchStore }: Props = $props();
+	let {
+		startDate,
+		endDate,
+		selectedResourceTypes,
+		selectedFormats,
+		resourceTypes,
+		formats,
+		onStartDateChange,
+		onEndDateChange,
+		onResourceTypesChange,
+		onFormatsChange
+	}: Props = $props();
 
-	// Get initial values from store
-	const dateRange = catalogueSearchStore.getDateRange();
-	let startDate = $state<string | null>(dateRange.start ?? null);
-	let endDate = $state<string | null>(dateRange.end ?? null);
-	let selectedResourceTypes = $state<string[]>(catalogueSearchStore.getSelectedResourceTypes());
-	let selectedFormats = $state<string[]>(catalogueSearchStore.getSelectedFormats());
-
-	// Convert resource types to combobox options
 	const resourceTypeOptions = $derived<ComboboxOption[]>(
-		catalogueSearchStore.getResourceTypes().map((rt) => ({
-			value: rt.value,
-			label: `${rt.value} (${rt.count})`
+		resourceTypes.map((resourceType) => ({
+			value: resourceType.value,
+			label: `${resourceType.value} (${resourceType.count})`
 		}))
 	);
 
-	// Convert formats to combobox options
 	const formatOptions = $derived<ComboboxOption[]>(
-		catalogueSearchStore.getFormats().map((format) => ({
+		formats.map((format) => ({
 			value: format.value,
 			label: `${format.value} (${format.count})`
 		}))
 	);
 
-	function handleStartDateChange(date: string | null) {
-		startDate = date;
-		catalogueSearchStore.setDateRange(startDate, endDate);
-	}
-
-	function handleEndDateChange(date: string | null) {
-		endDate = date;
-		catalogueSearchStore.setDateRange(startDate, endDate);
-	}
-
 	function handleResourceTypeSelect(value: string) {
-		selectedResourceTypes = [...selectedResourceTypes, value];
-		catalogueSearchStore.setSelectedResourceTypes(selectedResourceTypes);
+		onResourceTypesChange([...selectedResourceTypes, value]);
 	}
 
 	function handleResourceTypeDeselect(value: string) {
-		selectedResourceTypes = selectedResourceTypes.filter((v) => v !== value);
-		catalogueSearchStore.setSelectedResourceTypes(selectedResourceTypes);
+		onResourceTypesChange(selectedResourceTypes.filter((selectedValue) => selectedValue !== value));
 	}
 
 	function handleFormatSelect(value: string) {
-		selectedFormats = [...selectedFormats, value];
-		catalogueSearchStore.setSelectedFormats(selectedFormats);
+		onFormatsChange([...selectedFormats, value]);
 	}
 
 	function handleFormatDeselect(value: string) {
-		selectedFormats = selectedFormats.filter((v) => v !== value);
-		catalogueSearchStore.setSelectedFormats(selectedFormats);
+		onFormatsChange(selectedFormats.filter((selectedValue) => selectedValue !== value));
 	}
 </script>
 
@@ -79,9 +76,8 @@
 	<div class="filter-section">
 		<h3 class="filter-title">Publication Date</h3>
 		<div class="date-filters">
-			<DateSelector label="From Date" value={startDate} onDateChange={handleStartDateChange} />
-
-			<DateSelector label="To Date" value={endDate} onDateChange={handleEndDateChange} />
+			<DateSelector label="From Date" value={startDate} onDateChange={onStartDateChange} />
+			<DateSelector label="To Date" value={endDate} onDateChange={onEndDateChange} />
 		</div>
 	</div>
 
