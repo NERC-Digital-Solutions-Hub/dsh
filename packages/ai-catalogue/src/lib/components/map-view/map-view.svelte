@@ -10,6 +10,7 @@
 		zoom?: number; // Initial zoom level
 		center?: [number, number]; // Initial center coordinates [longitude, latitude]
 		interactive?: boolean; // Whether the map should be interactive
+		minHeight?: number | string; // Minimum height for the rendered map viewport
 	};
 
 	const {
@@ -17,7 +18,8 @@
 		fallbackBasemap = 'streets-vector',
 		zoom = undefined,
 		center = undefined,
-		interactive = true
+		interactive = true,
+		minHeight = 300
 	}: Props = $props();
 
 	let mapContainer: string | HTMLDivElement | null = null;
@@ -174,12 +176,15 @@
 	});
 </script>
 
-<div class="map-view" bind:this={mapContainer}></div>
+<div
+	class="map-view"
+	style:min-height={typeof minHeight === 'number' ? `${minHeight}px` : minHeight}
+	bind:this={mapContainer}
+></div>
 
 <style>
 	.map-view {
 		width: 100%;
 		height: 100%;
-		min-height: 300px;
 	}
 </style>

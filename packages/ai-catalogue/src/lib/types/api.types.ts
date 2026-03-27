@@ -1,6 +1,6 @@
 export interface ArchetypeDefinition {
-	id?: number;
-	name?: string | null;
+	id: number;
+	name: string;
 }
 
 export interface ArchetypeSummary {
@@ -13,7 +13,7 @@ export interface ArchetypeSummaries {
 }
 
 export interface GetArchetypesResponse {
-	archetypes?: ArchetypeDefinition[] | null;
+	results?: ArchetypeDefinition[] | null;
 }
 
 export interface QueryBoundingBox {

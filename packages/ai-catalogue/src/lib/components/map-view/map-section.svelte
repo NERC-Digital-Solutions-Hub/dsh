@@ -16,6 +16,8 @@
 		showBoundingBox?: boolean;
 		boundingBoxColor?: [number, number, number, number];
 		interactive?: boolean;
+		mapMinHeight?: number | string;
+		expandFactor?: number;
 	};
 
 	const {
@@ -29,7 +31,9 @@
 		},
 		showBoundingBox = true,
 		boundingBoxColor = [255, 0, 0, 0.3],
-		interactive = true
+		interactive = true,
+		mapMinHeight = 300,
+		expandFactor = 1.2
 	}: Props = $props();
 
 	// References to components
@@ -62,6 +66,7 @@
 			{portalId}
 			fallbackBasemap="streets-vector"
 			{interactive}
+			minHeight={mapMinHeight}
 		/>
 
 		<SvelteMapBoundingBox
@@ -71,6 +76,7 @@
 			visible={showBoundingBox}
 			color={boundingBoxColor}
 			{onBoundingBoxAdded}
+			{expandFactor}
 		/>
 	</div>
 </div>

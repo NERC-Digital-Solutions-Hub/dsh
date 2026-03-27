@@ -16,6 +16,7 @@
 		visible?: boolean;
 		color?: [number, number, number, number];
 		onBoundingBoxAdded?: (() => void) | null; // Callback when bounding box is added
+		expandFactor?: number;
 	};
 
 	const {
@@ -23,7 +24,8 @@
 		boundingBox = null,
 		visible = false,
 		color = [255, 0, 0, 0.3],
-		onBoundingBoxAdded = null
+		onBoundingBoxAdded = null,
+		expandFactor = 1.2
 	}: Props = $props();
 
 	let boundingBoxGraphic: any = null;
@@ -122,7 +124,7 @@
 				spatialReference: boundingBox.spatialReference || { wkid: 4326 }
 			});
 
-			await mapView.goTo(extent.expand(1.2)); // Add 20% padding around the extent
+			await mapView.goTo(extent.expand(expandFactor));
 		} catch (error) {
 			console.error('Error zooming to bounding box:', error);
 		}

@@ -7,7 +7,14 @@
 	import * as Alert from '$lib/components/shadcn/alert/index.js';
 	import * as InputGroup from '$lib/components/shadcn/input-group/index.js';
 	import { onMount } from 'svelte';
-	import { useFetchFormats, useFetchResourceTypes, useQueryMetadata } from '$lib';
+	import { Toaster } from '$lib/components/shadcn/sonner/index.js';
+	import { toast } from 'svelte-sonner';
+	import {
+		useFetchArchetypes,
+		useFetchFormats,
+		useFetchResourceTypes,
+		useQueryMetadata
+	} from '$lib';
 	import {
 		Sidebar,
 		SidebarContent,
@@ -16,13 +23,19 @@
 		SidebarTrigger
 	} from '$lib/components/shadcn/sidebar/index.js';
 	import type { ApiRequestError } from '$lib/hooks/_api-request';
-	import type { AiCatalogueApiEndpoints, QueryRequest, QuerySortBy } from '$lib/types/api.types';
+	import type {
+		AiCatalogueApiEndpoints,
+		ArchetypeDefinition,
+		QueryRequest,
+		QuerySortBy
+	} from '$lib/types/api.types';
 	import type { CatalogueConfig } from '$lib/types/config';
 	import type { ValueCount } from '$lib/types/metadata';
 	import { adaptQueryRecords, SortByCriteria } from '$lib/utils/catalogue-ui';
 	import AlertCircleIcon from '@lucide/svelte/icons/alert-circle';
 	import FilterIcon from '@lucide/svelte/icons/filter';
 	import SearchIcon from '@lucide/svelte/icons/search';
+	import ArchetypeDialog from '$lib/components/archetype-dialog/archetype-dialog.svelte';
 
 	const PAGE_SIZE = 20;
 
@@ -40,11 +53,15 @@
 	let isLoadingMore = $state(false);
 	let hasMore = $state(true);
 	let hasInitialQueryCompleted = $state(false);
+	let fetchArchetypes = $state<ReturnType<typeof useFetchArchetypes> | null>(null);
 	let metadataQuery = $state<ReturnType<typeof useQueryMetadata> | null>(null);
 	let resourceTypesQuery = $state<ReturnType<typeof useFetchResourceTypes> | null>(null);
 	let formatsQuery = $state<ReturnType<typeof useFetchFormats> | null>(null);
 	let currentPageIndex = $state(0);
 	let activeRequestBase = $state<Omit<QueryRequest, 'pagination'> | null>(null);
+
+	let selectedArchetype = $state<ArchetypeDefinition | null>(null);
+	let openArchetypeDialog = $state(true);
 
 	const apiRecords = $derived(metadataQuery?.content?.payload ?? []);
 	const records = $derived(adaptQueryRecords(apiRecords));
@@ -55,6 +72,7 @@
 		Boolean(metadataQuery) && !isConfigLoading && !isServiceUnavailable && !metadataQuery?.isLoading
 	);
 	const queryErrorMessage = $derived(getApiErrorMessage(metadataQuery?.error));
+	const archetypes: ArchetypeDefinition[] = $derived(fetchArchetypes?.content?.results ?? []);
 
 	onMount(() => {
 		void initialise();
@@ -92,6 +110,14 @@
 		}
 	});
 
+	$effect(() => {
+		if (!selectedArchetype) {
+			return;
+		}
+
+		toast('Selected archetype: ' + selectedArchetype.name);
+	});
+
 	async function initialise() {
 		isConfigLoading = true;
 		configError = null;
@@ -110,8 +136,13 @@
 			metadataQuery = useQueryMetadata(serviceEndpoints.queryMetadataRoute);
 			resourceTypesQuery = useFetchResourceTypes(serviceEndpoints.getResourceTypesRoute);
 			formatsQuery = useFetchFormats(serviceEndpoints.getFormatsRoute);
+			fetchArchetypes = useFetchArchetypes(serviceEndpoints.getArchetypesRoute);
 
-			await Promise.allSettled([resourceTypesQuery.fetch(), formatsQuery.fetch()]);
+			await Promise.allSettled([
+				resourceTypesQuery.fetch(),
+				formatsQuery.fetch(),
+				fetchArchetypes.fetch()
+			]);
 			await executeSearch();
 
 			if (metadataQuery.error && records.length === 0) {
@@ -275,6 +306,16 @@
 		);
 	}
 </script>
+
+<Toaster position="top-center" />
+
+{#if archetypes.length > 0}
+	<ArchetypeDialog
+		{archetypes}
+		open={openArchetypeDialog}
+		onSelectArchetype={(archetype) => (selectedArchetype = archetype)}
+	/>
+{/if}
 
 <SidebarProvider open={true}>
 	<!-- Filter Sidebar -->
