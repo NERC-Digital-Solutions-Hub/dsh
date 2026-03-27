@@ -20,8 +20,8 @@
 	<Dialog.Content
 		class="item-dialog h-[92vh] min-h-0 w-[80vw] max-w-[80vw] sm:max-w-[80vw] grid-rows-[auto_1fr] overflow-hidden p-0"
 	>
-		<!-- <div class="item-dialog__header-wrap">
-			<div class="item-dialog__actions">
+		<div class="item-dialog__header-wrap">
+			<!-- <div class="item-dialog__actions">
 				<Tooltip.Provider disableHoverableContent>
 					<Tooltip.Root>
 						<Tooltip.Trigger>
