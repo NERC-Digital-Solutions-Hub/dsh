@@ -317,7 +317,7 @@
 												<CardContent class="pt-0">
 													{#if !selectedArchetypeId}
 														<p class={emptyTextClass}>
-															Select an archetype to view the relevant summaries.
+															Select a role to view the relevant summaries.
 														</p>
 													{:else if groupedSelectedArchetypeSummaries.length > 0}
 														<div class="flex flex-col gap-3">
