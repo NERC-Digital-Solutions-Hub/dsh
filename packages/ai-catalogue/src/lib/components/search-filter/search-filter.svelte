@@ -6,6 +6,8 @@
 	import { buildArchetypeComboboxOption } from '$lib/utils/archetypes';
 
 	type Props = {
+		timeStartDate: string | null;
+		timeEndDate: string | null;
 		startDate: string | null;
 		endDate: string | null;
 		archetypes: ArchetypeDefinition[];
@@ -14,6 +16,8 @@
 		selectedFormats: string[];
 		resourceTypes: ValueCount[];
 		formats: ValueCount[];
+		onTimeStartDateChange: (date: string | null) => void;
+		onTimeEndDateChange: (date: string | null) => void;
 		onStartDateChange: (date: string | null) => void;
 		onEndDateChange: (date: string | null) => void;
 		onSelectedArchetypeChange: (archetype: ArchetypeDefinition | null) => void;
@@ -22,6 +26,8 @@
 	};
 
 	let {
+		timeStartDate,
+		timeEndDate,
 		startDate,
 		endDate,
 		archetypes,
@@ -30,6 +36,8 @@
 		selectedFormats,
 		resourceTypes,
 		formats,
+		onTimeStartDateChange,
+		onTimeEndDateChange,
 		onStartDateChange,
 		onEndDateChange,
 		onSelectedArchetypeChange,
@@ -106,6 +114,18 @@
 			placeholder="Select resource types..."
 			searchPlaceholder="Search resource types..."
 		/>
+	</div>
+
+	<div class="filter-section">
+		<h3 class="filter-title">Time Extent</h3>
+		<div class="date-filters">
+			<DateSelector
+				label="From Date"
+				value={timeStartDate}
+				onDateChange={onTimeStartDateChange}
+			/>
+			<DateSelector label="To Date" value={timeEndDate} onDateChange={onTimeEndDateChange} />
+		</div>
 	</div>
 
 	<div class="filter-section">

@@ -43,6 +43,8 @@
 
 	let searchTerm = $state(null);
 	let submittedSearchTerm = $state(null);
+	let timeStartDate = $state<string | null>(null);
+	let timeEndDate = $state<string | null>(null);
 	let startDate = $state<string | null>(null);
 	let endDate = $state<string | null>(null);
 	let selectedResourceTypes = $state<string[]>([]);
@@ -86,7 +88,7 @@
 
 		return {
 			baseUrl: normalisedBaseUrl,
-			getArchetypesRoute: `${normalisedBaseUrl}/archetypes`,
+			getArchetypesRoute: normalisedBaseUrl.replace(/\/v\d+(?=\/|$)/, '/v1') + '/archetypes',
 			queryMetadataRoute: `${normalisedBaseUrl}/metadata/query`,
 			getResourceTypesRoute: `${normalisedBaseUrl}/metadata/resource-types`,
 			getFormatsRoute: `${normalisedBaseUrl}/metadata/formats`
@@ -301,6 +303,13 @@
 			};
 		}
 
+		if (timeStartDate || timeEndDate) {
+			request.dataTimeSpan = {
+				start: timeStartDate,
+				end: timeEndDate
+			};
+		}
+
 		return request;
 	}
 
@@ -354,6 +363,8 @@
 		<SidebarContent>
 			<div class="sidebar-offset p-4">
 				<SearchFilter
+					{timeStartDate}
+					{timeEndDate}
 					{startDate}
 					{endDate}
 					{archetypes}
@@ -362,6 +373,8 @@
 					{selectedFormats}
 					{resourceTypes}
 					{formats}
+					onTimeStartDateChange={(date) => (timeStartDate = date)}
+					onTimeEndDateChange={(date) => (timeEndDate = date)}
 					onStartDateChange={(date) => (startDate = date)}
 					onEndDateChange={(date) => (endDate = date)}
 					onSelectedArchetypeChange={(archetype) => (selectedArchetype = archetype)}
