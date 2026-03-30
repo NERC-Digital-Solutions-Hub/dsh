@@ -1,6 +1,7 @@
 @source './Components'; /* this is needed so tailwind applies the app styling when this package is added as a dependency! */
 
 @import '@arcgis/core/assets/esri/themes/light/main.css';
+@import '@dsh/common/styles.css';
 
 .prose-intro-dialog :where(p) {
 	@apply text-center text-foreground;
@@ -16,50 +17,6 @@
 
 .prose-intro-dialog :where(h3) {
 	@apply mb-0 text-xl text-foreground;
-}
-
-.prose-info-markdown :where(p) {
-	@apply mb-3 text-foreground;
-}
-
-.prose-info-markdown :where(li) {
-	@apply mb-4 text-foreground;
-}
-
-.prose-info-markdown :where(ul) {
-	@apply list-disc pl-6;
-}
-
-.prose-info-markdown :where(ol) {
-	@apply list-decimal pl-6;
-}
-
-.prose-info-markdown :where(.references-item) {
-	@apply mb-1 text-xs leading-6 text-foreground;
-}
-
-.prose-info-markdown :where(a) {
-	@apply text-blue-600 underline underline-offset-2;
-}
-
-.prose-info-markdown :where(a:hover) {
-	@apply text-blue-700;
-}
-
-.prose-info-markdown :where(h1) {
-	@apply mb-4 text-center text-3xl font-bold text-foreground;
-}
-
-.prose-info-markdown :where(h2) {
-	@apply mb-3 text-2xl font-bold text-foreground;
-}
-
-.prose-info-markdown :where(h3) {
-	@apply mb-3 text-xl font-bold text-foreground;
-}
-
-.prose-info-markdown :where(h4, h5, h6, h7) {
-	@apply mb-3 text-lg font-bold text-foreground;
 }
 
 .prose-chat-markdown :where(p) {

@@ -2,16 +2,11 @@
 	import CopyToClipboardButton from '$lib/Components/CopyToClipboardButton/CopyToClipboardButton.svelte';
 	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
 	import { Button } from '$lib/Components/shadcn/button/index.js';
-	import rehypeStringify from 'rehype-stringify';
-	import remarkGfm from 'remark-gfm';
-	import remarkParse from 'remark-parse';
-	import remarkRehype from 'remark-rehype';
 	import * as Card from '$lib/Components/shadcn/card/index.js';
 	import { ArrowDownToLine } from '@lucide/svelte';
 	import ScrollArea from '$lib/Components/shadcn/scroll-area/scroll-area.svelte';
 	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
-	import { unified } from 'unified';
-	import { rehypeReferences } from '@dsh/common';
+	import { renderMarkdownToHtml } from '@dsh/common';
 
 	type Props = {
 		content: Extract<MetadataResolvedContent, { type: 'md' }>;
@@ -38,17 +33,7 @@
 			return null;
 		}
 
-		const htmlRaw = await unified()
-			.use(remarkParse)
-			.use(remarkGfm)
-			.use(remarkRehype)
-			.use(rehypeReferences)
-			.use(rehypeStringify)
-			.process(content.text);
-
-		console.log('Processed HTML:', htmlRaw.toString());
-
-		return htmlRaw.toString();
+		return await renderMarkdownToHtml(content.text);
 	});
 </script>
 
