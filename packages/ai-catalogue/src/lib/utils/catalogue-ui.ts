@@ -1,5 +1,6 @@
 import type { QueryBoundingBox, QueryResponsePayload } from '$lib/types/api.types';
 import type { ValueCount } from '$lib/types/metadata';
+import type { SummaryContentType } from '$lib/types/summary.types';
 
 const PLACEHOLDER_FORMATS = ['API', 'CSV', 'GeoJSON', 'JSON', 'Web Map'] as const;
 
@@ -31,7 +32,9 @@ export interface CatalogueResultCardRecord {
 export interface CatalogueArchetypeLink {
 	group: string;
 	label: string;
+	archetypeId: string;
 	url: string;
+	contentType: SummaryContentType;
 }
 
 export interface CatalogueItemDetail {
@@ -134,6 +137,20 @@ export function formatDisplayDate(value: string | null | undefined): string {
 		month: 'long',
 		day: 'numeric'
 	});
+}
+
+export function formatSummaryGroupLabel(value: string | null | undefined): string {
+	if (!value?.trim()) {
+		return 'Summary';
+	}
+
+	const normalised = value
+		.trim()
+		.replace(/[_-]+/g, ' ')
+		.replace(/\s+/g, ' ')
+		.toLowerCase();
+
+	return normalised.charAt(0).toUpperCase() + normalised.slice(1);
 }
 
 export function filterAndSortRecords(
@@ -252,12 +269,36 @@ function buildArchetypeLinks(record: QueryResponsePayload): CatalogueArchetypeLi
 				(value): value is { archetype?: string | null; url: string } =>
 					typeof value.url === 'string' && value.url.length > 0
 			)
-			.map((value) => ({
-				group,
-				label: value.archetype?.trim() || 'Open resource',
-				url: value.url
-			}))
+			.map((value) => {
+				const archetypeId = value.archetype?.trim() || '';
+
+				return {
+					group,
+					label: archetypeId || 'Open resource',
+					archetypeId,
+					url: value.url,
+					contentType: inferSummaryContentType(value.url)
+				};
+			})
 	);
+}
+
+function inferSummaryContentType(url: string): SummaryContentType {
+	const path = url.split(/[?#]/, 1)[0]?.toLowerCase() ?? '';
+
+	if (path.endsWith('.html') || path.endsWith('.htm')) {
+		return 'html';
+	}
+
+	if (path.endsWith('.xml')) {
+		return 'xml';
+	}
+
+	if (path.endsWith('.txt')) {
+		return 'text';
+	}
+
+	return 'md';
 }
 
 function toLegacyBoundingBox(boundingBox?: QueryBoundingBox | null) {

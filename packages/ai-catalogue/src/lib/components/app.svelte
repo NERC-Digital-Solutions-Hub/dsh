@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { asset } from '$app/paths';
 	import SearchFilter from '$lib/components/search-filter/search-filter.svelte';
+	import SelectedArchetypeToast from '$lib/components/app/selected-archetype-toast.svelte';
 	import ResultsTable from '$lib/components/results-table/results-table.svelte';
 	import ServiceUnavailable from '$lib/components/service-unavailable/service-unavailable.svelte';
 	import SortSelector from '$lib/components/sort-selector/sort-selector.svelte';
@@ -32,6 +33,7 @@
 	import type { CatalogueConfig } from '$lib/types/config';
 	import type { ValueCount } from '$lib/types/metadata';
 	import { adaptQueryRecords, SortByCriteria } from '$lib/utils/catalogue-ui';
+	import { getArchetypeIcon } from '$lib/utils/archetypes';
 	import AlertCircleIcon from '@lucide/svelte/icons/alert-circle';
 	import FilterIcon from '@lucide/svelte/icons/filter';
 	import SearchIcon from '@lucide/svelte/icons/search';
@@ -61,6 +63,7 @@
 	let activeRequestBase = $state<Omit<QueryRequest, 'pagination'> | null>(null);
 
 	let selectedArchetype = $state<ArchetypeDefinition | null>(null);
+	let previousSelectedArchetypeId = $state<number | null>(null);
 	let openArchetypeDialog = $state(true);
 
 	const apiRecords = $derived(metadataQuery?.content?.payload ?? []);
@@ -111,11 +114,39 @@
 	});
 
 	$effect(() => {
-		if (!selectedArchetype) {
+		if (archetypes.length === 0) {
+			selectedArchetype = null;
+			previousSelectedArchetypeId = null;
 			return;
 		}
 
-		toast('Selected archetype: ' + selectedArchetype.name);
+		if (!selectedArchetype) {
+			selectedArchetype = archetypes[0];
+		}
+	});
+
+	$effect(() => {
+		if (!selectedArchetype) {
+			previousSelectedArchetypeId = null;
+			return;
+		}
+
+		if (previousSelectedArchetypeId === null) {
+			previousSelectedArchetypeId = selectedArchetype.id;
+			return;
+		}
+
+		if (previousSelectedArchetypeId === selectedArchetype.id) {
+			return;
+		}
+
+		previousSelectedArchetypeId = selectedArchetype.id;
+		toast(SelectedArchetypeToast, {
+			componentProps: {
+				name: selectedArchetype.name
+			},
+			icon: getArchetypeIcon(selectedArchetype.id)
+		});
 	});
 
 	async function initialise() {
@@ -325,12 +356,15 @@
 				<SearchFilter
 					{startDate}
 					{endDate}
+					{archetypes}
+					{selectedArchetype}
 					{selectedResourceTypes}
 					{selectedFormats}
 					{resourceTypes}
 					{formats}
 					onStartDateChange={(date) => (startDate = date)}
 					onEndDateChange={(date) => (endDate = date)}
+					onSelectedArchetypeChange={(archetype) => (selectedArchetype = archetype)}
 					onResourceTypesChange={(values) => (selectedResourceTypes = values)}
 					onFormatsChange={(values) => (selectedFormats = values)}
 				/>
@@ -402,6 +436,7 @@
 						{/if}
 						<ResultsTable
 							{records}
+							{selectedArchetype}
 							searchTerm={submittedSearchTerm}
 							{hasMore}
 							{isLoadingMore}

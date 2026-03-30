@@ -7,12 +7,16 @@
 		CardHeader,
 		CardTitle
 	} from '$lib/components/shadcn/card';
+	import { FileText } from '@lucide/svelte';
 	import * as Dialog from '$lib/components/shadcn/dialog/index.js';
 	import MapSection from '$lib/components/map-view/map-section.svelte';
 	import ScrollArea from '$lib/components/shadcn/scroll-area/scroll-area.svelte';
+	import SummaryDialog from '$lib/components/summary-dialog/summary-dialog.svelte';
 	import * as Tabs from '$lib/components/shadcn/tabs/index.js';
 	import type { CatalogueItemDetail } from '$lib/utils/catalogue-ui';
-	import { formatDisplayDate } from '$lib/utils/catalogue-ui';
+	import { formatDisplayDate, formatSummaryGroupLabel } from '$lib/utils/catalogue-ui';
+	import type { ArchetypeDefinition } from '$lib/types/api.types';
+	import Button from '$lib/components/shadcn/button/button.svelte';
 
 	const tabs = [
 		{
@@ -31,24 +35,53 @@
 
 	type Props = {
 		item: CatalogueItemDetail;
+		selectedArchetype?: ArchetypeDefinition | null;
 		open?: boolean;
 	};
 
-	let { item, open = $bindable(false) }: Props = $props();
+	let { item, selectedArchetype, open = $bindable(false) }: Props = $props();
+	let activeSummary = $state<(typeof item.archetypeLinks)[number] | null>(null);
+	let isSummaryDialogOpen = $state(false);
 
 	const emptyTextClass = 'text-sm leading-6 text-muted-foreground';
 	const chipClass =
 		'inline-flex items-center rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-secondary-foreground';
 
-	const groupedArchetypeLinks = $derived.by(() => {
+	const selectedArchetypeId = $derived(
+		selectedArchetype?.id !== undefined ? String(selectedArchetype.id) : null
+	);
+
+	const groupedSelectedArchetypeSummaries = $derived.by(() => {
+		if (!selectedArchetypeId) {
+			return [];
+		}
+
 		const grouped = new Map<string, typeof item.archetypeLinks>();
 
 		for (const link of item.archetypeLinks) {
+			if (link.archetypeId !== selectedArchetypeId) {
+				continue;
+			}
+
 			const key = link.group?.trim() || 'Other';
 			grouped.set(key, [...(grouped.get(key) ?? []), link]);
 		}
 
-		return [...grouped.entries()].map(([group, links]) => ({ group, links }));
+		return [...grouped.entries()]
+			.map(([group, links]) => ({
+				group,
+				summary: links[0] ?? null,
+				count: links.length
+			}))
+			.filter(
+				(
+					entry
+				): entry is {
+					group: string;
+					summary: (typeof item.archetypeLinks)[number];
+					count: number;
+				} => Boolean(entry.summary)
+			);
 	});
 
 	const mapBoundingBox = $derived(
@@ -74,6 +107,18 @@
 			{ label: 'South', value: item.boundingBox.southBoundLatitude },
 			{ label: 'North', value: item.boundingBox.northBoundLatitude }
 		];
+	});
+
+	function openSummary(summary: (typeof item.archetypeLinks)[number]) {
+		activeSummary = summary;
+		isSummaryDialogOpen = true;
+	}
+
+	$effect(() => {
+		if (!open) {
+			isSummaryDialogOpen = false;
+			activeSummary = null;
+		}
 	});
 </script>
 
@@ -203,7 +248,7 @@
 											<div
 												class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
 											>
-												<Card class="border shadow-none">
+												<Card class="border shadow-none gap-3">
 													<CardHeader>
 														<CardTitle>Description</CardTitle>
 													</CardHeader>
@@ -212,7 +257,7 @@
 													</CardContent>
 												</Card>
 
-												<Card class="border shadow-none">
+												<Card class="border shadow-none gap-3">
 													<CardHeader>
 														<CardTitle>Additional Information</CardTitle>
 													</CardHeader>
@@ -269,41 +314,37 @@
 									<ScrollArea class="h-full min-h-0 w-full">
 										<div class="pr-4">
 											<Card class="border shadow-none">
-												<CardHeader class="pb-4">
-													<CardTitle>Archetype summaries</CardTitle>
-													<CardDescription>
-														Resource destinations grouped by archetype summary category.
-													</CardDescription>
-												</CardHeader>
 												<CardContent class="pt-0">
-													{#if groupedArchetypeLinks.length > 0}
+													{#if !selectedArchetypeId}
+														<p class={emptyTextClass}>
+															Select an archetype to view the relevant summaries.
+														</p>
+													{:else if groupedSelectedArchetypeSummaries.length > 0}
 														<div class="flex flex-col gap-3">
-															{#each groupedArchetypeLinks as entry, index (`group-${entry.group}-${index}`)}
-																<Accordion.Item
-																	title={entry.group}
-																	subtitle={`${entry.links.length} resource${entry.links.length === 1 ? '' : 's'}`}
+															{#each groupedSelectedArchetypeSummaries as entry, index (`group-${entry.group}-${index}`)}
+																<Button
+																	variant="outline"
+																	class="h-auto w-full justify-start whitespace-normal px-4 py-4 text-left [overflow-wrap:anywhere]"
+																	onclick={() => openSummary(entry.summary)}
 																>
-																	<div class="flex flex-col gap-3">
-																		{#each entry.links as link, linkIndex (`${link.url}-${linkIndex}`)}
-																			<a
-																				class="rounded-md border bg-muted/20 p-3 text-sm text-foreground transition hover:border-primary hover:bg-accent"
-																				href={link.url}
-																				target="_blank"
-																				rel="noreferrer noopener"
+																	<span
+																		class="grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-3"
+																	>
+																		<FileText class="size-4 self-center text-muted-foreground" />
+																		<span class="flex min-w-0 flex-col gap-1">
+																			<span
+																				class="text-sm leading-5 font-medium text-foreground break-words"
 																			>
-																				<div class="font-medium">{link.label}</div>
-																				<div class="mt-1 break-all text-xs text-muted-foreground">
-																					{link.url}
-																				</div>
-																			</a>
-																		{/each}
-																	</div>
-																</Accordion.Item>
+																				{formatSummaryGroupLabel(entry.group)}
+																			</span>
+																		</span>
+																	</span>
+																</Button>
 															{/each}
 														</div>
 													{:else}
 														<p class={emptyTextClass}>
-															No AI summaries are available for this resource yet.
+															No summaries are available for the selected archetype yet.
 														</p>
 													{/if}
 												</CardContent>
@@ -341,6 +382,12 @@
 		</div>
 	</Dialog.Content>
 </Dialog.Root>
+
+<SummaryDialog
+	bind:open={isSummaryDialogOpen}
+	summary={activeSummary}
+	selectedArchetype={selectedArchetype ?? null}
+/>
 
 <style>
 	:global(.item-dialog) {

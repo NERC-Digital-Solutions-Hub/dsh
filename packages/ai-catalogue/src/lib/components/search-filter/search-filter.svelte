@@ -1,17 +1,22 @@
 <script lang="ts">
 	import DateSelector from '$lib/components/date-selector/date-selector.svelte';
 	import { Combobox, type ComboboxOption } from '$lib/components/combobox';
+	import type { ArchetypeDefinition } from '$lib/types/api.types';
 	import type { ValueCount } from '$lib/types/metadata';
+	import { buildArchetypeComboboxOption } from '$lib/utils/archetypes';
 
 	type Props = {
 		startDate: string | null;
 		endDate: string | null;
+		archetypes: ArchetypeDefinition[];
+		selectedArchetype: ArchetypeDefinition | null;
 		selectedResourceTypes: string[];
 		selectedFormats: string[];
 		resourceTypes: ValueCount[];
 		formats: ValueCount[];
 		onStartDateChange: (date: string | null) => void;
 		onEndDateChange: (date: string | null) => void;
+		onSelectedArchetypeChange: (archetype: ArchetypeDefinition | null) => void;
 		onResourceTypesChange: (values: string[]) => void;
 		onFormatsChange: (values: string[]) => void;
 	};
@@ -19,15 +24,24 @@
 	let {
 		startDate,
 		endDate,
+		archetypes,
+		selectedArchetype,
 		selectedResourceTypes,
 		selectedFormats,
 		resourceTypes,
 		formats,
 		onStartDateChange,
 		onEndDateChange,
+		onSelectedArchetypeChange,
 		onResourceTypesChange,
 		onFormatsChange
 	}: Props = $props();
+
+	const selectedArchetypeValues = $derived(selectedArchetype ? [String(selectedArchetype.id)] : []);
+
+	const archetypeOptions = $derived<ComboboxOption[]>(
+		archetypes.map((archetype) => buildArchetypeComboboxOption(archetype))
+	);
 
 	const resourceTypeOptions = $derived<ComboboxOption[]>(
 		resourceTypes.map((resourceType) => ({
@@ -58,9 +72,30 @@
 	function handleFormatDeselect(value: string) {
 		onFormatsChange(selectedFormats.filter((selectedValue) => selectedValue !== value));
 	}
+
+	function handleArchetypeSelect(value: string) {
+		const nextArchetype = archetypes.find((archetype) => String(archetype.id) === value) ?? null;
+
+		onSelectedArchetypeChange(nextArchetype);
+	}
 </script>
 
 <div class="search-filter">
+	<div class="filter-section">
+		<h3 class="filter-title">Role</h3>
+		<Combobox
+			options={archetypeOptions}
+			selectedValues={selectedArchetypeValues}
+			onSelect={handleArchetypeSelect}
+			maxSelections={1}
+			placeholder="Select a role..."
+			searchPlaceholder="Search roles..."
+			emptyText="No roles found."
+			showSelectedBadges={false}
+			allowDeselectOnReselect={false}
+		/>
+	</div>
+
 	<div class="filter-section">
 		<h3 class="filter-title">Resource Types</h3>
 		<Combobox

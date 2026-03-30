@@ -1,9 +1,11 @@
 <script lang="ts">
 	import ResultsTableItem from './results-table-item/results-table-item.svelte';
+	import type { ArchetypeDefinition } from '$lib/types/api.types';
 	import type { CatalogueResultCardRecord } from '$lib/utils/catalogue-ui';
 
 	interface Props {
 		records: CatalogueResultCardRecord[];
+		selectedArchetype?: ArchetypeDefinition | null;
 		searchTerm?: string | null;
 		hasMore?: boolean;
 		isLoadingMore?: boolean;
@@ -12,6 +14,7 @@
 
 	let {
 		records,
+		selectedArchetype = null,
 		searchTerm = null,
 		hasMore = false,
 		isLoadingMore = false,
@@ -52,7 +55,7 @@
 	{#if records.length > 0}
 		<div class="results-list">
 			{#each records as record, index (`${record.fileIdentifier ?? record.title ?? 'result'}-${index}`)}
-				<ResultsTableItem {record} />
+				<ResultsTableItem {record} {selectedArchetype} />
 			{/each}
 		</div>
 		<div bind:this={loadMoreTrigger} class="load-more-trigger">

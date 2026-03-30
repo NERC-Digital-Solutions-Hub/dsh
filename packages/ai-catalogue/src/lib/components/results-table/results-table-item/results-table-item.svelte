@@ -9,14 +9,16 @@
 		CardTitle
 	} from '$lib/components/shadcn/card';
 	import { Button } from '$lib/components/shadcn/button';
+	import type { ArchetypeDefinition } from '$lib/types/api.types';
 	import MapSection from '$lib/components/map-view/map-section.svelte';
 	import type { CatalogueResultCardRecord } from '$lib/utils/catalogue-ui';
 
 	interface Props {
 		record: CatalogueResultCardRecord;
+		selectedArchetype?: ArchetypeDefinition | null;
 	}
 
-	let { record }: Props = $props();
+	let { record, selectedArchetype = null }: Props = $props();
 
 	let isExpanded = $state(false);
 	let isItemDialogOpen = $state(false);
@@ -120,7 +122,7 @@
 	</div>
 </Card>
 
-<ItemDialog bind:open={isItemDialogOpen} item={record.detailItem} />
+<ItemDialog bind:open={isItemDialogOpen} item={record.detailItem} {selectedArchetype} />
 
 <style>
 	:global(.result-card) {

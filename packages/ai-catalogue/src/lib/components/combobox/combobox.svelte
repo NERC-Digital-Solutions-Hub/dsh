@@ -3,12 +3,14 @@
 	import * as Command from '$lib/components/shadcn/command';
 	import * as Popover from '$lib/components/shadcn/popover';
 	import * as ScrollArea from '$lib/components/shadcn/scroll-area';
-	import { Check, ChevronsUpDown, X } from '@lucide/svelte';
+	import type { Component } from 'svelte';
+	import { ChevronsUpDown, X } from '@lucide/svelte';
 
 	interface ComboboxOption {
 		value: string;
 		label: string;
 		disabled?: boolean;
+		icon?: Component;
 	}
 
 	interface Props {
@@ -22,6 +24,8 @@
 		maxSelections?: number;
 		disabled?: boolean;
 		className?: string;
+		showSelectedBadges?: boolean;
+		allowDeselectOnReselect?: boolean;
 	}
 
 	let {
@@ -34,7 +38,9 @@
 		onDeselect,
 		maxSelections,
 		disabled = false,
-		className = ''
+		className = '',
+		showSelectedBadges = true,
+		allowDeselectOnReselect = true
 	}: Props = $props();
 
 	let open = $state(false);
@@ -42,12 +48,16 @@
 
 	const selectedSet = $derived(new Set(selectedValues));
 	const canAddMore = $derived(!maxSelections || selectedValues.length < maxSelections);
+	const selectedOptions = $derived(
+		selectedValues
+			.map((value) => options.find((opt) => opt.value === value))
+			.filter((option): option is ComboboxOption => Boolean(option))
+	);
+	const primarySelectedOption = $derived(selectedOptions[0] ?? null);
 
 	// Get labels for selected values
 	const selectedLabels = $derived(
-		selectedValues
-			.map((value) => options.find((opt) => opt.value === value)?.label)
-			.filter(Boolean) as string[]
+		selectedOptions.map((option) => option.label)
 	);
 
 	const displayText = $derived(
@@ -61,12 +71,15 @@
 	function handleSelect(value: string) {
 		if (selectedSet.has(value)) {
 			// Deselect
-			if (onDeselect) {
+			if (allowDeselectOnReselect && onDeselect) {
 				onDeselect(value);
 			}
 		} else {
-			// Select if we haven't reached max
-			if (canAddMore) {
+			// For single-select comboboxes, selecting another option replaces the current one.
+			if (maxSelections === 1) {
+				onSelect(value);
+				open = false;
+			} else if (canAddMore) {
 				onSelect(value);
 			}
 		}
@@ -94,7 +107,13 @@
 				class="w-full justify-between"
 				{disabled}
 			>
-				<span class="truncate">{displayText}</span>
+				<span class="flex min-w-0 items-center gap-2">
+					{#if primarySelectedOption?.icon}
+						{@const SelectedIcon = primarySelectedOption.icon}
+						<SelectedIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
+					{/if}
+					<span class="truncate">{displayText}</span>
+				</span>
 				<ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
 			</Button>
 		</Popover.Trigger>
@@ -109,13 +128,19 @@
 								<Command.Item
 									value={option.value}
 									onSelect={() => handleSelect(option.value)}
-									disabled={option.disabled || (!selectedSet.has(option.value) && !canAddMore)}
+									disabled={option.disabled}
+									class={selectedSet.has(option.value)
+										? 'bg-primary/15 text-foreground hover:!bg-primary/15 aria-selected:bg-primary/15'
+										: undefined}
 								>
-									<Check
-										class="mr-2 h-4 w-4 {selectedSet.has(option.value)
-											? 'opacity-100'
-											: 'opacity-0'}"
-									/>
+									{#if option.icon}
+										{@const OptionIcon = option.icon}
+										<OptionIcon
+											class="mr-2 h-4 w-4 shrink-0 {selectedSet.has(option.value)
+												? 'text-foreground'
+												: 'text-muted-foreground'}"
+										/>
+									{/if}
 									<span class="truncate">{option.label}</span>
 								</Command.Item>
 							{/each}
@@ -127,7 +152,7 @@
 	</Popover.Root>
 
 	<!-- Selected items badges (optional display) -->
-	{#if selectedValues.length > 0}
+	{#if showSelectedBadges && selectedValues.length > 0}
 		<div class="selected-items">
 			{#each selectedValues as value (value)}
 				{@const label = options.find((opt) => opt.value === value)?.label}

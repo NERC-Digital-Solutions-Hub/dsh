@@ -2,25 +2,7 @@
 	import ArchetypeCard from '$lib/components/archetype-dialog/archetype-card.svelte';
 	import * as Dialog from '$lib/components/shadcn/dialog/index.js';
 	import type { ArchetypeDefinition } from '$lib/types/api.types';
-	import {
-		ChartArea,
-		Trees,
-		Monitor,
-		PersonStanding,
-		ShieldCheck,
-		BookSearch,
-		MapPinned
-	} from '@lucide/svelte';
-
-	const archetypeIcons = {
-		1: ChartArea,
-		2: Trees,
-		3: Monitor,
-		4: PersonStanding,
-		5: ShieldCheck,
-		6: BookSearch,
-		7: MapPinned
-	};
+	import { getArchetypeIcon } from '$lib/utils/archetypes';
 
 	type Props = {
 		archetypes: ArchetypeDefinition[];
@@ -43,7 +25,7 @@
 			<div class="mx-auto flex min-h-full min-w-max w-fit flex-col justify-center gap-6">
 				<div class="flex flex-nowrap justify-center gap-6">
 					{#each archetypes.slice(0, 4) as archetype}
-						{@const Icon = archetypeIcons[archetype.id as keyof typeof archetypeIcons] ?? ChartArea}
+						{@const Icon = getArchetypeIcon(archetype.id)}
 						<ArchetypeCard
 							{archetype}
 							icon={Icon}
@@ -56,7 +38,7 @@
 				</div>
 				<div class="flex flex-nowrap justify-center gap-6">
 					{#each archetypes.slice(4, 7) as archetype}
-						{@const Icon = archetypeIcons[archetype.id as keyof typeof archetypeIcons] ?? ChartArea}
+						{@const Icon = getArchetypeIcon(archetype.id)}
 						<ArchetypeCard
 							{archetype}
 							icon={Icon}
