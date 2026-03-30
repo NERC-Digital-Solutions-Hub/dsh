@@ -222,7 +222,7 @@
 				</Button>
 			</Popover.Trigger>
 			<Popover.Content class="w-auto p-0" align="start">
-				<Calendar type="single" bind:value={selectedDate} onValueChange={handleCalendarChange} />
+				<Calendar type="single" bind:value={selectedDate} onValueChange={handleCalendarChange} captionLayout="dropdown" />
 			</Popover.Content>
 		</Popover.Root>
 	</div>
