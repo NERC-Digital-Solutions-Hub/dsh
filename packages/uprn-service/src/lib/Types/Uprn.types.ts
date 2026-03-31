@@ -118,6 +118,7 @@ export type DownloadEntry = {
 	localId: string;
 	externalId?: string;
 	status: DownloadStatus;
+	isDownloaded: boolean;
 	errorMessage?: string;
 	fileSize?: number;
 	areaSelection: AreaSelectionInfoWithCode;

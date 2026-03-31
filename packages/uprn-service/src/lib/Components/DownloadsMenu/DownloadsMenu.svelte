@@ -3,7 +3,6 @@
 	import HourglassIcon from '$lib/Components/Icons/HourglassIcon.svelte';
 	import SelectionEntryCard from '$lib/Components/SelectionEntryCard/SelectionEntryCard.svelte';
 	import Button from '$lib/Components/shadcn/button/button.svelte';
-	import { Spinner } from '$lib/Components/shadcn/spinner/index.js';
 	import { useUprnDownloadJobStatuses } from '$lib/Hooks/UseUprnDownloadJobStatuses.svelte';
 	import { useUprnDownloadRequestJob } from '$lib/Hooks/UseUprnDownloadRequestJob.svelte';
 	import type DownloadsStore from '$lib/Stores/DownloadsStore.svelte';
@@ -17,6 +16,7 @@
 		type UprnDownloadJobRequest
 	} from '$lib/Types/Uprn.types';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
+	import CheckIcon from '@lucide/svelte/icons/check';
 	import Download from '@lucide/svelte/icons/download';
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import LoaderIcon from '@lucide/svelte/icons/loader';
@@ -25,7 +25,7 @@
 	import { onMount } from 'svelte';
 	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 	import * as Alert from '$lib/Components/shadcn/alert/index.js';
-	import { SvelteMap } from 'svelte/reactivity';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import QueueStatus from '$lib/Components/DownloadsMenu/QueueStatus.svelte';
 	import { AlertCircleIcon, DownloadIcon } from '@lucide/svelte';
 	import { ChevronsDown, ChevronsUp } from '@lucide/svelte';
@@ -89,6 +89,7 @@
 	const jobStatusImmediateCheckInterval = 10000; // 10 seconds
 	const jobStatusCheckInterval = 30000; // 30 seconds
 	let statusCheckTimeout: ReturnType<typeof setTimeout> | undefined;
+	const downloadsInProgress = $state(new SvelteSet<string>());
 
 	function getStatusCfg(status: string) {
 		return statusConfig[status as keyof typeof statusConfig] ?? statusConfig.pending;
@@ -340,6 +341,7 @@
 		const download = downloads.find((d) => d.localId === localId);
 		if (download) {
 			download.status = DownloadStatus.Pending;
+			download.isDownloaded = false;
 			download.externalId = undefined; // Clear external ID to force new submission
 			download.errorMessage = undefined; // Clear error message
 			download.fileSize = undefined; // Clear file size
@@ -358,6 +360,56 @@
 	function getDownloadUrl(externalId: string): string {
 		const base = downloadBaseUrl.replace(/\/+$/, '');
 		return `${base}/${encodeURIComponent(externalId)}`;
+	}
+
+	function getFileNameFromResponse(response: Response, externalId: string): string {
+		const contentDisposition = response.headers.get('content-disposition');
+		if (contentDisposition) {
+			const utf8Match = contentDisposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+			if (utf8Match?.[1]) {
+				return decodeURIComponent(utf8Match[1]);
+			}
+
+			const filenameMatch = contentDisposition.match(/filename\s*=\s*"?(?<name>[^\";]+)"?/i);
+			if (filenameMatch?.groups?.name) {
+				return filenameMatch.groups.name;
+			}
+		}
+
+		return `uprn-download-${externalId}.zip`;
+	}
+
+	async function downloadFile(download: DownloadEntry) {
+		if (!download.externalId || downloadsInProgress.has(download.localId)) {
+			return;
+		}
+
+		downloadsInProgress.add(download.localId);
+
+		try {
+			const response = await fetch(getDownloadUrl(download.externalId));
+			if (!response.ok) {
+				throw new Error(`Download failed with status ${response.status}.`);
+			}
+
+			const blob = await response.blob();
+			const objectUrl = URL.createObjectURL(blob);
+			const anchor = document.createElement('a');
+			anchor.href = objectUrl;
+			anchor.download = getFileNameFromResponse(response, download.externalId);
+			anchor.rel = 'noopener';
+			document.body.appendChild(anchor);
+			anchor.click();
+			anchor.remove();
+			URL.revokeObjectURL(objectUrl);
+
+			download.isDownloaded = true;
+			downloadsStore.updateDownloadStatus(download);
+		} catch (error) {
+			console.error('[downloads-menu] Failed to download file:', error);
+		} finally {
+			downloadsInProgress.delete(download.localId);
+		}
 	}
 </script>
 
@@ -481,16 +533,31 @@
 											variant="ghost"
 											size="sm"
 											class="download-action-btn"
-											onclick={() => window.open(getDownloadUrl(download.externalId!), '_blank')}
-											aria-label="Open download"
+											onclick={() => downloadFile(download)}
+											disabled={downloadsInProgress.has(download.localId)}
+											aria-label="Download file"
 										>
-											<Download />
+											<span class="download-action-icon">
+												<Download size={14} />
+												{#if download.isDownloaded}
+													<span class="download-action-icon__badge" aria-hidden="true">
+														<CheckIcon size={5} />
+													</span>
+												{/if}
+											</span>
 										</Button>
 									</Tooltip.Trigger>
 									{@const fileSizeBytes = download.fileSize ?? 0}
 									{@const fileSizeMB = (fileSizeBytes / (1024 * 1024)).toFixed(2)}
-									{@const downloadTooltip =
-										fileSizeBytes > 0 ? `Download (${fileSizeMB} MB)` : 'Download'}
+									{@const downloadTooltip = downloadsInProgress.has(download.localId)
+										? 'Downloading...'
+										: fileSizeBytes > 0
+											? download.isDownloaded
+												? `Download again (${fileSizeMB} MB)`
+												: `Download (${fileSizeMB} MB)`
+											: download.isDownloaded
+												? 'Download again'
+												: 'Download'}
 									<Tooltip.Content>{downloadTooltip}</Tooltip.Content>
 								</Tooltip.Root>
 							</Tooltip.Provider>
@@ -710,6 +777,11 @@
 		color: #059669;
 	}
 
+	:global(.download-action-btn:disabled) {
+		opacity: 0.65;
+		cursor: wait;
+	}
+
 	:global(.download-info-btn:hover) {
 		color: #2563eb;
 	}
@@ -743,5 +815,24 @@
 		font-size: 0.875rem;
 		color: #9ca3af;
 		font-style: italic;
+	}
+
+	.download-action-icon {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.download-action-icon__badge {
+		position: absolute;
+		top: -0.2rem;
+		right: -0.35rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 0.5rem;
+		height: 0.5rem;
+		color: #059669;
 	}
 </style>

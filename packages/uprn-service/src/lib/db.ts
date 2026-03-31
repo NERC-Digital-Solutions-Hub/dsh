@@ -23,7 +23,7 @@ export interface DbUprnDataSelectionInfo extends DataSelectionSnapshot {
 	id?: number;
 }
 
-export interface DbUserDownload extends DownloadEntry {
+export interface DbUserDownload extends Omit<DownloadEntry, 'displayInfo'> {
 	id?: number;
 	createdAt: number;
 }
@@ -124,13 +124,15 @@ export const clearSelections = async (portalItemId: string) => {
 export const addUserDownload = async (
 	localId: string,
 	areaSelection: AreaSelectionInfoWithCode,
-	dataSelections: DataSelectionInfo[]
+	dataSelections: DataSelectionInfo[],
+	isDownloaded = false
 ) =>
 	await db.userDownloads.add({
 		localId,
 		areaSelection,
 		dataSelections,
 		status: DownloadStatus.Pending,
+		isDownloaded,
 		createdAt: Date.now()
 	});
 
@@ -141,7 +143,8 @@ export const updateUserDownload = async (
 	errorMessage?: string,
 	fileSize?: number,
 	areaSelection?: AreaSelectionInfoWithCode,
-	dataSelections?: DataSelectionInfo[]
+	dataSelections?: DataSelectionInfo[],
+	isDownloaded?: boolean
 ) => {
 	const update: Record<string, any> = {};
 	if (externalId !== undefined) update.externalId = externalId;
@@ -150,13 +153,19 @@ export const updateUserDownload = async (
 	if (fileSize !== undefined) update.fileSize = fileSize;
 	if (areaSelection !== undefined) update.areaSelection = areaSelection;
 	if (dataSelections !== undefined) update.dataSelections = dataSelections;
+	if (isDownloaded !== undefined) update.isDownloaded = isDownloaded;
 	if (Object.keys(update).length === 0) {
 		return;
 	}
 
 	console.log('[db] Updating user download:', localId, update);
 
-	await db.userDownloads.where('localId').equals(localId).modify(update);
+	await (db.userDownloads as Table<Record<string, any>, number>)
+		.where('localId')
+		.equals(localId)
+		.modify((download) => {
+			Object.assign(download, update);
+		});
 };
 export const getUserDownloads = async () =>
 	await db.userDownloads.orderBy('createdAt').reverse().toArray();

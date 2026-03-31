@@ -25,7 +25,7 @@ export default class DownloadsStore {
 	public addDownload(entry: DownloadEntry) {
 		console.log('[downloads-store] Adding download:', entry);
 		this.#downloads.set(entry.localId, entry);
-		addUserDownload(entry.localId, entry.areaSelection, entry.dataSelections);
+		addUserDownload(entry.localId, entry.areaSelection, entry.dataSelections, entry.isDownloaded);
 	}
 
 	public updateDownloadStatus(entry: DownloadEntry) {
@@ -38,7 +38,8 @@ export default class DownloadsStore {
 			entry.errorMessage,
 			entry.fileSize,
 			entry.areaSelection,
-			entry.dataSelections
+			entry.dataSelections,
+			entry.isDownloaded
 		);
 	}
 
@@ -69,6 +70,7 @@ export default class DownloadsStore {
 				localId: download.localId,
 				externalId: download.externalId,
 				status: download.status,
+				isDownloaded: download.isDownloaded ?? false,
 				errorMessage: download.errorMessage,
 				fileSize: download.fileSize,
 				areaSelection: download.areaSelection,

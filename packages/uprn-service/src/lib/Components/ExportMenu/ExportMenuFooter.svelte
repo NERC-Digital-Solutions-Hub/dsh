@@ -155,6 +155,7 @@
 			downloadsStore.addDownload({
 				localId: localId,
 				status: DownloadStatus.Pending,
+				isDownloaded: false,
 				areaSelection,
 				dataSelections
 			});
