@@ -73,6 +73,13 @@
 			mapView.map = webMap;
 			mapView.background = { color: '#CFD3D4' };
 			mapView.ui.move('zoom', 'top-right');
+
+			mapView.constraints = {
+				...mapView.constraints,
+				minZoom: 4,
+				maxZoom: 18
+			};
+
 			console.log('[uprn-map-view] MapView updated with new webMap');
 
 			await areaSelectionInteractionStore.refreshLayerView();
