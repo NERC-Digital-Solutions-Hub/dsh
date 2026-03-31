@@ -73,7 +73,7 @@
 					<EyeOff class="size-4" />
 				{/if}
 			</Tooltip.Trigger>
-			<Tooltip.Content>
+			<Tooltip.Content side="right">
 				<p>{getTooltipContent()}</p>
 			</Tooltip.Content>
 		</Tooltip.Root>

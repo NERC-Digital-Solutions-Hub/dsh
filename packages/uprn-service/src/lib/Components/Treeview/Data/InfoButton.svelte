@@ -34,7 +34,7 @@
 				<InfoIcon class="size-4" />
 			</button>
 		</Tooltip.Trigger>
-		<Tooltip.Content>
+		<Tooltip.Content side="right">
 			<p>Additional information</p>
 		</Tooltip.Content>
 	</Tooltip.Root>

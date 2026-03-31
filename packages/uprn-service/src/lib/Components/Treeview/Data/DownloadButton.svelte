@@ -65,7 +65,7 @@
 				aria-label={getTooltipContent(externalState)}
 			/>
 		</Tooltip.Trigger>
-		<Tooltip.Content>
+		<Tooltip.Content side="right">
 			<p>{getTooltipContent(externalState)}</p>
 		</Tooltip.Content>
 	</Tooltip.Root>
