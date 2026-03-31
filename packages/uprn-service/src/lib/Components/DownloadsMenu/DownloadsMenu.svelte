@@ -28,6 +28,7 @@
 	import { SvelteMap } from 'svelte/reactivity';
 	import QueueStatus from '$lib/Components/DownloadsMenu/QueueStatus.svelte';
 	import { AlertCircleIcon, DownloadIcon } from '@lucide/svelte';
+	import { ChevronsDown, ChevronsUp } from '@lucide/svelte';
 
 	type QueueItem = {
 		queueId: number;
@@ -370,6 +371,30 @@
 			<p class="text-xs text-muted-foreground mr-2">{downloads.length} download(s)</p>
 		{/if}
 	</div>
+	<Alert.Root class="queue-info-alert">
+		<Alert.Description class="queue-info-content">
+			<div class="queue-info-grid">
+				<div class="queue-info-section">
+					<div class="queue-info-heading">
+						<div class="queue-info-icon-wrapper" aria-hidden="true">
+							<ChevronsUp class="queue-info-icon" />
+						</div>
+						<span class="queue-info-title">Fast queue</span>
+					</div>
+					<p>Few UPRNs and/or few data selections. Jobs will be processed faster, with priority.</p>
+				</div>
+				<div class="queue-info-section">
+					<div class="queue-info-heading">
+						<div class="queue-info-icon-wrapper" aria-hidden="true">
+							<ChevronsDown class="queue-info-icon" />
+						</div>
+						<span class="queue-info-title">Slow queue</span>
+					</div>
+					<p>Many UPRNs and/or many data selections. Jobs might take longer to be processed.</p>
+				</div>
+			</div>
+		</Alert.Description>
+	</Alert.Root>
 	{#if downloads.length > 0}
 		<ul class="selected-list">
 			{#each downloads as download}
@@ -568,6 +593,79 @@
 	:global(.download-error-alert) {
 		padding-top: 0.25rem;
 		padding-bottom: 0.25rem;
+	}
+
+	:global(.queue-info-alert) {
+		margin-bottom: 0.75rem;
+		padding-top: 0.625rem;
+		padding-bottom: 0.625rem;
+	}
+
+	:global(.queue-info-alert-title) {
+		grid-column: 1 / -1;
+		margin-bottom: 0.125rem;
+		font-size: 0.8125rem;
+	}
+
+	:global(.queue-info-content) {
+		grid-column: 1 / -1;
+		width: 100%;
+		gap: 0.5rem;
+	}
+
+	:global(.queue-info-grid) {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.75rem;
+	}
+
+	:global(.queue-info-section) {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.25rem;
+		text-align: center;
+	}
+
+	:global(.queue-info-heading) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		font-weight: 600;
+		color: #374151;
+	}
+
+	:global(.queue-info-title) {
+		line-height: 1.2;
+	}
+
+	:global(.queue-info-icon-wrapper) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid #f3f4f6;
+		border-radius: 0.375rem;
+		padding: 0.125rem 0.25rem;
+		color: #6b7280;
+	}
+
+	:global(.queue-info-icon) {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	:global(.queue-info-section p) {
+		margin: 0;
+		font-size: 0.75rem;
+		line-height: 1.35;
+	}
+
+	@media (max-width: 640px) {
+		:global(.queue-info-grid) {
+			grid-template-columns: 1fr;
+			gap: 0.5rem;
+		}
 	}
 
 	:global(.download-status-btn .spinning) {

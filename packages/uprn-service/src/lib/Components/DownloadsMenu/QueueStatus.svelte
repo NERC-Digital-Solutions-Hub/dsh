@@ -11,15 +11,15 @@
 
 	/**
 	 * Generates tooltip content based on the queue ID and position.
-	 * @param queueId - The ID of the queue (1 for slow queue, 2 for fast queue).
+	 * @param queueId - The ID of the queue (1 for fast queue, 2 for slow queue).
 	 * @param queuePosition - The position of the item in the queue.
 	 * @returns A string containing the tooltip content.
 	 */
 	function getTooltipContent(queueId: number, queuePosition: number): string {
-		if (queueId === 2) {
-			return `Queue position: ${queuePosition} (Slow Queue)`;
-		} else if (queueId === 1) {
+		if (queueId === 1) {
 			return `Queue position: ${queuePosition} (Fast Queue)`;
+		} else if (queueId === 2) {
+			return `Queue position: ${queuePosition} (Slow Queue)`;
 		}
 
 		throw new Error(`Invalid queueId: ${queueId}. Expected 1 or 2.`);
