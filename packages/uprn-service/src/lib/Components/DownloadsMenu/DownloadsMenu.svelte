@@ -86,9 +86,11 @@
 		}
 	>;
 
-	const jobStatusImmediateCheckInterval = 10000; // 10 seconds
-	const jobStatusCheckInterval = 30000; // 30 seconds
+	const jobStatusBurstInterval = 3000; // 3 seconds
+	const jobStatusBurstDuration = 20000; // 20 seconds
+	const jobStatusCheckInterval = 15000; // 15 seconds
 	let statusCheckTimeout: ReturnType<typeof setTimeout> | undefined;
+	let statusCheckBurstEndsAt = 0;
 	const downloadsInProgress = $state(new SvelteSet<string>());
 
 	function getStatusCfg(status: string) {
@@ -97,7 +99,7 @@
 
 	onMount(() => {
 		submitRequests();
-		scheduleNextStatusCheck(jobStatusCheckInterval);
+		scheduleNextStatusCheck(getNextStatusCheckDelay());
 
 		return () => {
 			if (statusCheckTimeout) {
@@ -113,9 +115,29 @@
 
 		statusCheckTimeout = setTimeout(async () => {
 			await checkJobStatuses();
-			// After any one-off immediate check, return to the normal polling cadence.
-			scheduleNextStatusCheck(jobStatusCheckInterval);
+			scheduleNextStatusCheck(getNextStatusCheckDelay());
 		}, delayMs);
+	}
+
+	function hasBurstEligibleDownloads() {
+		return downloads.some(
+			(download) =>
+				download.status === DownloadStatus.Pending || download.status === DownloadStatus.Submitted
+		);
+	}
+
+	function getNextStatusCheckDelay(now = Date.now()) {
+		if (now < statusCheckBurstEndsAt && hasBurstEligibleDownloads()) {
+			return jobStatusBurstInterval;
+		}
+
+		statusCheckBurstEndsAt = 0;
+		return jobStatusCheckInterval;
+	}
+
+	function startStatusCheckBurst(now = Date.now()) {
+		statusCheckBurstEndsAt = now + jobStatusBurstDuration;
+		scheduleNextStatusCheck(jobStatusBurstInterval);
 	}
 
 	$effect(() => {
@@ -132,14 +154,11 @@
 	});
 
 	async function submitRequests() {
-		let submittedAnyRequest = false;
-
 		for (const download of downloads) {
 			if (download.externalId || download.status !== DownloadStatus.Pending) {
 				continue;
 			}
 
-			submittedAnyRequest = true;
 			download.status = DownloadStatus.Submitted;
 			downloadsStore.updateDownloadStatus(download);
 
@@ -183,11 +202,7 @@
 
 			download.externalId = response.guid;
 			downloadsStore.updateDownloadStatus(download);
-		}
-
-		if (submittedAnyRequest) {
-			// Speed up only the next status check after submitting new jobs.
-			scheduleNextStatusCheck(jobStatusImmediateCheckInterval);
+			startStatusCheckBurst();
 		}
 	}
 
@@ -196,14 +211,18 @@
 			return;
 		}
 
-		const downloadsToCheck: string[] = downloads
-			.filter(
-				(download) =>
-					download.externalId &&
-					download.status !== DownloadStatus.Completed &&
-					download.status !== DownloadStatus.Failed
+		const downloadsToCheck: string[] = [
+			...new Set(
+				downloads
+					.filter(
+						(download) =>
+							download.externalId &&
+							download.status !== DownloadStatus.Completed &&
+							download.status !== DownloadStatus.Failed
+					)
+					.map((download) => download.externalId!)
 			)
-			.map((download) => download.externalId!);
+		];
 
 		const request: UprnDownloadGetJobStatusesRequest = {
 			jobs: downloadsToCheck
