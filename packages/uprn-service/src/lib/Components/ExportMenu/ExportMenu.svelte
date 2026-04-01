@@ -197,6 +197,13 @@
 	 * @param areaId - The string ID of the area to remove (will be converted to number).
 	 */
 	function removeArea(node: SelectionTreeviewNodeType) {
+		if (node.children.length > 0) {
+			for (const child of node.children) {
+				removeArea(child);
+			}
+			return;
+		}
+
 		const numericId = parseInt(node.id, 10);
 		if (!isNaN(numericId)) {
 			areaSelectionInteractionStore.removeSelectedArea(numericId);
@@ -209,15 +216,28 @@
 	 * @param nodeId - The ID of the node to remove (layer ID or field ID in format "layerId::fieldName").
 	 */
 	function removeDataSelection(node: SelectionTreeviewNodeType) {
-		if (!node.isVariable) {
+		const treeviewNode = nodeProvider.getTreeviewNode(node.id);
+
+		if (treeviewNode && isDatasetNode(treeviewNode)) {
 			console.log('[export-menu] Removing data selection for layerId:', node.id);
 			dataSelectionStore.removeSelection(node.id);
 			return;
 		}
 
-		const treeviewNode = nodeProvider.getTreeviewNode(node.id);
-		if (!treeviewNode || !isVariableNode(treeviewNode)) {
+		if (!treeviewNode) {
 			console.warn('[export-menu] Could not find treeview node for id:', node.id);
+			return;
+		}
+
+		if (!isVariableNode(treeviewNode)) {
+			for (const child of node.children) {
+				removeDataSelection(child);
+			}
+			return;
+		}
+
+		if (!node.isVariable) {
+			console.warn('[export-menu] Expected a variable selection node for id:', node.id);
 			return;
 		}
 

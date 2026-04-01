@@ -1,5 +1,6 @@
 <script lang="ts" module>
 	import { TreeviewNodeTypology } from '$lib/Types/Treeview.types.js';
+	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 
 	/**
 	 * Represents a node in the selection tree.
@@ -117,16 +118,17 @@
 				{#if actions && node.isLeaf}
 					{@render actions(node)}
 				{/if}
-				{#if onRemove && node.isLeaf}
-					<Button
-						variant="ghost"
-						size="sm"
-						class="remove-btn"
-						title="Remove selection"
-						onclick={handleRemove}
-					>
-						×
-					</Button>
+				{#if onRemove}
+					<Tooltip.Provider disableHoverableContent>
+						<Tooltip.Root>
+							<Tooltip.Trigger>
+								<Button variant="ghost" size="sm" class="remove-btn" onclick={handleRemove}>
+									×
+								</Button>
+							</Tooltip.Trigger>
+							<Tooltip.Content>Remove</Tooltip.Content>
+						</Tooltip.Root>
+					</Tooltip.Provider>
 				{/if}
 			</div>
 		</div>
