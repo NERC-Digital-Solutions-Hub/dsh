@@ -621,8 +621,8 @@
 								<Alert.Root variant="destructive" class="download-error-alert">
 									<AlertCircleIcon />
 									<Alert.Description title={errorMessage}
-										>{errorMessage.length > 120
-											? `${errorMessage.slice(0, 120)}..`
+										>{errorMessage.length > 240
+											? `${errorMessage.slice(0, 240)}..`
 											: errorMessage}</Alert.Description
 									>
 								</Alert.Root>
