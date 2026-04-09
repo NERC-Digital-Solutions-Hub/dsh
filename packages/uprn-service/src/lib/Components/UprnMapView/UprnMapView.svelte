@@ -3,9 +3,13 @@
 	import { LayerViewProvider } from '$lib/Services/LayerViewProvider';
 	import type { AreaSelectionInteractionStore } from '$lib/Stores/AreaSelectionInteractionStore.svelte';
 	import { MapInteractionStore } from '$lib/Stores/MapInteractionStore.svelte';
+	import { TabType } from '$lib/Types/Uprn.types';
+	import type SearchWidget from '@arcgis/core/widgets/Search';
 	import type MapView from '@arcgis/core/views/MapView';
 	import { onDestroy, onMount } from 'svelte';
-	import type { SvelteSet } from 'svelte/reactivity';
+	import { SvelteSet } from 'svelte/reactivity';
+	import LocatorSearchSource from '@arcgis/core/widgets/Search/LocatorSearchSource.js';
+	import Extent from '@arcgis/core/geometry/Extent.js';
 
 	/**
 	 * Component props interface
@@ -15,9 +19,11 @@
 		mapView: MapView;
 		areaSelectionInteractionStore: AreaSelectionInteractionStore;
 		interactableLayers: SvelteSet<string>;
+		currentTab: TabType;
 	};
 
-	const { webMap, mapView, areaSelectionInteractionStore, interactableLayers }: Props = $props();
+	const { webMap, mapView, areaSelectionInteractionStore, interactableLayers, currentTab }: Props =
+		$props();
 
 	/** The map interaction store instance */
 	let mapInteractionStore: MapInteractionStore | null = $derived.by(() => {
@@ -26,6 +32,7 @@
 			: null;
 	});
 	let mapContainer: HTMLDivElement | null = null;
+	let searchWidget: SearchWidget | null = null;
 
 	const fallbackBasemap = 'streets-vector';
 
@@ -74,19 +81,58 @@
 			mapView.background = { color: '#CFD3D4' };
 			mapView.ui.move('zoom', 'bottom-left');
 
+			await addSearchWidget();
+
 			mapView.constraints = {
 				...mapView.constraints,
 				minZoom: 4,
-				maxZoom: 16
+				maxZoom: 17
 			};
 
 			console.log('[uprn-map-view] MapView updated with new webMap');
+
+			// Configure popup docking after the view is ready
+			if (mapView.popup) {
+				mapView.popup.dockEnabled = true;
+				mapView.popup.dockOptions = {
+					position: 'bottom-right',
+					breakpoint: false
+				};
+			}
 
 			await areaSelectionInteractionStore.refreshLayerView();
 			await areaSelectionInteractionStore.refreshAreas();
 		} catch (error) {
 			console.error('Error updating MapView with new webMap:', error);
 		}
+	}
+
+	async function addSearchWidget() {
+		if (searchWidget) {
+			return;
+		}
+
+		const { default: Search } = await import('@arcgis/core/widgets/Search');
+
+		if (searchWidget || !mapView) {
+			return;
+		}
+
+		const ukSource = new LocatorSearchSource({
+			url: 'https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer',
+			countryCode: 'GB',
+			placeholder: 'Search UK locations'
+		});
+
+		const widget = new Search({
+			view: mapView,
+			popupEnabled: false,
+			includeDefaultSources: false,
+			sources: [ukSource]
+		});
+
+		searchWidget = widget;
+		mapView.ui.add(widget, 'top-right');
 	}
 
 	/**
@@ -149,11 +195,43 @@
 		updateMapWithWebMap();
 	});
 
+	/**
+	 * Manages map interaction and popup behavior based on the active tab.
+	 * - Area of Interest tab: popups disabled, area selection interactions active.
+	 * - All other tabs: popups enabled, area selection interactions disabled,
+	 *   and area selection layers have their popups individually disabled so
+	 *   they don't interfere with area selection data.
+	 */
 	$effect(() => {
-		if (!interactableLayers || !mapInteractionStore) {
+		if (!mapView || !mapView.map || !mapInteractionStore) {
 			return;
 		}
-		mapInteractionStore.updateInteractableLayers(interactableLayers);
+
+		const isAreaTab = currentTab === TabType.AreaOfInterest;
+
+		// Toggle area selection interactions based on the active tab
+		mapInteractionStore.updateInteractableLayers(isAreaTab ? interactableLayers : new SvelteSet());
+
+		if (isAreaTab) {
+			mapView.popupEnabled = false;
+			if (mapView.popup?.visible) {
+				mapView.popup.close();
+			}
+		} else {
+			mapView.popupEnabled = true;
+
+			// Clear any active hover highlight when leaving the area tab
+			areaSelectionInteractionStore.clearHoveredArea();
+		}
+
+		// Disable popups on area selection layers so they never show popups
+		// even when the map-level popupEnabled is true.
+		const layers = mapView.map.allLayers;
+		layers.forEach((layer) => {
+			if (interactableLayers.has(layer.id)) {
+				(layer as __esri.FeatureLayer).popupEnabled = false;
+			}
+		});
 	});
 
 	/**
@@ -163,6 +241,11 @@
 	function cleanup() {
 		if (mapInteractionStore) {
 			mapInteractionStore.cleanup();
+		}
+		if (searchWidget) {
+			mapView?.ui.remove(searchWidget);
+			searchWidget.destroy();
+			searchWidget = null;
 		}
 		if (mapView) {
 			mapView.destroy();
