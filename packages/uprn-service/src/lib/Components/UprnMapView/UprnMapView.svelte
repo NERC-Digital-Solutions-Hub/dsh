@@ -72,7 +72,7 @@
 			mapView.popupEnabled = false;
 			mapView.map = webMap;
 			mapView.background = { color: '#CFD3D4' };
-			mapView.ui.move('zoom', 'top-right');
+			mapView.ui.move('zoom', 'bottom-left');
 
 			mapView.constraints = {
 				...mapView.constraints,
