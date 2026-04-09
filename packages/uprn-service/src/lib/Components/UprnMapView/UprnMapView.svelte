@@ -77,7 +77,7 @@
 			mapView.constraints = {
 				...mapView.constraints,
 				minZoom: 4,
-				maxZoom: 18
+				maxZoom: 16
 			};
 
 			console.log('[uprn-map-view] MapView updated with new webMap');
