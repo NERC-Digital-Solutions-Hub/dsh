@@ -622,7 +622,7 @@
 									<AlertCircleIcon />
 									<Alert.Description title={errorMessage}
 										>{errorMessage.length > 240
-											? `${errorMessage.slice(0, 240)}..`
+											? `${errorMessage.slice(0, 240)}...`
 											: errorMessage}</Alert.Description
 									>
 								</Alert.Root>
