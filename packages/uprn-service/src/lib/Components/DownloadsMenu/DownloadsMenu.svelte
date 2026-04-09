@@ -612,7 +612,7 @@
 										×
 									</Button>
 								</Tooltip.Trigger>
-								<Tooltip.Content>Remove</Tooltip.Content>
+								<Tooltip.Content side="right">Remove</Tooltip.Content>
 							</Tooltip.Root>
 						</Tooltip.Provider>
 						{#snippet footer()}
