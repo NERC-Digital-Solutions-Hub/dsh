@@ -10,6 +10,12 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import LocatorSearchSource from '@arcgis/core/widgets/Search/LocatorSearchSource.js';
 	import Extent from '@arcgis/core/geometry/Extent.js';
+	import type Legend from '@arcgis/core/widgets/Legend';
+	import type Expand from '@arcgis/core/widgets/Expand';
+	import PopupTemplate from '@arcgis/core/PopupTemplate.js';
+	import * as identify from '@arcgis/core/rest/identify.js';
+	import IdentifyParameters from '@arcgis/core/rest/support/IdentifyParameters.js';
+	import Point from '@arcgis/core/geometry/Point.js';
 
 	/**
 	 * Component props interface
@@ -33,6 +39,8 @@
 	});
 	let mapContainer: HTMLDivElement | null = null;
 	let searchWidget: SearchWidget | null = null;
+	let legendWidget: Legend | null = null;
+	let legendExpand: Expand | null = null;
 
 	const fallbackBasemap = 'streets-vector';
 
@@ -82,6 +90,7 @@
 			mapView.ui.move('zoom', 'bottom-left');
 
 			await addSearchWidget();
+			await addLegendWidget();
 
 			mapView.constraints = {
 				...mapView.constraints,
@@ -102,6 +111,8 @@
 
 			await areaSelectionInteractionStore.refreshLayerView();
 			await areaSelectionInteractionStore.refreshAreas();
+
+			onAreasOfInterestTabSelected();
 		} catch (error) {
 			console.error('Error updating MapView with new webMap:', error);
 		}
@@ -133,6 +144,29 @@
 
 		searchWidget = widget;
 		mapView.ui.add(widget, 'top-right');
+	}
+
+	async function addLegendWidget() {
+		if (legendWidget || !mapView) {
+			return;
+		}
+
+		const [{ default: Legend }, { default: Expand }] = await Promise.all([
+			import('@arcgis/core/widgets/Legend'),
+			import('@arcgis/core/widgets/Expand')
+		]);
+
+		legendWidget = new Legend({
+			view: mapView
+		});
+
+		legendExpand = new Expand({
+			view: mapView,
+			content: legendWidget,
+			expandTooltip: 'Legend'
+		});
+
+		mapView.ui.add(legendExpand, 'top-right');
 	}
 
 	/**
@@ -207,6 +241,14 @@
 			return;
 		}
 
+		onAreasOfInterestTabSelected();
+	});
+
+	function onAreasOfInterestTabSelected() {
+		if (!mapView || !mapView.map || !mapInteractionStore) {
+			return;
+		}
+
 		const isAreaTab = currentTab === TabType.AreaOfInterest;
 
 		// Toggle area selection interactions based on the active tab
@@ -228,11 +270,161 @@
 		// even when the map-level popupEnabled is true.
 		const layers = mapView.map.allLayers;
 		layers.forEach((layer) => {
-			if (interactableLayers.has(layer.id)) {
-				(layer as __esri.FeatureLayer).popupEnabled = false;
+			disablePopupsRecursively(layer);
+		});
+	}
+
+	function disablePopupsRecursively(layer: __esri.Layer | __esri.Sublayer) {
+		const title = layer.title?.toLowerCase() ?? '';
+		const id = String(layer.id);
+
+		if (interactableLayers.has(id) && 'popupEnabled' in layer) {
+			layer.popupEnabled = false;
+			console.log(`Disabled popups for interactable layer: ${id}`);
+		}
+
+		if (interactableLayers.has(id) && 'legendEnabled' in layer) {
+			layer.legendEnabled = false;
+		}
+
+		if (title.includes('raster cells')) {
+			const rasterLayer = layer as __esri.FeatureLayer | __esri.Sublayer;
+			rasterLayer.legendEnabled = false;
+			rasterLayer.popupEnabled = true;
+			rasterLayer.popupTemplate = createRasterCellsPopupTemplate();
+		}
+
+		if (layer.type === 'group') {
+			const groupLayer = layer as __esri.GroupLayer;
+			for (const childLayer of groupLayer.layers.toArray()) {
+				disablePopupsRecursively(childLayer);
+			}
+		}
+
+		if (layer.type === 'map-image') {
+			const mapImageLayer = layer as __esri.MapImageLayer;
+			for (const sublayer of mapImageLayer.allSublayers.toArray()) {
+				disablePopupsRecursively(sublayer);
+			}
+		}
+	}
+
+	function createRasterCellsPopupTemplate(): __esri.PopupTemplate {
+		return new PopupTemplate({
+			title: 'Cell {gridcode}',
+			outFields: ['*'],
+			content: async (context: { graphic: __esri.Graphic }) => {
+				const graphic: __esri.Graphic = context.graphic;
+				const gridcode: any = graphic.attributes.gridcode;
+
+				const active = getActiveRasterSublayer();
+				if (!active) {
+					return `
+          <b>Gridcode:</b> ${gridcode}<br>
+          No active raster layer.
+        `;
+				}
+
+				const center: __esri.Point | undefined = graphic.geometry?.extent?.center;
+
+				const params = new IdentifyParameters({
+					geometry: center,
+					tolerance: 1,
+					mapExtent: mapView.extent,
+					width: mapView.width,
+					height: mapView.height,
+					dpi: 96,
+					returnGeometry: false,
+					layerOption: 'visible',
+					layerIds: [active.id],
+					spatialReference: mapView.spatialReference
+				});
+
+				try {
+					const response = await identify.identify(active.mapServiceUrl, params);
+					const hit = response.results?.[0];
+
+					if (!hit) {
+						return `
+            <b>Gridcode:</b> ${gridcode}<br>
+            No raster value found.
+          `;
+					}
+
+					const attrs = (hit.feature?.attributes ?? {}) as Record<string, unknown>;
+
+					let valueProp =
+						Object.keys(attrs).find((key) => key.includes('Value')) ??
+						Object.keys(attrs).find((key) => key.includes('value'));
+
+					if (!valueProp) {
+						const numericEntry = Object.entries(attrs).find(([, v]) => {
+							if (typeof v === 'number') return true;
+							return typeof v === 'string' && v.trim() !== '' && !Number.isNaN(Number(v));
+						});
+						valueProp = numericEntry?.[0];
+					}
+
+					return `
+          <b>Gridcode:</b> ${gridcode}<br>
+          <b>${'Value'}:</b> ${valueProp ? attrs[valueProp] : 'N/A'}
+        `;
+				} catch (err) {
+					console.error('Identify failed', err);
+					return `
+          <b>Gridcode:</b> ${gridcode}<br>
+          Failed to identify raster value.
+        `;
+				}
 			}
 		});
-	});
+	}
+
+	function getActiveRasterSublayer(): {
+		id: number;
+		title: string;
+		mapServiceUrl: string;
+	} | null {
+		if (!mapView?.map) {
+			return null;
+		}
+
+		function findInLayers(layers: __esri.Collection<__esri.Layer>): {
+			id: number;
+			title: string;
+			mapServiceUrl: string;
+		} | null {
+			for (const layer of layers.toArray()) {
+				if (!layer.visible) continue;
+
+				// Case 1: MapImageLayer
+				if (layer.type === 'map-image') {
+					const mapImageLayer = layer as __esri.MapImageLayer;
+
+					// Pick the visible raster sublayer
+					const sublayer = mapImageLayer.allSublayers.find((s) => s.visible);
+
+					if (sublayer) {
+						return {
+							id: sublayer.id,
+							title: sublayer.title ?? 'Unnamed Layer',
+							mapServiceUrl: mapImageLayer.url ?? 'Unknown URL'
+						};
+					}
+				}
+
+				// Case 2: GroupLayer (or anything with child layers)
+				if ('layers' in layer && layer.layers) {
+					const found = findInLayers(layer.layers as __esri.Collection<__esri.Layer>);
+					if (found) return found;
+				}
+			}
+
+			return null;
+		}
+
+		return findInLayers(mapView.map.layers);
+	}
 
 	/**
 	 * Cleans up map resources and interaction stores when the component is destroyed.
