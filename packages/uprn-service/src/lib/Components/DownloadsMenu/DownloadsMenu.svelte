@@ -620,7 +620,7 @@
 								{@const errorMessage = download.errorMessage ?? 'An unknown error occurred.'}
 								<Alert.Root variant="destructive" class="download-error-alert">
 									<AlertCircleIcon />
-									<Alert.Description title={errorMessage}
+									<Alert.Description
 										>{errorMessage.length > 240
 											? `${errorMessage.slice(0, 240)}...`
 											: errorMessage}</Alert.Description
