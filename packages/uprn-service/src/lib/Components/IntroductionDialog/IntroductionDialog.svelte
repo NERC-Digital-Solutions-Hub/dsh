@@ -15,6 +15,8 @@
 
 	let { isOpen = $bindable(false), contentUrl }: Props = $props();
 
+	let hasBeenInitiallyOpened = $state(false);
+
 	/** Derived state for fetching the introduction content based on the provided URL. */
 	let introduction = $derived.by(() => {
 		if (!contentUrl) {
@@ -45,11 +47,12 @@
 	});
 
 	$effect(() => {
-		if (isOpen || !introduction?.content) {
+		if (hasBeenInitiallyOpened || isOpen || !introduction?.content) {
 			return;
 		}
 
 		isOpen = true;
+		hasBeenInitiallyOpened = true;
 	});
 </script>
 
