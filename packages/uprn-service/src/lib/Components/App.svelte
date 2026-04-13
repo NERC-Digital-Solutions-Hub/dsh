@@ -163,6 +163,9 @@
 	/** State of the ArcGIS MapView instance. */
 	let mapView: __esri.MapView | null = $state(null);
 
+	/** State to track whether the treeview visibility states have been synced to the map. */
+	let mapSyncedWithNodeVisibility = $state(false);
+
 	/** Hook for the AI UPRN chatbot health check. */
 	const aiUprnChatbotHealth = $derived.by(() => {
 		if (!appConfig.content?.aiUprnChatbot) {
@@ -477,12 +480,13 @@
 
 	/** Effect to sync treeview visibility states to the map when it becomes available. */
 	$effect(() => {
-		if (!mapView || !webMapStore?.isLoaded || !nodeVisibilityController) {
+		if (mapSyncedWithNodeVisibility || !mapView || !webMapStore?.isLoaded || !nodeVisibilityController) {
 			return;
 		}
 
 		console.log('[uprn/app] Syncing treeview visibility states to map');
 		nodeVisibilityController.setLayerViewProvider(new LayerViewProvider(mapView));
+		mapSyncedWithNodeVisibility = true;
 	});
 
 	/** Effect to update tab progress based on area and data selection states. */
