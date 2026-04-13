@@ -131,7 +131,7 @@
 	let sidebarOpen = $state(true);
 
 	/** State for managing the visibility of the introduction dialog. */
-	let introductionDialogOpen = $state(true);
+	let introductionDialogOpen = $state(false);
 
 	/** State for managing the visibility of the item info dialog. */
 	let itemInfoDialogOpen: boolean = $state(false);

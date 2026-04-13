@@ -13,7 +13,7 @@
 		contentUrl: string | null;
 	};
 
-	let { isOpen = $bindable(true), contentUrl }: Props = $props();
+	let { isOpen = $bindable(false), contentUrl }: Props = $props();
 
 	/** Derived state for fetching the introduction content based on the provided URL. */
 	let introduction = $derived.by(() => {
@@ -42,6 +42,14 @@
 			.process(introduction.content);
 
 		return htmlRaw.toString();
+	});
+
+	$effect(() => {
+		if (isOpen || !introduction?.content) {
+			return;
+		}
+
+		isOpen = true;
 	});
 </script>
 
