@@ -372,13 +372,8 @@
 
 	/** Controller for managing node visibility. */
 	let nodeVisibilityController: NodeVisibilityController | null = $derived.by(() => {
-		return mapView && treeviewNodeProvider && treeviewConfigStore
-			? new NodeVisibilityController(
-					new LayerViewProvider(mapView),
-					treeviewNodeProvider,
-					treeviewConfigStore,
-					treeviewConfigStore
-				)
+		return treeviewNodeProvider && treeviewConfigStore
+			? new NodeVisibilityController(treeviewNodeProvider, treeviewConfigStore, treeviewConfigStore)
 			: null;
 	});
 
@@ -444,7 +439,6 @@
 	$effect(() => {
 		if (
 			initializedNodeVisibility ||
-			!webMapStore?.isLoaded ||
 			!nodeVisibilityController ||
 			!treeviewNodes ||
 			treeviewNodes.length === 0
@@ -479,6 +473,16 @@
 		}
 
 		initializedNodeVisibility = true;
+	});
+
+	/** Effect to sync treeview visibility states to the map when it becomes available. */
+	$effect(() => {
+		if (!mapView || !webMapStore?.isLoaded || !nodeVisibilityController) {
+			return;
+		}
+
+		console.log('[uprn/app] Syncing treeview visibility states to map');
+		nodeVisibilityController.setLayerViewProvider(new LayerViewProvider(mapView));
 	});
 
 	/** Effect to update tab progress based on area and data selection states. */

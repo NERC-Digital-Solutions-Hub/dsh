@@ -28,7 +28,7 @@ export class NodeVisibilityController implements INodeVisibilityController {
 	public readonly visibilityStates: Map<string, boolean> = $state(new SvelteMap());
 
 	/** The layer view provider to use for accessing layer views. */
-	readonly #layerViewProvider: LayerViewProvider;
+	#layerViewProvider: LayerViewProvider | null;
 
 	/** The node provider to use for accessing treeview nodes. */
 	readonly #nodeProvider: INodeProvider;
@@ -47,18 +47,18 @@ export class NodeVisibilityController implements INodeVisibilityController {
 
 	/**
 	 * Initializes an instance of NodeVisibilityController.
-	 * @param layerViewProvider The layer view provider to use for accessing layer views.
 	 * @param nodeProvider The node provider to use for accessing treeview nodes.
 	 * @param nodeConfigProvider The node config provider to use for accessing node configuration such as visibility groups.
 	 * @param visibilityGroupProvider The visibility group provider to use for managing visibility groups.
+	 * @param layerViewProvider Optional layer view provider. If omitted, visibility states are tracked without syncing to the map until a provider is set via {@link setLayerViewProvider}.
 	 */
 	constructor(
-		layerViewProvider: LayerViewProvider,
 		nodeProvider: INodeProvider,
 		nodeConfigProvider: INodeConfigProvider,
-		visibilityGroupProvider: IVisibilityGroupProvider
+		visibilityGroupProvider: IVisibilityGroupProvider,
+		layerViewProvider?: LayerViewProvider | null
 	) {
-		this.#layerViewProvider = layerViewProvider;
+		this.#layerViewProvider = layerViewProvider ?? null;
 		this.#nodeProvider = nodeProvider;
 		this.#nodeConfigProvider = nodeConfigProvider;
 		this.#visibilityGroupProvider = visibilityGroupProvider;
@@ -128,6 +128,42 @@ export class NodeVisibilityController implements INodeVisibilityController {
 	}
 
 	/**
+	 * Sets the layer view provider and syncs all current visibility states to the map.
+	 * This allows the controller to operate without a map initially, tracking treeview visibility
+	 * state in memory, and then syncing to the map when it becomes available.
+	 * @param provider The layer view provider to use for accessing layer views.
+	 */
+	public setLayerViewProvider(provider: LayerViewProvider): void {
+		this.#layerViewProvider = provider;
+		this.syncDrawStatesToMap();
+	}
+
+	/**
+	 * Syncs all current visibility states to the map by applying draw states for each tracked node.
+	 * Called when the layer view provider becomes available after visibility states have already been set.
+	 */
+	private async syncDrawStatesToMap(): Promise<void> {
+		for (const [nodeId, isVisible] of this.visibilityStates) {
+			const node = this.#nodeProvider.getTreeviewNode(nodeId);
+			if (!node) continue;
+
+			if (this.isDatasetNode(node)) {
+				await this.setDatasetDrawState(node, isVisible);
+			} else if (this.isVariableNode(node)) {
+				if (node.variableSubType === VariableSubType.Tile) {
+					await this.setTileVariableDrawState(node, isVisible);
+				}
+			}
+		}
+
+		for (const [nodeId, isVisible] of this.visibilityStates) {
+			const node = this.#nodeProvider.getTreeviewNode(nodeId);
+			if (!node) continue;
+			await this.updateDependencyVisibility(node, isVisible);
+		}
+	}
+
+	/**
 	 * Sets the visibility state of a dataset node.
 	 * @param node The dataset treeview node.
 	 * @param isVisible A flag that determines if the node should be visible or not.
@@ -161,6 +197,10 @@ export class NodeVisibilityController implements INodeVisibilityController {
 	 * @param isVisible A flag that determines if the node should be visible or not.
 	 */
 	private async setDatasetDrawState(node: DatasetTreeviewNode, isVisible: boolean): Promise<void> {
+		if (!this.#layerViewProvider) {
+			return;
+		}
+
 		const datasetDrawState: NodeDrawState | undefined = this.drawStates.get(node.id);
 		if (!isVisible && datasetDrawState === NodeDrawState.Hidden) {
 			return; // already hidden, no need to update
@@ -356,6 +396,10 @@ export class NodeVisibilityController implements INodeVisibilityController {
 		node: VariableTreeviewNode,
 		isVisible: boolean
 	): Promise<void> {
+		if (!this.#layerViewProvider) {
+			return;
+		}
+
 		const drawState: NodeDrawState | undefined = this.drawStates.get(node.id);
 		if (!isVisible && drawState === NodeDrawState.Hidden) {
 			return;
@@ -574,6 +618,10 @@ export class NodeVisibilityController implements INodeVisibilityController {
 	 * @param isVisible The new visibility state of the node.
 	 */
 	private async updateDependencyVisibility(node: TreeviewNode, isVisible: boolean): Promise<void> {
+		if (!this.#layerViewProvider) {
+			return;
+		}
+
 		const config: TreeviewNodeConfig | undefined = this.#nodeConfigProvider.getConfig(node.id);
 		if (!config) {
 			return;
@@ -621,6 +669,10 @@ export class NodeVisibilityController implements INodeVisibilityController {
 		dependentNode: DatasetTreeviewNode,
 		isVisible: boolean
 	): Promise<void> {
+		if (!this.#layerViewProvider) {
+			return;
+		}
+
 		if (
 			!dependentNode.parent ||
 			!this.isDatasetNode(dependentNode.parent) ||
