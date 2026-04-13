@@ -280,7 +280,6 @@
 
 		if (interactableLayers.has(id) && 'popupEnabled' in layer) {
 			layer.popupEnabled = false;
-			console.log(`Disabled popups for interactable layer: ${id}`);
 		}
 
 		if (interactableLayers.has(id) && 'legendEnabled' in layer) {

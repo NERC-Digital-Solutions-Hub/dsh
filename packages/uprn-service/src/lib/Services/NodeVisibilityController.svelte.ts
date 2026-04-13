@@ -421,10 +421,10 @@ export class NodeVisibilityController implements INodeVisibilityController {
 		)?.allSublayers?.find((sublayer) => sublayer.id === layerIndex);
 
 		if (!subLayer) {
-			console.warn(
-				`Sublayer not found for node ${node.id} with layer ID ${node.layerId} and index ${layerIndex}`,
-				node
-			);
+			// console.warn(
+			// 	`Sublayer not found for node ${node.id} with layer ID ${node.layerId} and index ${layerIndex}`,
+			// 	node
+			// );
 			return;
 		}
 
