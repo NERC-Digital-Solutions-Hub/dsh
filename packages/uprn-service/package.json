@@ -74,6 +74,8 @@
 	],
 	"dependencies": {
 		"@dsh/common": "workspace:*",
+		"@keenmate/svelte-treeview": "^4.8.0",
+		"@tanstack/svelte-virtual": "^3.13.23",
 		"dexie": "^4.2.1",
 		"embla-carousel-svelte": "^8.6.0",
 		"lottie-web": "^5.13.0",

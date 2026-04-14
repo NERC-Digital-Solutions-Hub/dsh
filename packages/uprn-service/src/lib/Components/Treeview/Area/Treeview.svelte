@@ -1,11 +1,21 @@
 <script lang="ts">
-	import * as TreeView from '$lib/Components/shadcn/tree-view/index.js';
-	import { DatasetTreeviewNode, NodeDrawState, TreeviewNode } from '$lib/Models/Treeview/Index.js';
+	import { Tree, type LTreeNode } from '@keenmate/svelte-treeview';
+	import '@keenmate/svelte-treeview/styles.css';
+	import { Input } from '$lib/Components/shadcn/input/index.js';
+	import OpenIndicator from '$lib/Components/OpenIndicator/OpenIndicator.svelte';
+	import VisibilityCheckbox from '$lib/Components/VisibilityCheckbox/VisibilityCheckbox.svelte';
+	import { getNodeIcon } from '$lib/Components/Treeview/GetNodeIcon.js';
+	import {
+		DatasetTreeviewNode,
+		NodeDrawState,
+		type TreeviewNode
+	} from '$lib/Models/Treeview/Index.js';
 	import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 	import type { IAreaSelectionController } from '$lib/Services/IAreaSelectionController';
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 	import { TreeviewStore } from '$lib/Stores/TreeviewStore.svelte';
-	import Node from './Node.svelte';
+	import { TreeviewNodeTypology } from '$lib/Types/Treeview.types.js';
+	import { Ban, Search, X } from '@lucide/svelte';
 
 	/**
 	 * Props for the TreeView component.
@@ -23,9 +33,28 @@
 
 	const { treeviewStore, nodeConfigProvider, areaSelectionController }: Props = $props();
 
+	/** Bindable search text for the KeenMate Tree's built-in FlexSearch. */
+	let searchText = $state('');
+
+	/** Flat data representation for the KeenMate Tree component. */
+	interface FlatAreaNode {
+		path: string;
+		nodeId: string;
+		name: string;
+		nodeRef: TreeviewNode;
+	}
+
+	/** Use $state.raw to avoid deep proxy overhead on large arrays. */
+	let flatData = $state.raw<FlatAreaNode[]>([]);
+
+	/** Rebuild flat data whenever the underlying tree nodes change. */
+	$effect(() => {
+		const nodes = treeviewStore.getNodes();
+		flatData = flattenAreaNodes(nodes);
+	});
+
 	/**
-	 * Effect to update the area selection layer in the area selection store when the visible nodes in the area
-	 * treeview change.
+	 * Effect to update the area selection layer when the visible nodes change.
 	 */
 	$effect(() => {
 		const visibleNodes = treeviewStore?.getVisibleNodes();
@@ -45,35 +74,306 @@
 	});
 
 	/**
-	 * Gets the draw state of a node by its ID.
-	 * @param nodeId The ID of the node to check.
-	 * @returns The draw state of the node.
+	 * Flatten the hierarchical TreeviewNode tree into a flat array with
+	 * dot-separated paths for the KeenMate Tree component.
+	 *
+	 * Area tree rules:
+	 * - Root nodes: include all non-hidden nodes.
+	 * - Children: include only DatasetTreeviewNode (excludes Variable and Folder children).
 	 */
-	function getNodeDrawState(nodeId: string): NodeDrawState {
-		return treeviewStore.getNodeDrawState(nodeId);
+	function flattenAreaNodes(nodes: TreeviewNode[]): FlatAreaNode[] {
+		const result: FlatAreaNode[] = [];
+
+		function walk(nodes: TreeviewNode[], parentPath: string, isRoot: boolean) {
+			let index = 1;
+			for (const node of nodes) {
+				const config = nodeConfigProvider.getConfig(node.id);
+				if (config?.isHidden) continue;
+				if (!isRoot && node.type !== TreeviewNodeType.Dataset) continue;
+
+				const path = parentPath ? `${parentPath}.${index}` : `${index}`;
+				result.push({ path, nodeId: node.id, name: node.name, nodeRef: node });
+
+				if (node.children?.length) {
+					walk(node.children, path, false);
+				}
+				index++;
+			}
+		}
+
+		walk(nodes, '', true);
+		return result;
 	}
 
 	/**
-	 * Checks if a given node is a DatasetTreeviewNode.
-	 * @param node The node to check.
-	 * @returns True if the node is a DatasetTreeviewNode, false otherwise.
+	 * Handle node clicks — toggle visibility for leaf nodes.
 	 */
+	function handleNodeClicked(treeNode: LTreeNode<FlatAreaNode>) {
+		if (!treeNode.data) return;
+		const nodeRef = treeNode.data.nodeRef;
+
+		if (!treeNode.hasChildren) {
+			const config = nodeConfigProvider.getConfig(nodeRef.id);
+			if (config?.isEnabled !== false) {
+				const isVisible = treeviewStore.getVisibilityState(nodeRef.id);
+				treeviewStore.setVisibilityState(nodeRef.id, !isVisible);
+			}
+		}
+	}
+
 	function isDatasetNode(node: TreeviewNode): node is DatasetTreeviewNode {
 		return node.type === TreeviewNodeType.Dataset;
 	}
+
+	function hasVisibleChildren(node: TreeviewNode): boolean {
+		return node.children?.some((child) => treeviewStore.getVisibilityState(child.id)) ?? false;
+	}
 </script>
 
-<TreeView.Root>
-	{#each treeviewStore.getNodes() as node (node.id)}
-		<Node
-			{nodeConfigProvider}
-			{node}
-			onNodeClick={() => {}}
-			onNodeVisibilityChange={(node, visible) => treeviewStore.setVisibilityState(node.id, visible)}
-			getNodeVisibility={(nodeId) => treeviewStore.getVisibilityState(nodeId)}
-			{getNodeDrawState}
-			depth={0}
-			useLayerTypeIcon={true}
-		/>
-	{/each}
-</TreeView.Root>
+<div class="relative mb-2 w-full">
+	<Search
+		class="text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2"
+	/>
+	<Input
+		type="text"
+		placeholder="Search areas..."
+		class="h-8 pl-8 pr-8 text-sm"
+		bind:value={searchText}
+	/>
+	{#if searchText}
+		<button
+			type="button"
+			class="text-muted-foreground hover:text-foreground absolute right-2 top-1/2 -translate-y-1/2 transition-colors"
+			onclick={() => (searchText = '')}
+			aria-label="Clear search"
+		>
+			<X class="size-4" />
+		</button>
+	{/if}
+</div>
+
+<div class="tree-wrapper">
+	<Tree
+		data={flatData}
+		idMember="nodeId"
+		pathMember="path"
+		displayValueMember="name"
+		searchValueMember="name"
+		shouldUseInternalSearchIndex={true}
+		bind:searchText
+		virtualScroll={true}
+		virtualRowHeight={44}
+		virtualOverscan={5}
+		virtualContainerHeight="100%"
+		onNodeClicked={handleNodeClicked}
+		shouldToggleOnNodeClick={true}
+		expandLevel={0}
+	>
+		{#snippet nodeTemplate(treeNode: LTreeNode)}
+			{@const nodeRef = treeNode.data!.nodeRef}
+			{@const config = nodeConfigProvider.getConfig(nodeRef.id)}
+			{@const isEnabled = config?.isEnabled ?? false}
+			{@const hasChildren = treeNode.hasChildren}
+			{@const isVisible = treeviewStore.getVisibilityState(nodeRef.id)}
+			{@const drawState = treeviewStore.getNodeDrawState(nodeRef.id)}
+			{@const folderHasVisibleChild = hasChildren && hasVisibleChildren(nodeRef)}
+			{@const isPressed = (!hasChildren && isVisible) || folderHasVisibleChild}
+			{@const icon = getNodeIcon(
+				config?.typology ?? TreeviewNodeTypology.Area,
+				treeNode.isExpanded
+			)}
+
+			<div
+				class="node-card"
+				class:node-card-accent={isPressed}
+				class:node-card-disabled={!hasChildren && !isEnabled}
+				style="margin-left: calc({Math.max(
+					0,
+					(treeNode.level ?? 0) - 1
+				)} * var(--tree-step, 1.5rem));"
+			>
+				<div class="node-grid">
+					<div class="node-icons">
+						{#if hasChildren}
+							<span class="icon-slot">
+								<OpenIndicator isOpen={treeNode.isExpanded} />
+							</span>
+						{/if}
+						<span class="icon-slot">
+							{#if typeof icon === 'string'}
+								{@html icon}
+							{:else}
+								{@const Icon = icon}
+								<Icon />
+							{/if}
+						</span>
+					</div>
+
+					<span class="node-name">{nodeRef.name}</span>
+
+					<div class="node-end">
+						{#if isPressed}
+							<div class="visibility-wrapper visible">
+								<div class="visibility-inner">
+									<VisibilityCheckbox
+										disabled={true}
+										checked={true}
+										indeterminate={drawState === NodeDrawState.Suspended}
+									/>
+								</div>
+								{#if drawState === NodeDrawState.Suspended}
+									<span class="indeterminate-label">zoom</span>
+								{/if}
+							</div>
+						{/if}
+
+						{#if !isEnabled && !hasChildren}
+							<span title={config?.disabledReason}>
+								<Ban class="size-4 text-red-500" />
+							</span>
+						{/if}
+					</div>
+				</div>
+			</div>
+		{/snippet}
+	</Tree>
+</div>
+
+<style>
+	/* Override KeenMate tree defaults for custom card styling */
+	.tree-wrapper :global(.ltree-node-content) {
+		padding: 0 !important;
+		border-radius: 0 !important;
+		background-color: transparent !important;
+	}
+	.tree-wrapper :global(.ltree-node-content:hover) {
+		background-color: transparent !important;
+	}
+	.tree-wrapper :global(.ltree-toggle-icon) {
+		display: none !important;
+	}
+	.tree-wrapper :global(.ltree-node) {
+		--tree-node-indent-per-level: 0rem;
+	}
+
+	.node-card {
+		cursor: pointer;
+		border-radius: 0.375rem;
+		border: 1px solid hsl(var(--border));
+		box-shadow: none;
+		padding: 0.5rem;
+		margin-bottom: 0.25rem;
+		text-align: left;
+		transition-property: all;
+		transition-duration: 150ms;
+		font-size: 0.875rem;
+		font-weight: 400;
+		color: hsl(var(--foreground));
+		background-color: hsl(var(--card));
+		width: 100%;
+	}
+	.node-card:hover {
+		border-color: hsl(var(--border) / 0.5);
+		background-color: #f3f4f6;
+		box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+	}
+
+	.node-card-accent {
+		background-color: hsl(var(--accent));
+		color: hsl(var(--accent-foreground));
+	}
+	.node-card-accent:hover {
+		background-color: hsl(var(--accent));
+		color: hsl(var(--accent-foreground));
+	}
+
+	.node-card-disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+		pointer-events: auto;
+	}
+
+	.node-grid {
+		display: grid;
+		width: 100%;
+		grid-template-columns: auto 1fr auto;
+		align-items: center;
+		column-gap: 0.5rem;
+	}
+
+	.node-icons {
+		display: inline-flex;
+		align-items: center;
+		gap: 0;
+	}
+
+	.icon-slot {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 1rem;
+		width: var(--tree-step, 1.5rem);
+	}
+
+	.icon-slot :global(svg) {
+		width: 1rem;
+		height: 1rem;
+		flex-shrink: 0;
+	}
+
+	.node-name {
+		min-width: 0;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		text-align: left;
+		line-height: 1.375;
+	}
+
+	.node-end {
+		justify-self: end;
+		display: flex;
+		align-items: center;
+	}
+
+	.visibility-wrapper {
+		position: relative;
+		display: grid;
+		grid-template-columns: 0fr;
+		transition: grid-template-columns 0.2s ease-out;
+		overflow: visible;
+	}
+
+	.visibility-wrapper.visible {
+		grid-template-columns: 1fr;
+	}
+
+	.visibility-inner {
+		overflow: hidden;
+		display: flex;
+		opacity: 0;
+		transform: translateX(10px);
+		transition:
+			opacity 0.4s ease-out,
+			transform 0.2s ease-out;
+	}
+
+	.visibility-wrapper.visible .visibility-inner {
+		opacity: 1;
+		transform: translateX(0);
+	}
+
+	.indeterminate-label {
+		position: absolute;
+		top: 90%;
+		left: 50%;
+		transform: translateX(-50%);
+		font-size: 0.55rem;
+		line-height: 1;
+		white-space: nowrap;
+		pointer-events: none;
+		opacity: 0.7;
+		z-index: 100;
+		color: hsl(var(--muted-foreground));
+	}
+</style>

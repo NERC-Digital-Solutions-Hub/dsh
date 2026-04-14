@@ -18,10 +18,22 @@
 		childNode?: Snippet<[TreeviewNode]>;
 		/** Optional animation duration in milliseconds. */
 		duration?: number;
+		/** Whether to animate open/close transitions. Set false to skip (e.g. during search). */
+		animate?: boolean;
 	};
 
 	/** Destructured props with defaults. */
-	const { isOpen = false, childNodes = null, content, childNode, duration = 300 }: Props = $props();
+	const {
+		isOpen = false,
+		childNodes = null,
+		content,
+		childNode,
+		duration = 300,
+		animate = true
+	}: Props = $props();
+
+	/** Resolved duration — 0 when animations are suppressed. */
+	const effectiveDuration = $derived(animate ? duration : 0);
 
 	function safeSlide(node: Element, params: SlideParams = {}): TransitionConfig {
 		const transition = slide(node, params);
@@ -54,8 +66,8 @@
 
 			<div
 				class="tree-children"
-				in:safeSlide={{ duration, easing: cubicOut }}
-				out:safeSlide={{ duration }}
+				in:safeSlide={{ duration: effectiveDuration, easing: cubicOut }}
+				out:safeSlide={{ duration: effectiveDuration }}
 			>
 				{#each childNodes ?? [] as child}
 					{@render childNode?.(child)}

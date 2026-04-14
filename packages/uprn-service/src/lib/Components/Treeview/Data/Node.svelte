@@ -5,6 +5,7 @@
 	import NodeContent from '$lib/Components/Treeview/Data/NodeContent.svelte';
 	import { getNodeIcon } from '$lib/Components/Treeview/GetNodeIcon';
 	import NodeAnimation from '$lib/Components/Treeview/NodeAnimation.svelte';
+	import type { TreeviewSearch } from '$lib/Components/Treeview/TreeviewSearch.svelte.js';
 	import VisibilityCheckbox from '$lib/Components/VisibilityCheckbox/VisibilityCheckbox.svelte';
 	import { getTreeEvents } from '$lib/Events/DataTreeviewEvents';
 	import { NodeDrawState, TreeviewNode } from '$lib/Models/Treeview/Index.js';
@@ -15,6 +16,7 @@
 	import type { TagDefinition } from '$lib/Types/Configuration.types.js';
 	import { TreeviewNodeTypology, type TreeviewNodeConfig } from '$lib/Types/Treeview.types.js';
 	import type { Component } from 'svelte';
+	import { untrack } from 'svelte';
 	import DownloadButton from './DownloadButton.svelte';
 
 	/**
@@ -38,6 +40,9 @@
 
 		/** The IDs of currently selected tags to filter by. */
 		selectedTagIds: Set<string>;
+
+		/** Optional search state for filtering and expansion control. */
+		search?: TreeviewSearch | null;
 	};
 
 	const {
@@ -46,7 +51,8 @@
 		nodeConfigProvider,
 		nodeTagProvider,
 		tagDefinitionProvider,
-		selectedTagIds = new Set<string>()
+		selectedTagIds = new Set<string>(),
+		search = null
 	}: Props = $props();
 
 	const {
@@ -90,15 +96,19 @@
 		return definitions;
 	});
 
-	/** Filtered children based on selected tag IDs. */
+	/** Filtered children based on selected tag IDs and active search. */
 	const filteredChildren: TreeviewNode[] = $derived.by(() => {
 		if (!node.children?.length) {
 			return [];
 		}
-		if (selectedTagIds.size === 0) {
-			return node.children;
+		let children = node.children;
+		if (selectedTagIds.size > 0) {
+			children = children.filter((child) => nodeMatchesTagFilter(child));
 		}
-		return node.children.filter((child) => nodeMatchesTagFilter(child));
+		if (search?.isFiltering) {
+			children = children.filter((child) => search.nodeOrDescendantMatches(child.id));
+		}
+		return children;
 	});
 
 	/** Whether this node represents a folder (has children). */
@@ -140,6 +150,37 @@
 		const isVisible = getNodeVisibility ? getNodeVisibility(node.id) : false;
 		isChecked = isVisible ?? false;
 		icon = getNodeIcon(nodeConfig?.typology ?? TreeviewNodeTypology.Variable, isOpen);
+	});
+
+	/** Track previous search-active state for save/restore transitions. */
+	let wasSearchActive = false;
+
+	/** Search-driven expansion: save state on activation, auto-expand ancestors, restore on clear. */
+	$effect(() => {
+		if (!search || !isFolder) return;
+
+		const active = search.isActive;
+		const filtering = search.isFiltering;
+		const currentIsOpen = untrack(() => isOpen);
+
+		if (active && !wasSearchActive) {
+			// Search just became active — snapshot current expansion
+			search.saveExpansionState(node.id, currentIsOpen);
+		}
+
+		if (filtering && search.ancestorIds.has(node.id)) {
+			isOpen = true;
+		}
+
+		if (!active && wasSearchActive) {
+			// Search just cleared — restore unless user toggled
+			const saved = search.getSavedExpansionState(node.id);
+			if (saved !== undefined) {
+				isOpen = saved;
+			}
+		}
+
+		wasSearchActive = active;
 	});
 
 	$effect(() => {
@@ -213,6 +254,9 @@
 	 */
 	function handleFolderClick() {
 		isOpen = !isOpen;
+		if (search?.isActive) {
+			search.recordUserToggle(node.id);
+		}
 		onNodeClick?.(node);
 	}
 
@@ -327,12 +371,19 @@
 			{tagDefinitionProvider}
 			{node}
 			{selectedTagIds}
+			{search}
 			depth={depth + 1}
 		/>
 	{/if}
 {/snippet}
 
-<NodeAnimation {isOpen} {content} childNodes={isFolder ? filteredChildren : null} {childNode} />
+<NodeAnimation
+	{isOpen}
+	{content}
+	childNodes={isFolder ? filteredChildren : null}
+	{childNode}
+	animate={!search?.isActive}
+/>
 
 <style>
 	.node-actions {

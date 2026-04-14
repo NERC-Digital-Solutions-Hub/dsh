@@ -11,6 +11,8 @@
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 	import { TreeviewNodeTypology, type TreeviewNodeConfig } from '$lib/Types/Treeview.types';
 	import type { Component } from 'svelte';
+	import { untrack } from 'svelte';
+	import type { TreeviewSearch } from '../TreeviewSearch.svelte.js';
 	import { getNodeIcon } from '../GetNodeIcon';
 	import NodeAnimation from '../NodeAnimation.svelte';
 	import Node from './Node.svelte';
@@ -36,6 +38,8 @@
 		depth?: number;
 		/** Whether to use layer type specific icons. */
 		useLayerTypeIcon?: boolean;
+		/** Optional search state for filtering and expansion control. */
+		search?: TreeviewSearch | null;
 	};
 
 	/** Destructured props with defaults. */
@@ -47,7 +51,8 @@
 		getNodeVisibility,
 		getNodeDrawState,
 		depth = 0,
-		useLayerTypeIcon = false
+		useLayerTypeIcon = false,
+		search = null
 	}: Props = $props();
 
 	let nodeConfig: TreeviewNodeConfig | null = $derived(
@@ -81,6 +86,35 @@
 	/** Reactive state for visibility icon. */
 	let showVisibility: boolean = $state(false);
 	let isVisibilityAnimatingOut: boolean = $state(false);
+
+	/** Track previous search-active state for save/restore transitions. */
+	let wasSearchActive = false;
+
+	/** Search-driven expansion: save state on activation, auto-expand ancestors, restore on clear. */
+	$effect(() => {
+		if (!search || !isFolder) return;
+
+		const active = search.isActive;
+		const filtering = search.isFiltering;
+		const currentIsOpen = untrack(() => isOpen);
+
+		if (active && !wasSearchActive) {
+			search.saveExpansionState(node.id, currentIsOpen);
+		}
+
+		if (filtering && search.ancestorIds.has(node.id)) {
+			isOpen = true;
+		}
+
+		if (!active && wasSearchActive) {
+			const saved = search.getSavedExpansionState(node.id);
+			if (saved !== undefined) {
+				isOpen = saved;
+			}
+		}
+
+		wasSearchActive = active;
+	});
 
 	// Update pressed state and icon based on node properties
 	$effect(() => {
@@ -169,6 +203,9 @@
 	 */
 	function handleFolderClick() {
 		isOpen = !isOpen;
+		if (search?.isActive) {
+			search.recordUserToggle(node.id);
+		}
 		onNodeClick?.(node);
 	}
 
@@ -238,6 +275,7 @@
 			{getNodeDrawState}
 			depth={depth + 1}
 			{useLayerTypeIcon}
+			{search}
 		/>
 	{/if}
 {/snippet}
@@ -246,9 +284,14 @@
 	{isOpen}
 	{content}
 	childNodes={isFolder
-		? node.children.filter((child) => !(child instanceof VariableTreeviewNode))
+		? node.children.filter((child) => {
+				if (child instanceof VariableTreeviewNode) return false;
+				if (search?.isFiltering && !search.nodeOrDescendantMatches(child.id)) return false;
+				return true;
+			})
 		: null}
 	{childNode}
+	animate={!search?.isActive}
 />
 
 <style>
