@@ -60,6 +60,8 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import { useUprnDownloadSelectionAreaLimits } from '$lib/Hooks/UseUprnDownloadSelectionAreaLimits.svelte';
 	import Button from '$lib/Components/shadcn/button/button.svelte';
+	import { useFetchGeneralSettings } from '$lib/Hooks/UseFetchGeneralSettings.svelte';
+	import type { ChatbotRemoteConfig } from '$lib/Types/Configuration.types';
 
 	const tabBarTriggers = [
 		{
@@ -266,16 +268,30 @@
 		).toString();
 	});
 
-	/** Derived state to compute the chatbot configuration URL based on the app configuration. */
-	const chatbotConfigUrl: string | null = $derived.by(() => {
-		if (!appConfig.content?.content.baseUrl || !appConfig.content.content.manifest.files.chatbot) {
+	const settings: ReturnType<typeof useFetchGeneralSettings> | null = $derived.by(() => {
+		if (!appConfig.content?.content.baseUrl || !appConfig.content.content.manifest.files.settings) {
 			return null;
 		}
 
-		return new URL(
-			appConfig.content.content.manifest.files.chatbot,
+		const url: string = new URL(
+			appConfig.content.content.manifest.files.settings,
 			appConfig.content.content.baseUrl
 		).toString();
+
+		const settingsHook = useFetchGeneralSettings(url);
+		settingsHook.fetch();
+
+		return settingsHook;
+	});
+
+	/** Derived state for the chatbot settings. */
+	const chatbotSettings: ChatbotRemoteConfig | null = $derived.by(() => {
+		if (!settings?.content || !settings.content.chatbot) {
+			return null;
+		}
+
+		console.log('[uprn/app] Fetched general settings:', settings.content);
+		return settings.content.chatbot;
 	});
 
 	/** The web map store instance. */
@@ -480,7 +496,12 @@
 
 	/** Effect to sync treeview visibility states to the map when it becomes available. */
 	$effect(() => {
-		if (mapSyncedWithNodeVisibility || !mapView || !webMapStore?.isLoaded || !nodeVisibilityController) {
+		if (
+			mapSyncedWithNodeVisibility ||
+			!mapView ||
+			!webMapStore?.isLoaded ||
+			!nodeVisibilityController
+		) {
 			return;
 		}
 
@@ -903,7 +924,9 @@
 	});
 </script>
 
-<IntroductionDialog bind:isOpen={introductionDialogOpen} contentUrl={introductionUrl} />
+{#if settings?.content?.enableIntroductionPopup}
+	<IntroductionDialog bind:isOpen={introductionDialogOpen} contentUrl={introductionUrl} />
+{/if}
 
 <Toaster />
 {#if webMapStore?.isLoaded && treeviewConfigStore}
@@ -1068,10 +1091,15 @@
 					<p class="p-4 text-center text-sm text-gray-500">
 						AI UPRN Chatbot service is not available.
 					</p>
-				{:else if !!aiUprnChatbotHealth && aiUprnChatbotHealth.isAccessible && chatbotConfigUrl && appConfig.content?.aiUprnChatbot}
+				{:else if !!aiUprnChatbotHealth && aiUprnChatbotHealth.isAccessible && chatbotSettings && appConfig.content?.aiUprnChatbot}
 					{@const chatEndpoint = `${appConfig.content.aiUprnChatbot.baseUrl}${appConfig.content.aiUprnChatbot.chatRoute}`}
 					{@const feedbackEndpoint = `${appConfig.content.aiUprnChatbot.baseUrl}${appConfig.content.aiUprnChatbot.feedbackRoute}`}
-					<UprnChat configUrl={chatbotConfigUrl} {chatEndpoint} {feedbackEndpoint} {getTabState} />
+					<UprnChat
+						chatbotConfig={chatbotSettings}
+						{chatEndpoint}
+						{feedbackEndpoint}
+						{getTabState}
+					/>
 				{/if}
 			</CollapsibleWindow>
 		</div>

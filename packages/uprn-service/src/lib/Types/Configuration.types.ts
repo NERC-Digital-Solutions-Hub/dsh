@@ -24,7 +24,7 @@ export type AppsUprnServiceGeneratedFiles = {
 };
 
 export type AppsUprnServiceManifestFiles = {
-	chatbot: string;
+	settings: string;
 	cjBackend: string;
 	climatejustRenderers: string;
 	config: string;
@@ -117,4 +117,12 @@ export type ChatbotRemoteConfig = {
 	initialMessage: string;
 	/** A list of example questions that users can ask the chatbot to understand its capabilities */
 	exampleQuestions: string[];
+};
+
+/**
+ * General settings for the UPRN service.
+ */
+export type GeneralRemoteSettings = {
+	enableIntroductionPopup: boolean;
+	chatbot: ChatbotRemoteConfig;
 };

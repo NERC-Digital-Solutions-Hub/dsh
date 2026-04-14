@@ -8,6 +8,7 @@
 	import { useFetchAiChatbotConfig } from '$lib/Hooks/UseFetchAiChatbotConfig.svelte';
 	import { useSubmitAiChatbotChat } from '$lib/Hooks/UseSubmitAiChatbotChat.svelte';
 	import type { AppTabState } from '$lib/Types/Chatbot.types';
+	import type { ChatbotRemoteConfig } from '$lib/Types/Configuration.types';
 	import { cn } from '$lib/utils';
 	import { SendIcon, Flag } from '@lucide/svelte';
 	import { onMount, tick } from 'svelte';
@@ -35,7 +36,7 @@
 	};
 
 	type Props = {
-		configUrl: string;
+		chatbotConfig: ChatbotRemoteConfig;
 		chatEndpoint: string;
 		feedbackEndpoint: string;
 		getTabState: () => Promise<AppTabState>;
@@ -43,7 +44,7 @@
 	};
 
 	const {
-		configUrl,
+		chatbotConfig,
 		chatEndpoint,
 		feedbackEndpoint,
 		getTabState,
@@ -75,11 +76,6 @@
 	const chat = $derived.by(() => {
 		return chatEndpoint ? useSubmitAiChatbotChat(chatEndpoint) : null;
 	});
-
-	/** Hook for fetching the AI UPRN chatbot configuration. */
-	const config: ReturnType<typeof useFetchAiChatbotConfig> | null = $derived(
-		useFetchAiChatbotConfig(configUrl)
-	);
 
 	/** Current message being typed by the user */
 	let message: string = $state('');
@@ -113,10 +109,8 @@
 	const messages = $state<ChatMessage[]>([]);
 
 	onMount(async () => {
-		await config.fetch();
-		console.log('Chatbot config loaded:', config.content);
-		if (config.content) {
-			await streamBotMessage(config.content.initialMessage);
+		if (chatbotConfig) {
+			await streamBotMessage(chatbotConfig.initialMessage);
 		}
 	});
 
@@ -440,7 +434,7 @@
 			bind:value={message}
 			disabled={chat?.isLoading}
 			onsubmit={handleSubmit}
-			exampleQuestions={config.content?.exampleQuestions}
+			exampleQuestions={chatbotConfig?.exampleQuestions}
 		/>
 	</div>
 </div>
