@@ -13,6 +13,7 @@ import Renderer from '@arcgis/core/renderers/Renderer';
 import SimpleRenderer from '@arcgis/core/renderers/SimpleRenderer';
 import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 import SimpleLineSymbol from '@arcgis/core/symbols/SimpleLineSymbol';
+import * as intl from '@arcgis/core/intl.js';
 
 type CustomRendererSymbolWithAppearances = CustomRendererSymbol & {
 	Appearances: CustomRenderersSymbolAppearance[];
@@ -284,6 +285,8 @@ export class CustomRendererService {
 			field: fieldId
 		});
 
+		const fmt = (n: number) => Number(n.toFixed(3)).toString();
+
 		for (let i = 0; i < totalClasses; i++) {
 			const minValue = customClassBreaks[i][classMinValueField];
 			const maxValue = customClassBreaks[i][classMaxValueField];
@@ -293,6 +296,7 @@ export class CustomRendererService {
 			renderer.addClassBreakInfo({
 				minValue: minValue,
 				maxValue: maxValue,
+				label: `${fmt(minValue)} – ${fmt(maxValue)}`,
 				symbol: new SimpleFillSymbol({
 					color: Color.fromHex(symbolColor)!,
 					outline: new SimpleLineSymbol({
