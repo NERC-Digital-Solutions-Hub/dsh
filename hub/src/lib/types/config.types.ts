@@ -9,6 +9,7 @@ export type RemoteSiteConfig = {
 
 export type RootManifestFiles = {
 	introduction: string;
+	settings: string;
 };
 
 export type ManifestPage = {
@@ -30,4 +31,12 @@ export type SiteManifest = {
 	version: string;
 	environment: string;
 	pages: ManifestPage[];
+};
+
+/**
+ * Represents the site settings defined in the settings JSON. These settings are used to control various 
+ * aspects of the site's behavior and appearance.
+ */
+export type SiteSettings = {
+	enableIntroductionPopup: boolean;
 };
