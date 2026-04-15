@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Tree, type LTreeNode } from '@keenmate/svelte-treeview';
 	import '@keenmate/svelte-treeview/styles.css';
+	import '../treeview-common.css';
 	import { Input } from '$lib/Components/shadcn/input/index.js';
 	import OpenIndicator from '$lib/Components/OpenIndicator/OpenIndicator.svelte';
 	import VisibilityCheckbox from '$lib/Components/VisibilityCheckbox/VisibilityCheckbox.svelte';
@@ -130,250 +131,131 @@
 	}
 </script>
 
-<div class="relative mb-2 w-full">
-	<Search
-		class="text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2"
-	/>
-	<Input
-		type="text"
-		placeholder="Search areas..."
-		class="h-8 pl-8 pr-8 text-sm"
-		bind:value={searchText}
-	/>
-	{#if searchText}
-		<button
-			type="button"
-			class="text-muted-foreground hover:text-foreground absolute right-2 top-1/2 -translate-y-1/2 transition-colors"
-			onclick={() => (searchText = '')}
-			aria-label="Clear search"
-		>
-			<X class="size-4" />
-		</button>
-	{/if}
-</div>
-
-<div class="tree-wrapper">
-	<Tree
-		data={flatData}
-		idMember="nodeId"
-		pathMember="path"
-		displayValueMember="name"
-		searchValueMember="name"
-		shouldUseInternalSearchIndex={true}
-		bind:searchText
-		virtualScroll={true}
-		virtualRowHeight={44}
-		virtualOverscan={5}
-		virtualContainerHeight="100%"
-		onNodeClicked={handleNodeClicked}
-		shouldToggleOnNodeClick={true}
-		expandLevel={0}
-	>
-		{#snippet nodeTemplate(treeNode: LTreeNode)}
-			{@const nodeRef = treeNode.data!.nodeRef}
-			{@const config = nodeConfigProvider.getConfig(nodeRef.id)}
-			{@const isEnabled = config?.isEnabled ?? false}
-			{@const hasChildren = treeNode.hasChildren}
-			{@const isVisible = treeviewStore.getVisibilityState(nodeRef.id)}
-			{@const drawState = treeviewStore.getNodeDrawState(nodeRef.id)}
-			{@const folderHasVisibleChild = hasChildren && hasVisibleChildren(nodeRef)}
-			{@const isPressed = (!hasChildren && isVisible) || folderHasVisibleChild}
-			{@const icon = getNodeIcon(
-				config?.typology ?? TreeviewNodeTypology.Area,
-				treeNode.isExpanded
-			)}
-
-			<div
-				class="node-card"
-				class:node-card-accent={isPressed}
-				class:node-card-disabled={!hasChildren && !isEnabled}
-				style="margin-left: calc({Math.max(
-					0,
-					(treeNode.level ?? 0) - 1
-				)} * var(--tree-step, 1.5rem));"
+<div class="flex flex-col px-3">
+	<div class="relative mb-2 w-full">
+		<Search
+			class="text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2"
+		/>
+		<Input
+			type="text"
+			placeholder="Search areas..."
+			class="h-8 pl-8 pr-8 text-sm"
+			bind:value={searchText}
+		/>
+		{#if searchText}
+			<button
+				type="button"
+				class="text-muted-foreground hover:text-foreground absolute right-2 top-1/2 -translate-y-1/2 transition-colors"
+				onclick={() => (searchText = '')}
+				aria-label="Clear search"
 			>
-				<div class="node-grid">
-					<div class="node-icons">
-						{#if hasChildren}
-							<span class="icon-slot">
-								<OpenIndicator isOpen={treeNode.isExpanded} />
-							</span>
-						{/if}
-						<span class="icon-slot">
-							{#if typeof icon === 'string'}
-								{@html icon}
-							{:else}
-								{@const Icon = icon}
-								<Icon />
+				<X class="size-4" />
+			</button>
+		{/if}
+	</div>
+
+	<div class="tree-wrapper">
+		<Tree
+			data={flatData}
+			idMember="nodeId"
+			pathMember="path"
+			displayValueMember="name"
+			searchValueMember="name"
+			shouldUseInternalSearchIndex={true}
+			bind:searchText
+			virtualScroll={true}
+			virtualRowHeight={44}
+			virtualOverscan={5}
+			virtualContainerHeight="100%"
+			onNodeClicked={handleNodeClicked}
+			shouldToggleOnNodeClick={true}
+			expandLevel={0}
+		>
+			{#snippet nodeTemplate(treeNode: LTreeNode)}
+				{@const nodeRef = treeNode.data!.nodeRef}
+				{@const config = nodeConfigProvider.getConfig(nodeRef.id)}
+				{@const isEnabled = config?.isEnabled ?? false}
+				{@const hasChildren = treeNode.hasChildren}
+				{@const isVisible = treeviewStore.getVisibilityState(nodeRef.id)}
+				{@const drawState = treeviewStore.getNodeDrawState(nodeRef.id)}
+				{@const folderHasVisibleChild = hasChildren && hasVisibleChildren(nodeRef)}
+				{@const isPressed = (!hasChildren && isVisible) || folderHasVisibleChild}
+				{@const icon = getNodeIcon(
+					config?.typology ?? TreeviewNodeTypology.Area,
+					treeNode.isExpanded
+				)}
+
+				<div
+					class="node-card"
+					class:node-card-accent={isPressed}
+					class:node-card-disabled={!hasChildren && !isEnabled}
+					style="margin-left: calc({Math.max(
+						0,
+						(treeNode.level ?? 0) - 1
+					)} * var(--tree-step, 1.5rem));"
+				>
+					<div class="node-grid">
+						<div class="node-icons">
+							{#if hasChildren}
+								<span class="icon-slot">
+									<OpenIndicator isOpen={treeNode.isExpanded} />
+								</span>
 							{/if}
-						</span>
-					</div>
-
-					<span class="node-name">{nodeRef.name}</span>
-
-					<div class="node-end">
-						{#if isPressed}
-							<div class="visibility-wrapper visible">
-								<div class="visibility-inner">
-									<VisibilityCheckbox
-										disabled={true}
-										checked={true}
-										indeterminate={drawState === NodeDrawState.Suspended}
-									/>
-								</div>
-								{#if drawState === NodeDrawState.Suspended}
-									<span class="indeterminate-label">zoom</span>
+							<span class="icon-slot">
+								{#if typeof icon === 'string'}
+									{@html icon}
+								{:else}
+									{@const Icon = icon}
+									<Icon />
 								{/if}
-							</div>
-						{/if}
-
-						{#if !isEnabled && !hasChildren}
-							<span title={config?.disabledReason}>
-								<Ban class="size-4 text-red-500" />
 							</span>
-						{/if}
+						</div>
+
+						<span class="node-name">{nodeRef.name}</span>
+
+						<div class="node-end">
+							{#if isPressed}
+								<div class="visibility-wrapper visible">
+									<div class="visibility-inner">
+										<VisibilityCheckbox
+											disabled={true}
+											checked={true}
+											indeterminate={drawState === NodeDrawState.Suspended}
+										/>
+									</div>
+									{#if drawState === NodeDrawState.Suspended}
+										<span class="indeterminate-label">zoom</span>
+									{/if}
+								</div>
+							{/if}
+
+							{#if !isEnabled && !hasChildren}
+								<span title={config?.disabledReason}>
+									<Ban class="size-4 text-red-500" />
+								</span>
+							{/if}
+						</div>
 					</div>
 				</div>
-			</div>
-		{/snippet}
-	</Tree>
+			{/snippet}
+		</Tree>
+	</div>
 </div>
 
 <style>
-	/* Override KeenMate tree defaults for custom card styling */
-	.tree-wrapper :global(.ltree-node-content) {
-		padding: 0 !important;
-		border-radius: 0 !important;
-		background-color: transparent !important;
-	}
-	.tree-wrapper :global(.ltree-node-content:hover) {
-		background-color: transparent !important;
-	}
-	.tree-wrapper :global(.ltree-toggle-icon) {
-		display: none !important;
-	}
-	.tree-wrapper :global(.ltree-node) {
-		--tree-node-indent-per-level: 0rem;
-	}
-
-	.node-card {
-		cursor: pointer;
-		border-radius: 0.375rem;
-		border: 1px solid hsl(var(--border));
-		box-shadow: none;
-		padding: 0.5rem;
-		margin-bottom: 0.25rem;
-		text-align: left;
-		transition-property: all;
-		transition-duration: 150ms;
-		font-size: 0.875rem;
-		font-weight: 400;
-		color: hsl(var(--foreground));
-		background-color: hsl(var(--card));
-		width: 100%;
-	}
-	.node-card:hover {
-		border-color: hsl(var(--border) / 0.5);
-		background-color: #f3f4f6;
-		box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-	}
-
+	/* Area-specific styles */
 	.node-card-accent {
-		background-color: hsl(var(--accent));
-		color: hsl(var(--accent-foreground));
+		background-color: var(--accent);
+		color: var(--accent-foreground);
 	}
 	.node-card-accent:hover {
-		background-color: hsl(var(--accent));
-		color: hsl(var(--accent-foreground));
+		background-color: var(--accent);
+		color: var(--accent-foreground);
 	}
 
 	.node-card-disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
 		pointer-events: auto;
-	}
-
-	.node-grid {
-		display: grid;
-		width: 100%;
-		grid-template-columns: auto 1fr auto;
-		align-items: center;
-		column-gap: 0.5rem;
-	}
-
-	.node-icons {
-		display: inline-flex;
-		align-items: center;
-		gap: 0;
-	}
-
-	.icon-slot {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		height: 1rem;
-		width: var(--tree-step, 1.5rem);
-	}
-
-	.icon-slot :global(svg) {
-		width: 1rem;
-		height: 1rem;
-		flex-shrink: 0;
-	}
-
-	.node-name {
-		min-width: 0;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		text-align: left;
-		line-height: 1.375;
-	}
-
-	.node-end {
-		justify-self: end;
-		display: flex;
-		align-items: center;
-	}
-
-	.visibility-wrapper {
-		position: relative;
-		display: grid;
-		grid-template-columns: 0fr;
-		transition: grid-template-columns 0.2s ease-out;
-		overflow: visible;
-	}
-
-	.visibility-wrapper.visible {
-		grid-template-columns: 1fr;
-	}
-
-	.visibility-inner {
-		overflow: hidden;
-		display: flex;
-		opacity: 0;
-		transform: translateX(10px);
-		transition:
-			opacity 0.4s ease-out,
-			transform 0.2s ease-out;
-	}
-
-	.visibility-wrapper.visible .visibility-inner {
-		opacity: 1;
-		transform: translateX(0);
-	}
-
-	.indeterminate-label {
-		position: absolute;
-		top: 90%;
-		left: 50%;
-		transform: translateX(-50%);
-		font-size: 0.55rem;
-		line-height: 1;
-		white-space: nowrap;
-		pointer-events: none;
-		opacity: 0.7;
-		z-index: 100;
-		color: hsl(var(--muted-foreground));
 	}
 </style>

@@ -1012,7 +1012,7 @@
 						</UprnTabBarContent>
 					</div>
 
-					<div hidden={currentTab !== TabType.Data}>
+					{#if currentTab === TabType.Data}
 						<UprnTabBarContent>
 							{#if loadDataTreeview}
 								<DataSelectionTreeview
@@ -1024,17 +1024,19 @@
 								/>
 							{/if}
 						</UprnTabBarContent>
-					</div>
+					{/if}
 
 					<div hidden={currentTab !== TabType.Export}>
 						<UprnTabBarContent>
 							{#if loadExportMenu}
-								<ExportMenu
-									nodeProvider={treeviewNodeProvider!}
-									nodeConfigProvider={treeviewConfigStore!}
-									areaSelectionInteractionStore={areaSelectionInteractionStore!}
-									{dataSelectionStore}
-								/>
+								<div class="px-3">
+									<ExportMenu
+										nodeProvider={treeviewNodeProvider!}
+										nodeConfigProvider={treeviewConfigStore!}
+										areaSelectionInteractionStore={areaSelectionInteractionStore!}
+										{dataSelectionStore}
+									/>
+								</div>
 							{/if}
 						</UprnTabBarContent>
 					</div>

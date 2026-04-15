@@ -3,6 +3,7 @@
 @import 'tw-animate-css';
 
 @import '@dsh/common/styles.css';
+@import '../lib/styles.css';
 
 @import './prose.css';
 
