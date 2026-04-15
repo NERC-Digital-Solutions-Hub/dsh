@@ -13,7 +13,6 @@ import Renderer from '@arcgis/core/renderers/Renderer';
 import SimpleRenderer from '@arcgis/core/renderers/SimpleRenderer';
 import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 import SimpleLineSymbol from '@arcgis/core/symbols/SimpleLineSymbol';
-import * as intl from '@arcgis/core/intl.js';
 
 type CustomRendererSymbolWithAppearances = CustomRendererSymbol & {
 	Appearances: CustomRenderersSymbolAppearance[];
