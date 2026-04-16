@@ -62,6 +62,7 @@
 	import Button from '$lib/Components/shadcn/button/button.svelte';
 	import { useFetchGeneralSettings } from '$lib/Hooks/UseFetchGeneralSettings.svelte';
 	import type { ChatbotRemoteConfig } from '$lib/Types/Configuration.types';
+	import { ScrollArea } from '$lib/Components/shadcn/scroll-area';
 
 	const tabBarTriggers = [
 		{
@@ -987,26 +988,15 @@
 					</div>
 				</SidebarLayout.Header>
 
-				<div hidden={currentTab !== TabType.AreaOfInterest}>
-					<p class="w-full text-xs text-muted-foreground text-right px-2 pr-7 pb-1">
-						{areaSelectionStore.areaIds.size} area(s) selected
-					</p>
-				</div>
-
-				<div hidden={currentTab !== TabType.Data}>
-					<p class="w-full text-xs text-muted-foreground text-right px-2 pr-7 pb-1">
-						{dataSelectionStore.dataSelections.size} dataset(s) selected
-					</p>
-				</div>
-
 				<SidebarLayout.Content>
-					<div hidden={currentTab !== TabType.AreaOfInterest}>
+					<div class="flex flex-1 flex-col min-h-0" hidden={currentTab !== TabType.AreaOfInterest}>
 						<UprnTabBarContent>
 							{#if loadAreaTreeview}
 								<AreaSelectionTreeview
 									treeviewStore={areaTreeviewStore!}
 									nodeConfigProvider={treeviewConfigStore!}
 									areaSelectionController={areaSelectionStore}
+									selectionCount={areaSelectionStore.areaIds.size}
 								/>
 							{/if}
 						</UprnTabBarContent>
@@ -1021,49 +1011,56 @@
 									nodeTagProvider={treeviewConfigStore!}
 									tagDefinitionProvider={tagDefinitionProvider!}
 									{selectedTagIds}
+									selectionCount={dataSelectionStore.dataSelections.size}
 								/>
 							{/if}
 						</UprnTabBarContent>
 					{/if}
 
-					<div hidden={currentTab !== TabType.Export}>
-						<UprnTabBarContent>
-							{#if loadExportMenu}
-								<div class="px-3">
-									<ExportMenu
-										nodeProvider={treeviewNodeProvider!}
-										nodeConfigProvider={treeviewConfigStore!}
-										areaSelectionInteractionStore={areaSelectionInteractionStore!}
-										{dataSelectionStore}
-									/>
-								</div>
-							{/if}
-						</UprnTabBarContent>
+					<div class="flex flex-1 flex-col min-h-0" hidden={currentTab !== TabType.Export}>
+						<ScrollArea class="h-full w-full" type="always" scrollbarYClasses="z-50">
+							<UprnTabBarContent>
+								{#if loadExportMenu}
+									<div class="min-w-0 px-3">
+										<ExportMenu
+											nodeProvider={treeviewNodeProvider!}
+											nodeConfigProvider={treeviewConfigStore!}
+											areaSelectionInteractionStore={areaSelectionInteractionStore!}
+											{dataSelectionStore}
+										/>
+									</div>
+								{/if}
+							</UprnTabBarContent>
+						</ScrollArea>
 					</div>
 
-					<div hidden={currentTab !== TabType.Downloads}>
-						<UprnTabBarContent>
-							{#if !uprnDownloadHealth || uprnDownloadHealth.isLoading}
-								<div class="flex h-full w-full items-center justify-center">
-									<Spinner class="w-10 h-10" />
-								</div>
-							{:else if !!uprnDownloadHealth && (!uprnDownloadHealth.isAccessible || !!uprnDownloadHealth.error)}
-								<p class="p-4 text-center text-sm text-gray-500">
-									Download service is not available.
-								</p>
-							{:else if !!uprnDownloadHealth && uprnDownloadHealth.isAccessible && appConfig.content?.uprnDownload}
-								{@const requestJobUrl = `${appConfig.content.uprnDownload.baseUrl}${appConfig.content.uprnDownload.requestJobRoute}`}
-								{@const requestJobStatusUrl = `${appConfig.content.uprnDownload.baseUrl}${appConfig.content.uprnDownload.requestJobStatusesRoute}`}
-								{@const downloadBaseUrl = `${appConfig.content.uprnDownload.baseUrl}${appConfig.content.uprnDownload.fetchDownloadRoute}`}
-								<DownloadsMenu
-									{downloadsStore}
-									{requestJobUrl}
-									jobStatusesUrl={requestJobStatusUrl}
-									{downloadBaseUrl}
-									onOpenInfoDialog={onOpenDownloadInfoDialog}
-								/>
-							{/if}
-						</UprnTabBarContent>
+					<div class="flex flex-1 flex-col min-h-0" hidden={currentTab !== TabType.Downloads}>
+						<ScrollArea class="h-full w-full" type="always" scrollbarYClasses="z-50">
+							<div class="min-h-0 px-3">
+								<UprnTabBarContent>
+									{#if !uprnDownloadHealth || uprnDownloadHealth.isLoading}
+										<div class="flex h-full w-full items-center justify-center">
+											<Spinner class="w-10 h-10" />
+										</div>
+									{:else if !!uprnDownloadHealth && (!uprnDownloadHealth.isAccessible || !!uprnDownloadHealth.error)}
+										<p class="p-4 text-center text-sm text-gray-500">
+											Download service is not available.
+										</p>
+									{:else if !!uprnDownloadHealth && uprnDownloadHealth.isAccessible && appConfig.content?.uprnDownload}
+										{@const requestJobUrl = `${appConfig.content.uprnDownload.baseUrl}${appConfig.content.uprnDownload.requestJobRoute}`}
+										{@const requestJobStatusUrl = `${appConfig.content.uprnDownload.baseUrl}${appConfig.content.uprnDownload.requestJobStatusesRoute}`}
+										{@const downloadBaseUrl = `${appConfig.content.uprnDownload.baseUrl}${appConfig.content.uprnDownload.fetchDownloadRoute}`}
+										<DownloadsMenu
+											{downloadsStore}
+											{requestJobUrl}
+											jobStatusesUrl={requestJobStatusUrl}
+											{downloadBaseUrl}
+											onOpenInfoDialog={onOpenDownloadInfoDialog}
+										/>
+									{/if}
+								</UprnTabBarContent>
+							</div>
+						</ScrollArea>
 					</div>
 				</SidebarLayout.Content>
 

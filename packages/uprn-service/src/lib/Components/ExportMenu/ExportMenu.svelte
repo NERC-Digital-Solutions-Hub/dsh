@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { LTreeNode } from '@keenmate/svelte-treeview';
 	import type { DatasetTreeviewNode } from '$lib/Models/Treeview/DatasetTreeviewNode';
 	import type { VariableTreeviewNode } from '$lib/Models/Treeview/Index';
 	import type { TreeviewNode } from '$lib/Models/Treeview/TreeviewNode';
@@ -13,9 +14,15 @@
 	import DatabaseIcon from '@lucide/svelte/icons/database';
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
 	import { TreeviewNodeTypology, type TreeviewNodeConfig } from '$lib/Types/Treeview.types.js';
-	import SelectionTreeviewNode, {
-		type SelectionTreeviewNode as SelectionTreeviewNodeType
-	} from './SelectionTreeviewNode.svelte';
+	import { type SelectionTreeviewNode as SelectionTreeviewNodeType } from './SelectionTreeviewNode.svelte';
+	import BaseTreeview, {
+		type FlatTreeNode,
+		type GuideType
+	} from '$lib/Components/Treeview/BaseTreeview.svelte';
+	import OpenIndicator from '$lib/Components/OpenIndicator/OpenIndicator.svelte';
+	import { getNodeIcon } from '$lib/Components/Treeview/GetNodeIcon.js';
+	import { Button } from '$lib/Components/shadcn/button/index.js';
+	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 
 	type AreaInfo = {
 		id: number;
@@ -42,6 +49,55 @@
 	}: Props = $props();
 
 	let areaInfos: AreaInfo[] = $state<AreaInfo[]>([]);
+
+	/** Extended flat node that carries the original SelectionTreeviewNode reference. */
+	interface ExportFlatNode extends FlatTreeNode {
+		selectionNode: SelectionTreeviewNodeType;
+		hasChildren: boolean;
+	}
+
+	/**
+	 * Flatten a hierarchical SelectionTreeviewNode tree into a flat array
+	 * for the BaseTreeview component.
+	 */
+	function flattenSelectionTree(roots: SelectionTreeviewNodeType[]): ExportFlatNode[] {
+		const result: ExportFlatNode[] = [];
+
+		function walk(
+			nodes: SelectionTreeviewNodeType[],
+			parentPath: string,
+			ancestorGuides: GuideType[]
+		) {
+			let index = 1;
+			for (let i = 0; i < nodes.length; i++) {
+				const node = nodes[i];
+				const isLast = i === nodes.length - 1;
+				const path = parentPath ? `${parentPath}.${index}` : `${index}`;
+				const guideLines: GuideType[] = parentPath === '' ? [] : [...ancestorGuides, 'full'];
+
+				result.push({
+					path,
+					nodeId: node.id,
+					name: node.name,
+					order: index,
+					nodeRef: null as unknown as TreeviewNode,
+					isExpanded: false,
+					guideLines,
+					selectionNode: node,
+					hasChildren: node.children.length > 0
+				});
+
+				if (node.children.length > 0) {
+					const childGuides = guideLines.map((g) => (g === 'last' ? 'none' : g)) as GuideType[];
+					walk(node.children, path, childGuides);
+				}
+				index++;
+			}
+		}
+
+		walk(roots, '', []);
+		return result;
+	}
 
 	/**
 	 * Builds a hierarchical tree structure from selected area infos.
@@ -156,6 +212,9 @@
 
 		return rootNodes;
 	});
+
+	let flatAreaData = $derived(flattenSelectionTree(areaSelectionTree));
+	let flatDataData = $derived(flattenSelectionTree(dataSelectionTree));
 
 	$effect(() => {
 		if (!areaSelectionInteractionStore) {
@@ -282,12 +341,64 @@
 		</div>
 		<p class="text-xs text-muted-foreground mr-2">{areaInfos.length} area(s) selected</p>
 	</div>
-	{#if areaSelectionTree.length > 0}
-		<div class="selection-tree">
-			{#each areaSelectionTree as node (node.id)}
-				<SelectionTreeviewNode {node} onRemove={removeArea} />
-			{/each}
-		</div>
+	{#if flatAreaData.length > 0}
+		<BaseTreeview
+			data={flatAreaData}
+			searchBar={{ enabled: false }}
+			virtualScroll={{ enabled: false }}
+			rowPadding="0rem"
+		>
+			{#snippet nodeContent(treeNode: LTreeNode)}
+				{@const sNode = treeNode.data!.selectionNode}
+				{@const isFolder = treeNode.data!.hasChildren}
+				{@const icon = getNodeIcon(
+					sNode.typology ??
+						(isFolder ? TreeviewNodeTypology.Folder : TreeviewNodeTypology.Variable),
+					treeNode.isExpanded
+				)}
+				<div class="node-card relative overflow-hidden rounded-md">
+					<div class="node-grid">
+						<div class="node-icons">
+							{#if isFolder}
+								<span class="icon-slot">
+									<OpenIndicator isOpen={treeNode.isExpanded} />
+								</span>
+							{/if}
+							<span class="icon-slot">
+								{#if typeof icon === 'string'}
+									{@html icon}
+								{:else}
+									{@const Icon = icon}
+									<Icon />
+								{/if}
+							</span>
+						</div>
+
+						<span class="node-name">{sNode.name}</span>
+
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
+						<div class="node-end" onclick={(e) => e.stopPropagation()}>
+							<Tooltip.Provider disableHoverableContent>
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										<Button
+											variant="ghost"
+											size="sm"
+											class="remove-btn"
+											onclick={() => removeArea(sNode)}
+										>
+											×
+										</Button>
+									</Tooltip.Trigger>
+									<Tooltip.Content side="right">Remove</Tooltip.Content>
+								</Tooltip.Root>
+							</Tooltip.Provider>
+						</div>
+					</div>
+				</div>
+			{/snippet}
+		</BaseTreeview>
 	{:else}
 		<p class="no-selection">No areas selected</p>
 	{/if}
@@ -303,25 +414,70 @@
 			{dataSelectionStore.getAllSelections().length} dataset(s) selected
 		</p>
 	</div>
-	{#if dataSelectionTree.length > 0}
-		<div class="selection-tree">
-			{#each dataSelectionTree as node (node.id)}
-				<SelectionTreeviewNode {node} onRemove={removeDataSelection} />
-			{/each}
-		</div>
+	{#if flatDataData.length > 0}
+		<BaseTreeview
+			data={flatDataData}
+			searchBar={{ enabled: false }}
+			virtualScroll={{ enabled: false }}
+			rowPadding="0rem"
+		>
+			{#snippet nodeContent(treeNode: LTreeNode)}
+				{@const sNode = treeNode.data!.selectionNode}
+				{@const isFolder = treeNode.data!.hasChildren}
+				{@const icon = getNodeIcon(
+					sNode.typology ??
+						(isFolder ? TreeviewNodeTypology.Folder : TreeviewNodeTypology.Variable),
+					treeNode.isExpanded
+				)}
+				<div class="node-card relative overflow-hidden rounded-md">
+					<div class="node-grid">
+						<div class="node-icons">
+							{#if isFolder}
+								<span class="icon-slot">
+									<OpenIndicator isOpen={treeNode.isExpanded} />
+								</span>
+							{/if}
+							<span class="icon-slot">
+								{#if typeof icon === 'string'}
+									{@html icon}
+								{:else}
+									{@const Icon = icon}
+									<Icon />
+								{/if}
+							</span>
+						</div>
+
+						<span class="node-name">{sNode.name}</span>
+
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
+						<div class="node-end" onclick={(e) => e.stopPropagation()}>
+							<Tooltip.Provider disableHoverableContent>
+								<Tooltip.Root>
+									<Tooltip.Trigger>
+										<Button
+											variant="ghost"
+											size="sm"
+											class="remove-btn"
+											onclick={() => removeDataSelection(sNode)}
+										>
+											×
+										</Button>
+									</Tooltip.Trigger>
+									<Tooltip.Content side="right">Remove</Tooltip.Content>
+								</Tooltip.Root>
+							</Tooltip.Provider>
+						</div>
+					</div>
+				</div>
+			{/snippet}
+		</BaseTreeview>
 	{:else}
 		<p class="no-selection">No data selected</p>
 	{/if}
 </div>
 
 <style>
-	h2 {
-		margin: 0 0 1rem 0;
-		font-size: 1.125rem;
-		font-weight: 600;
-		color: #111827;
-	}
-
 	.section {
 		margin-bottom: 1.5rem;
 	}
@@ -350,20 +506,25 @@
 		gap: 0.5rem;
 	}
 
-	.selection-tree {
-		margin-bottom: 0.5rem;
-	}
-
-	.count {
-		font-size: 0.75rem;
-		font-weight: 500;
-		color: #6b7280;
-	}
-
 	.no-selection {
 		margin: 0;
 		font-size: 0.875rem;
 		color: #9ca3af;
 		font-style: italic;
+	}
+
+	:global(.remove-btn) {
+		height: 1rem;
+		width: 1rem;
+		min-width: 0;
+		padding: 0;
+		font-size: 0.875rem;
+		line-height: 1;
+		color: #6b7280;
+		transition: color 0.15s ease-in-out;
+	}
+
+	:global(.remove-btn:hover) {
+		color: #ef4444;
 	}
 </style>

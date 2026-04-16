@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { Tree, type LTreeNode } from '@keenmate/svelte-treeview';
-	import '@keenmate/svelte-treeview/styles.css';
-	import '../treeview-common.css';
-	import { Input } from '$lib/Components/shadcn/input/index.js';
+	import type { LTreeNode } from '@keenmate/svelte-treeview';
+	import BaseTreeview, {
+		type FlatTreeNode,
+		type GuideType
+	} from '$lib/Components/Treeview/BaseTreeview.svelte';
 	import OpenIndicator from '$lib/Components/OpenIndicator/OpenIndicator.svelte';
 	import VisibilityCheckbox from '$lib/Components/VisibilityCheckbox/VisibilityCheckbox.svelte';
 	import { getNodeIcon } from '$lib/Components/Treeview/GetNodeIcon.js';
@@ -16,7 +17,9 @@
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 	import { TreeviewStore } from '$lib/Stores/TreeviewStore.svelte';
 	import { TreeviewNodeTypology } from '$lib/Types/Treeview.types.js';
-	import { Ban, Search, X } from '@lucide/svelte';
+	import { Ban } from '@lucide/svelte';
+	import { Badge } from '$lib/Components/shadcn/badge/index.js';
+	import { fly } from 'svelte/transition';
 
 	/**
 	 * Props for the TreeView component.
@@ -30,23 +33,20 @@
 
 		/** Controller for area selection management. */
 		areaSelectionController: IAreaSelectionController;
+
+		/** Number of selected areas to display in the toolbar. */
+		selectionCount?: number;
 	};
 
-	const { treeviewStore, nodeConfigProvider, areaSelectionController }: Props = $props();
-
-	/** Bindable search text for the KeenMate Tree's built-in FlexSearch. */
-	let searchText = $state('');
-
-	/** Flat data representation for the KeenMate Tree component. */
-	interface FlatAreaNode {
-		path: string;
-		nodeId: string;
-		name: string;
-		nodeRef: TreeviewNode;
-	}
+	const {
+		treeviewStore,
+		nodeConfigProvider,
+		areaSelectionController,
+		selectionCount = 0
+	}: Props = $props();
 
 	/** Use $state.raw to avoid deep proxy overhead on large arrays. */
-	let flatData = $state.raw<FlatAreaNode[]>([]);
+	let flatData = $state.raw<FlatTreeNode[]>([]);
 
 	/** Rebuild flat data whenever the underlying tree nodes change. */
 	$effect(() => {
@@ -82,34 +82,62 @@
 	 * - Root nodes: include all non-hidden nodes.
 	 * - Children: include only DatasetTreeviewNode (excludes Variable and Folder children).
 	 */
-	function flattenAreaNodes(nodes: TreeviewNode[]): FlatAreaNode[] {
-		const result: FlatAreaNode[] = [];
+	function flattenAreaNodes(nodes: TreeviewNode[]): FlatTreeNode[] {
+		const result: FlatTreeNode[] = [];
 
-		function walk(nodes: TreeviewNode[], parentPath: string, isRoot: boolean) {
-			let index = 1;
+		function walk(
+			nodes: TreeviewNode[],
+			parentPath: string,
+			ancestorGuides: GuideType[],
+			isRoot: boolean
+		) {
+			const visible: {
+				node: TreeviewNode;
+				config: ReturnType<typeof nodeConfigProvider.getConfig>;
+			}[] = [];
 			for (const node of nodes) {
 				const config = nodeConfigProvider.getConfig(node.id);
 				if (config?.isHidden) continue;
 				if (!isRoot && node.type !== TreeviewNodeType.Dataset) continue;
+				visible.push({ node, config });
+			}
 
+			let index = 1;
+			for (let vi = 0; vi < visible.length; vi++) {
+				const { node, config } = visible[vi];
+				const isLast = vi === visible.length - 1;
 				const path = parentPath ? `${parentPath}.${index}` : `${index}`;
-				result.push({ path, nodeId: node.id, name: node.name, nodeRef: node });
+
+				const guideLines: GuideType[] = isRoot ? [] : [...ancestorGuides, isLast ? 'last' : 'full'];
+
+				result.push({
+					path,
+					nodeId: node.id,
+					name: node.name,
+					order: index,
+					nodeRef: node,
+					isExpanded: config?.isOpenOnInit ?? false,
+					guideLines
+				});
 
 				if (node.children?.length) {
-					walk(node.children, path, false);
+					const childAncestorGuides = guideLines.map((g) =>
+						g === 'last' ? (isLast ? 'last' : 'full') : g
+					) as GuideType[];
+					walk(node.children, path, childAncestorGuides, false);
 				}
 				index++;
 			}
 		}
 
-		walk(nodes, '', true);
+		walk(nodes, '', [], true);
 		return result;
 	}
 
 	/**
 	 * Handle node clicks — toggle visibility for leaf nodes.
 	 */
-	function handleNodeClicked(treeNode: LTreeNode<FlatAreaNode>) {
+	function handleNodeClicked(treeNode: LTreeNode<FlatTreeNode>) {
 		if (!treeNode.data) return;
 		const nodeRef = treeNode.data.nodeRef;
 
@@ -131,119 +159,93 @@
 	}
 </script>
 
-<div class="flex flex-col px-3">
-	<div class="relative mb-2 w-full">
-		<Search
-			class="text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2"
-		/>
-		<Input
-			type="text"
-			placeholder="Search areas..."
-			class="h-8 pl-8 pr-8 text-sm"
-			bind:value={searchText}
-		/>
-		{#if searchText}
-			<button
-				type="button"
-				class="text-muted-foreground hover:text-foreground absolute right-2 top-1/2 -translate-y-1/2 transition-colors"
-				onclick={() => (searchText = '')}
-				aria-label="Clear search"
-			>
-				<X class="size-4" />
-			</button>
-		{/if}
-	</div>
+<BaseTreeview
+	data={flatData}
+	searchBar={{ enabled: false }}
+	virtualScroll={{ enabled: true, overscan: 5 }}
+	onNodeClicked={handleNodeClicked}
+	rowPadding="1rem"
+>
+	{#snippet toolbarEnd()}
+		<p class="ml-auto shrink-0 text-xs text-muted-foreground leading-none pr-0.5 pb-0.5">
+			{selectionCount} area(s) selected
+		</p>
+	{/snippet}
 
-	<div class="tree-wrapper">
-		<Tree
-			data={flatData}
-			idMember="nodeId"
-			pathMember="path"
-			displayValueMember="name"
-			searchValueMember="name"
-			shouldUseInternalSearchIndex={true}
-			bind:searchText
-			virtualScroll={true}
-			virtualRowHeight={44}
-			virtualOverscan={5}
-			virtualContainerHeight="100%"
-			onNodeClicked={handleNodeClicked}
-			shouldToggleOnNodeClick={true}
-			expandLevel={0}
+	{#snippet nodeContent(treeNode: LTreeNode)}
+		{@const nodeRef = treeNode.data!.nodeRef}
+		{@const config = nodeConfigProvider.getConfig(nodeRef.id)}
+		{@const isEnabled = config?.isEnabled ?? false}
+		{@const hasChildren = treeNode.hasChildren}
+		{@const isVisible = treeviewStore.getVisibilityState(nodeRef.id)}
+		{@const drawState = treeviewStore.getNodeDrawState(nodeRef.id)}
+		{@const folderHasVisibleChild = hasChildren && hasVisibleChildren(nodeRef)}
+		{@const isPressed = (!hasChildren && isVisible) || folderHasVisibleChild}
+		{@const icon = getNodeIcon(config?.typology ?? TreeviewNodeTypology.Area, treeNode.isExpanded)}
+
+		<div
+			class="node-card relative overflow-hidden rounded-md"
+			class:node-card-accent={isPressed}
+			class:node-card-disabled={!hasChildren && !isEnabled}
 		>
-			{#snippet nodeTemplate(treeNode: LTreeNode)}
-				{@const nodeRef = treeNode.data!.nodeRef}
-				{@const config = nodeConfigProvider.getConfig(nodeRef.id)}
-				{@const isEnabled = config?.isEnabled ?? false}
-				{@const hasChildren = treeNode.hasChildren}
-				{@const isVisible = treeviewStore.getVisibilityState(nodeRef.id)}
-				{@const drawState = treeviewStore.getNodeDrawState(nodeRef.id)}
-				{@const folderHasVisibleChild = hasChildren && hasVisibleChildren(nodeRef)}
-				{@const isPressed = (!hasChildren && isVisible) || folderHasVisibleChild}
-				{@const icon = getNodeIcon(
-					config?.typology ?? TreeviewNodeTypology.Area,
-					treeNode.isExpanded
-				)}
-
-				<div
-					class="node-card"
-					class:node-card-accent={isPressed}
-					class:node-card-disabled={!hasChildren && !isEnabled}
-					style="margin-left: calc({Math.max(
-						0,
-						(treeNode.level ?? 0) - 1
-					)} * var(--tree-step, 1.5rem));"
-				>
-					<div class="node-grid">
-						<div class="node-icons">
-							{#if hasChildren}
-								<span class="icon-slot">
-									<OpenIndicator isOpen={treeNode.isExpanded} />
-								</span>
-							{/if}
-							<span class="icon-slot">
-								{#if typeof icon === 'string'}
-									{@html icon}
-								{:else}
-									{@const Icon = icon}
-									<Icon />
-								{/if}
-							</span>
-						</div>
-
-						<span class="node-name">{nodeRef.name}</span>
-
-						<div class="node-end">
-							{#if isPressed}
-								<div class="visibility-wrapper visible">
-									<div class="visibility-inner">
-										<VisibilityCheckbox
-											disabled={true}
-											checked={true}
-											indeterminate={drawState === NodeDrawState.Suspended}
-										/>
-									</div>
-									{#if drawState === NodeDrawState.Suspended}
-										<span class="indeterminate-label">zoom</span>
-									{/if}
-								</div>
-							{/if}
-
-							{#if !isEnabled && !hasChildren}
-								<span title={config?.disabledReason}>
-									<Ban class="size-4 text-red-500" />
-								</span>
-							{/if}
-						</div>
-					</div>
+			<div class="node-grid">
+				<div class="node-icons">
+					{#if hasChildren}
+						<span class="icon-slot">
+							<OpenIndicator isOpen={treeNode.isExpanded} />
+						</span>
+					{/if}
+					<span class="icon-slot">
+						{#if typeof icon === 'string'}
+							{@html icon}
+						{:else}
+							{@const Icon = icon}
+							<Icon />
+						{/if}
+					</span>
 				</div>
-			{/snippet}
-		</Tree>
-	</div>
-</div>
+
+				<span class="node-name">{nodeRef.name}</span>
+
+				<div class="node-end">
+					{#if isPressed}
+						<div class="visibility-wrapper visible">
+							<div class="visibility-inner">
+								<VisibilityCheckbox
+									disabled={true}
+									checked={true}
+									indeterminate={drawState === NodeDrawState.Suspended}
+								/>
+							</div>
+							{#if drawState === NodeDrawState.Suspended}
+								<span class="indeterminate-label">zoom</span>
+							{/if}
+						</div>
+					{/if}
+
+					{#if !isEnabled && !hasChildren}
+						<span title={config?.disabledReason}>
+							<Ban class="size-4 text-red-500" />
+						</span>
+					{/if}
+				</div>
+			</div>
+
+			{#if !isEnabled && !hasChildren}
+				<span class="pointer-events-none absolute top-1/2 right-8 z-10 beta-badge">
+					<Badge
+						variant="outline"
+						class="w-fit px-1.5 py-0.5 text-[10px] leading-tight whitespace-nowrap bg-pink-100 border-pink-400 opacity-100"
+					>
+						Not available in beta
+					</Badge>
+				</span>
+			{/if}
+		</div>
+	{/snippet}
+</BaseTreeview>
 
 <style>
-	/* Area-specific styles */
 	.node-card-accent {
 		background-color: var(--accent);
 		color: var(--accent-foreground);
@@ -257,5 +259,18 @@
 		opacity: 0.5;
 		cursor: not-allowed;
 		pointer-events: auto;
+	}
+
+	.beta-badge {
+		opacity: 0;
+		transform: translate(10px, -50%);
+		transition:
+			opacity 120ms ease,
+			transform 160ms ease;
+	}
+
+	.node-card:hover .beta-badge {
+		opacity: 1;
+		transform: translate(0, -50%);
 	}
 </style>

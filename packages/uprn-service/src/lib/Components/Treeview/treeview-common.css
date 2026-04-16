@@ -40,7 +40,6 @@
 /* Node card */
 .tree-wrapper .node-card {
 	cursor: pointer;
-	border-radius: 0.6rem;
 	border: 1px solid var(--border);
 	box-shadow: none;
 	padding: 0.5rem;

@@ -16,6 +16,8 @@
 	import * as identify from '@arcgis/core/rest/identify.js';
 	import IdentifyParameters from '@arcgis/core/rest/support/IdentifyParameters.js';
 	import Point from '@arcgis/core/geometry/Point.js';
+	import * as reactiveUtils from '@arcgis/core/core/reactiveUtils.js';
+	import { Spinner } from '$lib/Components/shadcn/spinner';
 
 	/**
 	 * Component props interface
@@ -41,6 +43,9 @@
 	let searchWidget: SearchWidget | null = null;
 	let legendWidget: Legend | null = null;
 	let legendExpand: Expand | null = null;
+
+	let isMapLoading = $state(false);
+	let mapLoadingHandle: __esri.WatchHandle | null = null;
 
 	const fallbackBasemap = 'streets-vector';
 
@@ -88,6 +93,8 @@
 			mapView.map = webMap;
 			mapView.background = { color: '#CFD3D4' };
 			mapView.ui.move('zoom', 'bottom-left');
+
+			setupMapLoadingWatcher();
 
 			await addSearchWidget();
 			await addLegendWidget();
@@ -425,6 +432,26 @@
 		return findInLayers(mapView.map.layers);
 	}
 
+	function setupMapLoadingWatcher() {
+		if (!mapView) return;
+
+		mapLoadingHandle?.remove();
+
+		mapLoadingHandle = reactiveUtils.watch(
+			() => mapView.updating,
+			(updating) => {
+				isMapLoading = updating;
+			},
+			{ initial: true }
+		);
+	}
+
+	function cleanupMapLoadingWatcher() {
+		mapLoadingHandle?.remove();
+		mapLoadingHandle = null;
+		isMapLoading = false;
+	}
+
 	/**
 	 * Cleans up map resources and interaction stores when the component is destroyed.
 	 * Destroys the map view and cleans up any associated event listeners.
@@ -449,13 +476,42 @@
 	});
 </script>
 
-<div class="map-view" bind:this={mapContainer}></div>
+<div class="map-shell">
+	<div class="map-view" bind:this={mapContainer}></div>
+
+	{#if isMapLoading}
+		<div class="loading-overlay">
+			<Spinner />
+		</div>
+	{/if}
+</div>
 
 <style>
+	.map-shell {
+		position: relative;
+		flex: 1 1 auto;
+		min-height: 0;
+		width: 100%;
+	}
+
 	.map-view {
 		flex: 1 1 auto;
 		min-height: 0;
 		width: 100%;
+		height: 100%;
 		z-index: 1;
+	}
+
+	.loading-overlay {
+		position: absolute;
+		right: 1rem;
+		bottom: 1rem;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		z-index: 10;
+		pointer-events: none;
+		font-weight: 600;
+		padding: 0.5rem 0.5rem;
 	}
 </style>
