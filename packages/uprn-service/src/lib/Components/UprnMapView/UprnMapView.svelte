@@ -504,11 +504,10 @@
 
 	.loading-overlay {
 		position: absolute;
-		right: 1rem;
+		right: 0.5rem;
 		bottom: 1rem;
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
 		z-index: 10;
 		pointer-events: none;
 		font-weight: 600;
