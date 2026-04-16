@@ -19,7 +19,6 @@
 	import * as identify from '@arcgis/core/rest/identify.js';
 	import IdentifyParameters from '@arcgis/core/rest/support/IdentifyParameters.js';
 	import * as reactiveUtils from '@arcgis/core/core/reactiveUtils.js';
-	import { table } from 'console';
 
 	/**
 	 * Props accepted by the map view component.
@@ -147,7 +146,7 @@
 			await areaSelectionInteractionStore.refreshLayerView();
 			await areaSelectionInteractionStore.refreshAreas();
 
-			applyTabInteractionMode(currentTab, interactableLayers);
+			//applyTabInteractionMode(currentTab, interactableLayers);
 			console.log('[uprn-map-view] MapView updated with new webMap');
 		} catch (error) {
 			console.error('Error updating MapView with new webMap:', error);
@@ -256,10 +255,6 @@
 
 		if (isAreaTab) {
 			mapView.popupEnabled = false;
-			console.log(
-				'[uprn-map-view] Area selection mode enabled: popups disabled, interactable layers set',
-				mapView.popup
-			);
 			if (mapView.popup?.visible) {
 				mapView.popup.close();
 			}
