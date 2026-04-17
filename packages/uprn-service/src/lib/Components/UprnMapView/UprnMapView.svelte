@@ -1,6 +1,5 @@
-<!-- MapView.svelte -->
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { onDestroy, mount, unmount } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 
 	import { Spinner } from '$lib/Components/shadcn/spinner';
@@ -72,7 +71,10 @@
 	let legendExpand: Expand | null = null;
 	let mapLoadingHandle: __esri.WatchHandle | null = null;
 
-	let isMapLoading = $state(false);
+	let searchRowEl: HTMLDivElement | null = null;
+	let spinnerSlotEl: HTMLDivElement | null = null;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	let spinnerInstance: any = null;
 
 	/**
 	 * Creates a layer view provider for the current map view.
@@ -172,7 +174,8 @@
 	}
 
 	/**
-	 * Creates and adds the search widget once.
+	 * Creates and adds the search widget once, placing it to the right of a spinner slot
+	 * inside a shared flex-row container added to the ArcGIS top-right UI.
 	 */
 	async function ensureSearchWidget(): Promise<void> {
 		if (searchWidget) {
@@ -187,14 +190,30 @@
 			placeholder: SEARCH_PLACEHOLDER
 		});
 
+		// Flex row container that holds [spinner | search]
+		searchRowEl = document.createElement('div');
+		searchRowEl.style.cssText =
+			'display: flex; flex-direction: row; align-items: center; gap: 6px;';
+
+		// Spinner slot – hidden until the map is loading
+		spinnerSlotEl = document.createElement('div');
+		spinnerSlotEl.style.cssText = 'display: none; align-items: center;';
+		spinnerInstance = mount(Spinner, { target: spinnerSlotEl, props: { class: 'size-5' } });
+		searchRowEl.appendChild(spinnerSlotEl);
+
+		// Search widget container
+		const searchContainerEl = document.createElement('div');
+		searchRowEl.appendChild(searchContainerEl);
+
 		searchWidget = new Search({
 			view: mapView,
+			container: searchContainerEl,
 			popupEnabled: false,
 			includeDefaultSources: false,
 			sources: [ukSource]
 		});
 
-		mapView.ui.add(searchWidget, 'top-right');
+		mapView.ui.add(searchRowEl, 'top-right');
 	}
 
 	/**
@@ -519,7 +538,7 @@
 	}
 
 	/**
-	 * Watches `mapView.updating` to expose map loading state to the UI.
+	 * Watches `mapView.updating` to show/hide the spinner slot in the ArcGIS UI.
 	 */
 	function setupMapLoadingWatcher(): void {
 		mapLoadingHandle?.remove();
@@ -527,19 +546,23 @@
 		mapLoadingHandle = reactiveUtils.watch(
 			() => mapView.updating,
 			(updating) => {
-				isMapLoading = updating;
+				if (spinnerSlotEl) {
+					spinnerSlotEl.style.display = updating ? 'flex' : 'none';
+				}
 			},
 			{ initial: true }
 		);
 	}
 
 	/**
-	 * Removes the map loading watcher and resets local loading state.
+	 * Removes the map loading watcher and hides the spinner slot.
 	 */
 	function cleanupMapLoadingWatcher(): void {
 		mapLoadingHandle?.remove();
 		mapLoadingHandle = null;
-		isMapLoading = false;
+		if (spinnerSlotEl) {
+			spinnerSlotEl.style.display = 'none';
+		}
 	}
 
 	/**
@@ -553,10 +576,20 @@
 		mapInteractionStore?.cleanup();
 		mapInteractionStore = null;
 
+		if (spinnerInstance) {
+			unmount(spinnerInstance);
+			spinnerInstance = null;
+		}
+
 		if (searchWidget) {
-			mapView.ui.remove(searchWidget);
 			searchWidget.destroy();
 			searchWidget = null;
+		}
+
+		if (searchRowEl) {
+			mapView.ui.remove(searchRowEl);
+			searchRowEl = null;
+			spinnerSlotEl = null;
 		}
 
 		if (legendExpand) {
@@ -623,12 +656,6 @@
 
 <div class="map-shell">
 	<div class="map-view" bind:this={mapContainer}></div>
-
-	{#if isMapLoading}
-		<div class="loading-overlay">
-			<Spinner />
-		</div>
-	{/if}
 </div>
 
 <style>
@@ -645,17 +672,5 @@
 		width: 100%;
 		height: 100%;
 		z-index: 1;
-	}
-
-	.loading-overlay {
-		position: absolute;
-		right: 0.5rem;
-		bottom: 1rem;
-		display: flex;
-		align-items: center;
-		z-index: 10;
-		pointer-events: none;
-		font-weight: 600;
-		padding: 0.5rem;
 	}
 </style>
