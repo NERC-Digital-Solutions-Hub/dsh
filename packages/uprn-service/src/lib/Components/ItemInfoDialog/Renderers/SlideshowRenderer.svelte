@@ -33,7 +33,7 @@
 	</div>
 
 	{#each content.urls as imageUrl, imageIndex}
-		<GalleryImage title={`Image ${imageIndex + 1}`}>
+		<GalleryImage>
 			<img src={imageUrl} alt={`Slideshow image ${imageIndex + 1}`} />
 		</GalleryImage>
 	{/each}
