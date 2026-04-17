@@ -156,7 +156,7 @@
 	virtualScroll={{ enabled: true }}
 >
 	{#snippet toolbarEnd()}
-		<p class="ml-auto shrink-0 text-xs text-muted-foreground leading-none pr-0.5 pb-0.5">
+		<p class="ml-auto shrink-0 text-xs text-muted-foreground leading-none pr-2 pb-0.5">
 			{selectionCount} dataset(s) selected
 		</p>
 	{/snippet}

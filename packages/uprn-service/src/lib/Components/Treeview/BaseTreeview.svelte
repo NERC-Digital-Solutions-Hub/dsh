@@ -261,6 +261,7 @@
 		bottom: -1px;
 		width: 2px;
 		background-color: var(--guide-lines, var(--secondary-foreground));
+		transform: translateX(1px);
 		opacity: 1;
 		z-index: 0;
 		pointer-events: none;

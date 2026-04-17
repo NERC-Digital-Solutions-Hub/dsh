@@ -334,7 +334,7 @@
 </script>
 
 <div class="section">
-	<div class="section-header pb-1">
+	<div class="section-header pb-0.5">
 		<div class="section-title ml-2">
 			<MapPinIcon size={16} class="text-gray-500" />
 			<h4>Selected Areas</h4>
@@ -405,7 +405,7 @@
 </div>
 
 <div class="section">
-	<div class="section-header pb-1">
+	<div class="section-header pb-0.5">
 		<div class="section-title ml-2">
 			<DatabaseIcon size={16} class="text-gray-500" />
 			<h4>Selected Data</h4>
