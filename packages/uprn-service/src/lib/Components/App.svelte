@@ -929,7 +929,7 @@
 	<IntroductionDialog bind:isOpen={introductionDialogOpen} contentUrl={introductionUrl} />
 {/if}
 
-<Toaster visibleToasts={1} />
+<Toaster visibleToasts={1} position="bottom-right" />
 {#if webMapStore?.isLoaded && treeviewConfigStore}
 	<ItemInfoDialog
 		bind:isOpen={itemInfoDialogOpen}

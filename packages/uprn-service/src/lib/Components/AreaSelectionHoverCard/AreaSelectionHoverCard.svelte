@@ -23,19 +23,34 @@
 	 */
 	let hoverRequestCounter = 0;
 
+	let latestMouseEvent: MouseEvent | null = null;
+	let mouseFramePending = false;
+
 	/**
 	 * Handles mouse movement events to update the mouse position state.
 	 * @param event - The mouse move event containing client coordinates.
 	 */
+
 	const handleMouseMove = (event: MouseEvent) => {
-		mousePosition = {
-			x: event.clientX,
-			y: event.clientY
-		};
+		latestMouseEvent = event;
+
+		if (mouseFramePending) return;
+		mouseFramePending = true;
+
+		requestAnimationFrame(() => {
+			mouseFramePending = false;
+			if (!latestMouseEvent) return;
+
+			mousePosition = {
+				x: latestMouseEvent.clientX,
+				y: latestMouseEvent.clientY
+			};
+		});
 	};
 
-	// Add mouse move listener when component mounts and remove on unmount
 	$effect(() => {
+		if (!currentHoveredAreaName) return;
+
 		document.addEventListener('mousemove', handleMouseMove);
 
 		return () => {

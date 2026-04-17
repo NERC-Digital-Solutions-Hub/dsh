@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { AreaSelectionInteractionStore } from '$lib/Stores/AreaSelectionInteractionStore.svelte';
 	import { toast } from 'svelte-sonner';
+	import { Plus, Minus } from '@lucide/svelte';
 
 	type Props = {
 		areaSelectionInteractionStore: AreaSelectionInteractionStore;
@@ -21,7 +22,10 @@
 		}
 
 		const message = `Area ${action}: ${names[0]}`;
-		toast.success(message);
+		toast.success(message, {
+			icon: action === 'added' ? Plus : Minus,
+			class: 'custom-toast'
+		});
 	}
 
 	// Effect to show toast when an area is added
@@ -44,4 +48,7 @@
 </script>
 
 <style>
+	:global(.custom-toast) {
+		pointer-events: none;
+	}
 </style>
