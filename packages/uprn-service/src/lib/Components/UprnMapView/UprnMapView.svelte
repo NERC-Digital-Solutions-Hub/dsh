@@ -388,10 +388,11 @@
 
 					const attrs = (hit.feature?.attributes ?? {}) as Record<string, unknown>;
 					const valueField = findBestRasterValueField(attrs);
+					const fixedValue = Number(attrs[valueField ?? '']).toFixed(3);
 
 					return `
 						<b>Gridcode:</b> ${gridcode}<br>
-						<b>Value:</b> ${valueField ? attrs[valueField] : 'N/A'}
+						<b>Value:</b> ${valueField ? fixedValue : 'N/A'}
 					`;
 				} catch (error) {
 					console.error('Identify failed', error);
