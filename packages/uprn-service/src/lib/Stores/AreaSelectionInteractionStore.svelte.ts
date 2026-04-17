@@ -59,7 +59,7 @@ export class AreaSelectionInteractionStore {
 	/**
 	 * Field infos for area selection layers. This is used to find where the name and code is found in the layer fields.
 	 */
-	private fieldInfos: AreaSelectionFieldInfo[] = [];
+	private fieldInfoByLayerId = new Map<string, AreaSelectionFieldInfo>();
 
 	/**
 	 * Cache where the layer ID is the first key, then the area IDs map to names.
@@ -73,7 +73,7 @@ export class AreaSelectionInteractionStore {
 	) {
 		this.areaSelectionStore = areaSelectionStore;
 		this.layerViewProvider = layerViewProvider;
-		this.fieldInfos = fieldInfos;
+		this.setFieldInfoMap(fieldInfos);
 	}
 
 	public async refreshLayerView(): Promise<void> {
@@ -136,7 +136,7 @@ export class AreaSelectionInteractionStore {
 	}
 
 	public setFieldInfos(fieldInfos: AreaSelectionFieldInfo[]): void {
-		this.fieldInfos = fieldInfos;
+		this.setFieldInfoMap(fieldInfos);
 	}
 
 	public setSelectedLayerView(layerView: __esri.FeatureLayerView): void {
@@ -277,26 +277,32 @@ export class AreaSelectionInteractionStore {
 		if (!codeField) return [];
 
 		const layer = this.selectionViewState.layerView.layer as __esri.FeatureLayer;
+		const objectIdField = layer.objectIdField;
 
-		const objectIdField: string = layer.objectIdField;
+		const idToIndex = new Map<number, number>();
+		const codes: string[] = new Array(ids.length).fill('');
+
+		ids.forEach((id, index) => {
+			idToIndex.set(id, index);
+		});
+
 		const result = await layer.queryFeatures({
 			objectIds: ids,
 			outFields: [codeField, objectIdField],
 			returnGeometry: false
 		});
 
-		const codes: (string | undefined)[] = new Array(ids.length);
 		for (const feature of result.features) {
 			const id = feature.attributes[objectIdField] as number;
 			const code = feature.attributes[codeField] as string;
+			const index = idToIndex.get(id);
 
-			const index = ids.indexOf(id);
-			if (index !== -1) {
+			if (index !== undefined) {
 				codes[index] = code ?? '';
 			}
 		}
 
-		return codes.map((n) => n ?? '');
+		return codes;
 	}
 
 	public setHoveredArea(id: number, handle: __esri.Handle): void {
@@ -329,19 +335,19 @@ export class AreaSelectionInteractionStore {
 			return null;
 		}
 
-		const nameField: string | undefined = this.fieldInfos.find(
-			(l) => l.id === this.selectionViewState?.layerView?.layer?.id
-		)?.nameField;
+		const layerId = this.selectionViewState.layerView?.layer?.id;
+		if (!layerId) return null;
 
-		if (!nameField) {
+		const info = this.fieldInfoByLayerId.get(layerId);
+		if (!info) {
 			console.warn(
 				`[area-selection-interaction-store] no name field configured for layer ${this.selectionViewState.layerView.layer.title}`,
-				this.fieldInfos
+				this.fieldInfoByLayerId
 			);
 			return null;
 		}
 
-		return nameField;
+		return info.nameField;
 	}
 
 	public getCodeFieldForCurrentLayer(): string | null {
@@ -352,17 +358,19 @@ export class AreaSelectionInteractionStore {
 		) {
 			return null;
 		}
-		const codeField: string | undefined = this.fieldInfos.find(
-			(l) => l.id === this.selectionViewState?.layerView?.layer?.id
-		)?.codeField;
-		if (!codeField) {
+
+		const layerId = this.selectionViewState.layerView?.layer?.id;
+		if (!layerId) return null;
+
+		const info = this.fieldInfoByLayerId.get(layerId);
+		if (!info) {
 			console.warn(
 				`[area-selection-interaction-store] no code field configured for layer ${this.selectionViewState.layerView.layer.title}`,
-				this.fieldInfos
+				this.fieldInfoByLayerId
 			);
 			return null;
 		}
-		return codeField;
+		return info.codeField;
 	}
 
 	public clearSelections(): void {
@@ -381,8 +389,15 @@ export class AreaSelectionInteractionStore {
 		this.lastRemovedArea = null;
 		this.currentHoveredArea = null;
 		this.cachedNames.clear();
-		this.fieldInfos = [];
+		this.fieldInfoByLayerId.clear();
 
 		console.log('[area-selection-interaction-store] cleaned up.');
+	}
+
+	private setFieldInfoMap(fieldInfos: AreaSelectionFieldInfo[]): void {
+		this.fieldInfoByLayerId.clear();
+		for (const info of fieldInfos) {
+			this.fieldInfoByLayerId.set(info.id, info);
+		}
 	}
 }
