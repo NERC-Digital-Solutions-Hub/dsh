@@ -16,10 +16,6 @@ export class MapInteractionStore {
 	private enterHandle: __esri.Handle | null = null;
 	private pointerInsideMap = $state<boolean>(true);
 
-	private hoverFramePending = false;
-	private lastPointerMoveEvent: __esri.ViewPointerMoveEvent | null = null;
-	private hoverRequestId = 0;
-
 	/**
 	 * Initialize the store with a MapView and set up event handlers
 	 * @param view - The Esri MapView to attach interactions to
@@ -75,67 +71,82 @@ export class MapInteractionStore {
 	 * @param view - The MapView to attach the handler to
 	 */
 	private setupPointerMoveHandler(view: MapView): void {
-		this.pointerMoveHandle = view.on('pointer-move', (event) => {
-			if (!this.pointerInsideMap) return;
+		this.pointerMoveHandle = view.on('pointer-move', async (event) => {
+			if (!this.pointerInsideMap) {
+				return;
+			}
 
-			this.lastPointerMoveEvent = event;
-
-			if (this.hoverFramePending) return;
-
-			this.hoverFramePending = true;
-
-			requestAnimationFrame(async () => {
-				this.hoverFramePending = false;
-
-				const latestEvent = this.lastPointerMoveEvent;
-				if (!latestEvent || !this.pointerInsideMap) return;
-
-				const { results } = await view.hitTest(latestEvent);
-
-				const result = results.find((result) => {
-					const graphic = (result as __esri.GraphicHit)?.graphic;
-					const layer = graphic?.layer as __esri.FeatureLayer;
-
-					return (
-						!!graphic &&
-						!!layer &&
-						this.isLayerInteractable(layer.id) &&
-						graphic.attributes?.[layer.objectIdField] !== undefined
-					);
-				});
-
+			const { results } = await view.hitTest(event);
+			const result = results.find((result) => {
 				if (!result) {
-					this.clearHoverHighlight();
-					return;
+					return false;
 				}
-
-				const graphic = (result as __esri.GraphicHit).graphic;
-				const layer = graphic.layer as __esri.FeatureLayer;
-				const objectId = graphic.attributes?.[layer.objectIdField];
-
-				if (this.areaSelectionInteractionStore.currentHoveredArea?.id === objectId) {
-					return;
+				const graphic = (result as __esri.GraphicHit)?.graphic;
+				if (!graphic) {
+					return false;
 				}
-
-				try {
-					const layerView = await view.whenLayerView(layer);
-
-					if (!this.pointerInsideMap) return;
-
-					if (this.areaSelectionInteractionStore.selectionViewState.layerView !== layerView) {
-						this.areaSelectionInteractionStore.setSelectedLayerView(layerView);
-					}
-
-					this.clearHoverHighlight();
-
-					const featureLayerView = layerView as __esri.FeatureLayerView;
-					const hoverHandle = featureLayerView.highlight(graphic, { name: 'hover' });
-					this.areaSelectionInteractionStore.setHoveredArea(objectId, hoverHandle);
-				} catch (error) {
-					console.error('Error in pointer-move handler:', error);
-					this.clearHoverHighlight();
+				const layer = graphic?.layer as __esri.FeatureLayer;
+				if (!layer) {
+					return false;
 				}
+				return (
+					this.isLayerInteractable(layer.id) &&
+					graphic.attributes?.[layer.objectIdField] !== undefined
+				);
 			});
+
+			if (!result) {
+				this.clearHoverHighlight();
+				return;
+			}
+
+			const graphic = (result as __esri.GraphicHit).graphic;
+			const layer = graphic.layer as __esri.FeatureLayer;
+
+			if (
+				!graphic ||
+				!layer ||
+				!this.isLayerInteractable(layer.id) ||
+				graphic.attributes?.[layer.objectIdField] === undefined
+			) {
+				this.clearHoverHighlight();
+				return;
+			}
+
+			const objectIdField = graphic.attributes?.[layer.objectIdField];
+
+			if (
+				this.areaSelectionInteractionStore.currentHoveredArea &&
+				this.areaSelectionInteractionStore.currentHoveredArea.id === objectIdField
+			) {
+				return;
+			}
+
+			try {
+				const layerView = await view.whenLayerView(layer);
+
+				if (this.areaSelectionInteractionStore.selectionViewState.layerView !== layerView) {
+					this.areaSelectionInteractionStore.setSelectedLayerView(layerView);
+				}
+
+				this.clearHoverHighlight();
+
+				const featureLayerView = layerView as __esri.FeatureLayerView;
+				if (!featureLayerView) {
+					console.warn('LayerView is not a FeatureLayerView');
+					return;
+				}
+
+				if (!this.pointerInsideMap) {
+					return;
+				}
+
+				const hoverHandle = featureLayerView.highlight(graphic, { name: 'hover' });
+				this.areaSelectionInteractionStore.setHoveredArea(objectIdField, hoverHandle);
+			} catch (error) {
+				console.error('Error in pointer-move handler:', error);
+				this.clearHoverHighlight();
+			}
 		});
 	}
 
