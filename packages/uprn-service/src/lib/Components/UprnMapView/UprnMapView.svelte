@@ -674,4 +674,14 @@
 		height: 100%;
 		z-index: 1;
 	}
+
+	/* ArcGIS focus outline - older selector */
+	:global(.esri-view .esri-view-surface--inset-outline:focus::after) {
+		outline: none !important;
+	}
+
+	/* ArcGIS focus outline - newer selector used after DOM changes */
+	:global(.esri-view .esri-view-surface--touch-none:focus::after) {
+		outline: none !important;
+	}
 </style>
