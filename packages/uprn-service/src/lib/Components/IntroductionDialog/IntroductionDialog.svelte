@@ -45,15 +45,6 @@
 
 		return htmlRaw.toString();
 	});
-
-	$effect(() => {
-		if (hasBeenInitiallyOpened || isOpen || !introduction?.content) {
-			return;
-		}
-
-		isOpen = true;
-		hasBeenInitiallyOpened = true;
-	});
 </script>
 
 <Dialog.Root bind:open={isOpen} onOpenChange={(open: boolean) => (isOpen = open)}>

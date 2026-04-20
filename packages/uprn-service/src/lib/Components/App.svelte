@@ -456,6 +456,15 @@
 		startApp();
 	});
 
+	$effect(() => {
+		if (!settings?.content?.enableIntroductionPopup) {
+			return;
+		}
+
+		console.log('[uprn/app] Introduction popup enabled, showing dialog');
+		introductionDialogOpen = true;
+	});
+
 	/** Effect to set initial visibility of treeview nodes based on their configurations when they are loaded. */
 	$effect(() => {
 		if (
@@ -926,9 +935,7 @@
 	});
 </script>
 
-{#if settings?.content?.enableIntroductionPopup}
-	<IntroductionDialog bind:isOpen={introductionDialogOpen} contentUrl={introductionUrl} />
-{/if}
+<IntroductionDialog bind:isOpen={introductionDialogOpen} contentUrl={introductionUrl} />
 
 <Toaster visibleToasts={1} position="bottom-right" />
 {#if webMapStore?.isLoaded && treeviewConfigStore}
@@ -977,24 +984,22 @@
 									actions={resetActions}
 									buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
 								/>
-								{#if settings?.content?.enableIntroductionPopup}
-									<Tooltip.Provider disableHoverableContent>
-										<Tooltip.Root>
-											<Tooltip.Trigger>
-												<Button
-													class="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
-													variant="outline"
-													onclick={() => (introductionDialogOpen = true)}
-												>
-													<InfoIcon class="w-5 h-5" />
-												</Button>
-											</Tooltip.Trigger>
-											<Tooltip.Content side="bottom">
-												<p>Information</p>
-											</Tooltip.Content>
-										</Tooltip.Root>
-									</Tooltip.Provider>
-								{/if}
+								<Tooltip.Provider disableHoverableContent>
+									<Tooltip.Root>
+										<Tooltip.Trigger>
+											<Button
+												class="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
+												variant="outline"
+												onclick={() => (introductionDialogOpen = true)}
+											>
+												<InfoIcon class="w-5 h-5" />
+											</Button>
+										</Tooltip.Trigger>
+										<Tooltip.Content side="bottom">
+											<p>Information</p>
+										</Tooltip.Content>
+									</Tooltip.Root>
+								</Tooltip.Provider>
 							</UprnTabBar>
 						</div>
 					</div>
