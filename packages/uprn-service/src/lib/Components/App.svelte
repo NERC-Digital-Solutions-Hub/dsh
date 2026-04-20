@@ -63,6 +63,7 @@
 	import { useFetchGeneralSettings } from '$lib/Hooks/UseFetchGeneralSettings.svelte';
 	import type { ChatbotRemoteConfig } from '$lib/Types/Configuration.types';
 	import { ScrollArea } from '$lib/Components/shadcn/scroll-area';
+	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 
 	const tabBarTriggers = [
 		{
@@ -976,13 +977,24 @@
 									actions={resetActions}
 									buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
 								/>
-								<Button
-									class="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
-									variant="outline"
-									onclick={() => (introductionDialogOpen = true)}
-								>
-									<InfoIcon class="w-5 h-5" />
-								</Button>
+								{#if settings?.content?.enableIntroductionPopup}
+									<Tooltip.Provider disableHoverableContent>
+										<Tooltip.Root>
+											<Tooltip.Trigger>
+												<Button
+													class="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
+													variant="outline"
+													onclick={() => (introductionDialogOpen = true)}
+												>
+													<InfoIcon class="w-5 h-5" />
+												</Button>
+											</Tooltip.Trigger>
+											<Tooltip.Content side="bottom">
+												<p>Information</p>
+											</Tooltip.Content>
+										</Tooltip.Root>
+									</Tooltip.Provider>
+								{/if}
 							</UprnTabBar>
 						</div>
 					</div>
