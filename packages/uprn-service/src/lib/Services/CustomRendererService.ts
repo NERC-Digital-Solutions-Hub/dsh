@@ -275,6 +275,7 @@ export class CustomRendererService {
 	): ClassBreaksRenderer {
 		const classMinValueField = 'ClassMinValue';
 		const classMaxValueField = 'ClassMaxValue';
+		const classLabelField = 'Label';
 		const symbolColorField = 'SymbolColor';
 		const outlineColorField = 'OutlineColor';
 		const outlineWidthField = 'OutlineWidth';
@@ -289,13 +290,14 @@ export class CustomRendererService {
 		for (let i = 0; i < totalClasses; i++) {
 			const minValue = customClassBreaks[i][classMinValueField];
 			const maxValue = customClassBreaks[i][classMaxValueField];
+			const label = customClassBreaks[i][classLabelField] || `${fmt(minValue)} – ${fmt(maxValue)}`;
 			const symbolColor = customSymbols.Appearances[i][symbolColorField];
 			const outlineColor = customSymbols.Appearances[i][outlineColorField];
 			const outlineWidth = customSymbols.Appearances[i][outlineWidthField];
 			renderer.addClassBreakInfo({
 				minValue: minValue,
 				maxValue: maxValue,
-				label: `${fmt(minValue)} – ${fmt(maxValue)}`,
+				label: label,
 				symbol: new SimpleFillSymbol({
 					color: Color.fromHex(symbolColor)!,
 					outline: new SimpleLineSymbol({
