@@ -34,7 +34,8 @@
 		"svelte": "^5.0.0"
 	},
 	"dependencies": {
-		"@dsh/common": "workspace:*"
+		"@dsh/common": "workspace:*",
+		"@tanstack/svelte-virtual": "^3.13.23"
 	},
 	"devDependencies": {
 		"@arcgis/core": "^4.33.13",

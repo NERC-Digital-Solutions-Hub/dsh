@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { get } from 'svelte/store';
+	import { untrack } from 'svelte';
+	import { createWindowVirtualizer } from '@tanstack/svelte-virtual';
 	import ResultsTableItem from './results-table-item/results-table-item.svelte';
 	import type { ArchetypeDefinition } from '$lib/types/api.types';
 	import type { CatalogueResultCardRecord } from '$lib/utils/catalogue-ui';
@@ -22,43 +25,60 @@
 	}: Props = $props();
 
 	const trimmedSearchTerm = $derived(searchTerm?.trim() ?? null);
-	let loadMoreTrigger = $state<HTMLDivElement | null>(null);
 
-	$effect(() => {
-		if (!loadMoreTrigger || !onLoadMore) {
-			return;
-		}
+	const ITEM_GAP = 24; // 1.5rem
 
-		const observer = new IntersectionObserver(
-			(entries) => {
-				const entry = entries[0];
-				if (entry?.isIntersecting && hasMore && !isLoadingMore) {
-					void onLoadMore();
-				}
-			},
-			{
-				root: null,
-				rootMargin: '200px',
-				threshold: 0.1
-			}
-		);
-
-		observer.observe(loadMoreTrigger);
-
-		return () => {
-			observer.disconnect();
-		};
+	const virtualizer = createWindowVirtualizer({
+		count: records.length,
+		estimateSize: () => 380 + ITEM_GAP,
+		overscan: 3
 	});
+
+	// Keep virtualizer count in sync with records without subscribing to the store
+	// (which would cause an infinite loop since setOptions triggers a store update)
+	$effect(() => {
+		const count = records.length;
+		untrack(() => {
+			$virtualizer.setOptions({ count });
+		});
+	});
+
+	// Trigger load-more when the last virtual item becomes visible
+	$effect(() => {
+		const items = $virtualizer.getVirtualItems();
+		const lastItem = items[items.length - 1];
+		if (
+			lastItem &&
+			lastItem.index >= records.length - 1 &&
+			hasMore &&
+			!isLoadingMore &&
+			onLoadMore
+		) {
+			void onLoadMore();
+		}
+	});
+
+	// Svelte action: registers the element with the virtualizer for dynamic size measurement
+	function measureElement(el: HTMLElement) {
+		get(virtualizer).measureElement(el);
+		return {};
+	}
 </script>
 
 <div class="results-container">
 	{#if records.length > 0}
-		<div class="results-list">
-			{#each records as record, index (`${record.fileIdentifier ?? record.title ?? 'result'}-${index}`)}
-				<ResultsTableItem {record} {selectedArchetype} />
+		<div style="position: relative; height: {$virtualizer.getTotalSize()}px;">
+			{#each $virtualizer.getVirtualItems() as item (item.key)}
+				<div
+					use:measureElement
+					data-index={item.index}
+					style="position: absolute; top: 0; left: 0; width: 100%; transform: translateY({item.start}px); padding-bottom: {ITEM_GAP}px;"
+				>
+					<ResultsTableItem record={records[item.index]} {selectedArchetype} />
+				</div>
 			{/each}
 		</div>
-		<div bind:this={loadMoreTrigger} class="load-more-trigger">
+		<div class="load-more-trigger">
 			{#if isLoadingMore}
 				<p class="load-more-message">Loading more results...</p>
 			{:else if !hasMore}
@@ -79,13 +99,6 @@
 		max-width: 1200px;
 		margin: 0 auto;
 		width: 100%;
-	}
-
-	.results-list {
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
-		margin-bottom: 2rem;
 	}
 
 	.no-results {
