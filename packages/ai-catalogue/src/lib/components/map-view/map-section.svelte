@@ -41,14 +41,38 @@
 	let boundingBoxComponent: SvelteMapBoundingBox | undefined = $state();
 	let mapView: MapView | null | undefined = $derived(mapViewComponent?.getMapView());
 
-	function onBoundingBoxAdded() {
-		zoomToBoundingBox();
+	let screenshotDataUrl: string | null = $state(null);
+	let mapMounted: boolean = $state(true);
+
+	async function onBoundingBoxAdded() {
+		await zoomToBoundingBox();
+		if (!interactive && mapView) {
+			// Wait for all tiles to finish loading before screenshotting
+			if (mapView.updating) {
+				await new Promise<void>((resolve) => {
+					const handle = mapView!.watch('updating', (updating: boolean) => {
+						if (!updating) {
+							handle.remove();
+							resolve();
+						}
+					});
+				});
+			}
+			try {
+				const screenshot = await mapView.takeScreenshot({ format: 'png' });
+				screenshotDataUrl = screenshot.dataUrl;
+			} catch (e) {
+				console.error('Error capturing map screenshot:', e);
+			}
+			// Unmount the map components to free the WebGL context and memory
+			mapMounted = false;
+		}
 	}
 
 	// Functions to control the map from parent components
-	export function zoomToBoundingBox() {
+	export async function zoomToBoundingBox() {
 		if (boundingBoxComponent) {
-			boundingBoxComponent.zoomToBoundingBox();
+			await boundingBoxComponent.zoomToBoundingBox();
 		}
 	}
 
@@ -60,25 +84,29 @@
 </script>
 
 <div class="map-section">
-	<div class="map-container">
-		<SvelteMapView
-			bind:this={mapViewComponent}
-			{portalId}
-			fallbackBasemap="streets-vector"
-			{interactive}
-			minHeight={mapMinHeight}
-		/>
+	{#if mapMounted}
+		<div class="map-container">
+			<SvelteMapView
+				bind:this={mapViewComponent}
+				{portalId}
+				fallbackBasemap="streets-vector"
+				{interactive}
+				minHeight={mapMinHeight}
+			/>
 
-		<SvelteMapBoundingBox
-			bind:this={boundingBoxComponent}
-			{mapView}
-			{boundingBox}
-			visible={showBoundingBox}
-			color={boundingBoxColor}
-			{onBoundingBoxAdded}
-			{expandFactor}
-		/>
-	</div>
+			<SvelteMapBoundingBox
+				bind:this={boundingBoxComponent}
+				{mapView}
+				{boundingBox}
+				visible={showBoundingBox}
+				color={boundingBoxColor}
+				{onBoundingBoxAdded}
+				{expandFactor}
+			/>
+		</div>
+	{:else if screenshotDataUrl}
+		<img src={screenshotDataUrl} alt="Map preview" class="map-screenshot" />
+	{/if}
 </div>
 
 <style>
@@ -93,5 +121,12 @@
 	.map-container {
 		flex: 1;
 		min-height: 0; /* Important for flex child to shrink properly */
+	}
+
+	.map-screenshot {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
 	}
 </style>

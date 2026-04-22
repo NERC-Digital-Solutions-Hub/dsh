@@ -124,7 +124,7 @@
 				spatialReference: boundingBox.spatialReference || { wkid: 4326 }
 			});
 
-			await mapView.goTo(extent.expand(expandFactor));
+			await mapView.goTo(extent.expand(expandFactor), { animate: false });
 		} catch (error) {
 			console.error('Error zooming to bounding box:', error);
 		}
