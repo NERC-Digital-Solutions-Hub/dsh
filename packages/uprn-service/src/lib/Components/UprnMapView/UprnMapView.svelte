@@ -144,7 +144,8 @@
 			configureMapView();
 			setupMapLoadingWatcher();
 
-			await Promise.all([ensureSearchWidget(), ensureLegendWidget()]);
+			await ensureSearchWidget();
+			await ensureLegendWidget();
 			await areaSelectionInteractionStore.refreshLayerView();
 			await areaSelectionInteractionStore.refreshAreas();
 
@@ -514,7 +515,7 @@
 					fieldName: field.name,
 					label: field.alias || field.name,
 					visible: true
-				};
+				} as __esri.FieldInfo;
 
 				if (isFloatingNumericFieldType(field.type)) {
 					info.format = {
