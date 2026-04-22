@@ -59,7 +59,7 @@
 				});
 			}
 			try {
-				const screenshot = await mapView.takeScreenshot({ format: 'png' });
+				const screenshot = await mapView.takeScreenshot({ format: 'png', width: 600, height: 600 });
 				screenshotDataUrl = screenshot.dataUrl;
 			} catch (e) {
 				console.error('Error capturing map screenshot:', e);

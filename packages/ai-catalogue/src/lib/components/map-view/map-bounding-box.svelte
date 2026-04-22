@@ -30,6 +30,7 @@
 
 	let boundingBoxGraphic: any = null;
 	let isInitialized = false;
+	let destroyed = false;
 
 	// Initialize the component when browser and mapView are available
 	$effect(() => {
@@ -50,6 +51,7 @@
 		try {
 			// Wait for map view to be ready
 			await mapView.when();
+			if (destroyed || !mapView) return;
 			isInitialized = true;
 			updateBoundingBox();
 		} catch (error) {
@@ -101,6 +103,7 @@
 					symbol: symbol
 				});
 
+				if (destroyed || !mapView) return;
 				mapView.graphics.add(boundingBoxGraphic);
 				onBoundingBoxAdded?.();
 			} catch (error) {
@@ -148,6 +151,7 @@
 
 	// Cleanup when component is destroyed
 	onDestroy(() => {
+		destroyed = true;
 		cleanup();
 	});
 </script>
