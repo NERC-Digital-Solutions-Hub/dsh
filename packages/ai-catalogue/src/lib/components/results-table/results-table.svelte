@@ -31,7 +31,8 @@
 	const virtualizer = createWindowVirtualizer({
 		count: records.length,
 		estimateSize: () => 380 + ITEM_GAP,
-		overscan: 3
+		overscan: 3,
+		getItemKey: (index) => records[index]?.fileIdentifier ?? index
 	});
 
 	// Keep virtualizer count in sync with records without subscribing to the store
@@ -69,12 +70,16 @@
 	{#if records.length > 0}
 		<div style="position: relative; height: {$virtualizer.getTotalSize()}px;">
 			{#each $virtualizer.getVirtualItems() as item (item.key)}
+				{@const record = records[item.index]}
+
 				<div
 					use:measureElement
 					data-index={item.index}
 					style="position: absolute; top: 0; left: 0; width: 100%; transform: translateY({item.start}px); padding-bottom: {ITEM_GAP}px;"
 				>
-					<ResultsTableItem record={records[item.index]} {selectedArchetype} />
+					{#key record.fileIdentifier}
+						<ResultsTableItem {record} {selectedArchetype} />
+					{/key}
 				</div>
 			{/each}
 		</div>
