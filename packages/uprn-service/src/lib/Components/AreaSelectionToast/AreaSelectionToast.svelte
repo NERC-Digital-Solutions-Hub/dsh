@@ -8,6 +8,9 @@
 	};
 
 	const { areaSelectionInteractionStore }: Props = $props();
+	const areaSelectionToastId = 'area-selection-toast';
+	const areaSelectionToastDuration = 4000;
+	let latestToastRequest = 0;
 
 	/**
 	 * Displays a toast notification for area selection changes.
@@ -15,7 +18,12 @@
 	 * @param action - The action performed ('added' or 'removed').
 	 */
 	async function showAreaChangeToast(areaId: number, action: 'added' | 'removed') {
+		const requestId = ++latestToastRequest;
 		const names = await areaSelectionInteractionStore.getAreaNamesById([areaId]);
+
+		if (requestId !== latestToastRequest) {
+			return;
+		}
 
 		if (!names || names.length === 0 || !names[0]) {
 			return;
@@ -23,6 +31,8 @@
 
 		const message = `Area ${action}: ${names[0]}`;
 		toast.success(message, {
+			id: areaSelectionToastId,
+			duration: areaSelectionToastDuration,
 			icon: action === 'added' ? Plus : Minus,
 			class: 'custom-toast'
 		});
