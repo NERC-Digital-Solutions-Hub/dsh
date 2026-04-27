@@ -18,8 +18,23 @@ type CustomRendererSymbolWithAppearances = CustomRendererSymbol & {
 	Appearances: CustomRenderersSymbolAppearance[];
 };
 
+type RendererLodSize = {
+	lod: number;
+	size: number;
+};
+
 const defaultClassBreakCount = 5;
 const defaultClassBreakColors = ['#d9f0a3', '#78c679', '#31a354', '#756bb1', '#54278f'];
+const defaultClassBreakOutlineLods: RendererLodSize[] = [
+	{ lod: 9, size: 0 },
+	{ lod: 10, size: 0.1 },
+	{ lod: 12, size: 0.2 },
+	{ lod: 13, size: 0.3 },
+	{ lod: 14, size: 0.4 },
+	{ lod: 15, size: 0.5 },
+	{ lod: 16, size: 0.8 },
+	{ lod: 17, size: 1 }
+];
 const numericFieldTypes = ['small-integer', 'integer', 'big-integer', 'single', 'double', 'long'];
 
 /**
@@ -189,15 +204,12 @@ export class CustomRendererService {
 			return;
 		}
 
-		const lodSizes: LODSize[] = [];
-		const levelsOfDetail = Object.values(ImageTileLevelOfDetails);
-
-		lodsResult.forEach((lodRecord) => {
-			const outlineWidth: number = lodRecord.OutlineWidth;
-			const lod: number = lodRecord.Lod;
-			const lodIndex: number = this.#getLODIndex(levelsOfDetail, lod) - 1;
-			lodSizes.push({ size: outlineWidth, value: levelsOfDetail[lodIndex].scale });
-		});
+		const lodSizes = this.#createLodSizes(
+			lodsResult.map((lodRecord) => ({
+				lod: lodRecord.Lod,
+				size: lodRecord.OutlineWidth
+			}))
+		);
 
 		if (
 			featureLayer.renderer instanceof ClassBreaksRenderer ||
@@ -420,6 +432,7 @@ export class CustomRendererService {
 					defaultClassBreakColors[defaultClassBreakColors.length - 1]
 				)
 			});
+			this.#setVisualVariables(renderer, this.#createLodSizes(defaultClassBreakOutlineLods));
 			return renderer;
 		}
 
@@ -436,6 +449,8 @@ export class CustomRendererService {
 				symbol: this.#createDefaultClassBreakSymbol(defaultClassBreakColors[i])
 			});
 		}
+
+		this.#setVisualVariables(renderer, this.#createLodSizes(defaultClassBreakOutlineLods));
 
 		return renderer;
 	}
@@ -459,6 +474,14 @@ export class CustomRendererService {
 			typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : Number.NaN;
 
 		return Number.isFinite(numericValue) ? numericValue : null;
+	}
+
+	#createLodSizes(lods: RendererLodSize[]): LODSize[] {
+		const levelsOfDetail = Object.values(ImageTileLevelOfDetails);
+		return lods.map(({ lod, size }) => {
+			const lodIndex = this.#getLODIndex(levelsOfDetail, lod) - 1;
+			return { size, value: levelsOfDetail[lodIndex].scale };
+		});
 	}
 
 	#createSimpleRenderer(
