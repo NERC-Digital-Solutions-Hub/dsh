@@ -18,6 +18,10 @@ type CustomRendererSymbolWithAppearances = CustomRendererSymbol & {
 	Appearances: CustomRenderersSymbolAppearance[];
 };
 
+const defaultClassBreakCount = 5;
+const defaultClassBreakColors = ['#d9f0a3', '#78c679', '#31a354', '#756bb1', '#54278f'];
+const numericFieldTypes = ['small-integer', 'integer', 'big-integer', 'single', 'double', 'long'];
+
 /**
  * Service responsible for applying custom renderers to feature layers based on a provided configuration.
  */
@@ -40,6 +44,7 @@ export class CustomRendererService {
 		);
 
 		if (!featureLayerRecord) {
+			await this.#applyDefaultClassBreaksRenderer(featureLayer, fieldName);
 			return;
 		}
 
@@ -52,36 +57,38 @@ export class CustomRendererService {
 			console.warn(
 				`[custom-renderer-service] could not find the field ${fieldName} for feature layer id ${featureLayerRecord.Id}`
 			);
+			await this.#applyDefaultClassBreaksRenderer(featureLayer, fieldName);
 			return;
 		}
 
 		// Find the custom renderer field mapping
-		let customRendererField = this.#data.CustomRenderers_Fields.find(
+		const customRendererField = this.#data.CustomRenderers_Fields.find(
 			(crf) => crf.FieldId === fieldRecord.Id
 		);
 
 		// TODO: Remove this fallback logic after data correction
-		if (!customRendererField) {
-			const newfieldRecord = this.#data.Fields.find(
-				(f) =>
-					f.FeatureLayerId === featureLayerRecord.Id &&
-					fieldName.includes(f.Name) &&
-					f !== fieldRecord
-			);
-			console.warn(
-				`[custom-renderer-service] could not find custom renderer field for field ${fieldName}. Falling back to similar field ${newfieldRecord?.Name}`
-			);
-			if (newfieldRecord) {
-				customRendererField = this.#data.CustomRenderers_Fields.find(
-					(crf) => crf.FieldId === newfieldRecord.Id
-				);
-			}
-		}
+		// if (!customRendererField) {
+		// 	const newfieldRecord = this.#data.Fields.find(
+		// 		(f) =>
+		// 			f.FeatureLayerId === featureLayerRecord.Id &&
+		// 			fieldName.includes(f.Name) &&
+		// 			f !== fieldRecord
+		// 	);
+		// 	console.warn(
+		// 		`[custom-renderer-service] could not find custom renderer field for field ${fieldName}. Falling back to similar field ${newfieldRecord?.Name}`
+		// 	);
+		// 	if (newfieldRecord) {
+		// 		customRendererField = this.#data.CustomRenderers_Fields.find(
+		// 			(crf) => crf.FieldId === newfieldRecord.Id
+		// 		);
+		// 	}
+		// }
 
 		if (!customRendererField) {
 			console.warn(
 				`[custom-renderer-service] could not find a custom renderer field for field ${fieldName} in feature layer id ${featureLayerRecord.Id}`
 			);
+			await this.#applyDefaultClassBreaksRenderer(featureLayer, fieldName);
 			return;
 		}
 
@@ -91,9 +98,11 @@ export class CustomRendererService {
 		);
 
 		if (!customRenderer) {
-			throw new Error(
-				`Could not find a custom renderer with the id ${customRendererField.CustomRendererId}`
+			console.warn(
+				`[custom-renderer-service] could not find a custom renderer with the id ${customRendererField.CustomRendererId}`
 			);
+			await this.#applyDefaultClassBreaksRenderer(featureLayer, fieldName);
+			return;
 		}
 
 		const customClassBreaks = await this.getRendererClassBreaks(
@@ -311,6 +320,145 @@ export class CustomRendererService {
 		this.#setVisualVariables(renderer, lodSizes);
 
 		return renderer;
+	}
+
+	async #applyDefaultClassBreaksRenderer(
+		featureLayer: FeatureLayer,
+		fieldName: string
+	): Promise<void> {
+		const field = featureLayer.getField(fieldName);
+		if (!field) {
+			console.warn(
+				`[custom-renderer-service] could not apply a default renderer because field ${fieldName} was not found on layer ${featureLayer.title}`
+			);
+			return;
+		}
+
+		if (!numericFieldTypes.includes(field.type)) {
+			console.warn(
+				`[custom-renderer-service] could not apply a default class breaks renderer because field ${fieldName} is not numeric`
+			);
+			return;
+		}
+
+		let range: { min: number; max: number } | null;
+		try {
+			range = await this.#getFieldValueRange(featureLayer, fieldName);
+		} catch (error) {
+			console.warn(
+				`[custom-renderer-service] could not query values for default class breaks renderer field ${fieldName}`,
+				error
+			);
+			return;
+		}
+
+		if (!range) {
+			console.warn(
+				`[custom-renderer-service] could not apply a default class breaks renderer because no numeric values were found for field ${fieldName}`
+			);
+			return;
+		}
+
+		featureLayer.renderer = this.#createDefaultClassBreaksRenderer(
+			fieldName,
+			field.alias ?? fieldName,
+			range
+		);
+	}
+
+	async #getFieldValueRange(
+		featureLayer: FeatureLayer,
+		fieldName: string
+	): Promise<{ min: number; max: number } | null> {
+		const minFieldName = 'defaultRendererMinValue';
+		const maxFieldName = 'defaultRendererMaxValue';
+		const query = featureLayer.createQuery();
+		query.returnGeometry = false;
+		query.outStatistics = [
+			{
+				statisticType: 'min',
+				onStatisticField: fieldName,
+				outStatisticFieldName: minFieldName
+			},
+			{
+				statisticType: 'max',
+				onStatisticField: fieldName,
+				outStatisticFieldName: maxFieldName
+			}
+		];
+
+		const result = await featureLayer.queryFeatures(query);
+		const attributes = result.features[0]?.attributes;
+		const min = this.#toFiniteNumber(attributes?.[minFieldName]);
+		const max = this.#toFiniteNumber(attributes?.[maxFieldName]);
+
+		if (min === null || max === null) {
+			return null;
+		}
+
+		return min <= max ? { min, max } : { min: max, max: min };
+	}
+
+	#createDefaultClassBreaksRenderer(
+		fieldName: string,
+		fieldLabel: string,
+		range: { min: number; max: number }
+	): ClassBreaksRenderer {
+		const renderer = new ClassBreaksRenderer({
+			field: fieldName,
+			legendOptions: {
+				title: fieldLabel
+			}
+		});
+
+		if (range.min === range.max) {
+			renderer.addClassBreakInfo({
+				minValue: range.min,
+				maxValue: range.max,
+				label: this.#formatClassBreakLabel(range.min),
+				symbol: this.#createDefaultClassBreakSymbol(
+					defaultClassBreakColors[defaultClassBreakColors.length - 1]
+				)
+			});
+			return renderer;
+		}
+
+		const interval = (range.max - range.min) / defaultClassBreakCount;
+		for (let i = 0; i < defaultClassBreakCount; i++) {
+			const minValue = i === 0 ? range.min : range.min + interval * i;
+			const maxValue =
+				i === defaultClassBreakCount - 1 ? range.max : range.min + interval * (i + 1);
+
+			renderer.addClassBreakInfo({
+				minValue,
+				maxValue,
+				label: `${this.#formatClassBreakLabel(minValue)} – ${this.#formatClassBreakLabel(maxValue)}`,
+				symbol: this.#createDefaultClassBreakSymbol(defaultClassBreakColors[i])
+			});
+		}
+
+		return renderer;
+	}
+
+	#createDefaultClassBreakSymbol(color: string): SimpleFillSymbol {
+		return new SimpleFillSymbol({
+			color: Color.fromHex(color)!,
+			outline: new SimpleLineSymbol({
+				color: Color.fromHex('#475569')!,
+				width: 0.5
+			})
+		});
+	}
+
+	#formatClassBreakLabel(value: number): string {
+		return Number(value.toFixed(3)).toString();
+	}
+
+	#toFiniteNumber(value: unknown): number | null {
+		const numericValue =
+			typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : Number.NaN;
+
+		return Number.isFinite(numericValue) ? numericValue : null;
 	}
 
 	#createSimpleRenderer(
