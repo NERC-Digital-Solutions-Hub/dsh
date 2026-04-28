@@ -80,7 +80,7 @@
 										<Button
 											{...tooltipProps}
 											type="button"
-											class="size-11 border bg-background hover:bg-accent focus-visible:border-ring"
+											class="size-6 border bg-background hover:bg-accent focus-visible:border-ring"
 											onclick={onToggleMaximise}
 											aria-label={isMaximised ? 'Compact view' : 'Expand view'}
 										>
@@ -106,7 +106,7 @@
 									<Button
 										{...tooltipProps}
 										type="button"
-										class="size-11 border bg-background hover:bg-accent focus-visible:border-ring"
+										class="size-6 border bg-background hover:bg-accent focus-visible:border-ring"
 										onclick={onToggleCollapse}
 										aria-label={isOpened ? 'Hide panel' : 'Open panel'}
 										aria-expanded={isOpened}
