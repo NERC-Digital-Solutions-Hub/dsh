@@ -1,6 +1,5 @@
 import type { LayerViewProvider } from '$lib/Services/LayerViewProvider';
 import type { AreaSelectionStore } from '$lib/Stores/AreaSelectionStore.svelte';
-import FeatureLayerView from '@arcgis/core/views/layers/FeatureLayerView';
 import { SvelteMap } from 'svelte/reactivity';
 
 export type AreaSelectionFieldInfo = {
@@ -59,7 +58,7 @@ export class AreaSelectionInteractionStore {
 	/**
 	 * Field infos for area selection layers. This is used to find where the name and code is found in the layer fields.
 	 */
-	private fieldInfoByLayerId = new Map<string, AreaSelectionFieldInfo>();
+	private fieldInfoByLayerId = new SvelteMap<string, AreaSelectionFieldInfo>();
 
 	/**
 	 * Cache where the layer ID is the first key, then the area IDs map to names.
@@ -104,7 +103,7 @@ export class AreaSelectionInteractionStore {
 			return;
 		}
 
-		this.setSelectedLayerView(layerView as unknown as FeatureLayerView);
+		this.setSelectedLayerView(layerView as __esri.FeatureLayerView);
 	}
 
 	public async refreshAreas(): Promise<void> {
@@ -279,7 +278,7 @@ export class AreaSelectionInteractionStore {
 		const layer = this.selectionViewState.layerView.layer as __esri.FeatureLayer;
 		const objectIdField = layer.objectIdField;
 
-		const idToIndex = new Map<number, number>();
+		const idToIndex = new SvelteMap<number, number>();
 		const codes: string[] = new Array(ids.length).fill('');
 
 		ids.forEach((id, index) => {

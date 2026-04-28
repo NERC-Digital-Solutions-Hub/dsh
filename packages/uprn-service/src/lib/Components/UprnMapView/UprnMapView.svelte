@@ -13,12 +13,6 @@
 	import type Legend from '@arcgis/core/widgets/Legend';
 	import type Expand from '@arcgis/core/widgets/Expand';
 
-	import LocatorSearchSource from '@arcgis/core/widgets/Search/LocatorSearchSource.js';
-	import PopupTemplate from '@arcgis/core/PopupTemplate.js';
-	import * as identify from '@arcgis/core/rest/identify.js';
-	import IdentifyParameters from '@arcgis/core/rest/support/IdentifyParameters.js';
-	import * as reactiveUtils from '@arcgis/core/core/reactiveUtils.js';
-
 	/**
 	 * Props accepted by the map view component.
 	 */
@@ -142,7 +136,7 @@
 		try {
 			mapView.map = webMap;
 			configureMapView();
-			setupMapLoadingWatcher();
+			await setupMapLoadingWatcher();
 
 			await ensureSearchWidget();
 			await ensureLegendWidget();
@@ -183,7 +177,10 @@
 			return;
 		}
 
-		const { default: Search } = await import('@arcgis/core/widgets/Search');
+		const [{ default: Search }, { default: LocatorSearchSource }] = await Promise.all([
+			import('@arcgis/core/widgets/Search'),
+			import('@arcgis/core/widgets/Search/LocatorSearchSource.js')
+		]);
 
 		const ukSource = new LocatorSearchSource({
 			url: SEARCH_URL,
@@ -265,7 +262,7 @@
 	 * - area selection interaction disabled
 	 * - popups enabled
 	 */
-	function applyTabInteractionMode(tab: TabType, layers: SvelteSet<string>) {
+	async function applyTabInteractionMode(tab: TabType, layers: SvelteSet<string>): Promise<void> {
 		if (!mapView.map || !mapInteractionStore) {
 			return;
 		}
@@ -284,7 +281,7 @@
 		}
 
 		for (const layer of mapView.map.allLayers.toArray()) {
-			configureLayerPopupsAndLegend(layer);
+			await configureLayerPopupsAndLegend(layer);
 		}
 	}
 
@@ -296,7 +293,9 @@
 	 * - non-interactable feature layers get a generated field-based popup
 	 * - raster cell layers get a custom identify-driven popup
 	 */
-	function configureLayerPopupsAndLegend(layer: __esri.Layer | __esri.Sublayer): void {
+	async function configureLayerPopupsAndLegend(
+		layer: __esri.Layer | __esri.Sublayer
+	): Promise<void> {
 		const id = String(layer.id);
 		const title = layer.title?.toLowerCase() ?? '';
 		const isInteractable = interactableLayers.has(id);
@@ -308,7 +307,7 @@
 			}
 			if ('popupEnabled' in layer) {
 				layer.popupEnabled = true;
-				layer.popupTemplate = createRasterCellsPopupTemplate();
+				layer.popupTemplate = await createRasterCellsPopupTemplate();
 			}
 		} else if (isInteractable) {
 			if ('popupEnabled' in layer) {
@@ -320,18 +319,18 @@
 		} else if (layer.type === 'feature') {
 			const featureLayer = layer as __esri.FeatureLayer;
 			featureLayer.popupEnabled = true;
-			featureLayer.popupTemplate = createFeatureLayerPopupTemplate(featureLayer);
+			featureLayer.popupTemplate = await createFeatureLayerPopupTemplate(featureLayer);
 		}
 
 		if (layer.type === 'group') {
 			for (const childLayer of (layer as __esri.GroupLayer).layers.toArray()) {
-				configureLayerPopupsAndLegend(childLayer);
+				await configureLayerPopupsAndLegend(childLayer);
 			}
 		}
 
 		if (layer.type === 'map-image') {
 			for (const sublayer of (layer as __esri.MapImageLayer).allSublayers.toArray()) {
-				configureLayerPopupsAndLegend(sublayer);
+				await configureLayerPopupsAndLegend(sublayer);
 			}
 		}
 	}
@@ -340,7 +339,9 @@
 	 * Creates a popup template for raster cell features.
 	 * The popup performs an identify request against the active visible raster sublayer.
 	 */
-	function createRasterCellsPopupTemplate(): __esri.PopupTemplate {
+	async function createRasterCellsPopupTemplate(): Promise<__esri.PopupTemplate> {
+		const { default: PopupTemplate } = await import('@arcgis/core/PopupTemplate.js');
+
 		return new PopupTemplate({
 			title: 'Cell {gridcode}',
 			outFields: ['*'],
@@ -362,6 +363,11 @@
 						No geometry center available.
 					`;
 				}
+
+				const [{ default: IdentifyParameters }, identify] = await Promise.all([
+					import('@arcgis/core/rest/support/IdentifyParameters.js'),
+					import('@arcgis/core/rest/identify.js')
+				]);
 
 				const params = new IdentifyParameters({
 					geometry: center,
@@ -497,7 +503,11 @@
 	/**
 	 * Creates a readable popup template for feature layers by using visible, non-system fields.
 	 */
-	function createFeatureLayerPopupTemplate(layer: __esri.FeatureLayer): __esri.PopupTemplate {
+	async function createFeatureLayerPopupTemplate(
+		layer: __esri.FeatureLayer
+	): Promise<__esri.PopupTemplate> {
+		const { default: PopupTemplate } = await import('@arcgis/core/PopupTemplate.js');
+
 		const hiddenFieldTypes = new Set([
 			'oid',
 			'global-id',
@@ -542,8 +552,10 @@
 	/**
 	 * Watches `mapView.updating` to show/hide the spinner slot in the ArcGIS UI.
 	 */
-	function setupMapLoadingWatcher(): void {
+	async function setupMapLoadingWatcher(): Promise<void> {
 		mapLoadingHandle?.remove();
+
+		const reactiveUtils = await import('@arcgis/core/core/reactiveUtils.js');
 
 		mapLoadingHandle = reactiveUtils.watch(
 			() => mapView.updating,
@@ -648,7 +660,7 @@
 		const tab = currentTab;
 		const layers = interactableLayers;
 
-		applyTabInteractionMode(tab, layers);
+		void applyTabInteractionMode(tab, layers);
 	});
 
 	onDestroy(() => {
