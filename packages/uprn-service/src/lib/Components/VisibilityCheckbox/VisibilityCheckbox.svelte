@@ -47,38 +47,43 @@
 	}
 </script>
 
-<button
-	type="button"
-	class="visibility-btn"
-	class:visible={checked}
-	class:indeterminate
-	onclick={(e) => {
-		e.stopPropagation();
-		handleClick();
-	}}
-	onkeydown={handleKeydown}
-	{disabled}
-	role="switch"
-	aria-label={getTooltipContent()}
-	{...restProps}
->
-	<Tooltip.Provider disableHoverableContent>
-		<Tooltip.Root>
-			<Tooltip.Trigger>
-				{#if checked}
-					<Eye class="size-4" />
-				{:else if indeterminate}
-					<Eye class="size-4" />
-				{:else}
-					<EyeOff class="size-4" />
-				{/if}
-			</Tooltip.Trigger>
-			<Tooltip.Content side="right">
-				<p>{getTooltipContent()}</p>
-			</Tooltip.Content>
-		</Tooltip.Root>
-	</Tooltip.Provider>
-</button>
+<Tooltip.Provider disableHoverableContent>
+	<Tooltip.Root>
+		<Tooltip.Trigger>
+			{#snippet child({ props: tooltipProps })}
+				<button
+					{...tooltipProps}
+					type="button"
+					class="visibility-btn"
+					class:visible={checked}
+					class:indeterminate
+					onclick={(e) => {
+						e.stopPropagation();
+						handleClick();
+					}}
+					onkeydown={handleKeydown}
+					{disabled}
+					role="checkbox"
+					aria-checked={indeterminate ? 'mixed' : checked ? 'true' : 'false'}
+					aria-label={getTooltipContent()}
+					{...restProps}
+				>
+					{#if checked}
+						<Eye class="size-4" aria-hidden="true" />
+					{:else if indeterminate}
+						<Eye class="size-4" aria-hidden="true" />
+					{:else}
+						<EyeOff class="size-4" aria-hidden="true" />
+					{/if}
+				</button>
+			{/snippet}
+		</Tooltip.Trigger>
+
+		<Tooltip.Content side="right">
+			<p>{getTooltipContent()}</p>
+		</Tooltip.Content>
+	</Tooltip.Root>
+</Tooltip.Provider>
 
 <style>
 	.visibility-btn {

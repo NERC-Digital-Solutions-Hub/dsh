@@ -32,18 +32,25 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Trigger class={cn(buttonVariants({ variant: 'outline' }), buttonClass)}>
-		<Tooltip.Provider disableHoverableContent>
-			<Tooltip.Root>
-				<Tooltip.Trigger>
-					<RotateCcw />
-				</Tooltip.Trigger>
-				<Tooltip.Content side="bottom">
-					<p>Reset options</p>
-				</Tooltip.Content>
-			</Tooltip.Root>
-		</Tooltip.Provider>
-	</Dialog.Trigger>
+	<Tooltip.Provider disableHoverableContent>
+		<Tooltip.Root>
+			<Tooltip.Trigger>
+				{#snippet child({ props: tooltipProps })}
+					<Dialog.Trigger
+						{...tooltipProps}
+						class={cn(buttonVariants({ variant: 'outline' }), buttonClass)}
+						aria-label="Reset options"
+					>
+						<RotateCcw aria-hidden="true" />
+					</Dialog.Trigger>
+				{/snippet}
+			</Tooltip.Trigger>
+
+			<Tooltip.Content side="bottom">
+				<p>Reset options</p>
+			</Tooltip.Content>
+		</Tooltip.Root>
+	</Tooltip.Provider>
 	<Dialog.Content class="sm:max-w-[425px]">
 		<Dialog.Header>
 			<Dialog.Title>Reset Options</Dialog.Title>

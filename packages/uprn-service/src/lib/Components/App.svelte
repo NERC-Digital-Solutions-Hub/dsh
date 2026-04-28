@@ -12,6 +12,7 @@
 	import type { ResetAction } from '$lib/Components/ResetDialog/ResetDialog.svelte';
 	import ResetDialog from '$lib/Components/ResetDialog/ResetDialog.svelte';
 	import * as Card from '$lib/Components/shadcn/card/index.js';
+	import * as Tabs from '$lib/Components/shadcn/tabs/index.js';
 	import { Toaster } from '$lib/Components/shadcn/sonner';
 	import Spinner from '$lib/Components/shadcn/spinner/spinner.svelte';
 	import * as SidebarLayout from '$lib/Components/SidebarLayout/index.js';
@@ -73,7 +74,7 @@
 			value: TabType.AreaOfInterest,
 			label: 'Areas of Interest',
 			tooltip: 'Select areas of interest on the map',
-			seperatorIcon: Plus
+			separatorIcon: Plus
 		},
 		{
 			value: TabType.Data,
@@ -973,44 +974,49 @@
 			<Card.Root
 				class="relative flex flex-1 flex-col overflow-hidden rounded-md gap-0 py-0 shadow-none bg-slate-50"
 			>
-				<SidebarLayout.Header>
-					<div class="tabs-center">
-						<div class="tabbar-anchor" use:observeTabbarSize>
-							<UprnTabBar
-								value={currentTab}
-								triggers={tabBarTriggers}
-								progressByValue={tabProgressByValue}
-								onValueChange={onTabValueChange}
-							>
-								| <ResetDialog
-									bind:open={resetDialogOpen}
-									actions={resetActions}
-									buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
-								/>
-								<Tooltip.Provider disableHoverableContent>
-									<Tooltip.Root>
-										<Tooltip.Trigger>
-											<Button
-												class="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
-												variant="outline"
-												onclick={() => (introductionDialogOpen = true)}
-											>
-												<InfoIcon class="w-5 h-5" />
-											</Button>
-										</Tooltip.Trigger>
-										<Tooltip.Content side="bottom">
-											<p>Information</p>
-										</Tooltip.Content>
-									</Tooltip.Root>
-								</Tooltip.Provider>
-							</UprnTabBar>
+				<Tabs.Root
+					value={currentTab}
+					onValueChange={onTabValueChange}
+					class="flex min-h-0 flex-1 flex-col gap-0"
+				>
+					<SidebarLayout.Header>
+						<div class="tabs-center">
+							<div class="tabbar-anchor" use:observeTabbarSize>
+								<UprnTabBar triggers={tabBarTriggers} progressByValue={tabProgressByValue}>
+									{#snippet actions()}
+										<ResetDialog
+											bind:open={resetDialogOpen}
+											actions={resetActions}
+											buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
+										/>
+										<Tooltip.Provider disableHoverableContent>
+											<Tooltip.Root>
+												<Tooltip.Trigger>
+													{#snippet child({ props })}
+														<Button
+															{...props}
+															class="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
+															variant="outline"
+															aria-label="Information"
+															onclick={() => (introductionDialogOpen = true)}
+														>
+															<InfoIcon class="w-5 h-5" aria-hidden="true" />
+														</Button>
+													{/snippet}
+												</Tooltip.Trigger>
+												<Tooltip.Content side="bottom">
+													<p>Information</p>
+												</Tooltip.Content>
+											</Tooltip.Root>
+										</Tooltip.Provider>
+									{/snippet}
+								</UprnTabBar>
+							</div>
 						</div>
-					</div>
-				</SidebarLayout.Header>
+					</SidebarLayout.Header>
 
-				<SidebarLayout.Content>
-					<div class="flex flex-1 flex-col min-h-0" hidden={currentTab !== TabType.AreaOfInterest}>
-						<UprnTabBarContent>
+					<SidebarLayout.Content>
+						<UprnTabBarContent value={TabType.AreaOfInterest}>
 							{#if loadAreaTreeview}
 								<AreaSelectionTreeview
 									treeviewStore={areaTreeviewStore!}
@@ -1020,10 +1026,8 @@
 								/>
 							{/if}
 						</UprnTabBarContent>
-					</div>
 
-					{#if currentTab === TabType.Data}
-						<UprnTabBarContent>
+						<UprnTabBarContent value={TabType.Data}>
 							{#if loadDataTreeview}
 								<DataSelectionTreeview
 									treeviewStore={dataTreeviewStore!}
@@ -1035,11 +1039,9 @@
 								/>
 							{/if}
 						</UprnTabBarContent>
-					{/if}
 
-					<div class="flex flex-1 flex-col min-h-0" hidden={currentTab !== TabType.Export}>
-						<ScrollArea class="h-full w-full" type="always" scrollbarYClasses="z-50">
-							<UprnTabBarContent>
+						<UprnTabBarContent value={TabType.Export}>
+							<ScrollArea class="h-full w-full" type="always" scrollbarYClasses="z-50">
 								{#if loadExportMenu}
 									<div class="min-w-0 px-3">
 										<ExportMenu
@@ -1050,14 +1052,12 @@
 										/>
 									</div>
 								{/if}
-							</UprnTabBarContent>
-						</ScrollArea>
-					</div>
+							</ScrollArea>
+						</UprnTabBarContent>
 
-					<div class="flex flex-1 flex-col min-h-0" hidden={currentTab !== TabType.Downloads}>
-						<ScrollArea class="h-full w-full" type="always" scrollbarYClasses="z-50">
-							<div class="min-h-0 px-3">
-								<UprnTabBarContent>
+						<UprnTabBarContent value={TabType.Downloads}>
+							<ScrollArea class="h-full w-full" type="always" scrollbarYClasses="z-50">
+								<div class="min-h-0 px-3">
 									{#if !uprnDownloadHealth || uprnDownloadHealth.isLoading}
 										<div class="flex h-full w-full items-center justify-center">
 											<Spinner class="w-10 h-10" />
@@ -1078,27 +1078,27 @@
 											onOpenInfoDialog={onOpenDownloadInfoDialog}
 										/>
 									{/if}
-								</UprnTabBarContent>
-							</div>
-						</ScrollArea>
-					</div>
-				</SidebarLayout.Content>
+								</div>
+							</ScrollArea>
+						</UprnTabBarContent>
+					</SidebarLayout.Content>
 
-				<SidebarLayout.Footer>
-					<div hidden={currentTab !== 'export'}>
-						{#if areaSelectionInteractionStore && treeviewConfigStore}
-							<ExportMenuFooter
-								onExportSuccess={() => onTabValueChange('download')}
-								{areaSelectionInteractionStore}
-								{areaSelectionStore}
-								{dataSelectionStore}
-								{downloadsStore}
-								nodeConfigProvider={treeviewConfigStore}
-								areaSelectionLimits={areaSelectionLimitsMap}
-							/>
-						{/if}
-					</div>
-				</SidebarLayout.Footer>
+					<SidebarLayout.Footer>
+						<div hidden={currentTab !== TabType.Export}>
+							{#if areaSelectionInteractionStore && treeviewConfigStore}
+								<ExportMenuFooter
+									onExportSuccess={() => onTabValueChange(TabType.Downloads)}
+									{areaSelectionInteractionStore}
+									{areaSelectionStore}
+									{dataSelectionStore}
+									{downloadsStore}
+									nodeConfigProvider={treeviewConfigStore}
+									areaSelectionLimits={areaSelectionLimitsMap}
+								/>
+							{/if}
+						</div>
+					</SidebarLayout.Footer>
+				</Tabs.Root>
 			</Card.Root>
 
 			<CollapsibleWindow isOpenedOnInit={true} class="mt-0 shadow-none">

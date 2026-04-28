@@ -17,7 +17,7 @@
 		/** Optional tooltip text for the tab trigger. */
 		tooltip?: string;
 		/** Optional separator icon component for the tab triggers. If not provided, the ChevronRightIcon will be used. */
-		seperatorIcon?: Component;
+		separatorIcon?: Component;
 		/** Optional progress state for the tab trigger. */
 		hasProgress?: boolean;
 	};
@@ -26,19 +26,15 @@
 	 * Props for the UPRNTabBar component.
 	 */
 	type Props = {
-		/** The currently selected tab value. */
-		value?: string;
 		/** Array of trigger definitions for the tabs. */
 		triggers?: TriggerDefinition[];
 		/** Optional mapping of tab values to their progress states. */
 		progressByValue?: Record<string, TabProgress | undefined>;
-		/** Callback function when the tab value changes. */
-		onValueChange?: (value: string) => void;
-		/** Optional children snippet for the tab content. */
-		children?: Snippet;
+		/** Optional action controls shown beside the tab list. */
+		actions?: Snippet;
 	};
 
-	const { value, triggers = [], progressByValue = {}, onValueChange, children }: Props = $props();
+	const { triggers = [], progressByValue = {}, actions }: Props = $props();
 
 	const triggersWithProgress = $derived.by(() =>
 		triggers.map((t) => ({
@@ -65,28 +61,32 @@
 	}
 </script>
 
-<Tabs.Root {value} {onValueChange} class="flex h-full w-full flex-col">
-	<div class="tab-list-wrapper flex-shrink-0">
-		<Tabs.List class="tab-list">
-			{#each triggersWithProgress as { value, label, seperatorIcon, tooltip, progress, hasProgress }}
-				<Tooltip.Provider disableHoverableContent>
+<div class="tab-list-wrapper flex-shrink-0">
+	<div class="tabbar-shell">
+		<Tooltip.Provider disableHoverableContent>
+			<Tabs.List class="tab-list">
+				{#each triggersWithProgress as { value, label, separatorIcon, tooltip, progress, hasProgress }}
+					{@const isLastTrigger = value === triggers[triggers.length - 1]?.value}
+					{@const SeparatorIcon = separatorIcon ?? ChevronRightIcon}
 					<Tooltip.Root>
 						<Tooltip.Trigger>
-							<Tabs.Trigger {value} class="tab-trigger">
-								{@const progressValue = !progress ? TabProgress.NotStarted : progress}
-								{#if progressValue && (hasProgress == undefined || hasProgress)}
-									<span class="text-xs text-muted-foreground">
-										{#if progressValue === TabProgress.NotStarted}
-											<CircleDashed class="inline-block h-4 w-4" />
-										{:else if progressValue === TabProgress.InProgress}
-											<CircleDot class="inline-block h-4 w-4 text-amber-600" />
-										{:else if progressValue === TabProgress.Completed}
-											<CircleCheckBig class="inline-block h-4 w-4 text-green-800" />
-										{/if}
-									</span>
-								{/if}
-								{label}
-							</Tabs.Trigger>
+							{#snippet child({ props })}
+								<Tabs.Trigger {...props} {value} class="tab-trigger">
+									{@const progressValue = !progress ? TabProgress.NotStarted : progress}
+									{#if progressValue && (hasProgress == undefined || hasProgress)}
+										<span class="text-xs text-muted-foreground">
+											{#if progressValue === TabProgress.NotStarted}
+												<CircleDashed class="inline-block h-4 w-4" />
+											{:else if progressValue === TabProgress.InProgress}
+												<CircleDot class="inline-block h-4 w-4 text-amber-600" />
+											{:else if progressValue === TabProgress.Completed}
+												<CircleCheckBig class="inline-block h-4 w-4 text-green-800" />
+											{/if}
+										</span>
+									{/if}
+									{label}
+								</Tabs.Trigger>
+							{/snippet}
 						</Tooltip.Trigger>
 						<Tooltip.Content side="bottom">
 							<p>
@@ -95,32 +95,46 @@
 							</p>
 						</Tooltip.Content>
 					</Tooltip.Root>
-				</Tooltip.Provider>
-				{#if value !== triggers[triggers.length - 1]?.value}
-					{#if seperatorIcon}
-						{@const SeparatorIcon = seperatorIcon}
-						<SeparatorIcon class="separator" />
-					{:else}
-						<ChevronRightIcon class="separator" />
+					{#if !isLastTrigger}
+						<span class="separator-container" role="presentation" aria-hidden="true">
+							<SeparatorIcon class="separator" aria-hidden="true" />
+						</span>
 					{/if}
-				{/if}
-			{/each}
-			{@render children?.()}
-		</Tabs.List>
+				{/each}
+			</Tabs.List>
+		</Tooltip.Provider>
+
+		{#if actions}
+			|
+			<div class="tab-actions">
+				{@render actions()}
+			</div>
+		{/if}
 	</div>
-</Tabs.Root>
+</div>
 
 <style>
 	.tab-list-wrapper {
-		display: flex;
+		display: inline-flex;
 		justify-content: center;
-		width: 100%;
+		max-width: 100%;
 		padding: 0.75rem 0;
 	}
 
-	:global(.tab-list) {
+	.tabbar-shell {
 		background: white;
 		border: 1px solid #e5e7eb;
+		border-radius: 0.5rem;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.125rem;
+		max-width: 100%;
+	}
+
+	:global(.tab-list) {
+		background: transparent;
+		border: none;
 		display: flex;
 		align-items: center;
 		gap: 0.25rem;
@@ -140,6 +154,7 @@
 		min-width: fit-content;
 		display: flex;
 		align-items: center;
+		gap: 0.375rem;
 	}
 
 	:global(.tab-trigger:hover),
@@ -156,10 +171,35 @@
 		box-shadow: none !important;
 	}
 
-	:global(.separator) {
+	.separator-container {
 		color: #6b7280;
-		width: 0.875rem;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 1rem;
+		opacity: 1;
+		pointer-events: none;
+		width: 1rem;
+		flex: 0 0 1rem;
+	}
+
+	.separator-container :global(.separator) {
+		color: #6b7280;
+		display: block;
 		height: 0.875rem;
+		opacity: 1;
 		flex-shrink: 0;
+		width: 0.875rem;
+	}
+
+	.action-separator {
+		margin-left: 0.125rem;
+		margin-right: 0.125rem;
+	}
+
+	.tab-actions {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
 	}
 </style>

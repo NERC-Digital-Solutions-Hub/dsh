@@ -349,38 +349,42 @@
 	<!-- Toggle button: absolutely positioned at the top-right edge of the wrapper,
 	     floats over adjacent content so there is no white strip. -->
 	{#if !hideToggleButton}
-		<Button
-			onclick={onToggle}
-			variant="default"
-			size="icon"
-			class="cursor-pointer absolute top-0 z-10 inline-flex size-7 items-center justify-center overflow-hidden rounded-md bg-background shadow-none outline-hidden select-none hover:bg-accent focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
-			style="{position === SidebarPosition.LEFT
-				? 'right: 0; transform: translateX(calc(100% - 4px));'
-				: position === SidebarPosition.RIGHT
-					? 'left: 0; transform: translateX(calc(-100% + 4px));'
-					: position === SidebarPosition.TOP
-						? 'bottom: 0; right: 0; transform: translateY(calc(100% - 4px));'
-						: 'top: 0; right: 0; transform: translateY(calc(-100% + 4px));'} transform-origin: top left;"
-			aria-label={isOpen ? 'Collapse sidebar' : 'Open sidebar'}
-			aria-expanded={isOpen}
-		>
-			<Tooltip.Provider disableHoverableContent>
-				<Tooltip.Root>
-					<Tooltip.Trigger class="cursor-pointer">
-						{#if isOpen}
-							{@const Icon = closeIcon()}
-							<Icon class="h-6 w-6 text-primary cursor-pointer" />
-						{:else}
-							{@const OpenIcon = openIcon}
-							<OpenIcon class="h-6 w-6 text-primary cursor-pointer" />
-						{/if}
-					</Tooltip.Trigger>
-					<Tooltip.Content side="bottom">
-						<p>{isOpen ? 'Collapse' : 'Expand'}</p>
-					</Tooltip.Content>
-				</Tooltip.Root>
-			</Tooltip.Provider>
-		</Button>
+		<Tooltip.Provider disableHoverableContent>
+			<Tooltip.Root>
+				<Tooltip.Trigger>
+					{#snippet child({ props: tooltipProps })}
+						<Button
+							{...tooltipProps}
+							onclick={onToggle}
+							variant="default"
+							size="icon"
+							class="cursor-pointer absolute top-0 z-10 inline-flex size-7 items-center justify-center overflow-hidden rounded-md bg-background shadow-none outline-hidden select-none hover:bg-accent focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+							style="{position === SidebarPosition.LEFT
+								? 'right: 0; transform: translateX(calc(100% - 4px));'
+								: position === SidebarPosition.RIGHT
+									? 'left: 0; transform: translateX(calc(-100% + 4px));'
+									: position === SidebarPosition.TOP
+										? 'bottom: 0; right: 0; transform: translateY(calc(100% - 4px));'
+										: 'top: 0; right: 0; transform: translateY(calc(-100% + 4px));'} transform-origin: top left;"
+							aria-label={isOpen ? 'Collapse sidebar' : 'Open sidebar'}
+							aria-expanded={isOpen}
+						>
+							{#if isOpen}
+								{@const Icon = closeIcon()}
+								<Icon class="h-6 w-6 text-primary cursor-pointer" aria-hidden="true" />
+							{:else}
+								{@const OpenIcon = openIcon}
+								<OpenIcon class="h-6 w-6 text-primary cursor-pointer" aria-hidden="true" />
+							{/if}
+						</Button>
+					{/snippet}
+				</Tooltip.Trigger>
+
+				<Tooltip.Content side="bottom">
+					<p>{isOpen ? 'Collapse' : 'Expand'}</p>
+				</Tooltip.Content>
+			</Tooltip.Root>
+		</Tooltip.Provider>
 	{/if}
 </div>
 

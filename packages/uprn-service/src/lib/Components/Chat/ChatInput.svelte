@@ -61,6 +61,7 @@
 			bind:value
 			class="w-full rounded-full pr-12"
 			placeholder=""
+			aria-label="Chat input"
 			{disabled}
 			onfocus={() => (isFocused = true)}
 			onblur={() => (isFocused = false)}
@@ -88,8 +89,9 @@
 			size="icon"
 			class="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 rounded-full"
 			disabled={value.trim() === '' || disabled}
+			aria-label="Submit"
 		>
-			<ArrowUp class="h-4 w-4" />
+			<ArrowUp class="h-4 w-4" aria-hidden="true" />
 		</Button>
 	</div>
 </form>
@@ -124,6 +126,7 @@
 		font-size: 0.875rem;
 		line-height: 1.25rem;
 		font-weight: 400;
-		color: var(--muted-foreground);
+		color: var(--foreground);
+		opacity: 0.75;
 	}
 </style>

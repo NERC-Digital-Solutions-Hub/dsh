@@ -76,20 +76,25 @@
 						<Tooltip.Provider disableHoverableContent>
 							<Tooltip.Root>
 								<Tooltip.Trigger>
-									<Button
-										class="size-6 border-1 bg-background hover:bg-accent focus-visible:border-ring"
-										onclick={onToggleMaximise}
-										aria-label={isMaximised ? 'Compact' : 'Expand'}
-									>
-										{#if isMaximised}
-											<Minimize class="text-primary" />
-										{:else}
-											<Maximize class="text-primary" />
-										{/if}
-									</Button>
+									{#snippet child({ props: tooltipProps })}
+										<Button
+											{...tooltipProps}
+											type="button"
+											class="size-11 border bg-background hover:bg-accent focus-visible:border-ring"
+											onclick={onToggleMaximise}
+											aria-label={isMaximised ? 'Compact view' : 'Expand view'}
+										>
+											{#if isMaximised}
+												<Minimize class="size-4 text-primary" aria-hidden="true" />
+											{:else}
+												<Maximize class="size-4 text-primary" aria-hidden="true" />
+											{/if}
+										</Button>
+									{/snippet}
 								</Tooltip.Trigger>
+
 								<Tooltip.Content>
-									<p>{isMaximised ? 'Compact' : 'Expand'}</p>
+									<p>{isMaximised ? 'Compact view' : 'Expand view'}</p>
 								</Tooltip.Content>
 							</Tooltip.Root>
 						</Tooltip.Provider>
@@ -97,20 +102,26 @@
 					<Tooltip.Provider disableHoverableContent>
 						<Tooltip.Root>
 							<Tooltip.Trigger>
-								<Button
-									class="size-6 border-1 bg-background hover:bg-accent focus-visible:border-ring"
-									onclick={onToggleCollapse}
-									aria-label={isOpened ? 'Hide' : 'Open'}
-								>
-									{#if !isOpened}
-										<ChevronUp class="text-primary" />
-									{:else}
-										<ChevronDown class="text-primary" />
-									{/if}
-								</Button>
+								{#snippet child({ props: tooltipProps })}
+									<Button
+										{...tooltipProps}
+										type="button"
+										class="size-11 border bg-background hover:bg-accent focus-visible:border-ring"
+										onclick={onToggleCollapse}
+										aria-label={isOpened ? 'Hide panel' : 'Open panel'}
+										aria-expanded={isOpened}
+									>
+										{#if !isOpened}
+											<ChevronUp class="size-4 text-primary" aria-hidden="true" />
+										{:else}
+											<ChevronDown class="size-4 text-primary" aria-hidden="true" />
+										{/if}
+									</Button>
+								{/snippet}
 							</Tooltip.Trigger>
+
 							<Tooltip.Content>
-								<p>{isOpened ? 'Hide' : 'Open'}</p>
+								<p>{isOpened ? 'Hide panel' : 'Open panel'}</p>
 							</Tooltip.Content>
 						</Tooltip.Root>
 					</Tooltip.Provider>

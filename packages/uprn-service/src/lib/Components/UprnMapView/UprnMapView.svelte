@@ -508,7 +508,7 @@
 			'xml'
 		]);
 
-		const fieldInfos: __esri.FieldInfo[] = layer.fields
+		const fieldInfos: __esri.FieldInfo[] = (layer.fields ?? [])
 			.filter((field) => !hiddenFieldTypes.has(field.type))
 			.map((field) => {
 				const info: __esri.FieldInfo = {
