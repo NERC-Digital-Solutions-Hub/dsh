@@ -23,6 +23,7 @@ export function installBrowserPolyfills(): void {
 	const browserGlobal = globalThis as BrowserGlobal;
 
 	if (!browserGlobal.requestIdleCallback) {
+		console.warn('requestIdleCallback is not supported in this browser. Installing polyfill.');
 		browserGlobal.requestIdleCallback = (callback, options) => {
 			const start = Date.now();
 			const timeout = options?.timeout ?? 1;
@@ -37,6 +38,7 @@ export function installBrowserPolyfills(): void {
 	}
 
 	if (!browserGlobal.cancelIdleCallback) {
+		console.warn('cancelIdleCallback is not supported in this browser. Installing polyfill.');
 		browserGlobal.cancelIdleCallback = (handle) => {
 			window.clearTimeout(handle);
 		};
