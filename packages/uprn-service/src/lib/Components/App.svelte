@@ -55,6 +55,7 @@
 	import { TreeviewType } from '$lib/Types/Treeview.types';
 	import { TabProgress, TabType, type DownloadEntry } from '$lib/Types/Uprn.types';
 	import { createTreeviewNodes } from '$lib/Utilities/CreateTreeviewNodes';
+	import { installBrowserPolyfills } from '$lib/Utilities/browser-polyfills';
 	import { InfoIcon, Plus } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
@@ -64,6 +65,8 @@
 	import type { ChatbotRemoteConfig } from '$lib/Types/Configuration.types';
 	import { ScrollArea } from '$lib/Components/shadcn/scroll-area';
 	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
+
+	installBrowserPolyfills();
 
 	const tabBarTriggers = [
 		{
