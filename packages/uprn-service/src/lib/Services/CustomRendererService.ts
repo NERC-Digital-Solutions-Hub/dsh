@@ -25,6 +25,8 @@ type RendererLodSize = {
 
 const defaultClassBreakCount = 5;
 const defaultClassBreakColors = ['#d9f0a3', '#78c679', '#31a354', '#756bb1', '#54278f'];
+const defaultClassBreakFallbackColor = '#9b9b9b';
+const defaultClassBreakFallbackLabel = 'No data';
 const defaultClassBreakOutlineLods: RendererLodSize[] = [
 	{ lod: 9, size: 0 },
 	{ lod: 10, size: 0.1 },
@@ -418,6 +420,8 @@ export class CustomRendererService {
 	): ClassBreaksRenderer {
 		const renderer = new ClassBreaksRenderer({
 			field: fieldName,
+			defaultLabel: defaultClassBreakFallbackLabel,
+			defaultSymbol: this.#createDefaultClassBreakSymbol(defaultClassBreakFallbackColor),
 			legendOptions: {
 				title: fieldLabel
 			}
