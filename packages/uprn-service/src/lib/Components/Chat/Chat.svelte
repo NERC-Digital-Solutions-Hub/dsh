@@ -97,6 +97,16 @@
 
 	let scrollViewport: HTMLElement | null = $state(null);
 
+	/** Tracks whether the current chat response should keep pinning the viewport to the bottom. */
+	let shouldAutoScrollToBottom = $state(true);
+
+	/** True while a bot message is being progressively rendered. */
+	let isStreamingBotResponse = $state(false);
+
+	let lastScrollTop = 0;
+
+	const USER_SCROLL_UP_THRESHOLD = 2;
+
 	/** Reference to the input element */
 	let inputRef: HTMLInputElement | null = $state(null);
 
@@ -119,7 +129,21 @@
 		chat?.isLoading;
 		chat?.content;
 
-		scrollToBottom(true);
+		if (shouldAutoScrollToBottom) {
+			scrollToBottom(!isStreamingBotResponse);
+		}
+	});
+
+	$effect(() => {
+		const viewport = scrollViewport;
+		if (!viewport) return;
+
+		lastScrollTop = viewport.scrollTop;
+		viewport.addEventListener('scroll', handleViewportScroll, { passive: true });
+
+		return () => {
+			viewport.removeEventListener('scroll', handleViewportScroll);
+		};
 	});
 
 	/**
@@ -175,6 +199,8 @@
 		fullHtml: string,
 		metadata?: { sessionId?: string; sequenceNumber?: number }
 	): Promise<void> {
+		startAutoScrollSession();
+
 		messages.push({
 			id: messageIdCounter++,
 			senderId: BOT_SENDER_ID,
@@ -192,7 +218,7 @@
 		const tickMs = 15;
 		let visibleCharsShown = 0;
 
-		await scrollToBottom();
+		await scrollToBottom(false, { force: true });
 
 		while (visibleCharsShown < totalVisibleChars) {
 			const charsThisTick = Math.max(1, Math.round((CHARACTERS_PER_SECOND * tickMs) / 1000));
@@ -206,6 +232,7 @@
 
 		streamingMessage.message = fullHtml;
 		streamingMessage.isStreaming = false;
+		isStreamingBotResponse = false;
 	}
 
 	function getVisibleTextLength(fullHtml: string): number {
@@ -320,7 +347,30 @@
 		isFeedbackDialogOpen = true;
 	}
 
-	async function scrollToBottom(smooth = true) {
+	function startAutoScrollSession() {
+		shouldAutoScrollToBottom = true;
+		isStreamingBotResponse = true;
+		lastScrollTop = scrollViewport?.scrollTop ?? 0;
+	}
+
+	function handleViewportScroll() {
+		if (!scrollViewport) return;
+
+		const nextScrollTop = scrollViewport.scrollTop;
+		const userScrolledUp = nextScrollTop < lastScrollTop - USER_SCROLL_UP_THRESHOLD;
+
+		if (isStreamingBotResponse && shouldAutoScrollToBottom && userScrolledUp) {
+			shouldAutoScrollToBottom = false;
+		}
+
+		lastScrollTop = nextScrollTop;
+	}
+
+	async function scrollToBottom(smooth = true, options?: { force?: boolean }) {
+		if (!options?.force && !shouldAutoScrollToBottom) {
+			return;
+		}
+
 		await tick();
 
 		if (!scrollViewport) return;
@@ -351,7 +401,9 @@
 		const userMessage = message.trim();
 		message = '';
 
+		shouldAutoScrollToBottom = true;
 		addMessage(userMessage, USER_SENDER_ID);
+		await scrollToBottom(true, { force: true });
 
 		const responseSessionId = chat?.conversationId;
 		const responseSequenceNumber = chat?.sequenceNumber;
