@@ -1,58 +1,46 @@
-# Svelte library
+# @dsh/research-page
 
-Everything you need to build a Svelte library, powered by [`sv`](https://npmjs.com/package/sv).
+`@dsh/research-page` renders research content for the Digital Solutions Hub. It loads markdown and article metadata from the DSH content repository, converts markdown to HTML, and exposes Svelte components for the research landing page and individual article pages.
 
-Read more about creating a library [in the docs](https://svelte.dev/docs/kit/packaging).
+The hub mounts this package at `/research` and `/research/articles/[title]`.
 
-## Creating a project
+## What It Provides
 
-If you're seeing this, you've probably already done this step. Congrats!
+- `ResearchPage`, the main research landing-page component.
+- `ArticlePage`, the individual article component.
+- Server load helpers for research and article routes.
+- Article index loading and metadata lookup.
+- Markdown processing with frontmatter, GitHub-flavoured markdown, raw HTML support, heading links, external links, and Mermaid support.
+- Static content config under `static/config/content.json`.
 
-```sh
-# create a new project in the current directory
-npx sv create
+## External Dependencies
 
-# create a new project in my-app
-npx sv create my-app
+- GitHub raw content from the `NERC-Digital-Solutions-Hub/dsh-content` repository.
+- Content paths are configured by `static/config/content.json`:
+  - Organisation: `NERC-Digital-Solutions-Hub`
+  - Repo: `dsh-content`
+  - Relative path: `pages`
+  - Research main page: `pages/research/main.md`
+  - Article index: `pages/research/articles/index.txt`
+- Markdown and diagram processing libraries, including `gray-matter`, `unified`, `remark-*`, `rehype-*`, `mermaid`, and `sql.js`.
+
+## Configuration
+
+Content config lives in:
+
+```txt
+static/config/content.json
 ```
 
-## Developing
+When running inside the hub, this config is copied into `hub/static/config/content.json`.
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+The route loaders currently read content from the `dev` branch of the configured GitHub repository.
 
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-Everything inside `src/lib` is part of your library, everything inside `src/routes` can be used as a showcase or preview app.
-
-## Building
-
-To build your library:
+## Useful Commands
 
 ```sh
-npm pack
-```
-
-To create a production version of your showcase app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
-
-## Publishing
-
-Go into the `package.json` and give your package the desired name through the `"name"` option. Also consider adding a `"license"` field and point it to a `LICENSE` file which you can create from a template (one popular option is the [MIT license](https://opensource.org/license/mit/)).
-
-To publish your library to [npm](https://www.npmjs.com):
-
-```sh
-npm publish
+pnpm --filter @dsh/research-page dev
+pnpm --filter @dsh/research-page package
+pnpm --filter @dsh/research-page build
+pnpm --filter @dsh/research-page lint
 ```

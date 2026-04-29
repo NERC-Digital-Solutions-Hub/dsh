@@ -1,58 +1,53 @@
-# Svelte library
+# Hub
 
-Everything you need to build a Svelte library, powered by [`sv`](https://npmjs.com/package/sv).
+The `hub` workspace is the main SvelteKit application for the NERC Digital Solutions Hub. It provides the public site shell, home page, navigation, page metadata, and the routes that mount each feature package into one integrated experience.
 
-Read more about creating a library [in the docs](https://svelte.dev/docs/kit/packaging).
+The hub is intentionally thin: most feature work lives in packages under `../packages`, and this app imports those packages as local workspace dependencies.
 
-## Creating a project
+## What It Provides
 
-If you're seeing this, you've probably already done this step. Congrats!
+- Home page and site-level layout for the Digital Solutions Hub.
+- Navigation for catalogues, apps, realtime pages, maps, and research content.
+- Route wrappers for the package apps, including mobile handling where needed.
+- Static configuration aggregation for package apps.
+- E2E test entry point for the integrated site.
 
-```sh
-# create a new project in the current directory
-npx sv create
+## Local Packages Used By The Hub
 
-# create a new project in my-app
-npx sv create my-app
-```
+- `@dsh/ai-catalogue` is mounted at `/catalogues/ai`.
+- `@dsh/ai-where-to-build` is mounted at `/apps/ai-where-to-build`.
+- `@dsh/maps-page` is mounted at `/maps`.
+- `@dsh/research-page` is mounted at `/research` and `/research/articles/[title]`.
+- `@dsh/uprn-service` is mounted at `/apps/uprn`.
+- `@dsh/common` provides shared markdown utilities used by hub content rendering.
 
-## Developing
+## Configuration
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+The hub keeps its own home-page config in `static/config/home/config.json`. Package configuration is copied into `static/config` by `scripts/sync-configs.ts`, which runs from `vite.config.ts` when the hub starts or builds.
 
-```sh
-npm run dev
+The sync keeps the hub's `home` config and refreshes package config from:
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+- `../packages/ai-catalogue/static/config`
+- `../packages/ai-where-to-build/static/config`
+- `../packages/maps-page/static/config`
+- `../packages/research-page/static/config`
+- `../packages/uprn-service/static/config`
 
-Everything inside `src/lib` is part of your library, everything inside `src/routes` can be used as a showcase or preview app.
+## External Dependencies
 
-## Building
+- DSH content site: `https://nerc-digital-solutions-hub.github.io/dsh-content/` for home, site, and research content manifests.
+- GitHub raw content from `NERC-Digital-Solutions-Hub/dsh-content` for research markdown and article metadata.
+- DSH catalogue API, UPRN download API, UPRN chatbot API, and ArcGIS portals indirectly through the mounted package configs.
+- ArcGIS services used by the maps, UPRN, and AI where-to-build packages.
 
-To build your library:
+## Useful Commands
 
-```sh
-npm pack
-```
-
-To create a production version of your showcase app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
-
-## Publishing
-
-Go into the `package.json` and give your package the desired name through the `"name"` option. Also consider adding a `"license"` field and point it to a `LICENSE` file which you can create from a template (one popular option is the [MIT license](https://opensource.org/license/mit/)).
-
-To publish your library to [npm](https://www.npmjs.com):
+Run these from the repository root unless you are intentionally working only inside `hub`.
 
 ```sh
-npm publish
+pnpm dev
+pnpm --filter hub dev:workspace
+pnpm --filter hub build
+pnpm --filter hub lint
+pnpm --filter hub test
 ```

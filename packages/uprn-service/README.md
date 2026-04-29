@@ -1,58 +1,68 @@
-# Svelte library
+# @dsh/uprn-service
 
-Everything you need to build a Svelte library, powered by [`sv`](https://npmjs.com/package/sv).
+`@dsh/uprn-service` provides the UPRN application for the Digital Solutions Hub. It lets users explore Unique Property Reference Numbers on an ArcGIS map, select areas of interest, select data layers, export data, manage download jobs, and interact with an AI chatbot.
 
-Read more about creating a library [in the docs](https://svelte.dev/docs/kit/packaging).
+The hub mounts this package at `/apps/uprn`.
 
-## Creating a project
+## What It Provides
 
-If you're seeing this, you've probably already done this step. Congrats!
+- `UprnServiceApp`, the main Svelte component exported from `src/lib/index.ts`.
+- ArcGIS web map integration.
+- Area-of-interest selection tools.
+- Data treeviews for selecting layers, variables, and fields.
+- Export flow for combining selected areas and data.
+- Download queue/status UI.
+- UPRN chatbot panel.
+- IndexedDB-backed selection persistence.
+- Static app, map, API, and renderer config under `static/config/apps/uprn`.
 
-```sh
-# create a new project in the current directory
-npx sv create
+## External Dependencies
 
-# create a new project in my-app
-npx sv create my-app
+- DSH content site:
+  - `https://nerc-digital-solutions-hub.github.io/dsh-content/`
+  - Used for app introduction, settings, and remote content manifests.
+- DSH UPRN Download API configured in `static/config/apps/uprn/config.json`:
+  - Base URL: `https://dshapitest.xyz/uprn-download/api/v1`
+  - Health: `/healthz`
+  - Request job: `/request-job`
+  - Job statuses: `/request-job-statuses`
+  - Area selection limits: `/get-area-selection-limits`
+  - Fetch download: `/fetch-download`
+- DSH UPRN Chatbot API configured in `static/config/apps/uprn/config.json`:
+  - Base URL: `https://dshapitest.xyz/uprn-chatbot`
+  - Health: `/healthz`
+  - Chat: `/chat`
+  - Streaming chat: `/chat_stream`
+  - Feedback: `/feedbacks`
+- ArcGIS Enterprise portal:
+  - `https://nercdsh.dev.azure.manchester.ac.uk/portal`
+  - Used to load configured web maps and layers.
+- ArcGIS Maps SDK for JavaScript through `@arcgis/core` and `@arcgis/map-components`.
+- Browser IndexedDB, via `dexie`, for persisting selections and download state.
+
+## Configuration
+
+Primary app config lives in:
+
+```txt
+static/config/apps/uprn/config.json
 ```
 
-## Developing
+Supporting config is grouped under:
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+```txt
+static/config/apps/uprn/api
+static/config/apps/uprn/maps
+static/config/apps/uprn/maps/custom-renderers
 ```
 
-Everything inside `src/lib` is part of your library, everything inside `src/routes` can be used as a showcase or preview app.
+When running inside the hub, this config is copied into `hub/static/config/apps/uprn`.
 
-## Building
-
-To build your library:
+## Useful Commands
 
 ```sh
-npm pack
-```
-
-To create a production version of your showcase app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
-
-## Publishing
-
-Go into the `package.json` and give your package the desired name through the `"name"` option. Also consider adding a `"license"` field and point it to a `LICENSE` file which you can create from a template (one popular option is the [MIT license](https://opensource.org/license/mit/)).
-
-To publish your library to [npm](https://www.npmjs.com):
-
-```sh
-npm publish
+pnpm dev:uprn-service
+pnpm --filter @dsh/uprn-service package
+pnpm --filter @dsh/uprn-service build
+pnpm --filter @dsh/uprn-service lint
 ```
