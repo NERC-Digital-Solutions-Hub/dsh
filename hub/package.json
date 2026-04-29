@@ -3,8 +3,9 @@
 	"version": "0.0.1",
 	"packageManager": "pnpm@10.22.0",
 	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build && npm run prepack",
+		"dev": "pnpm --workspace-root run package:libs && pnpm --workspace-root run dev:watch",
+		"dev:workspace": "vite dev",
+		"build": "vite build && pnpm run prepack",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"prepack": "svelte-kit sync && svelte-package && publint",
