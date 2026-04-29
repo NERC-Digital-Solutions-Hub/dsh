@@ -778,15 +778,27 @@ importers:
 
   packages/uprn-service:
     dependencies:
+      '@arcgis/core':
+        specifier: ^4.33.13
+        version: 4.34.8
       '@dsh/common':
         specifier: workspace:*
         version: link:../common
+      '@internationalized/date':
+        specifier: ^3.10.0
+        version: 3.10.0
       '@keenmate/svelte-treeview':
         specifier: ^4.8.0
         version: 4.8.0(svelte@5.45.8)
-      '@tanstack/svelte-virtual':
-        specifier: ^3.13.23
-        version: 3.13.23(svelte@5.45.8)
+      '@lucide/svelte':
+        specifier: ^0.544.0
+        version: 0.544.0(svelte@5.45.8)
+      bits-ui:
+        specifier: ^2.14.4
+        version: 2.14.4(@internationalized/date@3.10.0)(@sveltejs/kit@2.49.2(@sveltejs/vite-plugin-svelte@6.2.1(svelte@5.45.8)(vite@7.2.7(@types/node@22.19.2)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.45.8)(vite@7.2.7(@types/node@22.19.2)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.45.8)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       dexie:
         specifier: ^4.2.1
         version: 4.2.1
@@ -799,24 +811,12 @@ importers:
       minisearch:
         specifier: ^7.2.0
         version: 7.2.0
-      rehype-autolink-headings:
-        specifier: ^7.1.0
-        version: 7.1.0
-      rehype-external-links:
-        specifier: ^3.0.0
-        version: 3.0.0
-      rehype-raw:
-        specifier: ^7.0.0
-        version: 7.0.0
-      rehype-slug:
-        specifier: ^6.0.0
-        version: 6.0.0
+      mode-watcher:
+        specifier: ^1.1.0
+        version: 1.1.0(svelte@5.45.8)
       rehype-stringify:
         specifier: ^10.0.1
         version: 10.0.1
-      remark-frontmatter:
-        specifier: ^5.0.0
-        version: 5.0.0
       remark-gfm:
         specifier: ^4.0.1
         version: 4.0.1
@@ -829,28 +829,25 @@ importers:
       svelte-lightbox:
         specifier: ^1.1.7
         version: 1.1.7(svelte@5.45.8)
+      svelte-sonner:
+        specifier: ^1.0.5
+        version: 1.0.7(svelte@5.45.8)
+      tailwind-merge:
+        specifier: ^3.4.0
+        version: 3.4.0
+      tailwind-variants:
+        specifier: ^3.2.2
+        version: 3.2.2(tailwind-merge@3.4.0)(tailwindcss@4.1.17)
       unified:
         specifier: ^11.0.5
         version: 11.0.5
-      unist-util-visit:
-        specifier: ^5.0.0
-        version: 5.0.0
     devDependencies:
-      '@arcgis/core':
-        specifier: ^4.33.13
-        version: 4.34.8
       '@eslint/compat':
         specifier: ^1.4.0
         version: 1.4.1(eslint@9.39.1(jiti@2.6.1))
       '@eslint/js':
         specifier: ^9.39.1
         version: 9.39.1
-      '@internationalized/date':
-        specifier: ^3.10.0
-        version: 3.10.0
-      '@lucide/svelte':
-        specifier: ^0.544.0
-        version: 0.544.0(svelte@5.45.8)
       '@sveltejs/adapter-auto':
         specifier: ^7.0.0
         version: 7.0.0(@sveltejs/kit@2.49.2(@sveltejs/vite-plugin-svelte@6.2.1(svelte@5.45.8)(vite@7.2.7(@types/node@22.19.2)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.45.8)(vite@7.2.7(@types/node@22.19.2)(jiti@2.6.1)(lightningcss@1.30.2)))
@@ -863,21 +860,12 @@ importers:
       '@sveltejs/vite-plugin-svelte':
         specifier: ^6.2.1
         version: 6.2.1(svelte@5.45.8)(vite@7.2.7(@types/node@22.19.2)(jiti@2.6.1)(lightningcss@1.30.2))
-      '@tailwindcss/typography':
-        specifier: ^0.5.19
-        version: 0.5.19(tailwindcss@4.1.17)
       '@tailwindcss/vite':
         specifier: ^4.1.17
         version: 4.1.17(vite@7.2.7(@types/node@22.19.2)(jiti@2.6.1)(lightningcss@1.30.2))
       '@types/node':
         specifier: ^22
         version: 22.19.2
-      bits-ui:
-        specifier: ^2.14.4
-        version: 2.14.4(@internationalized/date@3.10.0)(@sveltejs/kit@2.49.2(@sveltejs/vite-plugin-svelte@6.2.1(svelte@5.45.8)(vite@7.2.7(@types/node@22.19.2)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.45.8)(vite@7.2.7(@types/node@22.19.2)(jiti@2.6.1)(lightningcss@1.30.2)))(svelte@5.45.8)
-      clsx:
-        specifier: ^2.1.1
-        version: 2.1.1
       eslint:
         specifier: ^9.39.1
         version: 9.39.1(jiti@2.6.1)
@@ -893,9 +881,6 @@ importers:
       jsrepo:
         specifier: ^3.0.8
         version: 3.0.8(svelte@5.45.8)
-      mode-watcher:
-        specifier: ^1.1.0
-        version: 1.1.0(svelte@5.45.8)
       prettier:
         specifier: ^3.6.2
         version: 3.7.4
@@ -914,15 +899,6 @@ importers:
       svelte-check:
         specifier: ^4.3.4
         version: 4.3.4(picomatch@4.0.3)(svelte@5.45.8)(typescript@5.9.3)
-      svelte-sonner:
-        specifier: ^1.0.5
-        version: 1.0.7(svelte@5.45.8)
-      tailwind-merge:
-        specifier: ^3.4.0
-        version: 3.4.0
-      tailwind-variants:
-        specifier: ^3.2.2
-        version: 3.2.2(tailwind-merge@3.4.0)(tailwindcss@4.1.17)
       tailwindcss:
         specifier: ^4.1.17
         version: 4.1.17
