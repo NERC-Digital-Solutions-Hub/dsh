@@ -1,58 +1,43 @@
-# Svelte library
+# @dsh/ai-where-to-build
 
-Everything you need to build a Svelte library, powered by [`sv`](https://npmjs.com/package/sv).
+`@dsh/ai-where-to-build` is an ArcGIS-based planning and analysis app for identifying and assessing potential development sites. It combines an interactive map, layer controls, basemap controls, and analysis tools that can clip, merge, buffer, and query spatial layers.
 
-Read more about creating a library [in the docs](https://svelte.dev/docs/kit/packaging).
+The hub mounts this package at `/apps/ai-where-to-build`.
 
-## Creating a project
+## What It Provides
 
-If you're seeing this, you've probably already done this step. Congrats!
+- `AiWhereToBuildApp`, the main Svelte component exported from `src/lib/index.ts`.
+- Interactive ArcGIS map view.
+- Sidebar widgets for layers, basemaps, and analysis.
+- Spatial analysis tools under `src/lib/tools/map`.
+- Stores for map interaction and area selection state.
+- Static analysis settings under `static/config/apps/ai-where-to-build/config.json`.
 
-```sh
-# create a new project in the current directory
-npx sv create
+## External Dependencies
 
-# create a new project in my-app
-npx sv create my-app
+- ArcGIS Maps SDK for JavaScript through `@arcgis/core` and `@arcgis/map-components`.
+- ArcGIS REST packages for portal and feature-service interactions.
+- ArcGIS Online web map item referenced by the app map component:
+  - Item ID: `331ba640fe6c4fa5b4c3d025160c2ec5`
+- ArcGIS feature layers used by the map and analysis settings.
+
+This package does not currently define a bespoke DSH HTTP API endpoint in its static config. Most external data access is through ArcGIS web maps, layers, and feature queries.
+
+## Configuration
+
+Analysis settings live in:
+
+```txt
+static/config/apps/ai-where-to-build/config.json
 ```
 
-## Developing
+When running inside the hub, this config is copied into `hub/static/config/apps/ai-where-to-build/config.json`.
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-Everything inside `src/lib` is part of your library, everything inside `src/routes` can be used as a showcase or preview app.
-
-## Building
-
-To build your library:
+## Useful Commands
 
 ```sh
-npm pack
-```
-
-To create a production version of your showcase app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
-
-## Publishing
-
-Go into the `package.json` and give your package the desired name through the `"name"` option. Also consider adding a `"license"` field and point it to a `LICENSE` file which you can create from a template (one popular option is the [MIT license](https://opensource.org/license/mit/)).
-
-To publish your library to [npm](https://www.npmjs.com):
-
-```sh
-npm publish
+pnpm --filter @dsh/ai-where-to-build dev
+pnpm --filter @dsh/ai-where-to-build package
+pnpm --filter @dsh/ai-where-to-build build
+pnpm --filter @dsh/ai-where-to-build lint
 ```

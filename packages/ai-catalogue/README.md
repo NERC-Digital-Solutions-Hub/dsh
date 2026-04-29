@@ -1,58 +1,44 @@
-# Svelte library
+# @dsh/ai-catalogue
 
-Everything you need to build a Svelte library, powered by [`sv`](https://npmjs.com/package/sv).
+`@dsh/ai-catalogue` provides the AI-powered catalogue search experience for the Digital Solutions Hub. It lets users search catalogue metadata, filter results, choose resource archetypes, sort results, and inspect returned records.
 
-Read more about creating a library [in the docs](https://svelte.dev/docs/kit/packaging).
+The hub mounts this package at `/catalogues/ai`.
 
-## Creating a project
+## What It Provides
 
-If you're seeing this, you've probably already done this step. Congrats!
+- `AiCatalogue`, the main Svelte component exported from `src/lib/index.ts`.
+- Search UI for catalogue metadata.
+- Filters for time span, date range, resource type, format, and archetype.
+- Paginated result loading and result sorting.
+- Service-unavailable and query-error states for external API failures.
+- Static config under `static/config/catalogues/ai/api.json`.
 
-```sh
-# create a new project in the current directory
-npx sv create
+## External Dependencies
 
-# create a new project in my-app
-npx sv create my-app
+- DSH catalogue API configured in `static/config/catalogues/ai/api.json`:
+  - Base URL: `https://dshapitest.xyz/catalogue/api/v1`
+  - Archetypes: `/archetypes`
+  - Metadata query: `/metadata/query`
+  - Resource types: `/metadata/resource-types`
+  - Formats: `/metadata/formats`
+- `@dsh/common` for shared workspace utilities.
+- ArcGIS client libraries are present for map-related catalogue UI components and spatial result display.
+
+## Configuration
+
+The package reads its API base URL from:
+
+```txt
+static/config/catalogues/ai/api.json
 ```
 
-## Developing
+When running inside the hub, this config is copied into `hub/static/config/catalogues/ai/api.json` by the hub config sync script.
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-Everything inside `src/lib` is part of your library, everything inside `src/routes` can be used as a showcase or preview app.
-
-## Building
-
-To build your library:
+## Useful Commands
 
 ```sh
-npm pack
-```
-
-To create a production version of your showcase app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
-
-## Publishing
-
-Go into the `package.json` and give your package the desired name through the `"name"` option. Also consider adding a `"license"` field and point it to a `LICENSE` file which you can create from a template (one popular option is the [MIT license](https://opensource.org/license/mit/)).
-
-To publish your library to [npm](https://www.npmjs.com):
-
-```sh
-npm publish
+pnpm dev:ai-catalogue
+pnpm --filter @dsh/ai-catalogue package
+pnpm --filter @dsh/ai-catalogue build
+pnpm --filter @dsh/ai-catalogue lint
 ```

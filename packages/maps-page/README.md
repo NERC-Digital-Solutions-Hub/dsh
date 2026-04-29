@@ -1,58 +1,46 @@
-# Svelte library
+# @dsh/maps-page
 
-Everything you need to build a Svelte library, powered by [`sv`](https://npmjs.com/package/sv).
+`@dsh/maps-page` provides the general map explorer for the Digital Solutions Hub. It gives users an ArcGIS map with a layer list, command search, organisation selection, and commands for adding web maps or layers.
 
-Read more about creating a library [in the docs](https://svelte.dev/docs/kit/packaging).
+The hub mounts this package at `/maps`.
 
-## Creating a project
+## What It Provides
 
-If you're seeing this, you've probably already done this step. Congrats!
+- `MapsApp`, the main Svelte component exported from `src/lib/index.ts`.
+- Full-screen ArcGIS map view.
+- Sidebar layer list and legend support.
+- Command search for map actions.
+- Commands for selecting an organisation, adding layers, adding web maps, and clearing the map.
+- Static organisation and portal config under `static/config/maps/config.json`.
 
-```sh
-# create a new project in the current directory
-npx sv create
+## External Dependencies
 
-# create a new project in my-app
-npx sv create my-app
+- ArcGIS Maps SDK for JavaScript through `@arcgis/core` and `@arcgis/map-components`.
+- ArcGIS REST portal and feature-service packages.
+- Configured ArcGIS portals and search endpoints:
+  - ArcGIS Online: `https://www.arcgis.com`
+  - DSH Enterprise: `https://nercdsh.dev.azure.manchester.ac.uk/portal`
+  - DSH Enterprise sandbox: `https://base.sandbox.digital-solutions.uk/portal`
+  - Organisation-specific ArcGIS search endpoints for UoM AGOL, DSH AGOL, Natural England, and the Met Office.
+- ArcGIS map, feature, tile, and vector tile services returned by those portal searches.
+
+## Configuration
+
+Map organisation config lives in:
+
+```txt
+static/config/maps/config.json
 ```
 
-## Developing
+When running inside the hub, this config is copied into `hub/static/config/maps/config.json`.
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+The package also contains `static/api/maps/*.json` files, which are cached or sample ArcGIS search responses used as local reference data.
 
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-Everything inside `src/lib` is part of your library, everything inside `src/routes` can be used as a showcase or preview app.
-
-## Building
-
-To build your library:
+## Useful Commands
 
 ```sh
-npm pack
-```
-
-To create a production version of your showcase app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
-
-## Publishing
-
-Go into the `package.json` and give your package the desired name through the `"name"` option. Also consider adding a `"license"` field and point it to a `LICENSE` file which you can create from a template (one popular option is the [MIT license](https://opensource.org/license/mit/)).
-
-To publish your library to [npm](https://www.npmjs.com):
-
-```sh
-npm publish
+pnpm --filter @dsh/maps-page dev
+pnpm --filter @dsh/maps-page package
+pnpm --filter @dsh/maps-page build
+pnpm --filter @dsh/maps-page lint
 ```
