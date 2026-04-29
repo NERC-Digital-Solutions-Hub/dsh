@@ -1017,7 +1017,7 @@
 
 					<SidebarLayout.Content>
 						<UprnTabBarContent value={TabType.AreaOfInterest}>
-							{#if loadAreaTreeview}
+							{#if currentTab === TabType.AreaOfInterest && loadAreaTreeview}
 								<AreaSelectionTreeview
 									treeviewStore={areaTreeviewStore!}
 									nodeConfigProvider={treeviewConfigStore!}
@@ -1028,7 +1028,7 @@
 						</UprnTabBarContent>
 
 						<UprnTabBarContent value={TabType.Data}>
-							{#if loadDataTreeview}
+							{#if currentTab === TabType.Data && loadDataTreeview}
 								<DataSelectionTreeview
 									treeviewStore={dataTreeviewStore!}
 									nodeConfigProvider={treeviewConfigStore!}
