@@ -18,11 +18,29 @@
 	let isOpened = $state<boolean>(false);
 	let isMaximised = $state<boolean>(false);
 	let canAnimate = $state<boolean>(false);
+	let cardElement = $state<HTMLDivElement | null>(null);
+	let headerElement = $state<HTMLDivElement | null>(null);
 
-	const collapsedHeight = '45px';
+	const initialCollapsedHeight = '45px';
+	let collapsedHeight = $state(initialCollapsedHeight);
 	const normalHeight = '300px';
 	let lastExpandedHeight = normalHeight;
-	let currentHeight = $state<string>(collapsedHeight);
+	let currentHeight = $state<string>(initialCollapsedHeight);
+
+	function measureCollapsedHeight() {
+		if (!cardElement || !headerElement) return;
+
+		const cardTop = cardElement.getBoundingClientRect().top;
+		const headerBottom = headerElement.getBoundingClientRect().bottom;
+		const nextCollapsedHeight = `${Math.ceil(headerBottom - cardTop)}px`;
+
+		if (collapsedHeight === nextCollapsedHeight) return;
+
+		collapsedHeight = nextCollapsedHeight;
+		if (!isOpened) {
+			currentHeight = nextCollapsedHeight;
+		}
+	}
 
 	$effect(() => {
 		if (isInitialised) return;
@@ -36,6 +54,21 @@
 		requestAnimationFrame(() => {
 			canAnimate = true;
 		});
+	});
+
+	$effect(() => {
+		if (!cardElement || !headerElement) return;
+
+		isOpened;
+
+		requestAnimationFrame(measureCollapsedHeight);
+
+		const resizeObserver = new ResizeObserver(measureCollapsedHeight);
+		resizeObserver.observe(headerElement);
+
+		return () => {
+			resizeObserver.disconnect();
+		};
 	});
 
 	function onToggleCollapse() {
@@ -66,9 +99,10 @@
 		: ''}"
 >
 	<Card.Root
+		bind:ref={cardElement}
 		class="h-full w-full rounded-tl-md rounded-tr-md rounded-br-none rounded-bl-none gap-0 py-0 pt-0 pb-0 border-0 border-t border-t-border"
 	>
-		<Card.Header class="pt-2">
+		<Card.Header bind:ref={headerElement} class="pt-2">
 			<div class="flex w-full items-center justify-between">
 				<div class="font-medium">Chat</div>
 				<div class="flex gap-1">
@@ -80,7 +114,7 @@
 										<Button
 											{...tooltipProps}
 											type="button"
-											class="size-6 border bg-background hover:bg-accent focus-visible:border-ring"
+											class="size-7 border shadow-none bg-background hover:bg-accent focus-visible:border-ring"
 											onclick={onToggleMaximise}
 											aria-label={isMaximised ? 'Compact view' : 'Expand view'}
 										>
@@ -106,7 +140,7 @@
 									<Button
 										{...tooltipProps}
 										type="button"
-										class="size-6 border bg-background hover:bg-accent focus-visible:border-ring"
+										class="size-7 border shadow-none bg-background hover:bg-accent focus-visible:border-ring"
 										onclick={onToggleCollapse}
 										aria-label={isOpened ? 'Hide panel' : 'Open panel'}
 										aria-expanded={isOpened}

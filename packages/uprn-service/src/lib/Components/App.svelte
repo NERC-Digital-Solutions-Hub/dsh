@@ -1101,7 +1101,7 @@
 				</Tabs.Root>
 			</Card.Root>
 
-			<CollapsibleWindow isOpenedOnInit={true} class="mt-0 shadow-none">
+			<CollapsibleWindow isOpenedOnInit={true} class="shadow-none">
 				{#if !aiUprnChatbotHealth || aiUprnChatbotHealth.isLoading}
 					<div class="flex h-full w-full items-center justify-center">
 						<Spinner class="w-10 h-10" />
