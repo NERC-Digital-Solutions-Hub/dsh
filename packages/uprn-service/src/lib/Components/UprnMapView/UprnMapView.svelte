@@ -9,9 +9,13 @@
 	import { TabType } from '$lib/Types/Uprn.types';
 
 	import type MapView from '@arcgis/core/views/MapView';
-	import type SearchWidget from '@arcgis/core/widgets/Search';
-	import type Legend from '@arcgis/core/widgets/Legend';
-	import type Expand from '@arcgis/core/widgets/Expand';
+	import type { ArcgisExpand } from '@arcgis/map-components/components/arcgis-expand';
+	import type { ArcgisLegend } from '@arcgis/map-components/components/arcgis-legend';
+	import type { ArcgisSearch } from '@arcgis/map-components/components/arcgis-search';
+
+	type ArcgisExpandElement = HTMLElement & ArcgisExpand;
+	type ArcgisLegendElement = HTMLElement & ArcgisLegend;
+	type ArcgisSearchElement = HTMLElement & ArcgisSearch;
 
 	/**
 	 * Props accepted by the map view component.
@@ -60,9 +64,9 @@
 	let mapContainer: HTMLDivElement | null = null;
 
 	let mapInteractionStore: MapInteractionStore | null = null;
-	let searchWidget: SearchWidget | null = null;
-	let legendWidget: Legend | null = null;
-	let legendExpand: Expand | null = null;
+	let searchComponent: ArcgisSearchElement | null = null;
+	let legendComponent: ArcgisLegendElement | null = null;
+	let legendExpandComponent: ArcgisExpandElement | null = null;
 	let mapLoadingHandle: __esri.WatchHandle | null = null;
 
 	let searchRowEl: HTMLDivElement | null = null;
@@ -138,8 +142,8 @@
 			configureMapView();
 			await setupMapLoadingWatcher();
 
-			await ensureSearchWidget();
-			await ensureLegendWidget();
+			await ensureSearchComponent();
+			await ensureLegendComponent();
 			await areaSelectionInteractionStore.refreshLayerView();
 			await areaSelectionInteractionStore.refreshAreas();
 
@@ -169,17 +173,19 @@
 	}
 
 	/**
-	 * Creates and adds the search widget once, placing it to the right of a spinner slot
+	 * Creates and adds the search component once, placing it to the right of a spinner slot
 	 * inside a shared flex-row container added to the ArcGIS top-right UI.
 	 */
-	async function ensureSearchWidget(): Promise<void> {
-		if (searchWidget) {
+	async function ensureSearchComponent(): Promise<void> {
+		if (searchComponent) {
+			searchComponent.view = mapView;
 			return;
 		}
 
-		const [{ default: Search }, { default: LocatorSearchSource }] = await Promise.all([
-			import('@arcgis/core/widgets/Search'),
-			import('@arcgis/core/widgets/Search/LocatorSearchSource.js')
+		const [{ default: LocatorSearchSource }, { default: Collection }] = await Promise.all([
+			import('@arcgis/core/widgets/Search/LocatorSearchSource.js'),
+			import('@arcgis/core/core/Collection.js'),
+			import('@arcgis/map-components/components/arcgis-search')
 		]);
 
 		const ukSource = new LocatorSearchSource({
@@ -187,6 +193,9 @@
 			countryCode: SEARCH_COUNTRY_CODE,
 			placeholder: SEARCH_PLACEHOLDER
 		});
+
+		const sources = new Collection<__esri.LayerSearchSource | __esri.LocatorSearchSource>();
+		sources.add(ukSource);
 
 		// Flex row container that holds [spinner | search]
 		searchRowEl = document.createElement('div');
@@ -199,42 +208,50 @@
 		spinnerInstance = mount(Spinner, { target: spinnerSlotEl, props: { class: 'size-5' } });
 		searchRowEl.appendChild(spinnerSlotEl);
 
-		// Search widget container
+		// Search component container
 		const searchContainerEl = document.createElement('div');
 		searchRowEl.appendChild(searchContainerEl);
 
-		searchWidget = new Search({
-			view: mapView,
-			container: searchContainerEl,
-			popupEnabled: false,
-			includeDefaultSources: false,
-			sources: [ukSource]
-		});
+		searchComponent = document.createElement('arcgis-search') as ArcgisSearchElement;
+		searchComponent.view = mapView;
+		searchComponent.popupDisabled = true;
+		searchComponent.includeDefaultSourcesDisabled = true;
+		searchComponent.allPlaceholder = SEARCH_PLACEHOLDER;
+		searchComponent.sources = sources;
+		searchContainerEl.appendChild(searchComponent);
 
 		mapView.ui.add(searchRowEl, 'top-right');
 	}
 
 	/**
-	 * Creates and adds the legend widget once.
+	 * Creates and adds the legend component once.
 	 */
-	async function ensureLegendWidget(): Promise<void> {
-		if (legendWidget || legendExpand) {
+	async function ensureLegendComponent(): Promise<void> {
+		if (legendComponent || legendExpandComponent) {
+			if (legendComponent) {
+				legendComponent.view = mapView;
+			}
+			if (legendExpandComponent) {
+				legendExpandComponent.view = mapView;
+			}
 			return;
 		}
 
-		const [{ default: Legend }, { default: Expand }] = await Promise.all([
-			import('@arcgis/core/widgets/Legend'),
-			import('@arcgis/core/widgets/Expand')
+		await Promise.all([
+			import('@arcgis/map-components/components/arcgis-legend'),
+			import('@arcgis/map-components/components/arcgis-expand')
 		]);
 
-		legendWidget = new Legend({ view: mapView });
-		legendExpand = new Expand({
-			view: mapView,
-			content: legendWidget,
-			expandTooltip: 'Legend'
-		});
+		legendComponent = document.createElement('arcgis-legend') as ArcgisLegendElement;
+		legendComponent.view = mapView;
 
-		mapView.ui.add(legendExpand, 'top-right');
+		legendExpandComponent = document.createElement('arcgis-expand') as ArcgisExpandElement;
+		legendExpandComponent.view = mapView;
+		legendExpandComponent.label = 'Legend';
+		legendExpandComponent.expandTooltip = 'Legend';
+		legendExpandComponent.appendChild(legendComponent);
+
+		mapView.ui.add(legendExpandComponent, 'top-right');
 	}
 
 	/**
@@ -595,9 +612,9 @@
 			spinnerInstance = null;
 		}
 
-		if (searchWidget) {
-			searchWidget.destroy();
-			searchWidget = null;
+		if (searchComponent) {
+			void searchComponent.destroy();
+			searchComponent = null;
 		}
 
 		if (searchRowEl) {
@@ -606,15 +623,15 @@
 			spinnerSlotEl = null;
 		}
 
-		if (legendExpand) {
-			mapView.ui.remove(legendExpand);
-			legendExpand.destroy();
-			legendExpand = null;
+		if (legendExpandComponent) {
+			mapView.ui.remove(legendExpandComponent);
+			void legendExpandComponent.destroy();
+			legendExpandComponent = null;
 		}
 
-		if (legendWidget) {
-			legendWidget.destroy();
-			legendWidget = null;
+		if (legendComponent) {
+			void legendComponent.destroy();
+			legendComponent = null;
 		}
 
 		cleanupMapLoadingWatcher();

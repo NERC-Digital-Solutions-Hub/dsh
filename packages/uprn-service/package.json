@@ -36,6 +36,7 @@
 	},
 	"dependencies": {
 		"@arcgis/core": "^4.33.13",
+		"@arcgis/map-components": "^4.34.9",
 		"@dsh/common": "workspace:*",
 		"@internationalized/date": "^3.10.0",
 		"@keenmate/svelte-treeview": "^4.8.0",
