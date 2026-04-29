@@ -1,7 +1,20 @@
 <script lang="ts">
 	import { base } from '$app/paths';
+	import navItems from '$lib/components/nav.json';
 	import * as NavigationMenu from '$lib/components/shadcn/navigation-menu/index.js';
 	import { navigationMenuTriggerStyle } from '$lib/components/shadcn/navigation-menu/navigation-menu-trigger.svelte';
+	import type { NavItem } from '$lib/types/nav.types';
+
+	const navigation = navItems as NavItem[];
+	const absoluteUrlPattern = /^[a-z][a-z\d+\-.]*:/i;
+
+	const resolveHref = (href: string) => {
+		if (absoluteUrlPattern.test(href) || href.startsWith('#')) {
+			return href;
+		}
+
+		return `${base}${href.startsWith('/') ? href : `/${href}`}`;
+	};
 </script>
 
 <nav>
@@ -15,140 +28,41 @@
 	</a>
 	<NavigationMenu.Root class="menu-item-container z-20">
 		<NavigationMenu.List>
-			<NavigationMenu.Item openOnHover={false}>
-				<NavigationMenu.Trigger>Catalogues</NavigationMenu.Trigger>
-				<NavigationMenu.Content>
-					<ul class="apps-menu-dropdown grid w-[300px] gap-4 p-2">
-						<li>
-							<NavigationMenu.Link
-								class="apps-menu-link"
-								href="https://nercdsh.dev.azure.manchester.ac.uk/portal/apps/sites/#/dsh-catalogue/search"
-								title="Explore our data using a traditional approach to search."
-							>
-								<div class="font-medium">DSH Catalogue</div>
-								<div class="apps-menu-description text-muted-foreground">
-									Explore our data using a traditional approach to search.
-								</div>
-							</NavigationMenu.Link>
-							<!-- <NavigationMenu.Link
-								class="apps-menu-link"
-								href="https://ndsh-uomanchester.hub.arcgis.com/search"
-								title="Explore our data using a traditional approach to search."
-							>
-								<div class="font-medium">DSH Catalogue (ArcGIS Online)</div>
-								<div class="apps-menu-description text-muted-foreground">
-									Explore our data using a traditional approach to search.
-								</div>
-							</NavigationMenu.Link> -->
-							<NavigationMenu.Link
-								class="apps-menu-link"
-								href={`${base}/catalogues/ai`}
-								title="Explore our data using AI-powered search and discovery tools."
-							>
-								<div class="font-medium">AI Catalogue</div>
-								<div class="apps-menu-description text-muted-foreground">
-									Explore our data using AI-powered search and discovery tools.
-								</div>
-							</NavigationMenu.Link>
-						</li>
-					</ul>
-				</NavigationMenu.Content>
-			</NavigationMenu.Item>
-			<NavigationMenu.Item openOnHover={false}>
-				<NavigationMenu.Trigger>Apps</NavigationMenu.Trigger>
-				<NavigationMenu.Content>
-					<ul class="apps-menu-dropdown grid w-[300px] gap-4 p-2">
-						<li>
-							<NavigationMenu.Link
-								class="apps-menu-link"
-								href={`${base}/apps/uprn`}
-								title="Explore Unique Property Reference Numbers (UPRNs) on an interactive map."
-							>
-								<div class="font-medium">UPRN</div>
-								<div class="apps-menu-description text-muted-foreground">
-									Explore Unique Property Reference Numbers (UPRNs) on an interactive map.
-								</div>
-							</NavigationMenu.Link>
-							<NavigationMenu.Link
-								class="apps-menu-link"
-								href={`${base}/apps/climate-just`}
-								title="Discover who is vulnerable to climate change and fuel-poverty and why."
-							>
-								<div class="font-medium">ClimateJust</div>
-								<div class="apps-menu-description text-muted-foreground">
-									Discover who is vulnerable to climate change and fuel-poverty and why.
-								</div>
-							</NavigationMenu.Link>
-							<NavigationMenu.Link
-								class="apps-menu-link"
-								href={`${base}/apps/health-and-environment`}
-								title="Explore the spatial relationships between a broad set of environmental and health data along with the ability to add your own data for your own use."
-							>
-								<div class="font-medium">Health and Environment</div>
-								<div class="apps-menu-description text-muted-foreground">
-									Explore the spatial relationships between a broad set of environmental and health
-									data along with the ability to add your own data for your own use.
-								</div>
-							</NavigationMenu.Link>
-							<NavigationMenu.Link
-								class="apps-menu-link"
-								href={`${base}/apps/where-to-build`}
-								title="Identify potential sites for housing and undertake a site analysis based on your choices."
-							>
-								<div class="font-medium">Where to Build</div>
-								<div class="apps-menu-description text-muted-foreground">
-									Identify potential sites for housing and undertake a site analysis based on your
-									choices.
-								</div>
-							</NavigationMenu.Link>
-							<NavigationMenu.Link
-								class="apps-menu-link"
-								href={`${base}/apps/ai-where-to-build`}
-								title="Identify potential sites for housing and undertake a site analysis based on your choices - AI powered."
-							>
-								<div class="font-medium">Where to Build (AI)</div>
-								<div class="apps-menu-description text-muted-foreground">
-									Identify potential sites for housing and undertake a site analysis based on your
-									choices - AI powered.
-								</div>
-							</NavigationMenu.Link>
-							<NavigationMenu.Link
-								class="apps-menu-link"
-								href={`${base}/apps`}
-								title="View all apps."
-							>
-								<div class="font-medium">View All...</div>
-							</NavigationMenu.Link>
-						</li>
-					</ul>
-				</NavigationMenu.Content>
-			</NavigationMenu.Item>
-			<NavigationMenu.Item openOnHover={false}>
-				<NavigationMenu.Trigger>Realtime</NavigationMenu.Trigger>
-				<NavigationMenu.Content>
-					<ul class="grid w-[300px] gap-4 p-2">
-						<li>
-							<NavigationMenu.Link href={`${base}/realtime/urban-observatory`}>
-								<div class="font-medium">NERC Urban Observatory</div>
-							</NavigationMenu.Link>
-						</li>
-					</ul>
-				</NavigationMenu.Content>
-			</NavigationMenu.Item>
-			<NavigationMenu.Item openOnHover={false}>
-				<NavigationMenu.Link>
-					{#snippet child()}
-						<a href={`${base}/maps`} class={navigationMenuTriggerStyle()}>Maps</a>
-					{/snippet}
-				</NavigationMenu.Link>
-			</NavigationMenu.Item>
-			<NavigationMenu.Item openOnHover={false}>
-				<NavigationMenu.Link>
-					{#snippet child()}
-						<a href={`${base}/research`} class={navigationMenuTriggerStyle()}>Research</a>
-					{/snippet}
-				</NavigationMenu.Link>
-			</NavigationMenu.Item>
+			{#each navigation as item}
+				<NavigationMenu.Item openOnHover={false}>
+					{#if item.type === 'folder'}
+						<NavigationMenu.Trigger>{item.name}</NavigationMenu.Trigger>
+						<NavigationMenu.Content>
+							<ul class="apps-menu-dropdown grid w-[300px] gap-4 p-2">
+								<li>
+									{#each item.children as child}
+										<NavigationMenu.Link
+											class="apps-menu-link"
+											href={resolveHref(child.href)}
+											title={child.info ?? child.name}
+										>
+											<div class="font-medium">{child.name}</div>
+											{#if child.info}
+												<div class="apps-menu-description text-muted-foreground">
+													{child.info}
+												</div>
+											{/if}
+										</NavigationMenu.Link>
+									{/each}
+								</li>
+							</ul>
+						</NavigationMenu.Content>
+					{:else}
+						<NavigationMenu.Link>
+							{#snippet child()}
+								<a href={resolveHref(item.href)} class={navigationMenuTriggerStyle()}>
+									{item.name}
+								</a>
+							{/snippet}
+						</NavigationMenu.Link>
+					{/if}
+				</NavigationMenu.Item>
+			{/each}
 		</NavigationMenu.List>
 	</NavigationMenu.Root>
 </nav>
