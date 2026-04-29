@@ -130,6 +130,7 @@
 		gap: 0.25rem;
 		padding: 0.125rem;
 		max-width: 100%;
+		padding-right: 0.5rem;
 	}
 
 	:global(.tab-list) {
@@ -190,11 +191,6 @@
 		opacity: 1;
 		flex-shrink: 0;
 		width: 0.875rem;
-	}
-
-	.action-separator {
-		margin-left: 0.125rem;
-		margin-right: 0.125rem;
 	}
 
 	.tab-actions {
