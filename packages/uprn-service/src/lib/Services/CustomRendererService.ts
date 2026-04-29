@@ -23,8 +23,73 @@ type RendererLodSize = {
 	size: number;
 };
 
-const defaultClassBreakCount = 5;
-const defaultClassBreakColors = ['#d9f0a3', '#78c679', '#31a354', '#756bb1', '#54278f'];
+type DefaultClassBreak = {
+	minValue: number | null;
+	maxValue: number | null;
+	classLabel: string;
+	symbolColor: string;
+	outlineWidth: number;
+	outlineColor: string;
+};
+
+const defaultClassBreaks: DefaultClassBreak[] = [
+	{
+		minValue: 3,
+		maxValue: null,
+		classLabel: 'Acute',
+		symbolColor: '#704489',
+		outlineWidth: 0.7,
+		outlineColor: '#3A2448'
+	},
+	{
+		minValue: 2,
+		maxValue: 3,
+		classLabel: 'High',
+		symbolColor: '#AA66CD',
+		outlineWidth: 0.7,
+		outlineColor: '#3A2448'
+	},
+	{
+		minValue: 1,
+		maxValue: 2,
+		classLabel: 'Relative high',
+		symbolColor: '#C29ED7',
+		outlineWidth: 0.7,
+		outlineColor: '#704489'
+	},
+	{
+		minValue: -1,
+		maxValue: 1,
+		classLabel: 'Average',
+		symbolColor: '#FFEBAF',
+		outlineWidth: 0.7,
+		outlineColor: '#704489'
+	},
+	{
+		minValue: -2,
+		maxValue: -1,
+		classLabel: 'Relative low',
+		symbolColor: '#FAAA00',
+		outlineWidth: 0.7,
+		outlineColor: '#704489'
+	},
+	{
+		minValue: -3,
+		maxValue: -2,
+		classLabel: 'Low',
+		symbolColor: '#FF5500',
+		outlineWidth: 0.7,
+		outlineColor: '#704489'
+	},
+	{
+		minValue: null,
+		maxValue: -3,
+		classLabel: 'Slight',
+		symbolColor: '#E60000',
+		outlineWidth: 0.7,
+		outlineColor: '#704489'
+	}
+];
 const defaultClassBreakFallbackColor = '#9b9b9b';
 const defaultClassBreakFallbackLabel = 'No data';
 const defaultClassBreakOutlineLods: RendererLodSize[] = [
@@ -428,29 +493,31 @@ export class CustomRendererService {
 		});
 
 		if (range.min === range.max) {
+			const classBreak = this.#getDefaultClassBreakForValue(range.min);
 			renderer.addClassBreakInfo({
 				minValue: range.min,
 				maxValue: range.max,
-				label: this.#formatClassBreakLabel(range.min),
+				label: classBreak.classLabel,
 				symbol: this.#createDefaultClassBreakSymbol(
-					defaultClassBreakColors[defaultClassBreakColors.length - 1]
+					classBreak.symbolColor,
+					classBreak.outlineColor,
+					classBreak.outlineWidth
 				)
 			});
 			this.#setVisualVariables(renderer, this.#createLodSizes(defaultClassBreakOutlineLods));
 			return renderer;
 		}
 
-		const interval = (range.max - range.min) / defaultClassBreakCount;
-		for (let i = 0; i < defaultClassBreakCount; i++) {
-			const minValue = i === 0 ? range.min : range.min + interval * i;
-			const maxValue =
-				i === defaultClassBreakCount - 1 ? range.max : range.min + interval * (i + 1);
-
+		for (const classBreak of defaultClassBreaks) {
 			renderer.addClassBreakInfo({
-				minValue,
-				maxValue,
-				label: `${this.#formatClassBreakLabel(minValue)} – ${this.#formatClassBreakLabel(maxValue)}`,
-				symbol: this.#createDefaultClassBreakSymbol(defaultClassBreakColors[i])
+				minValue: this.#getDefaultClassBreakMinValue(classBreak, range),
+				maxValue: this.#getDefaultClassBreakMaxValue(classBreak, range),
+				label: classBreak.classLabel,
+				symbol: this.#createDefaultClassBreakSymbol(
+					classBreak.symbolColor,
+					classBreak.outlineColor,
+					classBreak.outlineWidth
+				)
 			});
 		}
 
@@ -459,18 +526,43 @@ export class CustomRendererService {
 		return renderer;
 	}
 
-	#createDefaultClassBreakSymbol(color: string): SimpleFillSymbol {
+	#createDefaultClassBreakSymbol(
+		color: string,
+		outlineColor: string = '#475569',
+		outlineWidth: number = 0.5
+	): SimpleFillSymbol {
 		return new SimpleFillSymbol({
 			color: Color.fromHex(color)!,
 			outline: new SimpleLineSymbol({
-				color: Color.fromHex('#475569')!,
-				width: 0.5
+				color: Color.fromHex(outlineColor)!,
+				width: outlineWidth
 			})
 		});
 	}
 
-	#formatClassBreakLabel(value: number): string {
-		return Number(value.toFixed(3)).toString();
+	#getDefaultClassBreakMinValue(
+		classBreak: DefaultClassBreak,
+		range: { min: number; max: number }
+	): number {
+		return classBreak.minValue ?? Math.min(range.min, classBreak.maxValue!);
+	}
+
+	#getDefaultClassBreakMaxValue(
+		classBreak: DefaultClassBreak,
+		range: { min: number; max: number }
+	): number {
+		return classBreak.maxValue ?? Math.max(range.max, classBreak.minValue!);
+	}
+
+	#getDefaultClassBreakForValue(value: number): DefaultClassBreak {
+		return (
+			defaultClassBreaks.find((classBreak) => {
+				const minValue = classBreak.minValue ?? Number.NEGATIVE_INFINITY;
+				const maxValue = classBreak.maxValue ?? Number.POSITIVE_INFINITY;
+
+				return value >= minValue && value <= maxValue;
+			}) ?? defaultClassBreaks[defaultClassBreaks.length - 1]
+		);
 	}
 
 	#toFiniteNumber(value: unknown): number | null {
