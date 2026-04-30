@@ -116,7 +116,7 @@
 					name: node.name,
 					order: index,
 					nodeRef: node,
-					isExpanded: config?.isOpenOnInit ?? false,
+					isExpanded: treeviewStore.getExpansionState(node.id, config?.isOpenOnInit ?? false),
 					guideLines
 				});
 
@@ -150,6 +150,11 @@
 		}
 	}
 
+	function handleNodeExpansionChanged(treeNode: LTreeNode<FlatTreeNode>, isExpanded: boolean) {
+		if (!treeNode.data) return;
+		treeviewStore.setExpansionState(treeNode.data.nodeId, isExpanded);
+	}
+
 	function isDatasetNode(node: TreeviewNode): node is DatasetTreeviewNode {
 		return node.type === TreeviewNodeType.Dataset;
 	}
@@ -164,6 +169,7 @@
 	searchBar={{ enabled: false }}
 	virtualScroll={{ enabled: true, overscan: 5 }}
 	onNodeClicked={handleNodeClicked}
+	onNodeExpansionChanged={handleNodeExpansionChanged}
 	rowPadding="1rem"
 >
 	{#snippet toolbarEnd()}
@@ -172,7 +178,7 @@
 		</p>
 	{/snippet}
 
-	{#snippet nodeContent(treeNode: LTreeNode)}
+	{#snippet nodeContent(treeNode: LTreeNode<FlatTreeNode>)}
 		{@const nodeRef = treeNode.data!.nodeRef}
 		{@const config = nodeConfigProvider.getConfig(nodeRef.id)}
 		{@const isEnabled = config?.isEnabled ?? false}

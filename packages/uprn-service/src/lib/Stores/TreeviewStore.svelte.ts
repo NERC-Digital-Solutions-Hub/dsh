@@ -61,6 +61,9 @@ export class TreeviewStore
 		return map;
 	});
 
+	/** Map of node IDs to their current expanded/open state in the treeview. */
+	#expansionStates: SvelteMap<string, boolean> = new SvelteMap<string, boolean>();
+
 	constructor(
 		treeviewType: TreeviewType,
 		nodeProvider: INodeProvider,
@@ -165,6 +168,19 @@ export class TreeviewStore
 		this.#nodeVisibilityController.setVisibilityState(node, isVisible);
 	}
 
+	public getExpansionState(nodeId: string, defaultState = false): boolean {
+		return this.#expansionStates.get(nodeId) ?? defaultState;
+	}
+
+	public setExpansionState(nodeId: string, isExpanded: boolean): void {
+		if (!this.#nodeProvider.getTreeviewNode(nodeId)) {
+			console.warn(`Node not found for ID ${nodeId} while setting expansion state`);
+			return;
+		}
+
+		this.#expansionStates.set(nodeId, isExpanded);
+	}
+
 	public getNodeDrawState(nodeId: string): NodeDrawState {
 		const directState = this.#drawStates.get(nodeId);
 		if (directState !== undefined) {
@@ -194,6 +210,7 @@ export class TreeviewStore
 	public reset(): void {
 		this.#visibilityStates.clear();
 		this.#drawStates.clear();
+		this.#expansionStates.clear();
 		this.#nodeSelectionController.reset();
 		this.#nodeVisibilityController.reset();
 	}

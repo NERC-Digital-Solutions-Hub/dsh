@@ -63,6 +63,8 @@
 		expandLevel?: number;
 		/** Called when a tree node is clicked. */
 		onNodeClicked?: (node: LTreeNode<T>) => void;
+		/** Called when a tree node is expanded or collapsed. */
+		onNodeExpansionChanged?: (node: LTreeNode<T>, isExpanded: boolean) => void;
 		/** Snippet for rendering each node row. Receives the LTreeNode and guide line info. */
 		nodeContent: Snippet<[LTreeNode<T>]>;
 		/** Optional snippet for the toolbar area next to the search bar. */
@@ -81,6 +83,7 @@
 		shouldToggleOnNodeClick = true,
 		expandLevel = 0,
 		onNodeClicked,
+		onNodeExpansionChanged,
 		nodeContent,
 		toolbarEnd,
 		class: className = '',
@@ -133,6 +136,7 @@
 					next.add(nodeId);
 				}
 				expandedSet = next;
+				onNodeExpansionChanged?.(node, next.has(nodeId));
 			}
 		}
 		onNodeClicked?.(node);
@@ -269,7 +273,7 @@
 			{expandLevel}
 			onNodeClicked={handleNodeClicked}
 		>
-			{#snippet nodeTemplate(treeNode: LTreeNode)}
+			{#snippet nodeTemplate(treeNode: LTreeNode<T>)}
 				{@const guideLines = treeNode.data!.guideLines}
 				{@const indentLevel = guideLines.length}
 				<div class="node-row" style="padding-inline: {rowPadding};">
@@ -285,7 +289,7 @@
 						class="node-indent-wrap"
 						style="margin-left: calc({indentLevel} * var(--tree-step, 1.5rem));"
 					>
-						{@render nodeContent(treeNode as LTreeNode)}
+						{@render nodeContent(treeNode as LTreeNode<T>)}
 					</div>
 				</div>
 			{/snippet}
