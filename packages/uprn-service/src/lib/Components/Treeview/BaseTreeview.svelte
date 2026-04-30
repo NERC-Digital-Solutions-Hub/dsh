@@ -110,6 +110,17 @@
 
 	/** Measured height for the virtual scroll container. */
 	let treeHeight = $state(300);
+	let hasVerticalScrollbar = $state(false);
+	let verticalScrollbarWidth = $state(0);
+	let scheduleLayoutMeasure: (() => void) | null = null;
+
+	$effect(() => {
+		data;
+		expandedSet;
+		searchText;
+		treeHeight;
+		scheduleLayoutMeasure?.();
+	});
 
 	function handleNodeClicked(node: LTreeNode<T>): void {
 		if (node.hasChildren) {
@@ -132,6 +143,8 @@
 	 * scroll-area-viewport or card-content ancestor.
 	 */
 	function fitToScrollViewport(el: HTMLElement) {
+		let animationFrame = 0;
+
 		function findViewport(node: HTMLElement | null): HTMLElement | null {
 			while (node) {
 				const slot = node.getAttribute('data-slot');
@@ -143,29 +156,61 @@
 
 		function measure() {
 			const viewport = findViewport(el.parentElement);
-			if (!viewport) return;
 			const treeWrapper = el.querySelector<HTMLElement>('.tree-wrapper');
-			if (!treeWrapper) return;
-			const viewportBottom = viewport.getBoundingClientRect().bottom;
-			const treeTop = treeWrapper.getBoundingClientRect().top;
-			treeHeight = Math.max(100, viewportBottom - treeTop);
+			if (viewport && treeWrapper) {
+				const viewportBottom = viewport.getBoundingClientRect().bottom;
+				const treeTop = treeWrapper.getBoundingClientRect().top;
+				treeHeight = Math.max(100, viewportBottom - treeTop);
+			}
+
+			const scrollContainer = el.querySelector<HTMLElement>('.ltree-virtual-scroll');
+			if (!scrollContainer) {
+				hasVerticalScrollbar = false;
+				verticalScrollbarWidth = 0;
+				return;
+			}
+
+			const isOverflowing = scrollContainer.scrollHeight > scrollContainer.clientHeight + 1;
+			const scrollbarWidth = scrollContainer.offsetWidth - scrollContainer.clientWidth;
+			hasVerticalScrollbar = isOverflowing && scrollbarWidth > 0;
+			verticalScrollbarWidth = hasVerticalScrollbar ? scrollbarWidth : 0;
+		}
+
+		function scheduleMeasure() {
+			cancelAnimationFrame(animationFrame);
+			animationFrame = requestAnimationFrame(measure);
 		}
 
 		const viewport = findViewport(el.parentElement);
-		const ro = new ResizeObserver(measure);
-		if (viewport) ro.observe(viewport);
+		const ro = new ResizeObserver(scheduleMeasure);
+		const mo = new MutationObserver(scheduleMeasure);
+		if (viewport) {
+			ro.observe(viewport);
+		}
 		ro.observe(el);
-		measure();
+		mo.observe(el, { childList: true, subtree: true });
+		scheduleLayoutMeasure = scheduleMeasure;
+		scheduleMeasure();
 
 		return {
 			destroy() {
+				cancelAnimationFrame(animationFrame);
 				ro.disconnect();
+				mo.disconnect();
+				if (scheduleLayoutMeasure === scheduleMeasure) {
+					scheduleLayoutMeasure = null;
+				}
 			}
 		};
 	}
 </script>
 
-<div use:fitToScrollViewport class="flex flex-col pt-1 {className}">
+<div
+	use:fitToScrollViewport
+	class="flex flex-col pt-1 {className}"
+	class:treeview-has-scrollbar={hasVerticalScrollbar}
+	style="--tree-scrollbar-width: {verticalScrollbarWidth}px;"
+>
 	{#if searchBar.enabled || toolbarEnd}
 		<div class="flex mb-1 h-auto w-full items-end" style="padding-inline: {rowPadding};">
 			{#if searchBar.enabled}

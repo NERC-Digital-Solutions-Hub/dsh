@@ -1,6 +1,10 @@
 /* treeview-common.css — shared styles for Data & Area treeviews */
 
 /* KeenMate tree overrides */
+.tree-wrapper {
+	overflow: visible !important;
+}
+
 .tree-wrapper .ltree-node-content {
 	padding: 0 !important;
 	border-radius: 0 !important;
@@ -22,6 +26,11 @@
 .tree-wrapper .ltree-virtual-scroll {
 	scrollbar-width: thin;
 	scrollbar-color: var(--border) transparent;
+	width: 100%;
+}
+
+.treeview-has-scrollbar .tree-wrapper .ltree-virtual-scroll > div {
+	width: calc(100% + var(--tree-scrollbar-width, 10px));
 }
 .tree-wrapper .ltree-virtual-scroll::-webkit-scrollbar {
 	width: 10px;
