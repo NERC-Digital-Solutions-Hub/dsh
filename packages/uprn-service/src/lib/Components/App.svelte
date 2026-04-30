@@ -679,6 +679,7 @@
 	function startApp() {
 		initializedNodeVisibility = false;
 		initializedSelectionsFromDb = false;
+		mapSyncedWithNodeVisibility = false;
 		mapView = null;
 
 		appConfig.fetch();
