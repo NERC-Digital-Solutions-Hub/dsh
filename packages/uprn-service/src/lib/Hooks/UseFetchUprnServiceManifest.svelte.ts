@@ -1,6 +1,5 @@
-import { asset } from '$app/paths';
+import { env } from '$env/dynamic/public';
 import type {
-	RemoteSiteConfig,
 	AppUprnContentConfig,
 	SiteManifest,
 	AppsUprnServiceManifestPage
@@ -22,12 +21,10 @@ export function useFetchUprnServiceManifest(contentConfig: AppUprnContentConfig)
 		error = null;
 
 		try {
-			const siteConfigUrl = asset('/site.json');
-			console.log('Fetching site config from', siteConfigUrl);
-			const siteConfig: RemoteSiteConfig = await fetchSiteConfig(siteConfigUrl);
+			const environment = getSiteEnvironment();
 			const manifestPage: AppsUprnServiceManifestPage = await fetchUprnServiceManifestPage(
 				contentConfig.baseUrl,
-				siteConfig
+				environment
 			);
 
 			content = manifestPage;
@@ -54,30 +51,24 @@ export function useFetchUprnServiceManifest(contentConfig: AppUprnContentConfig)
 }
 
 /**
- * Fetches the site configuration from the given URL and returns it as a SiteConfig object.
- * @param siteConfigUrl - The URL to the site configuration.
- * @returns The site configuration.
+ * Gets the site environment from public environment variables.
+ * Falls back to production when no environment is configured.
  */
-async function fetchSiteConfig(siteConfigUrl: string): Promise<RemoteSiteConfig> {
-	const response = await fetch(siteConfigUrl);
-	if (!response.ok) {
-		throw new Error(`Site config fetch failed: ${response.statusText}`);
-	}
-
-	return (await response.json()) as RemoteSiteConfig;
+function getSiteEnvironment(): string {
+	return env.PUBLIC_DSH_ENVIRONMENT?.trim() || 'production';
 }
 
 /**
- * Fetches the UPRN service manifest page from the content repository based on the provided site configuration.
+ * Fetches the UPRN service manifest page from the content repository based on the configured environment.
  * @param contentBaseUrl - The base URL to the content repository.
- * @param siteConfig - The site configuration.
+ * @param environment - The environment name to use when selecting the manifest.
  * @returns - The UPRN service manifest page.
  */
 async function fetchUprnServiceManifestPage(
 	contentBaseUrl: string,
-	siteConfig: RemoteSiteConfig
+	environment: string
 ): Promise<AppsUprnServiceManifestPage> {
-	const manifestPath: string = `manifest.${siteConfig.environment}.json`;
+	const manifestPath: string = `manifest.${environment}.json`;
 	const manifestUrl: string = new SvelteURL(manifestPath, contentBaseUrl).toString();
 
 	const response = await fetch(manifestUrl);

@@ -17,6 +17,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
     env:
       NODE_OPTIONS: --max-old-space-size=8192
     steps:
@@ -42,6 +44,7 @@ jobs:
       - name: Build
         env:
           BASE_PATH: '/${{ github.event.repository.name }}'
+          PUBLIC_DSH_ENVIRONMENT: ${{ vars.PUBLIC_DSH_ENVIRONMENT || 'production' }}
         run: pnpm build
 
       - name: Upload Pages artifact

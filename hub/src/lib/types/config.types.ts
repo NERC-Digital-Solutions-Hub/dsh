@@ -1,10 +1,6 @@
 export type HomeLocalConfig = {
 	baseUrl: string;
-	sitePath: string;
-};
-
-export type RemoteSiteConfig = {
-	environment: string;
+	sitePath?: string;
 };
 
 export type RootManifestFiles = {

@@ -1,10 +1,6 @@
 import type { TreeviewConfig } from '$lib/Types/Treeview.types';
 import type { AiUprnChatbotEndpoints, UprnDownloadEndpoints } from '$lib/Types/Uprn.types';
 
-export type RemoteSiteConfig = {
-	environment: string;
-};
-
 /**
  * Files exposed by dsh-content manifest for the /apps/uprn-service route.
  */
@@ -57,7 +53,7 @@ export type SiteManifest = {
 
 export type AppUprnContentConfig = {
 	baseUrl: string;
-	sitePath: string;
+	sitePath?: string;
 };
 
 export type AppUprnContent = {
