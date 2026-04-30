@@ -26,6 +26,7 @@
 .tree-wrapper .ltree-virtual-scroll {
 	scrollbar-width: thin;
 	scrollbar-color: var(--border) transparent;
+	overflow-x: hidden !important;
 	width: 100%;
 }
 
