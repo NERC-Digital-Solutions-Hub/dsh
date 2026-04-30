@@ -1,68 +1,26 @@
 <script lang="ts">
-	import { asset } from '$app/paths';
 	import IntroductionDialog from '$lib/components/introduction-dialog/introduction-dialog.svelte';
-	import { useFetchHomeIntroductionMarkdown } from '$lib/hooks/use-fetch-home-introduction-markdown.svelte';
-	import { useFetchHomeLocalConfig } from '$lib/hooks/use-fetch-home-local-config.svelte';
-	import { useFetchRootManifest } from '$lib/hooks/use-fetch-root-manifest.svelte';
-	import { useFetchSiteSettings } from '$lib/hooks/use-fetch-site-settings.svelte';
+	import { getHubIntroduction, getHubSettings, type HubSettings } from '@dsh/content-api';
 	import { onMount } from 'svelte';
-	import { SvelteURL } from 'svelte/reactivity';
 
-	/** Fetches the home local configuration. */
-	const localConfig = useFetchHomeLocalConfig(asset('/config/home/config.json'));
+	let introduction = $state<string | null>(null);
+	let settings = $state<HubSettings | null>(null);
 
-	/** Fetches the root manifest, which contains the URLs for the introduction markdown and site settings. */
-	const fetchRootManifest: ReturnType<typeof useFetchRootManifest> | null = $derived.by(() => {
-		if (!localConfig || !localConfig.content) {
-			return null;
+	async function fetchHomeContent() {
+		try {
+			[introduction, settings] = await Promise.all([getHubIntroduction(), getHubSettings()]);
+		} catch (error) {
+			console.error('[hub] Failed to load content API home content', error);
 		}
-
-		const hook = useFetchRootManifest(localConfig.content);
-		hook.fetch();
-		return hook;
-	});
-
-	/** Derived state for extracting the introduction URL from the remote configuration. */
-	const fetchIntroduction = $derived.by(() => {
-		if (!fetchRootManifest || !fetchRootManifest.content) {
-			return null;
-		}
-
-		const url = new SvelteURL(
-			'pages/' + fetchRootManifest.content.files.introduction,
-			localConfig?.content?.baseUrl
-		).toString();
-
-		const pageBaseUrl = new SvelteURL('pages/', localConfig?.content?.baseUrl).toString();
-
-		const hook = useFetchHomeIntroductionMarkdown(url, pageBaseUrl);
-		hook.fetch();
-		return hook;
-	});
-
-	/** Derived state for fetching the site settings based on the URL from the root manifest. */
-	const fetchSiteSettings = $derived.by(() => {
-		if (!localConfig || !localConfig.content) {
-			return null;
-		}
-
-		const url = new SvelteURL(
-			'pages/' + fetchRootManifest?.content?.files.settings,
-			localConfig.content.baseUrl
-		).toString();
-
-		const hook = useFetchSiteSettings(url);
-		hook.fetch();
-		return hook;
-	});
+	}
 
 	onMount(() => {
-		localConfig.fetch();
+		void fetchHomeContent();
 	});
 </script>
 
-{#if fetchIntroduction?.content && fetchSiteSettings?.content?.enableIntroductionPopup}
-	<IntroductionDialog introduction={fetchIntroduction.content} />
+{#if introduction && settings?.enableIntroductionPopup}
+	<IntroductionDialog {introduction} />
 {/if}
 <div class="hero-section">
 	<h1 class="title">NERC Digital Solutions Hub</h1>

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import * as Dialog from '$lib/Components/shadcn/dialog/index.js';
-	import { useFetchAppIntroductionMarkdown } from '$lib/Hooks/UseFetchAppIntroductionMarkdown.svelte';
 	import { rehypeGithubAlerts, rehypeInlineTextAdjacentSvgIcons } from '@dsh/common';
 	import rehypeStringify from 'rehype-stringify';
 	import remarkGfm from 'remark-gfm';
@@ -10,27 +9,14 @@
 
 	type Props = {
 		isOpen: boolean;
-		contentUrl: string | null;
+		content: string | null;
 	};
 
-	let { isOpen = $bindable(false), contentUrl }: Props = $props();
-
-	let hasBeenInitiallyOpened = $state(false);
-
-	/** Derived state for fetching the introduction content based on the provided URL. */
-	let introduction = $derived.by(() => {
-		if (!contentUrl) {
-			return null;
-		}
-
-		const hook = useFetchAppIntroductionMarkdown(contentUrl);
-		hook.fetch();
-		return hook;
-	});
+	let { isOpen = $bindable(false), content }: Props = $props();
 
 	/** Derived state for processing the fetched introduction markdown content into HTML. */
 	let introductionHtml: Promise<string | null> = $derived.by(async () => {
-		if (!introduction || !introduction.content) {
+		if (!content) {
 			return null;
 		}
 
@@ -41,7 +27,7 @@
 			.use(rehypeGithubAlerts)
 			.use(rehypeInlineTextAdjacentSvgIcons)
 			.use(rehypeStringify)
-			.process(introduction.content);
+			.process(content);
 
 		return htmlRaw.toString();
 	});

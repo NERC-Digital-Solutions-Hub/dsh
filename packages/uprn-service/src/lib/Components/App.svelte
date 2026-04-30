@@ -26,7 +26,6 @@
 	import { setItemInfoDialogEvents } from '$lib/Events/ItemInfoDialogEvents';
 	import { useAiChatbotHealth } from '$lib/Hooks/UseAiChatbotHealth.svelte';
 	import { useFetchAppConfig } from '$lib/Hooks/UseFetchAppConfig.svelte';
-	import { useFetchCustomRenderers } from '$lib/Hooks/UseFetchCustomRenderers.svelte';
 	import { useLoadSelectionsFromIndexDb } from '$lib/Hooks/UseLoadSelectionsFromIndexDb.svelte';
 	import { useUprnDownloadHealth } from '$lib/Hooks/UseUprnDownloadHealth.svelte';
 	import { SelectionState } from '$lib/Models/Treeview/SelectionState';
@@ -62,7 +61,6 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import { useUprnDownloadSelectionAreaLimits } from '$lib/Hooks/UseUprnDownloadSelectionAreaLimits.svelte';
 	import Button from '$lib/Components/shadcn/button/button.svelte';
-	import { useFetchGeneralSettings } from '$lib/Hooks/UseFetchGeneralSettings.svelte';
 	import type { ChatbotRemoteConfig } from '$lib/Types/Configuration.types';
 	import { ScrollArea } from '$lib/Components/shadcn/scroll-area';
 	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
@@ -211,24 +209,6 @@
 		return selections;
 	});
 
-	/** Hook to fetch custom renderers for the map based on the app configuration. */
-	const customRenderers = $derived.by(() => {
-		if (
-			!appConfig.content?.content.baseUrl ||
-			!appConfig.content.content.manifest.files.climatejustRenderers
-		) {
-			return null;
-		}
-
-		const url: string = new URL(
-			appConfig.content.content.manifest.files.climatejustRenderers,
-			appConfig.content.content.baseUrl
-		).toString();
-		const renderers = useFetchCustomRenderers(url);
-		renderers.fetch();
-		return renderers;
-	});
-
 	/** Hook to fetch area selection limits for the UPRN download service. */
 	const areaSelectionLimits = $derived.by(() => {
 		if (!appConfig.content?.uprnDownload || !appConfig.content.map.selectableLayers) {
@@ -259,45 +239,20 @@
 		return map;
 	});
 
-	/** Derived state to compute the introduction content URL based on the app configuration. */
-	const introductionUrl: string | null = $derived.by(() => {
-		if (
-			!appConfig.content?.content.baseUrl ||
-			!appConfig.content.content.manifest.files.introduction
-		) {
-			return null;
-		}
+	const introductionMarkdown: string | null = $derived(
+		appConfig.content?.content.introductionMarkdown ?? null
+	);
 
-		return new URL(
-			appConfig.content.content.manifest.files.introduction,
-			appConfig.content.content.baseUrl
-		).toString();
-	});
-
-	const settings: ReturnType<typeof useFetchGeneralSettings> | null = $derived.by(() => {
-		if (!appConfig.content?.content.baseUrl || !appConfig.content.content.manifest.files.settings) {
-			return null;
-		}
-
-		const url: string = new URL(
-			appConfig.content.content.manifest.files.settings,
-			appConfig.content.content.baseUrl
-		).toString();
-
-		const settingsHook = useFetchGeneralSettings(url);
-		settingsHook.fetch();
-
-		return settingsHook;
-	});
+	const settings = $derived(appConfig.content?.content.settings ?? null);
 
 	/** Derived state for the chatbot settings. */
 	const chatbotSettings: ChatbotRemoteConfig | null = $derived.by(() => {
-		if (!settings?.content || !settings.content.chatbot) {
+		if (!settings?.chatbot) {
 			return null;
 		}
 
-		console.log('[uprn/app] Fetched general settings:', settings.content);
-		return settings.content.chatbot;
+		console.log('[uprn/app] Fetched general settings:', settings);
+		return settings.chatbot;
 	});
 
 	/** The web map store instance. */
@@ -313,8 +268,8 @@
 
 	/** The custom renderer service instance. */
 	let customRendererService: CustomRendererService | null = $derived.by(() => {
-		return customRenderers && customRenderers.content
-			? new CustomRendererService(customRenderers.content)
+		return appConfig.content?.content.customRenderers
+			? new CustomRendererService(appConfig.content.content.customRenderers)
 			: null;
 	});
 
@@ -461,7 +416,7 @@
 	});
 
 	$effect(() => {
-		if (!settings?.content?.enableIntroductionPopup) {
+		if (!settings?.enableIntroductionPopup) {
 			return;
 		}
 
@@ -939,7 +894,7 @@
 	});
 </script>
 
-<IntroductionDialog bind:isOpen={introductionDialogOpen} contentUrl={introductionUrl} />
+<IntroductionDialog bind:isOpen={introductionDialogOpen} content={introductionMarkdown} />
 
 <Toaster visibleToasts={1} position="bottom-right" />
 {#if webMapStore?.isLoaded && treeviewConfigStore}

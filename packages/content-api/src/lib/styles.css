@@ -1,0 +1,89 @@
+@source './components'; /* this is needed so tailwind applies the app styling when this package is added as a dependency! */
+
+.svg-icon {
+	display: inline-block;
+	width: 1em;
+	height: 1em;
+	flex: 0 0 auto;
+	background-color: currentColor;
+	vertical-align: -0.125em;
+
+	-webkit-mask-image: var(--svg-icon-url);
+	-webkit-mask-repeat: no-repeat;
+	-webkit-mask-position: center;
+	-webkit-mask-size: contain;
+
+	mask-image: var(--svg-icon-url);
+	mask-repeat: no-repeat;
+	mask-position: center;
+	mask-size: contain;
+}
+
+.inline-svg-icon {
+	margin-inline-end: 0.35em;
+}
+
+/* closer to the screenshot / original HTML render */
+.svg-icon--accent {
+	color: #e83e8c;
+}
+
+.svg-icon--primary {
+	color: #3b82f6;
+}
+
+.svg-icon--success {
+	color: #198754;
+}
+
+.svg-icon--warning {
+	color: #f0ad00;
+}
+
+.svg-icon--danger {
+	color: #dc3545;
+}
+
+.prose-info-markdown :where(p) {
+	@apply mb-3 text-foreground;
+}
+
+.prose-info-markdown :where(li) {
+	@apply mb-4 text-foreground;
+}
+
+.prose-info-markdown :where(ul) {
+	@apply list-disc pl-6;
+}
+
+.prose-info-markdown :where(ol) {
+	@apply list-decimal pl-6;
+}
+
+.prose-info-markdown :where(.references-item) {
+	@apply mb-1 text-xs leading-6 text-foreground;
+}
+
+.prose-info-markdown :where(a) {
+	@apply text-blue-600 underline underline-offset-2;
+}
+
+.prose-info-markdown :where(a:hover) {
+	@apply text-blue-700;
+}
+
+.prose-info-markdown :where(h1) {
+	@apply mb-4 text-center text-3xl font-bold text-foreground;
+}
+
+.prose-info-markdown :where(h2) {
+	@apply mb-3 text-2xl font-bold text-foreground;
+}
+
+.prose-info-markdown :where(h3) {
+	@apply mb-3 text-xl font-bold text-foreground;
+}
+
+.prose-info-markdown :where(h4, h5, h6, h7) {
+	@apply mb-3 text-lg font-bold text-foreground;
+}
