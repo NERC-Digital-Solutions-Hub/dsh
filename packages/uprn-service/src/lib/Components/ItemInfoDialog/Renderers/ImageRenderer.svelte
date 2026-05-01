@@ -23,6 +23,9 @@
 	let dragStartY = 0;
 	let dragStartTranslateX = 0;
 	let dragStartTranslateY = 0;
+	let dragMoved = false;
+	let pointerDownStartedOnFrame = false;
+	let pointerDownStartedOnViewerBackground = false;
 
 	const altText = $derived(`Metadata image ${index + 1}`);
 	const imageTransform = $derived(
@@ -111,7 +114,14 @@
 	}
 
 	function handlePointerDown(event: PointerEvent) {
-		if (scale <= 1 || event.button !== 0) {
+		if (event.button !== 0) {
+			return;
+		}
+
+		dragMoved = false;
+		pointerDownStartedOnViewerBackground = event.target === viewerElement;
+
+		if (scale <= 1) {
 			return;
 		}
 
@@ -133,6 +143,10 @@
 
 		event.preventDefault();
 
+		if (Math.abs(event.clientX - dragStartX) > 2 || Math.abs(event.clientY - dragStartY) > 2) {
+			dragMoved = true;
+		}
+
 		const clamped = clampTranslation(
 			dragStartTranslateX + event.clientX - dragStartX,
 			dragStartTranslateY + event.clientY - dragStartY
@@ -151,9 +165,35 @@
 		(event.currentTarget as HTMLElement).releasePointerCapture(event.pointerId);
 	}
 
+	function handleFramePointerDown(event: PointerEvent) {
+		pointerDownStartedOnFrame = event.target === event.currentTarget;
+	}
+
+	function closeWhenPressingFrame(event: PointerEvent) {
+		if (pointerDownStartedOnFrame && event.target === event.currentTarget) {
+			pointerDownStartedOnFrame = false;
+			closeViewer();
+		}
+	}
+
+	function closeWhenPressingViewerBackground(event: PointerEvent) {
+		if (dragMoved) {
+			dragMoved = false;
+			return;
+		}
+
+		if (pointerDownStartedOnViewerBackground && event.target === viewerElement) {
+			pointerDownStartedOnViewerBackground = false;
+			closeViewer();
+		}
+	}
+
 	function handleOpenChange(open: boolean) {
 		isOpen = open;
 		isDragging = false;
+		dragMoved = false;
+		pointerDownStartedOnFrame = false;
+		pointerDownStartedOnViewerBackground = false;
 		resetTransform();
 	}
 </script>
@@ -171,11 +211,13 @@
 	<Dialog.Content
 		class="z-[10050] h-[calc(90dvh-2rem)] w-[calc(80vw-2rem)] max-w-none overflow-hidden border-0 bg-transparent p-0 shadow-none sm:max-w-none"
 		showCloseButton={false}
-		interactOutsideBehavior="ignore"
+		interactOutsideBehavior="close"
 		aria-label={altText}
 	>
 		<div
 			class="relative flex h-full w-full overflow-hidden rounded-lg bg-slate-50 p-4 shadow-2xl ring-1 ring-black/10"
+			onpointerdown={handleFramePointerDown}
+			onpointerup={closeWhenPressingFrame}
 		>
 			<div class="absolute right-4 top-4 z-10 flex gap-2">
 				<button
@@ -214,7 +256,10 @@
 				onwheel={handleWheel}
 				onpointerdown={handlePointerDown}
 				onpointermove={handlePointerMove}
-				onpointerup={handlePointerUp}
+				onpointerup={(event) => {
+					handlePointerUp(event);
+					closeWhenPressingViewerBackground(event);
+				}}
 				onpointercancel={handlePointerUp}
 			>
 				<img
