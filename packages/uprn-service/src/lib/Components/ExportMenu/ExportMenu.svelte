@@ -56,6 +56,8 @@
 		hasChildren: boolean;
 	}
 
+	type ExportTreeNode = LTreeNode<ExportFlatNode>;
+
 	/**
 	 * Flatten a hierarchical SelectionTreeviewNode tree into a flat array
 	 * for the BaseTreeview component.
@@ -348,7 +350,7 @@
 			virtualScroll={{ enabled: false }}
 			rowPadding="0rem"
 		>
-			{#snippet nodeContent(treeNode: LTreeNode)}
+			{#snippet nodeContent(treeNode: ExportTreeNode)}
 				{@const sNode = treeNode.data!.selectionNode}
 				{@const isFolder = treeNode.data!.hasChildren}
 				{@const icon = getNodeIcon(
@@ -421,7 +423,7 @@
 			virtualScroll={{ enabled: false }}
 			rowPadding="0rem"
 		>
-			{#snippet nodeContent(treeNode: LTreeNode)}
+			{#snippet nodeContent(treeNode: ExportTreeNode)}
 				{@const sNode = treeNode.data!.selectionNode}
 				{@const isFolder = treeNode.data!.hasChildren}
 				{@const icon = getNodeIcon(

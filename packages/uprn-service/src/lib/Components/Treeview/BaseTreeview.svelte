@@ -48,6 +48,8 @@
 	import { Search, X } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
 
+	type TypedTreeNode = LTreeNode<T>;
+
 	type Props = {
 		/** Flat tree data to render. */
 		data: T[];
@@ -62,9 +64,9 @@
 		/** Initial expand level. @default 0 */
 		expandLevel?: number;
 		/** Called when a tree node is clicked. */
-		onNodeClicked?: (node: LTreeNode<T>) => void;
+		onNodeClicked?: (node: TypedTreeNode) => void;
 		/** Snippet for rendering each node row. Receives the LTreeNode and guide line info. */
-		nodeContent: Snippet<[LTreeNode<T>]>;
+		nodeContent: Snippet<[TypedTreeNode]>;
 		/** Optional snippet for the toolbar area next to the search bar. */
 		toolbarEnd?: Snippet;
 		/** Extra CSS classes for the outer container. */
@@ -111,7 +113,10 @@
 	/** Measured height for the virtual scroll container. */
 	let treeHeight = $state(300);
 
-	function handleNodeClicked(node: LTreeNode<T>): void {
+	/** Forces the virtual tree to re-read its scroll container height after layout changes. */
+	let virtualRefreshTick = $state(0);
+
+	function handleNodeClicked(node: TypedTreeNode): void {
 		if (node.hasChildren) {
 			const nodeId = node.data?.nodeId;
 			if (nodeId) {
@@ -132,6 +137,9 @@
 	 * scroll-area-viewport or card-content ancestor.
 	 */
 	function fitToScrollViewport(el: HTMLElement) {
+		let animationFrame: number | null = null;
+		let virtualRefreshFrame: number | null = null;
+
 		function findViewport(node: HTMLElement | null): HTMLElement | null {
 			while (node) {
 				const slot = node.getAttribute('data-slot');
@@ -141,25 +149,81 @@
 			return null;
 		}
 
+		function isHidden(node: HTMLElement): boolean {
+			return !!node.closest('[hidden]');
+		}
+
 		function measure() {
+			if (isHidden(el)) return;
+
 			const viewport = findViewport(el.parentElement);
 			if (!viewport) return;
+
 			const treeWrapper = el.querySelector<HTMLElement>('.tree-wrapper');
 			if (!treeWrapper) return;
+
 			const viewportBottom = viewport.getBoundingClientRect().bottom;
 			const treeTop = treeWrapper.getBoundingClientRect().top;
-			treeHeight = Math.max(100, viewportBottom - treeTop);
+			const nextTreeHeight = viewportBottom - treeTop;
+
+			if (nextTreeHeight <= 0) return;
+
+			treeHeight = Math.max(100, nextTreeHeight);
+			scheduleVirtualRefresh();
+		}
+
+		function scheduleMeasure() {
+			if (animationFrame !== null) {
+				cancelAnimationFrame(animationFrame);
+			}
+
+			animationFrame = requestAnimationFrame(() => {
+				animationFrame = requestAnimationFrame(() => {
+					animationFrame = null;
+					measure();
+				});
+			});
+		}
+
+		function scheduleVirtualRefresh() {
+			if (virtualRefreshFrame !== null) {
+				cancelAnimationFrame(virtualRefreshFrame);
+			}
+
+			virtualRefreshFrame = requestAnimationFrame(() => {
+				virtualRefreshFrame = requestAnimationFrame(() => {
+					virtualRefreshFrame = null;
+					virtualRefreshTick += 1;
+				});
+			});
 		}
 
 		const viewport = findViewport(el.parentElement);
-		const ro = new ResizeObserver(measure);
+		const ro = new ResizeObserver(scheduleMeasure);
 		if (viewport) ro.observe(viewport);
 		ro.observe(el);
-		measure();
+
+		const mo = new MutationObserver(scheduleMeasure);
+		let ancestor = el.parentElement;
+		while (ancestor) {
+			mo.observe(ancestor, {
+				attributeFilter: ['hidden', 'data-state', 'class', 'style']
+			});
+			ancestor = ancestor.parentElement;
+		}
+
+		scheduleMeasure();
 
 		return {
 			destroy() {
+				if (animationFrame !== null) {
+					cancelAnimationFrame(animationFrame);
+				}
+				if (virtualRefreshFrame !== null) {
+					cancelAnimationFrame(virtualRefreshFrame);
+				}
 				ro.disconnect();
+				mo.disconnect();
 			}
 		};
 	}
@@ -218,13 +282,13 @@
 			bind:searchText
 			virtualScroll={!!vsConfig}
 			virtualRowHeight={vsConfig?.rowHeight ?? 44}
-			virtualOverscan={vsConfig?.overscan ?? 1}
+			virtualOverscan={(vsConfig?.overscan ?? 1) + (virtualRefreshTick % 2)}
 			virtualContainerHeight={vsConfig ? `${treeHeight}px` : '100%'}
 			{shouldToggleOnNodeClick}
 			{expandLevel}
 			onNodeClicked={handleNodeClicked}
 		>
-			{#snippet nodeTemplate(treeNode: LTreeNode)}
+			{#snippet nodeTemplate(treeNode: TypedTreeNode)}
 				{@const guideLines = treeNode.data!.guideLines}
 				{@const indentLevel = guideLines.length}
 				<div class="node-row" style="padding-inline: {rowPadding};">
@@ -240,7 +304,7 @@
 						class="node-indent-wrap"
 						style="margin-left: calc({indentLevel} * var(--tree-step, 1.5rem));"
 					>
-						{@render nodeContent(treeNode as LTreeNode)}
+						{@render nodeContent(treeNode as TypedTreeNode)}
 					</div>
 				</div>
 			{/snippet}
