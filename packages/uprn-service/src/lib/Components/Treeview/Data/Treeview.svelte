@@ -38,6 +38,8 @@
 		selectionCount?: number;
 	};
 
+	type DataTreeNode = LTreeNode<FlatTreeNode>;
+
 	let {
 		treeviewStore,
 		nodeConfigProvider,
@@ -90,7 +92,7 @@
 					name: node.name,
 					order: index,
 					nodeRef: node,
-					isExpanded: treeviewStore.getExpansionState(node.id, config?.isOpenOnInit ?? false),
+					isExpanded: config?.isOpenOnInit ?? false,
 					guideLines: Array.from({ length: indentLevel }, () => 'full' as const)
 				});
 
@@ -140,11 +142,6 @@
 		return true;
 	}
 
-	function handleNodeExpansionChanged(treeNode: LTreeNode<FlatTreeNode>, isExpanded: boolean) {
-		if (!treeNode.data) return;
-		treeviewStore.setExpansionState(treeNode.data.nodeId, isExpanded);
-	}
-
 	setTreeEvents({
 		onNodeVisibilityChange: (node, visible) => treeviewStore.setVisibilityState(node.id, visible),
 		onDownloadStateChanged,
@@ -159,7 +156,6 @@
 	bind:searchText
 	searchBar={{ enabled: true, placeholder: 'Search data...', collapsible: true }}
 	virtualScroll={{ enabled: true }}
-	onNodeExpansionChanged={handleNodeExpansionChanged}
 >
 	{#snippet toolbarEnd()}
 		<p class="ml-auto shrink-0 text-xs text-muted-foreground leading-none pr-2 pb-0.5">
@@ -167,7 +163,7 @@
 		</p>
 	{/snippet}
 
-	{#snippet nodeContent(treeNode: LTreeNode<FlatTreeNode>)}
+	{#snippet nodeContent(treeNode: DataTreeNode)}
 		{@const nodeRef = treeNode.data!.nodeRef}
 		{@const config = nodeConfigProvider.getConfig(nodeRef.id)}
 		{@const isDownloadable = config?.isEnabled ?? true}

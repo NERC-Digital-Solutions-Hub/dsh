@@ -973,27 +973,27 @@
 
 					<SidebarLayout.Content>
 						<UprnTabBarContent value={TabType.AreaOfInterest}>
-							{#if currentTab === TabType.AreaOfInterest && loadAreaTreeview}
-								<AreaSelectionTreeview
-									treeviewStore={areaTreeviewStore!}
-									nodeConfigProvider={treeviewConfigStore!}
-									areaSelectionController={areaSelectionStore}
-									selectionCount={areaSelectionStore.areaIds.size}
-								/>
-							{/if}
+								{#if loadAreaTreeview}
+									<AreaSelectionTreeview
+										treeviewStore={areaTreeviewStore!}
+										nodeConfigProvider={treeviewConfigStore!}
+										areaSelectionController={areaSelectionStore}
+										selectionCount={areaSelectionStore.areaIds.size}
+									/>
+								{/if}
 						</UprnTabBarContent>
 
 						<UprnTabBarContent value={TabType.Data}>
-							{#if currentTab === TabType.Data && loadDataTreeview}
-								<DataSelectionTreeview
-									treeviewStore={dataTreeviewStore!}
-									nodeConfigProvider={treeviewConfigStore!}
-									nodeTagProvider={treeviewConfigStore!}
-									tagDefinitionProvider={tagDefinitionProvider!}
-									{selectedTagIds}
-									selectionCount={dataSelectionStore.dataSelections.size}
-								/>
-							{/if}
+								{#if loadDataTreeview}
+									<DataSelectionTreeview
+										treeviewStore={dataTreeviewStore!}
+										nodeConfigProvider={treeviewConfigStore!}
+										nodeTagProvider={treeviewConfigStore!}
+										tagDefinitionProvider={tagDefinitionProvider!}
+										{selectedTagIds}
+										selectionCount={dataSelectionStore.dataSelections.size}
+									/>
+								{/if}
 						</UprnTabBarContent>
 
 						<UprnTabBarContent value={TabType.Export}>

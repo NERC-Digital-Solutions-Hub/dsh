@@ -63,8 +63,6 @@
 		expandLevel?: number;
 		/** Called when a tree node is clicked. */
 		onNodeClicked?: (node: LTreeNode<T>) => void;
-		/** Called when a tree node is expanded or collapsed. */
-		onNodeExpansionChanged?: (node: LTreeNode<T>, isExpanded: boolean) => void;
 		/** Snippet for rendering each node row. Receives the LTreeNode and guide line info. */
 		nodeContent: Snippet<[LTreeNode<T>]>;
 		/** Optional snippet for the toolbar area next to the search bar. */
@@ -83,7 +81,6 @@
 		shouldToggleOnNodeClick = true,
 		expandLevel = 0,
 		onNodeClicked,
-		onNodeExpansionChanged,
 		nodeContent,
 		toolbarEnd,
 		class: className = '',
@@ -113,17 +110,6 @@
 
 	/** Measured height for the virtual scroll container. */
 	let treeHeight = $state(300);
-	let hasVerticalScrollbar = $state(false);
-	let verticalScrollbarWidth = $state(0);
-	let scheduleLayoutMeasure: (() => void) | null = null;
-
-	$effect(() => {
-		data;
-		expandedSet;
-		searchText;
-		treeHeight;
-		scheduleLayoutMeasure?.();
-	});
 
 	function handleNodeClicked(node: LTreeNode<T>): void {
 		if (node.hasChildren) {
@@ -136,7 +122,6 @@
 					next.add(nodeId);
 				}
 				expandedSet = next;
-				onNodeExpansionChanged?.(node, next.has(nodeId));
 			}
 		}
 		onNodeClicked?.(node);
@@ -147,8 +132,6 @@
 	 * scroll-area-viewport or card-content ancestor.
 	 */
 	function fitToScrollViewport(el: HTMLElement) {
-		let animationFrame = 0;
-
 		function findViewport(node: HTMLElement | null): HTMLElement | null {
 			while (node) {
 				const slot = node.getAttribute('data-slot');
@@ -160,61 +143,29 @@
 
 		function measure() {
 			const viewport = findViewport(el.parentElement);
+			if (!viewport) return;
 			const treeWrapper = el.querySelector<HTMLElement>('.tree-wrapper');
-			if (viewport && treeWrapper) {
-				const viewportBottom = viewport.getBoundingClientRect().bottom;
-				const treeTop = treeWrapper.getBoundingClientRect().top;
-				treeHeight = Math.max(100, viewportBottom - treeTop);
-			}
-
-			const scrollContainer = el.querySelector<HTMLElement>('.ltree-virtual-scroll');
-			if (!scrollContainer) {
-				hasVerticalScrollbar = false;
-				verticalScrollbarWidth = 0;
-				return;
-			}
-
-			const isOverflowing = scrollContainer.scrollHeight > scrollContainer.clientHeight + 1;
-			const scrollbarWidth = scrollContainer.offsetWidth - scrollContainer.clientWidth;
-			hasVerticalScrollbar = isOverflowing && scrollbarWidth > 0;
-			verticalScrollbarWidth = hasVerticalScrollbar ? scrollbarWidth : 0;
-		}
-
-		function scheduleMeasure() {
-			cancelAnimationFrame(animationFrame);
-			animationFrame = requestAnimationFrame(measure);
+			if (!treeWrapper) return;
+			const viewportBottom = viewport.getBoundingClientRect().bottom;
+			const treeTop = treeWrapper.getBoundingClientRect().top;
+			treeHeight = Math.max(100, viewportBottom - treeTop);
 		}
 
 		const viewport = findViewport(el.parentElement);
-		const ro = new ResizeObserver(scheduleMeasure);
-		const mo = new MutationObserver(scheduleMeasure);
-		if (viewport) {
-			ro.observe(viewport);
-		}
+		const ro = new ResizeObserver(measure);
+		if (viewport) ro.observe(viewport);
 		ro.observe(el);
-		mo.observe(el, { childList: true, subtree: true });
-		scheduleLayoutMeasure = scheduleMeasure;
-		scheduleMeasure();
+		measure();
 
 		return {
 			destroy() {
-				cancelAnimationFrame(animationFrame);
 				ro.disconnect();
-				mo.disconnect();
-				if (scheduleLayoutMeasure === scheduleMeasure) {
-					scheduleLayoutMeasure = null;
-				}
 			}
 		};
 	}
 </script>
 
-<div
-	use:fitToScrollViewport
-	class="flex flex-col pt-1 {className}"
-	class:treeview-has-scrollbar={hasVerticalScrollbar}
-	style="--tree-scrollbar-width: {verticalScrollbarWidth}px;"
->
+<div use:fitToScrollViewport class="flex flex-col pt-1 {className}">
 	{#if searchBar.enabled || toolbarEnd}
 		<div class="flex mb-1 h-auto w-full items-end" style="padding-inline: {rowPadding};">
 			{#if searchBar.enabled}
@@ -273,7 +224,7 @@
 			{expandLevel}
 			onNodeClicked={handleNodeClicked}
 		>
-			{#snippet nodeTemplate(treeNode: LTreeNode<T>)}
+			{#snippet nodeTemplate(treeNode: LTreeNode)}
 				{@const guideLines = treeNode.data!.guideLines}
 				{@const indentLevel = guideLines.length}
 				<div class="node-row" style="padding-inline: {rowPadding};">
@@ -289,7 +240,7 @@
 						class="node-indent-wrap"
 						style="margin-left: calc({indentLevel} * var(--tree-step, 1.5rem));"
 					>
-						{@render nodeContent(treeNode as LTreeNode<T>)}
+						{@render nodeContent(treeNode as LTreeNode)}
 					</div>
 				</div>
 			{/snippet}
