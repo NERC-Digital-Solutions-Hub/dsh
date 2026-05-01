@@ -157,6 +157,9 @@
 	/** State for managing the current active tab. */
 	let currentTab: TabType = $state(TabType.AreaOfInterest);
 
+	/** State for tracking tabs that have been mounted at least once. */
+	const mountedTabs: Set<TabType> = $state(new SvelteSet<TabType>([TabType.AreaOfInterest]));
+
 	/** State for tracking the tab bar progress that contains the tabs the user has visited. */
 	let tabProgressByValue: Record<string, TabProgress | undefined> = $state({});
 
@@ -727,6 +730,7 @@
 	 */
 	function onTabValueChange(value: string): void {
 		currentTab = value as TabType;
+		mountedTabs.add(currentTab);
 		tabStateService.setCurrentTab(value);
 		console.log(`[uprn/app] Switched to tab: ${value}`);
 	}
@@ -973,27 +977,27 @@
 
 					<SidebarLayout.Content>
 						<UprnTabBarContent value={TabType.AreaOfInterest}>
-								{#if loadAreaTreeview}
-									<AreaSelectionTreeview
-										treeviewStore={areaTreeviewStore!}
-										nodeConfigProvider={treeviewConfigStore!}
-										areaSelectionController={areaSelectionStore}
-										selectionCount={areaSelectionStore.areaIds.size}
-									/>
-								{/if}
+							{#if mountedTabs.has(TabType.AreaOfInterest) && loadAreaTreeview}
+								<AreaSelectionTreeview
+									treeviewStore={areaTreeviewStore!}
+									nodeConfigProvider={treeviewConfigStore!}
+									areaSelectionController={areaSelectionStore}
+									selectionCount={areaSelectionStore.areaIds.size}
+								/>
+							{/if}
 						</UprnTabBarContent>
 
 						<UprnTabBarContent value={TabType.Data}>
-								{#if loadDataTreeview}
-									<DataSelectionTreeview
-										treeviewStore={dataTreeviewStore!}
-										nodeConfigProvider={treeviewConfigStore!}
-										nodeTagProvider={treeviewConfigStore!}
-										tagDefinitionProvider={tagDefinitionProvider!}
-										{selectedTagIds}
-										selectionCount={dataSelectionStore.dataSelections.size}
-									/>
-								{/if}
+							{#if mountedTabs.has(TabType.Data) && loadDataTreeview}
+								<DataSelectionTreeview
+									treeviewStore={dataTreeviewStore!}
+									nodeConfigProvider={treeviewConfigStore!}
+									nodeTagProvider={treeviewConfigStore!}
+									tagDefinitionProvider={tagDefinitionProvider!}
+									{selectedTagIds}
+									selectionCount={dataSelectionStore.dataSelections.size}
+								/>
+							{/if}
 						</UprnTabBarContent>
 
 						<UprnTabBarContent value={TabType.Export}>

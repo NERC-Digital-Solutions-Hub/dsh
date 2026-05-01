@@ -113,9 +113,6 @@
 	/** Measured height for the virtual scroll container. */
 	let treeHeight = $state(300);
 
-	/** Forces the virtual tree to re-read its scroll container height after layout changes. */
-	let virtualRefreshTick = $state(0);
-
 	function handleNodeClicked(node: TypedTreeNode): void {
 		if (node.hasChildren) {
 			const nodeId = node.data?.nodeId;
@@ -193,7 +190,10 @@
 			virtualRefreshFrame = requestAnimationFrame(() => {
 				virtualRefreshFrame = requestAnimationFrame(() => {
 					virtualRefreshFrame = null;
-					virtualRefreshTick += 1;
+					const scrollContainer = el.querySelector<HTMLElement>('.ltree-virtual-scroll');
+					if (!scrollContainer) return;
+
+					scrollContainer.dispatchEvent(new Event('scroll'));
 				});
 			});
 		}
@@ -282,7 +282,7 @@
 			bind:searchText
 			virtualScroll={!!vsConfig}
 			virtualRowHeight={vsConfig?.rowHeight ?? 44}
-			virtualOverscan={(vsConfig?.overscan ?? 1) + (virtualRefreshTick % 2)}
+			virtualOverscan={vsConfig?.overscan ?? 1}
 			virtualContainerHeight={vsConfig ? `${treeHeight}px` : '100%'}
 			{shouldToggleOnNodeClick}
 			{expandLevel}
