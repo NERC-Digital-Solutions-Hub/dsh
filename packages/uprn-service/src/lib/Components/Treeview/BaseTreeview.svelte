@@ -111,7 +111,13 @@
 	});
 
 	/** Measured height for the virtual scroll container. */
-	let treeHeight = $state(300);
+	let treeHeight = $state<number | null>(null);
+	let virtualLayoutRefreshKey = $state(0);
+	// KeenMate reads clientHeight inside a derived value, but clientHeight itself is not reactive.
+	// Toggling overscan after layout measurement makes it recalculate the visible virtual window.
+	const virtualOverscan = $derived(
+		vsConfig ? vsConfig.overscan + (virtualLayoutRefreshKey % 2) : 0
+	);
 
 	function handleNodeClicked(node: TypedTreeNode): void {
 		if (node.hasChildren) {
@@ -165,8 +171,11 @@
 
 			if (nextTreeHeight <= 0) return;
 
-			treeHeight = Math.max(100, nextTreeHeight);
-			scheduleVirtualRefresh();
+			const measuredHeight = Math.max(100, Math.floor(nextTreeHeight));
+			if (treeHeight === measuredHeight) return;
+
+			treeHeight = measuredHeight;
+			scheduleVirtualLayoutRefresh();
 		}
 
 		function scheduleMeasure() {
@@ -182,7 +191,7 @@
 			});
 		}
 
-		function scheduleVirtualRefresh() {
+		function scheduleVirtualLayoutRefresh() {
 			if (virtualRefreshFrame !== null) {
 				cancelAnimationFrame(virtualRefreshFrame);
 			}
@@ -190,10 +199,7 @@
 			virtualRefreshFrame = requestAnimationFrame(() => {
 				virtualRefreshFrame = requestAnimationFrame(() => {
 					virtualRefreshFrame = null;
-					const scrollContainer = el.querySelector<HTMLElement>('.ltree-virtual-scroll');
-					if (!scrollContainer) return;
-
-					scrollContainer.dispatchEvent(new Event('scroll'));
+					virtualLayoutRefreshKey += 1;
 				});
 			});
 		}
@@ -270,45 +276,47 @@
 	{/if}
 
 	<div class="tree-wrapper overflow-hidden">
-		<Tree
-			{data}
-			idMember="nodeId"
-			pathMember="path"
-			displayValueMember="name"
-			searchValueMember="name"
-			orderMember="order"
-			shouldUseInternalSearchIndex={true}
-			isExpandedMember="isExpanded"
-			bind:searchText
-			virtualScroll={!!vsConfig}
-			virtualRowHeight={vsConfig?.rowHeight ?? 44}
-			virtualOverscan={vsConfig?.overscan ?? 1}
-			virtualContainerHeight={vsConfig ? `${treeHeight}px` : '100%'}
-			{shouldToggleOnNodeClick}
-			{expandLevel}
-			onNodeClicked={handleNodeClicked}
-		>
-			{#snippet nodeTemplate(treeNode: TypedTreeNode)}
-				{@const guideLines = treeNode.data!.guideLines}
-				{@const indentLevel = guideLines.length}
-				<div class="node-row" style="padding-inline: {rowPadding};">
-					{#each guideLines as guide, i}
-						{#if guide !== 'none'}
-							<div
-								class="tree-guide-line"
-								style="left: calc({rowPadding} + {i + 0.5} * var(--tree-step, 1.5rem));"
-							></div>
-						{/if}
-					{/each}
-					<div
-						class="node-indent-wrap"
-						style="margin-left: calc({indentLevel} * var(--tree-step, 1.5rem));"
-					>
-						{@render nodeContent(treeNode as TypedTreeNode)}
+		{#if !vsConfig || treeHeight !== null}
+			<Tree
+				{data}
+				idMember="nodeId"
+				pathMember="path"
+				displayValueMember="name"
+				searchValueMember="name"
+				orderMember="order"
+				shouldUseInternalSearchIndex={true}
+				isExpandedMember="isExpanded"
+				bind:searchText
+				virtualScroll={!!vsConfig}
+				virtualRowHeight={vsConfig?.rowHeight ?? 44}
+				{virtualOverscan}
+				virtualContainerHeight={vsConfig ? `${treeHeight}px` : '100%'}
+				{shouldToggleOnNodeClick}
+				{expandLevel}
+				onNodeClicked={handleNodeClicked}
+			>
+				{#snippet nodeTemplate(treeNode: TypedTreeNode)}
+					{@const guideLines = treeNode.data!.guideLines}
+					{@const indentLevel = guideLines.length}
+					<div class="node-row" style="padding-inline: {rowPadding};">
+						{#each guideLines as guide, i}
+							{#if guide !== 'none'}
+								<div
+									class="tree-guide-line"
+									style="left: calc({rowPadding} + {i + 0.5} * var(--tree-step, 1.5rem));"
+								></div>
+							{/if}
+						{/each}
+						<div
+							class="node-indent-wrap"
+							style="margin-left: calc({indentLevel} * var(--tree-step, 1.5rem));"
+						>
+							{@render nodeContent(treeNode as TypedTreeNode)}
+						</div>
 					</div>
-				</div>
-			{/snippet}
-		</Tree>
+				{/snippet}
+			</Tree>
+		{/if}
 	</div>
 </div>
 
