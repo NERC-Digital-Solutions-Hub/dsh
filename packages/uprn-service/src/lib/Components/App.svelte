@@ -1092,6 +1092,7 @@
 				areaSelectionInteractionStore={areaSelectionInteractionStore!}
 				interactableLayers={interactableLayers!}
 				{currentTab}
+				class="h-full min-h-0 w-full flex-1"
 			/>
 		{:else}
 			<div class="flex h-full w-full items-center justify-center">
