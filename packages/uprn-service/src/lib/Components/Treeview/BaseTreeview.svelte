@@ -153,6 +153,24 @@
 			scheduleVirtualLayoutRefresh();
 		}
 
+		function updateScrollbarCompensation() {
+			if (isHidden(el)) return;
+
+			const treeWrapper = el.querySelector<HTMLElement>('.tree-wrapper');
+			const virtualScroller = el.querySelector<HTMLElement>('.ltree-virtual-scroll');
+			if (!treeWrapper || !virtualScroller) return;
+
+			const scrollbarWidth = virtualScroller.offsetWidth - virtualScroller.clientWidth;
+			const hasScrollbar =
+				scrollbarWidth > 0 && virtualScroller.scrollHeight > virtualScroller.clientHeight;
+			const compensatedWidth = `${hasScrollbar ? scrollbarWidth : 0}px`;
+
+			treeWrapper.classList.toggle('treeview-has-scrollbar', hasScrollbar);
+			if (treeWrapper.style.getPropertyValue('--tree-scrollbar-width') !== compensatedWidth) {
+				treeWrapper.style.setProperty('--tree-scrollbar-width', compensatedWidth);
+			}
+		}
+
 		function scheduleMeasure() {
 			if (animationFrame !== null) {
 				cancelAnimationFrame(animationFrame);
@@ -162,6 +180,7 @@
 				animationFrame = requestAnimationFrame(() => {
 					animationFrame = null;
 					measure();
+					updateScrollbarCompensation();
 				});
 			});
 		}
@@ -184,7 +203,17 @@
 		if (viewport) ro.observe(viewport);
 		ro.observe(el);
 
-		const mo = new MutationObserver(scheduleMeasure);
+		const mo = new MutationObserver(() => {
+			updateScrollbarCompensation();
+			scheduleMeasure();
+		});
+		mo.observe(el, {
+			attributes: true,
+			childList: true,
+			subtree: true,
+			attributeFilter: ['class', 'style']
+		});
+
 		let ancestor = el.parentElement;
 		while (ancestor) {
 			mo.observe(ancestor, {

@@ -30,7 +30,7 @@
 	width: 100%;
 }
 
-.treeview-has-scrollbar .tree-wrapper .ltree-virtual-scroll > div {
+.tree-wrapper.treeview-has-scrollbar .ltree-virtual-scroll > div {
 	width: calc(100% + var(--tree-scrollbar-width, 10px));
 }
 .tree-wrapper .ltree-virtual-scroll::-webkit-scrollbar {
