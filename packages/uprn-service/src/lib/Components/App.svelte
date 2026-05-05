@@ -1007,6 +1007,7 @@
 										<ExportMenu
 											nodeProvider={treeviewNodeProvider!}
 											nodeConfigProvider={treeviewConfigStore!}
+											{areaSelectionStore}
 											areaSelectionInteractionStore={areaSelectionInteractionStore!}
 											{dataSelectionStore}
 										/>

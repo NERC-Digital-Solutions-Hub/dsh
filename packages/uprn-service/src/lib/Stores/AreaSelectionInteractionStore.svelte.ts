@@ -205,7 +205,7 @@ export class AreaSelectionInteractionStore {
 
 		const removedHandle = this.selectionViewState.areaHandles.get(id);
 		if (!removedHandle) {
-			console.warn(`[area-selection-interaction-store] no handle found for area ID ${id}.`);
+			this.areaSelectionStore.removeSelectedArea(id);
 			return;
 		}
 
@@ -218,12 +218,20 @@ export class AreaSelectionInteractionStore {
 	}
 
 	public async getAreaNamesById(ids: number[]): Promise<string[]> {
-		if (!this.selectionViewState?.layerView) return [];
+		const layerId = this.selectionViewState?.layerView?.layer?.id;
+		if (!layerId) return ids.map(() => '');
 
-		const nameField = this.getNameFieldForCurrentLayer();
-		if (!nameField) return [];
+		return await this.getAreaNamesByLayerId(layerId, ids);
+	}
 
-		const layer = this.selectionViewState.layerView.layer as __esri.FeatureLayer;
+	public async getAreaNamesByLayerId(layerId: string, ids: number[]): Promise<string[]> {
+		if (ids.length === 0) return [];
+
+		const nameField = this.getNameFieldForLayer(layerId);
+		if (!nameField) return ids.map(() => '');
+
+		const layer = this.getFeatureLayerById(layerId);
+		if (!layer) return ids.map(() => '');
 
 		let cache = this.cachedNames.get(layer.uid);
 		if (!cache) {
@@ -250,32 +258,45 @@ export class AreaSelectionInteractionStore {
 		}
 
 		const objectIdField: string = layer.objectIdField;
-		const result = await layer.queryFeatures({
-			objectIds: missingIds,
-			outFields: [nameField, objectIdField],
-			returnGeometry: false
-		});
+		try {
+			const result = await layer.queryFeatures({
+				objectIds: missingIds,
+				outFields: [nameField, objectIdField],
+				returnGeometry: false
+			});
 
-		for (const feature of result.features) {
-			const id = feature.attributes[objectIdField] as number;
-			const name = feature.attributes[nameField] as string;
-			const idx = idToIndex.get(id);
-			if (idx !== undefined) {
-				names[idx] = name ?? '';
-				cache!.set(id, name ?? '');
+			for (const feature of result.features) {
+				const id = feature.attributes[objectIdField] as number;
+				const name = feature.attributes[nameField] as string;
+				const idx = idToIndex.get(id);
+				if (idx !== undefined) {
+					names[idx] = name ?? '';
+					cache!.set(id, name ?? '');
+				}
 			}
+		} catch (error) {
+			console.warn('[area-selection-interaction-store] failed to query area names.', error);
 		}
 
 		return names.map((n) => n ?? '');
 	}
 
 	public async getAreaCodesById(ids: number[]): Promise<string[]> {
-		if (!this.selectionViewState?.layerView) return [];
+		const layerId = this.selectionViewState?.layerView?.layer?.id;
+		if (!layerId) return ids.map(() => '');
 
-		const codeField = this.getCodeFieldForCurrentLayer();
-		if (!codeField) return [];
+		return await this.getAreaCodesByLayerId(layerId, ids);
+	}
 
-		const layer = this.selectionViewState.layerView.layer as __esri.FeatureLayer;
+	public async getAreaCodesByLayerId(layerId: string, ids: number[]): Promise<string[]> {
+		if (ids.length === 0) return [];
+
+		const codeField = this.getCodeFieldForLayer(layerId);
+		if (!codeField) return ids.map(() => '');
+
+		const layer = this.getFeatureLayerById(layerId);
+		if (!layer) return ids.map(() => '');
+
 		const objectIdField = layer.objectIdField;
 
 		const idToIndex = new SvelteMap<number, number>();
@@ -285,20 +306,24 @@ export class AreaSelectionInteractionStore {
 			idToIndex.set(id, index);
 		});
 
-		const result = await layer.queryFeatures({
-			objectIds: ids,
-			outFields: [codeField, objectIdField],
-			returnGeometry: false
-		});
+		try {
+			const result = await layer.queryFeatures({
+				objectIds: ids,
+				outFields: [codeField, objectIdField],
+				returnGeometry: false
+			});
 
-		for (const feature of result.features) {
-			const id = feature.attributes[objectIdField] as number;
-			const code = feature.attributes[codeField] as string;
-			const index = idToIndex.get(id);
+			for (const feature of result.features) {
+				const id = feature.attributes[objectIdField] as number;
+				const code = feature.attributes[codeField] as string;
+				const index = idToIndex.get(id);
 
-			if (index !== undefined) {
-				codes[index] = code ?? '';
+				if (index !== undefined) {
+					codes[index] = code ?? '';
+				}
 			}
+		} catch (error) {
+			console.warn('[area-selection-interaction-store] failed to query area codes.', error);
 		}
 
 		return codes;
@@ -337,11 +362,14 @@ export class AreaSelectionInteractionStore {
 		const layerId = this.selectionViewState.layerView?.layer?.id;
 		if (!layerId) return null;
 
+		return this.getNameFieldForLayer(layerId);
+	}
+
+	public getNameFieldForLayer(layerId: string): string | null {
 		const info = this.fieldInfoByLayerId.get(layerId);
 		if (!info) {
 			console.warn(
-				`[area-selection-interaction-store] no name field configured for layer ${this.selectionViewState.layerView.layer.title}`,
-				this.fieldInfoByLayerId
+				`[area-selection-interaction-store] no name field configured for layer ${layerId}`
 			);
 			return null;
 		}
@@ -361,11 +389,14 @@ export class AreaSelectionInteractionStore {
 		const layerId = this.selectionViewState.layerView?.layer?.id;
 		if (!layerId) return null;
 
+		return this.getCodeFieldForLayer(layerId);
+	}
+
+	public getCodeFieldForLayer(layerId: string): string | null {
 		const info = this.fieldInfoByLayerId.get(layerId);
 		if (!info) {
 			console.warn(
-				`[area-selection-interaction-store] no code field configured for layer ${this.selectionViewState.layerView.layer.title}`,
-				this.fieldInfoByLayerId
+				`[area-selection-interaction-store] no code field configured for layer ${layerId}`
 			);
 			return null;
 		}
@@ -398,5 +429,17 @@ export class AreaSelectionInteractionStore {
 		for (const info of fieldInfos) {
 			this.fieldInfoByLayerId.set(info.id, info);
 		}
+	}
+
+	private getFeatureLayerById(layerId: string): __esri.FeatureLayer | null {
+		const layer = this.layerViewProvider.getLayerById(layerId);
+		if (!layer || !('queryFeatures' in layer) || !('objectIdField' in layer)) {
+			console.warn(
+				`[area-selection-interaction-store] no queryable feature layer found for ${layerId}.`
+			);
+			return null;
+		}
+
+		return layer as __esri.FeatureLayer;
 	}
 }

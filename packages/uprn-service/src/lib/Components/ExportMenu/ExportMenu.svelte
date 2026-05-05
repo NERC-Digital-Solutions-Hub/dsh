@@ -6,10 +6,8 @@
 	import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 	import type { INodeProvider } from '$lib/Services/INodeProvider';
-	import type {
-		AreaFieldHandleInfo,
-		AreaSelectionInteractionStore
-	} from '$lib/Stores/AreaSelectionInteractionStore.svelte';
+	import type { AreaSelectionInteractionStore } from '$lib/Stores/AreaSelectionInteractionStore.svelte';
+	import type { AreaSelectionStore } from '$lib/Stores/AreaSelectionStore.svelte';
 	import type { DataSelectionStore } from '$lib/Stores/DataSelectionStore.svelte';
 	import DatabaseIcon from '@lucide/svelte/icons/database';
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
@@ -27,7 +25,6 @@
 	type AreaInfo = {
 		id: number;
 		name: string;
-		HighlightAreaInfo: AreaFieldHandleInfo;
 	};
 
 	type SelectionTreeviewNodeTypeWithParent = SelectionTreeviewNodeType & {
@@ -37,6 +34,7 @@
 	type Props = {
 		nodeProvider: INodeProvider;
 		nodeConfigProvider: INodeConfigProvider;
+		areaSelectionStore: AreaSelectionStore;
 		areaSelectionInteractionStore: AreaSelectionInteractionStore;
 		dataSelectionStore: DataSelectionStore;
 	};
@@ -44,6 +42,7 @@
 	const {
 		nodeProvider,
 		nodeConfigProvider,
+		areaSelectionStore,
 		areaSelectionInteractionStore,
 		dataSelectionStore
 	}: Props = $props();
@@ -110,12 +109,10 @@
 			return [];
 		}
 
-		// All areas belong to the same layer, so group them under the layer
-		const layerTitle =
-			areaSelectionInteractionStore.selectionViewState?.layerView?.layer?.title ?? 'Selected Areas';
+		const layerTitle = getAreaLayerTitle(areaSelectionStore.layerId);
 
 		const childNodes: SelectionTreeviewNodeType[] = areaInfos.map((area) => ({
-			id: String(area.HighlightAreaInfo?.id),
+			id: String(area.id),
 			name: area.name,
 			isVariable: false,
 			isLeaf: true,
@@ -126,7 +123,7 @@
 		// Return a single root node representing the layer with areas as children
 		return [
 			{
-				id: 'area-layer-root',
+				id: areaSelectionStore.layerId ?? 'area-layer-root',
 				name: layerTitle,
 				isVariable: false,
 				isLeaf: false,
@@ -219,38 +216,36 @@
 	let flatDataData = $derived(flattenSelectionTree(dataSelectionTree));
 
 	$effect(() => {
-		if (!areaSelectionInteractionStore) {
+		const layerId = areaSelectionStore.layerId;
+		const areaIds = Array.from(areaSelectionStore.areaIds);
+
+		if (!layerId || areaIds.length === 0) {
 			areaInfos = [];
 			return;
 		}
 
-		if (!areaSelectionInteractionStore.selectionViewState?.areaHandles.size) {
-			areaInfos = [];
-			return;
-		}
+		let cancelled = false;
 
 		const getAreaInfos = async () => {
-			const areaIds = areaSelectionInteractionStore.selectionViewState.areaHandles.keys().toArray();
-			const areaNames = await areaSelectionInteractionStore.getAreaNamesById(areaIds);
+			const areaNames = await areaSelectionInteractionStore.getAreaNamesByLayerId(layerId, areaIds);
 
-			const fieldHandleInfos: AreaFieldHandleInfo[] =
-				areaSelectionInteractionStore.selectionViewState.areaHandles
-					.entries()
-					.toArray()
-					.map(([id, handle]) => ({ id, handle }));
-
-			const newAreaInfos: AreaInfo[] = [];
-			for (let i = 0; i < areaNames.length; i++) {
-				newAreaInfos.push({
-					id: areaIds[i],
-					name: areaNames[i] || 'Unknown Area',
-					HighlightAreaInfo: fieldHandleInfos[i]
-				});
+			if (cancelled) {
+				return;
 			}
-			areaInfos = newAreaInfos;
+
+			areaInfos = areaIds.map((id, i) => {
+				return {
+					id,
+					name: areaNames[i] || 'Unknown Area'
+				};
+			});
 		};
 
 		getAreaInfos();
+
+		return () => {
+			cancelled = true;
+		};
 	});
 
 	/**
@@ -332,6 +327,33 @@
 	 */
 	function isVariableNode(node: TreeviewNode): node is VariableTreeviewNode {
 		return node.type === TreeviewNodeType.Variable;
+	}
+
+	function getAreaLayerTitle(layerId: string | null): string {
+		const node = layerId ? findDatasetNodeByLayerId(layerId) : null;
+		if (!node) return 'Selected Areas';
+
+		const nodeConfig = nodeConfigProvider.getConfig(node.id);
+		return nodeConfig?.displayName || nodeConfig?.name || node.name || 'Selected Areas';
+	}
+
+	function findDatasetNodeByLayerId(layerId: string): DatasetTreeviewNode | null {
+		const walk = (nodes: TreeviewNode[]): DatasetTreeviewNode | null => {
+			for (const node of nodes) {
+				if (isDatasetNode(node) && node.layerId === layerId) {
+					return node;
+				}
+
+				const match = walk(node.children);
+				if (match) {
+					return match;
+				}
+			}
+
+			return null;
+		};
+
+		return walk(nodeProvider.getAllTreeviewNodes());
 	}
 </script>
 
