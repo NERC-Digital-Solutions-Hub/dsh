@@ -2,15 +2,18 @@
 	import { onDestroy } from 'svelte';
 	import type { SvelteSet } from 'svelte/reactivity';
 
+	import * as ContextMenu from '$lib/Components/shadcn/context-menu';
 	import { LayerViewProvider } from '$lib/Services/LayerViewProvider';
 	import type { AreaSelectionInteractionStore } from '$lib/Stores/AreaSelectionInteractionStore.svelte';
 	import { MapInteractionStore } from '$lib/Stores/MapInteractionStore.svelte';
 	import { TabType } from '$lib/Types/Uprn.types';
 	import { cn } from '$lib/utils';
+	import { Eraser, EyeOff, List, ZoomIn, ZoomOut } from '@lucide/svelte';
 
 	import { ArcgisMapWidgets } from './ArcgisMapWidgets';
 	import { applyTabInteractionMode } from './mapInteractionMode';
 	import { configureMapView, loadFallbackMap } from './mapViewSetup';
+	import UprnMapContextMenu, { type UprnMapContextMenuEntries } from './UprnMapContextMenu.svelte';
 
 	import type MapView from '@arcgis/core/views/MapView';
 
@@ -48,6 +51,21 @@
 		 * Currently active application tab.
 		 */
 		currentTab: TabType;
+
+		/**
+		 * Clears area selections and hides hideable data layers.
+		 */
+		onClearSelections?: () => void;
+
+		/**
+		 * Hides visible data layers.
+		 */
+		onHideVisibleDataLayer?: () => void;
+
+		/**
+		 * True when at least one data layer is currently visible on the map.
+		 */
+		hasVisibleDataLayer?: boolean;
 	};
 
 	const {
@@ -56,13 +74,57 @@
 		mapView,
 		areaSelectionInteractionStore,
 		interactableLayers,
-		currentTab
+		currentTab,
+		onClearSelections,
+		onHideVisibleDataLayer,
+		hasVisibleDataLayer = false
 	}: Props = $props();
 
 	let mapContainer: HTMLDivElement | null = null;
+	let contextMenuShell = $state<HTMLDivElement | null>(null);
+	let contextMenuTrigger = $state<HTMLDivElement | null>(null);
 	let mapInteractionStore: MapInteractionStore | null = null;
 	let mapWidgets: ArcgisMapWidgets | null = null;
 	let mapWidgetsView: MapView | null = null;
+	let contextMenuOpen = $state(false);
+	let legendIsOpen = $state(false);
+	let dispatchingSyntheticContextMenu = false;
+	let mapContextMenuEntries: UprnMapContextMenuEntries = $derived.by(() => ({
+		zoomIn: {
+			action: zoomIn,
+			icon: ZoomIn,
+			kind: 'action',
+			label: 'Zoom In'
+		},
+		zoomOut: {
+			action: zoomOut,
+			icon: ZoomOut,
+			kind: 'action',
+			label: 'Zoom Out'
+		},
+		toggleLegend: {
+			action: toggleLegend,
+			icon: List,
+			kind: 'action',
+			label: legendIsOpen ? 'Close Legend' : 'Open Legend'
+		},
+		selectionSeparator: {
+			kind: 'separator'
+		},
+		hideDataLayer: {
+			action: () => onHideVisibleDataLayer?.(),
+			disabled: !hasVisibleDataLayer,
+			icon: EyeOff,
+			kind: 'action',
+			label: 'Hide Data Layer'
+		},
+		clear: {
+			action: () => onClearSelections?.(),
+			icon: Eraser,
+			kind: 'action',
+			label: 'Clear'
+		}
+	}));
 
 	/**
 	 * Creates a layer view provider for the current map view.
@@ -132,6 +194,94 @@
 	}
 
 	/**
+	 * Zooms the map in by one ArcGIS zoom level.
+	 */
+	function zoomIn(): void {
+		void mapView.goTo({ zoom: mapView.zoom + 1 });
+	}
+
+	/**
+	 * Zooms the map out by one ArcGIS zoom level.
+	 */
+	function zoomOut(): void {
+		void mapView.goTo({ zoom: mapView.zoom - 1 });
+	}
+
+	/**
+	 * Opens or closes the ArcGIS legend expand widget.
+	 */
+	function toggleLegend(): void {
+		mapWidgets?.toggleLegend();
+		syncLegendState();
+	}
+
+	/**
+	 * Synchronises local menu label state with the ArcGIS expand widget state.
+	 */
+	function syncLegendState(): void {
+		legendIsOpen = mapWidgets?.isLegendExpanded() ?? false;
+	}
+
+	/**
+	 * Returns true when the context menu event originated from ArcGIS UI chrome rather than the map surface.
+	 */
+	function isMapWidgetContextMenuTarget(target: EventTarget | null): boolean {
+		if (!(target instanceof Element)) {
+			return false;
+		}
+
+		return !!target.closest(
+			[
+				'.esri-ui',
+				'.esri-popup',
+				'.esri-widget',
+				'.esri-component',
+				'.uprn-map-search-row',
+				'arcgis-expand',
+				'arcgis-legend',
+				'arcgis-search'
+			].join(', ')
+		);
+	}
+
+	/**
+	 * Captures map right-clicks before ArcGIS consumes them, while leaving widget right-clicks alone.
+	 */
+	function handleCapturedContextMenu(event: MouseEvent): void {
+		if (dispatchingSyntheticContextMenu) {
+			return;
+		}
+
+		if (isMapWidgetContextMenuTarget(event.target)) {
+			event.stopPropagation();
+			return;
+		}
+
+		if (!contextMenuTrigger) {
+			return;
+		}
+
+		event.preventDefault();
+		event.stopPropagation();
+
+		dispatchingSyntheticContextMenu = true;
+		contextMenuTrigger.dispatchEvent(
+			new MouseEvent('contextmenu', {
+				bubbles: true,
+				button: 2,
+				buttons: event.buttons || 2,
+				cancelable: true,
+				clientX: event.clientX,
+				clientY: event.clientY,
+				ctrlKey: event.ctrlKey,
+				metaKey: event.metaKey,
+				shiftKey: event.shiftKey
+			})
+		);
+		dispatchingSyntheticContextMenu = false;
+	}
+
+	/**
 	 * Removes widgets and local subscriptions created by this component.
 	 *
 	 * Note:
@@ -195,13 +345,50 @@
 		});
 	});
 
+	/**
+	 * Refreshes the legend menu label from the ArcGIS widget whenever the menu is opened.
+	 */
+	$effect(() => {
+		if (!contextMenuOpen) {
+			return;
+		}
+
+		syncLegendState();
+	});
+
+	/**
+	 * ArcGIS handles map pointer events internally, so capture native context menu events
+	 * and forward allowed map-surface right-clicks to the shadcn trigger.
+	 */
+	$effect(() => {
+		if (!contextMenuShell) {
+			return;
+		}
+
+		contextMenuShell.addEventListener('contextmenu', handleCapturedContextMenu, {
+			capture: true
+		});
+
+		return () => {
+			contextMenuShell?.removeEventListener('contextmenu', handleCapturedContextMenu, {
+				capture: true
+			});
+		};
+	});
+
 	onDestroy(() => {
 		cleanup();
 	});
 </script>
 
-<div class={cn('relative', className)}>
-	<div class="h-full w-full" bind:this={mapContainer}></div>
+<div class={cn('relative', className)} bind:this={contextMenuShell}>
+	<ContextMenu.ContextMenu bind:open={contextMenuOpen}>
+		<ContextMenu.ContextMenuTrigger bind:ref={contextMenuTrigger} class="block h-full w-full">
+			<div class="h-full w-full" bind:this={mapContainer}></div>
+		</ContextMenu.ContextMenuTrigger>
+
+		<UprnMapContextMenu entries={mapContextMenuEntries} />
+	</ContextMenu.ContextMenu>
 </div>
 
 <style>

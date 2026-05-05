@@ -123,6 +123,7 @@
 	const dataSelectionStore: DataSelectionStore = new DataSelectionStore();
 	const areaSelectionStore: AreaSelectionStore = new AreaSelectionStore();
 	const downloadsStore: DownloadsStore = new DownloadsStore();
+	const persistentUprnVisibilityGroupId = 'group:uprn';
 
 	/** Hook for fetching the app configuration. */
 	const appConfig = useFetchAppConfig();
@@ -413,6 +414,11 @@
 	let loadExportMenu: boolean = $derived(
 		!!(areaSelectionInteractionStore && treeviewNodeProvider && treeviewConfigStore)
 	);
+
+	/** True when any data layer is currently visible on the map. */
+	let hasVisibleDataLayer: boolean = $derived.by(() => {
+		return getVisibleDataLayerNodeIds().length > 0;
+	});
 
 	onMount(() => {
 		startApp();
@@ -848,6 +854,55 @@
 	}
 
 	/**
+	 * Clears area selections and hides visible data layers without changing data selections.
+	 */
+	function clearMapSelections(): void {
+		console.log('[uprn/app] Clearing area selections and hiding data layers');
+		clearAreaSelections();
+		hideVisibleDataLayers();
+	}
+
+	/**
+	 * Gets visible data layer node IDs from the data tree/map visibility state.
+	 */
+	function getVisibleDataLayerNodeIds(): string[] {
+		if (!dataTreeviewStore) {
+			return [];
+		}
+
+		return dataTreeviewStore
+			.getVisibleNodes()
+			.filter((node) => node.type !== TreeviewNodeType.Folder && isHideableDataLayer(node.id))
+			.map((node) => node.id);
+	}
+
+	/**
+	 * Returns true when a data layer can be hidden by map-level context menu actions.
+	 */
+	function isHideableDataLayer(nodeId: string): boolean {
+		const config = treeviewConfigStore?.getConfig(nodeId);
+
+		if (!config || config.isHidden) {
+			return false;
+		}
+
+		return config.visibilityGroupId !== persistentUprnVisibilityGroupId;
+	}
+
+	/**
+	 * Hides data layer nodes that are currently visible on the map.
+	 */
+	function hideVisibleDataLayers(): void {
+		if (!dataTreeviewStore) {
+			return;
+		}
+
+		for (const nodeId of getVisibleDataLayerNodeIds()) {
+			dataTreeviewStore.setVisibilityState(nodeId, false);
+		}
+	}
+
+	/**
 	 * Clears all downloads by clearing the downloads store.
 	 */
 	function clearDownloads() {
@@ -1088,11 +1143,14 @@
 	{#snippet mainContent()}
 		{#if loadMapView}
 			<UprnMapView
-				webMap={webMapStore?.data!}
+				webMap={webMapStore!.data!}
 				mapView={mapView!}
 				areaSelectionInteractionStore={areaSelectionInteractionStore!}
 				interactableLayers={interactableLayers!}
 				{currentTab}
+				onClearSelections={clearMapSelections}
+				onHideVisibleDataLayer={hideVisibleDataLayers}
+				{hasVisibleDataLayer}
 				class="h-full min-h-0 w-full flex-1"
 			/>
 		{:else}

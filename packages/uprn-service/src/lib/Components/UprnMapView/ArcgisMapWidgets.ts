@@ -135,6 +135,24 @@ export class ArcgisMapWidgets {
 	}
 
 	/**
+	 * Indicates whether the legend expand widget is currently open.
+	 */
+	public isLegendExpanded(): boolean {
+		return this.legendExpandComponent?.expanded ?? false;
+	}
+
+	/**
+	 * Opens the legend when closed and closes it when open.
+	 */
+	public toggleLegend(): void {
+		if (!this.legendExpandComponent) {
+			return;
+		}
+
+		this.legendExpandComponent.expanded = !this.legendExpandComponent.expanded;
+	}
+
+	/**
 	 * Removes widgets, Svelte-mounted spinner content, and ArcGIS watchers.
 	 */
 	public cleanup(): void {
