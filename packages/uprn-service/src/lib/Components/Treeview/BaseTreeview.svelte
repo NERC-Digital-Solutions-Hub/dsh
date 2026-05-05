@@ -43,9 +43,7 @@
 	import { Tree, type LTreeNode } from '@keenmate/svelte-treeview';
 	import '@keenmate/svelte-treeview/styles.css';
 	import './treeview-common.css';
-	import ExpandableSearchBar from '$lib/Components/ExpandableSearchBar/ExpandableSearchBar.svelte';
-	import { Input } from '$lib/Components/shadcn/input/index.js';
-	import { Search, X } from '@lucide/svelte';
+	import TreeviewToolbar from './TreeviewToolbar.svelte';
 	import type { Snippet } from 'svelte';
 
 	type TypedTreeNode = LTreeNode<T>;
@@ -99,17 +97,6 @@
 			: null
 	);
 
-	/**
-	 * Tracks which node IDs are currently expanded.
-	 * Kept in sync via handleNodeClicked.
-	 */
-	let expandedSet = $state(new Set<string>());
-
-	/** Sync expandedSet when data changes (initial expansion state). */
-	$effect(() => {
-		expandedSet = new Set(data.filter((n) => n.isExpanded).map((n) => n.nodeId));
-	});
-
 	/** Measured height for the virtual scroll container. */
 	let treeHeight = $state<number | null>(null);
 	let virtualLayoutRefreshKey = $state(0);
@@ -120,18 +107,6 @@
 	);
 
 	function handleNodeClicked(node: TypedTreeNode): void {
-		if (node.hasChildren) {
-			const nodeId = node.data?.nodeId;
-			if (nodeId) {
-				const next = new Set(expandedSet);
-				if (next.has(nodeId)) {
-					next.delete(nodeId);
-				} else {
-					next.add(nodeId);
-				}
-				expandedSet = next;
-			}
-		}
 		onNodeClicked?.(node);
 	}
 
@@ -237,42 +212,7 @@
 
 <div use:fitToScrollViewport class="flex flex-col pt-1 {className}">
 	{#if searchBar.enabled || toolbarEnd}
-		<div class="flex mb-1 h-auto w-full items-end" style="padding-inline: {rowPadding};">
-			{#if searchBar.enabled}
-				{#if searchBar.collapsible}
-					<ExpandableSearchBar
-						bind:searchText
-						placeholder={searchBar.placeholder ?? 'Search...'}
-						collapsible
-					/>
-				{:else}
-					<div class="relative h-8 min-w-0 flex-1">
-						<Search
-							class="text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2"
-						/>
-						<Input
-							type="text"
-							placeholder={searchBar.placeholder ?? 'Search...'}
-							class="h-8 pl-8 pr-8 text-sm"
-							bind:value={searchText}
-						/>
-						{#if searchText}
-							<button
-								type="button"
-								class="text-muted-foreground hover:text-foreground absolute right-2 top-1/2 -translate-y-1/2 transition-colors"
-								onclick={() => (searchText = '')}
-								aria-label="Clear search"
-							>
-								<X class="size-4" />
-							</button>
-						{/if}
-					</div>
-				{/if}
-			{/if}
-			{#if toolbarEnd}
-				{@render toolbarEnd()}
-			{/if}
-		</div>
+		<TreeviewToolbar {searchBar} bind:searchText {toolbarEnd} {rowPadding} />
 	{/if}
 
 	<div class="tree-wrapper overflow-hidden">
@@ -299,7 +239,7 @@
 					{@const guideLines = treeNode.data!.guideLines}
 					{@const indentLevel = guideLines.length}
 					<div class="node-row" style="padding-inline: {rowPadding};">
-						{#each guideLines as guide, i}
+						{#each guideLines as guide, i (`${treeNode.data!.nodeId}-${i}`)}
 							{#if guide !== 'none'}
 								<div
 									class="tree-guide-line"

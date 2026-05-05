@@ -2,18 +2,21 @@
 	import { Input } from '$lib/Components/shadcn/input/index.js';
 	import { Search, X } from '@lucide/svelte';
 	import type { TreeviewSearch } from './TreeviewSearch.svelte.js';
+	import { cn } from '$lib/utils';
 
 	type Props = {
+		/** Parent-controlled outer classes. */
+		class?: string;
 		/** The search state manager to bind to. */
 		search: TreeviewSearch;
 		/** Placeholder text for the input. */
 		placeholder?: string;
 	};
 
-	const { search, placeholder = 'Search...' }: Props = $props();
+	const { class: className, search, placeholder = 'Search...' }: Props = $props();
 </script>
 
-<div class="relative w-full">
+<div class={cn('relative', className)}>
 	<Search
 		class="text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2"
 	/>

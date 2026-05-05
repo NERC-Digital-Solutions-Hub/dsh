@@ -282,39 +282,34 @@
 				{isFolder}
 				{isOpen}
 			>
-				{#snippet children()}
-					<div class="node-actions">
-						{#if nodeConfig?.metadataTabInfoUrl}
-							<span class="action-slot">
-								<InfoButton layerId={node.id} />
-							</span>
-						{/if}
+				<div class="node-actions">
+					{#if nodeConfig?.metadataTabInfoUrl}
+						<span class="action-slot">
+							<InfoButton layerId={node.id} />
+						</span>
+					{/if}
 
-						{#if isDownloadable}
-							<span class="action-slot">
-								<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
-							</span>
-						{/if}
+					{#if isDownloadable}
+						<span class="action-slot">
+							<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
+						</span>
+					{/if}
 
-						{#if showVisibility}
-							<span
-								class="action-slot visibility-wrapper"
-								class:visible={!isVisibilityAnimatingOut}
-							>
-								<span class="visibility-inner">
-									<VisibilityCheckbox
-										checked={isChecked}
-										indeterminate={getNodeDrawState?.(node.id) === NodeDrawState.Suspended}
-										onCheckedChange={toggleVisible}
-									/>
-								</span>
-								{#if getNodeDrawState?.(node.id) === NodeDrawState.Suspended}
-									<span class="indeterminate-label text-muted-foreground">zoom</span>
-								{/if}
+					{#if showVisibility}
+						<span class="action-slot visibility-wrapper" class:visible={!isVisibilityAnimatingOut}>
+							<span class="visibility-inner">
+								<VisibilityCheckbox
+									checked={isChecked}
+									indeterminate={getNodeDrawState?.(node.id) === NodeDrawState.Suspended}
+									onCheckedChange={toggleVisible}
+								/>
 							</span>
-						{/if}
-					</div>
-				{/snippet}
+							{#if getNodeDrawState?.(node.id) === NodeDrawState.Suspended}
+								<span class="indeterminate-label text-muted-foreground">zoom</span>
+							{/if}
+						</span>
+					{/if}
+				</div>
 			</NodeContent>
 		{:else}
 			<NodeContent
@@ -325,39 +320,34 @@
 				onclick={handleClick}
 				{isFolder}
 			>
-				{#snippet children()}
-					<div class="node-actions">
-						{#if nodeConfig?.metadataTabInfoUrl}
-							<span class="action-slot">
-								<InfoButton layerId={node.id} />
-							</span>
-						{/if}
+				<div class="node-actions">
+					{#if nodeConfig?.metadataTabInfoUrl}
+						<span class="action-slot">
+							<InfoButton layerId={node.id} />
+						</span>
+					{/if}
 
-						{#if isDownloadable}
-							<span class="action-slot">
-								<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
-							</span>
-						{/if}
+					{#if isDownloadable}
+						<span class="action-slot">
+							<DownloadButton {node} {onDownloadStateChanged} {getDownloadState} />
+						</span>
+					{/if}
 
-						{#if showVisibility}
-							<span
-								class="action-slot visibility-wrapper"
-								class:visible={!isVisibilityAnimatingOut}
-							>
-								<span class="visibility-inner">
-									<VisibilityCheckbox
-										checked={isChecked}
-										indeterminate={getNodeDrawState?.(node.id) === NodeDrawState.Suspended}
-										onCheckedChange={toggleVisible}
-									/>
-								</span>
-								{#if getNodeDrawState?.(node.id) === NodeDrawState.Suspended}
-									<span class="indeterminate-label text-muted-foreground">zoom</span>
-								{/if}
+					{#if showVisibility}
+						<span class="action-slot visibility-wrapper" class:visible={!isVisibilityAnimatingOut}>
+							<span class="visibility-inner">
+								<VisibilityCheckbox
+									checked={isChecked}
+									indeterminate={getNodeDrawState?.(node.id) === NodeDrawState.Suspended}
+									onCheckedChange={toggleVisible}
+								/>
 							</span>
-						{/if}
-					</div>
-				{/snippet}
+							{#if getNodeDrawState?.(node.id) === NodeDrawState.Suspended}
+								<span class="indeterminate-label text-muted-foreground">zoom</span>
+							{/if}
+						</span>
+					{/if}
+				</div>
 			</NodeContent>
 		{/if}
 	{/if}

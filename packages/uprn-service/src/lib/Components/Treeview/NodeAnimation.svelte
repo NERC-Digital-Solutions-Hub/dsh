@@ -69,7 +69,7 @@
 				in:safeSlide={{ duration: effectiveDuration, easing: cubicOut }}
 				out:safeSlide={{ duration: effectiveDuration }}
 			>
-				{#each childNodes ?? [] as child}
+				{#each childNodes ?? [] as child (child.id)}
 					{@render childNode?.(child)}
 				{/each}
 			</div>

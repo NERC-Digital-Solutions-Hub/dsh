@@ -4,9 +4,10 @@
 	import { Toggle } from '$lib/Components/shadcn/toggle/index.js';
 	import { Badge } from '$lib/Components/shadcn/badge/index.js';
 	import { Ban } from '@lucide/svelte';
-	import type { Component } from 'svelte';
+	import type { Component, Snippet } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import { accentBgStyles, defaultBgStyles, getNodeStyles } from '../NodeContentStyles.js';
+	import TreeviewNodeIcon from '../TreeviewNodeIcon.svelte';
 
 	/**
 	 * Props for the NodeContent component.
@@ -29,7 +30,7 @@
 		/** Click handler function. */
 		onclick: () => void;
 		/** Additional children to render (e.g., checkboxes). */
-		children?: any;
+		children?: Snippet;
 		/** Whether the node is open (for folders). */
 		isOpen: boolean;
 	};
@@ -74,14 +75,7 @@
 	>
 		<div class="grid w-full grid-cols-[auto_1fr_auto] items-center gap-x-2">
 			<div class="flex items-center gap-1">
-				<span class="inline-block size-4 shrink-0" aria-hidden="true">
-					{#if typeof icon === 'string'}
-						{@html icon}
-					{:else}
-						{@const Icon = icon}
-						<Icon />
-					{/if}
-				</span>
+				<TreeviewNodeIcon {icon} />
 			</div>
 
 			<span class="min-w-0 whitespace-normal break-words text-left leading-snug">{name}</span>
@@ -120,14 +114,7 @@
 		<div class="grid w-full grid-cols-[auto_1fr_auto] items-center gap-x-2">
 			<div class="flex items-center gap-1">
 				<OpenIndicator {isOpen} />
-				<span class="inline-block size-4 shrink-0" aria-hidden="true">
-					{#if typeof icon === 'string'}
-						{@html icon}
-					{:else}
-						{@const Icon = icon}
-						<Icon />
-					{/if}
-				</span>
+				<TreeviewNodeIcon {icon} />
 			</div>
 
 			<span class="min-w-0 whitespace-normal break-words text-left leading-snug">{name}</span>

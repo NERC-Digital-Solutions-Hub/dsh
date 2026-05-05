@@ -241,24 +241,22 @@
 			onclick={isFolder ? handleFolderClick : handleClick}
 			{isOpen}
 		>
-			{#snippet children()}
-				{#if isPressed}
-					<div class="flex items-center">
-						<div class="visibility-wrapper" class:visible={!isVisibilityAnimatingOut}>
-							<div class="visibility-inner">
-								<VisibilityCheckbox
-									disabled={true}
-									checked={true}
-									indeterminate={getNodeDrawState?.(node.id) === NodeDrawState.Suspended}
-								/>
-							</div>
-							{#if getNodeDrawState?.(node.id) === NodeDrawState.Suspended}
-								<span class="indeterminate-label text-muted-foreground">zoom</span>
-							{/if}
+			{#if isPressed}
+				<div class="flex items-center">
+					<div class="visibility-wrapper" class:visible={!isVisibilityAnimatingOut}>
+						<div class="visibility-inner">
+							<VisibilityCheckbox
+								disabled={true}
+								checked={true}
+								indeterminate={getNodeDrawState?.(node.id) === NodeDrawState.Suspended}
+							/>
 						</div>
+						{#if getNodeDrawState?.(node.id) === NodeDrawState.Suspended}
+							<span class="indeterminate-label text-muted-foreground">zoom</span>
+						{/if}
 					</div>
-				{/if}
-			{/snippet}
+				</div>
+			{/if}
 		</NodeContent>
 	{/if}
 {/snippet}
