@@ -361,44 +361,96 @@ export class CustomRendererService {
 		customClassBreaks: CustomRendererClassBreak[],
 		lodSizes: LODSize[]
 	): ClassBreaksRenderer {
-		const classMinValueField = 'ClassMinValue';
-		const classMaxValueField = 'ClassMaxValue';
-		const classLabelField = 'Label';
-		const symbolColorField = 'SymbolColor';
-		const outlineColorField = 'OutlineColor';
-		const outlineWidthField = 'OutlineWidth';
-		const totalClasses = customSymbols.Appearances.length;
-
 		const renderer = new ClassBreaksRenderer({
 			field: fieldId
 		});
 
 		const fmt = (n: number) => Number(n.toFixed(3)).toString();
 
-		for (let i = 0; i < totalClasses; i++) {
-			const minValue = customClassBreaks[i][classMinValueField];
-			const maxValue = customClassBreaks[i][classMaxValueField];
-			const label = customClassBreaks[i][classLabelField] || `${fmt(minValue)} – ${fmt(maxValue)}`;
-			const symbolColor = customSymbols.Appearances[i][symbolColorField];
-			const outlineColor = customSymbols.Appearances[i][outlineColorField];
-			const outlineWidth = customSymbols.Appearances[i][outlineWidthField];
-			renderer.addClassBreakInfo({
-				minValue: minValue,
-				maxValue: maxValue,
-				label: label,
-				symbol: new SimpleFillSymbol({
-					color: Color.fromHex(symbolColor)!,
-					outline: new SimpleLineSymbol({
-						color: Color.fromHex(outlineColor)!,
-						width: outlineWidth
-					})
+		const classBreaks = [...customClassBreaks].sort((a, b) => a.Order - b.Order);
+
+		const appearancesByOrder = new Map(
+			customSymbols.Appearances.map((appearance) => [appearance.Order, appearance])
+		);
+
+		for (const classBreak of classBreaks) {
+			const appearance = appearancesByOrder.get(classBreak.Order);
+
+			if (!appearance) {
+				console.warn(
+					`[custom-renderer-service] no symbol appearance found for class break order ${classBreak.Order}`
+				);
+				continue;
+			}
+
+			const label =
+				classBreak.Label || `${fmt(classBreak.ClassMinValue)} – ${fmt(classBreak.ClassMaxValue)}`;
+
+			const symbol = new SimpleFillSymbol({
+				color: Color.fromHex(this.#resolveFillColor(appearance.SymbolColor))!,
+				outline: new SimpleLineSymbol({
+					color: Color.fromHex(this.#resolveOutlineColor(appearance.OutlineColor))!,
+					width: appearance.OutlineWidth
 				})
+			});
+
+			if (this.#isDefaultClassBreak(classBreak)) {
+				renderer.defaultLabel = label;
+				renderer.defaultSymbol = symbol;
+				continue;
+			}
+
+			renderer.addClassBreakInfo({
+				minValue: classBreak.ClassMinValue,
+				maxValue: classBreak.ClassMaxValue,
+				label,
+				symbol
 			});
 		}
 
 		this.#setVisualVariables(renderer, lodSizes);
 
 		return renderer;
+	}
+
+	#isDefaultClassBreak(classBreak: CustomRendererClassBreak): boolean {
+		return (
+			classBreak.Order === 0 &&
+			(this.#isNoDataClassBreakValue(classBreak.ClassMinValue) ||
+				this.#isNoDataClassBreakValue(classBreak.ClassMaxValue))
+		);
+	}
+
+	#isNoDataClassBreakValue(value: number): boolean {
+		return Number.isFinite(value) && value <= -999999;
+	}
+
+	#resolveFillColor(color: string | null | undefined): string {
+		const normalizedColor = this.#normalizeHexColor(color);
+
+		if (this.#isFullyTransparentHexColor(normalizedColor)) {
+			return defaultClassBreakFallbackColor;
+		}
+
+		return normalizedColor || defaultClassBreakFallbackColor;
+	}
+
+	#resolveOutlineColor(color: string | null | undefined): string {
+		const normalizedColor = this.#normalizeHexColor(color);
+
+		if (this.#isFullyTransparentHexColor(normalizedColor)) {
+			return '#BCBCBC';
+		}
+
+		return normalizedColor || '#BCBCBC';
+	}
+
+	#normalizeHexColor(color: string | null | undefined): string {
+		return (color ?? '').trim().toUpperCase();
+	}
+
+	#isFullyTransparentHexColor(color: string): boolean {
+		return /^#[0-9A-F]{8}$/.test(color) && color.endsWith('00');
 	}
 
 	async #applyDefaultClassBreaksRenderer(
