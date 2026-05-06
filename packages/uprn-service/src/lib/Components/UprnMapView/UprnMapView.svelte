@@ -244,6 +244,23 @@
 		);
 	}
 
+	function isRightButtonEvent(event: MouseEvent): boolean {
+		return event.button === 2 || (event.buttons & 2) === 2;
+	}
+
+	function stopMapRightClickInteraction(event: Event): void {
+		if (!(event instanceof MouseEvent) || !isRightButtonEvent(event)) {
+			return;
+		}
+
+		if (isMapWidgetContextMenuTarget(event.target)) {
+			return;
+		}
+
+		event.stopImmediatePropagation();
+		event.stopPropagation();
+	}
+
 	/**
 	 * Captures map right-clicks before ArcGIS consumes them, while leaving widget right-clicks alone.
 	 */
@@ -365,11 +382,32 @@
 			return;
 		}
 
+		const blockedRightClickEvents = [
+			'pointerdown',
+			'pointerup',
+			'mousedown',
+			'mouseup',
+			'click',
+			'auxclick'
+		];
+
+		for (const eventName of blockedRightClickEvents) {
+			contextMenuShell.addEventListener(eventName, stopMapRightClickInteraction, {
+				capture: true
+			});
+		}
+
 		contextMenuShell.addEventListener('contextmenu', handleCapturedContextMenu, {
 			capture: true
 		});
 
 		return () => {
+			for (const eventName of blockedRightClickEvents) {
+				contextMenuShell?.removeEventListener(eventName, stopMapRightClickInteraction, {
+					capture: true
+				});
+			}
+
 			contextMenuShell?.removeEventListener('contextmenu', handleCapturedContextMenu, {
 				capture: true
 			});
