@@ -403,8 +403,13 @@ export class AreaSelectionInteractionStore {
 		return info.codeField;
 	}
 
+	public get selectedAreaCount(): number {
+		return this.areaSelectionStore.areaIds.size;
+	}
+
 	public clearSelections(): void {
 		this.resetSelectedAreas();
+		this.areaSelectionStore.clearSelectedAreas();
 		this.clearHoveredArea();
 		this.lastAddedArea = null;
 		this.lastRemovedArea = null;

@@ -854,12 +854,11 @@
 	}
 
 	/**
-	 * Clears area selections and hides visible data layers without changing data selections.
+	 * Clears selected areas from the map without changing area or data layer visibility.
 	 */
-	function clearMapSelections(): void {
-		console.log('[uprn/app] Clearing area selections and hiding data layers');
-		clearAreaSelections();
-		hideVisibleDataLayers();
+	function clearSelectedMapAreas(): void {
+		console.log('[uprn/app] Clearing selected map areas');
+		areaSelectionInteractionStore?.clearSelections();
 	}
 
 	/**
@@ -1148,7 +1147,7 @@
 				areaSelectionInteractionStore={areaSelectionInteractionStore!}
 				interactableLayers={interactableLayers!}
 				{currentTab}
-				onClearSelections={clearMapSelections}
+				onClearSelections={clearSelectedMapAreas}
 				onHideVisibleDataLayer={hideVisibleDataLayers}
 				{hasVisibleDataLayer}
 				class="h-full min-h-0 w-full flex-1"

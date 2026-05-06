@@ -120,9 +120,10 @@
 		},
 		clear: {
 			action: () => onClearSelections?.(),
+			disabled: areaSelectionInteractionStore.selectedAreaCount === 0,
 			icon: Eraser,
 			kind: 'action',
-			label: 'Clear'
+			label: 'Clear Area(s)'
 		}
 	}));
 
