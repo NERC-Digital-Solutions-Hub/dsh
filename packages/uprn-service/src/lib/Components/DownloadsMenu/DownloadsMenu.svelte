@@ -190,7 +190,7 @@
 		console.log('[downloads-menu] Checking job statuses for downloads:', request);
 		await jobStatusesHook.fetch(request);
 		const response = jobStatusesHook.content as UprnDownloadGetJobStatusesResponse | undefined;
-		console.log('[downloads-menu] Received job statuses response:', response, queuePositions);
+		console.log('[downloads-menu] Received job statuses response:', response);
 
 		if (!response || jobStatusesHook.error) {
 			console.warn('[downloads-menu] Failed to get job statuses.', response);
