@@ -1,4 +1,5 @@
 import type { LayerViewProvider } from '$lib/Services/LayerViewProvider';
+import type { IWebMapService } from '$lib/Services/IWebMapService';
 import type { AreaSelectionStore } from '$lib/Stores/AreaSelectionStore.svelte';
 import { SvelteMap } from 'svelte/reactivity';
 
@@ -18,6 +19,13 @@ export type AreaFieldHandleInfo = {
 	handle: __esri.Handle;
 };
 
+type QueryableAreaLayer = (__esri.FeatureLayer | __esri.Sublayer) & {
+	id: string;
+	objectIdField: string;
+	uid?: string;
+	queryFeatures: (query: __esri.QueryProperties) => Promise<__esri.FeatureSet>;
+};
+
 /**
  * Store for managing interactions with area selection on the map.
  */
@@ -31,6 +39,11 @@ export class AreaSelectionInteractionStore {
 	 * Provider for getting LayerViews.
 	 */
 	private layerViewProvider: LayerViewProvider;
+
+	/**
+	 * Optional web map service used for layer queries before the MapView has attached the WebMap.
+	 */
+	private webMapService: IWebMapService | null;
 
 	/**
 	 * The current layer view for the area selection layer.
@@ -68,10 +81,12 @@ export class AreaSelectionInteractionStore {
 	constructor(
 		areaSelectionStore: AreaSelectionStore,
 		layerViewProvider: LayerViewProvider,
-		fieldInfos: AreaSelectionFieldInfo[]
+		fieldInfos: AreaSelectionFieldInfo[],
+		webMapService: IWebMapService | null = null
 	) {
 		this.areaSelectionStore = areaSelectionStore;
 		this.layerViewProvider = layerViewProvider;
+		this.webMapService = webMapService;
 		this.setFieldInfoMap(fieldInfos);
 	}
 
@@ -230,13 +245,14 @@ export class AreaSelectionInteractionStore {
 		const nameField = this.getNameFieldForLayer(layerId);
 		if (!nameField) return ids.map(() => '');
 
-		const layer = this.getFeatureLayerById(layerId);
+		const layer = this.getQueryableAreaLayerById(layerId, false);
 		if (!layer) return ids.map(() => '');
 
-		let cache = this.cachedNames.get(layer.uid);
+		const cacheKey = layer.uid ?? layer.id;
+		let cache = this.cachedNames.get(cacheKey);
 		if (!cache) {
 			cache = new SvelteMap<number, string>();
-			this.cachedNames.set(layer.uid, cache);
+			this.cachedNames.set(cacheKey, cache);
 		}
 
 		const names: (string | undefined)[] = new Array(ids.length);
@@ -429,6 +445,10 @@ export class AreaSelectionInteractionStore {
 		console.log('[area-selection-interaction-store] cleaned up.');
 	}
 
+	public canQueryAreaLayer(layerId: string): boolean {
+		return this.getQueryableAreaLayerById(layerId, false) !== null;
+	}
+
 	private setFieldInfoMap(fieldInfos: AreaSelectionFieldInfo[]): void {
 		this.fieldInfoByLayerId.clear();
 		for (const info of fieldInfos) {
@@ -436,15 +456,22 @@ export class AreaSelectionInteractionStore {
 		}
 	}
 
-	private getFeatureLayerById(layerId: string): __esri.FeatureLayer | null {
-		const layer = this.layerViewProvider.getLayerById(layerId);
+	private getFeatureLayerById(layerId: string): QueryableAreaLayer | null {
+		return this.getQueryableAreaLayerById(layerId);
+	}
+
+	private getQueryableAreaLayerById(layerId: string, shouldWarn = true): QueryableAreaLayer | null {
+		const layer =
+			this.layerViewProvider.getLayerById(layerId) ?? this.webMapService?.getLayerById(layerId);
 		if (!layer || !('queryFeatures' in layer) || !('objectIdField' in layer)) {
-			console.warn(
-				`[area-selection-interaction-store] no queryable feature layer found for ${layerId}.`
-			);
+			if (shouldWarn) {
+				console.warn(
+					`[area-selection-interaction-store] no queryable feature layer found for ${layerId}.`
+				);
+			}
 			return null;
 		}
 
-		return layer as __esri.FeatureLayer;
+		return layer as QueryableAreaLayer;
 	}
 }

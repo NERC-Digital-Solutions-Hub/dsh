@@ -25,9 +25,11 @@
 	type AreaInfo = {
 		id: number;
 		name: string;
+		nameStatus: 'loading' | 'loaded' | 'unavailable';
 	};
 
-	type SelectionTreeviewNodeTypeWithParent = SelectionTreeviewNodeType & {
+	type ExportSelectionTreeviewNode = SelectionTreeviewNodeType & {
+		nameStatus?: AreaInfo['nameStatus'];
 		parentId?: string;
 	};
 
@@ -37,6 +39,7 @@
 		areaSelectionStore: AreaSelectionStore;
 		areaSelectionInteractionStore: AreaSelectionInteractionStore;
 		dataSelectionStore: DataSelectionStore;
+		webMapLoaded?: boolean;
 	};
 
 	const {
@@ -44,14 +47,15 @@
 		nodeConfigProvider,
 		areaSelectionStore,
 		areaSelectionInteractionStore,
-		dataSelectionStore
+		dataSelectionStore,
+		webMapLoaded = false
 	}: Props = $props();
 
 	let areaInfos: AreaInfo[] = $state<AreaInfo[]>([]);
 
 	/** Extended flat node that carries the original SelectionTreeviewNode reference. */
 	interface ExportFlatNode extends FlatTreeNode {
-		selectionNode: SelectionTreeviewNodeType;
+		selectionNode: ExportSelectionTreeviewNode;
 		hasChildren: boolean;
 	}
 
@@ -61,11 +65,11 @@
 	 * Flatten a hierarchical SelectionTreeviewNode tree into a flat array
 	 * for the BaseTreeview component.
 	 */
-	function flattenSelectionTree(roots: SelectionTreeviewNodeType[]): ExportFlatNode[] {
+	function flattenSelectionTree(roots: ExportSelectionTreeviewNode[]): ExportFlatNode[] {
 		const result: ExportFlatNode[] = [];
 
 		function walk(
-			nodes: SelectionTreeviewNodeType[],
+			nodes: ExportSelectionTreeviewNode[],
 			parentPath: string,
 			ancestorGuides: GuideType[]
 		) {
@@ -104,16 +108,17 @@
 	 * Builds a hierarchical tree structure from selected area infos.
 	 * Areas are grouped under their parent layer.
 	 */
-	let areaSelectionTree: SelectionTreeviewNodeType[] = $derived.by(() => {
+	let areaSelectionTree: ExportSelectionTreeviewNode[] = $derived.by(() => {
 		if (areaInfos.length === 0) {
 			return [];
 		}
 
 		const layerTitle = getAreaLayerTitle(areaSelectionStore.layerId);
 
-		const childNodes: SelectionTreeviewNodeType[] = areaInfos.map((area) => ({
+		const childNodes: ExportSelectionTreeviewNode[] = areaInfos.map((area) => ({
 			id: String(area.id),
 			name: area.name,
+			nameStatus: area.nameStatus,
 			isVariable: false,
 			isLeaf: true,
 			children: [],
@@ -137,20 +142,20 @@
 	 * Builds a hierarchical tree structure from selected data nodes.
 	 * Nodes are grouped by their parent nodes (including ancestors).
 	 */
-	let dataSelectionTree: SelectionTreeviewNodeType[] = $derived.by(() => {
+	let dataSelectionTree: ExportSelectionTreeviewNode[] = $derived.by(() => {
 		const selections = dataSelectionStore.getAllSelections();
 		if (selections.length === 0) return [];
 
-		const nodeMap = new Map<string, SelectionTreeviewNodeTypeWithParent>();
+		const nodeMap = new Map<string, ExportSelectionTreeviewNode>();
 
-		const ensureNode = (node: TreeviewNode): SelectionTreeviewNodeTypeWithParent | null => {
+		const ensureNode = (node: TreeviewNode): ExportSelectionTreeviewNode | null => {
 			const existing = nodeMap.get(node.id);
 			if (existing) return existing;
 
 			const nodeConfig: TreeviewNodeConfig | undefined = nodeConfigProvider.getConfig(node.id);
 			if (!nodeConfig) return null;
 
-			const created: SelectionTreeviewNodeTypeWithParent = {
+			const created: ExportSelectionTreeviewNode = {
 				id: node.id,
 				name: nodeConfig.displayName || nodeConfig.name || node.id,
 				isVariable: isVariableNode(node),
@@ -189,7 +194,7 @@
 			}
 		}
 
-		const rootNodes: SelectionTreeviewNodeType[] = [];
+		const rootNodes: ExportSelectionTreeviewNode[] = [];
 
 		for (const node of nodeMap.values()) {
 			if (!node.parentId) {
@@ -218,6 +223,10 @@
 	$effect(() => {
 		const layerId = areaSelectionStore.layerId;
 		const areaIds = Array.from(areaSelectionStore.areaIds);
+		const selectedLayerViewId =
+			areaSelectionInteractionStore.selectionViewState.layerView?.layer?.id;
+		void webMapLoaded;
+		void selectedLayerViewId;
 
 		if (!layerId || areaIds.length === 0) {
 			areaInfos = [];
@@ -225,6 +234,11 @@
 		}
 
 		let cancelled = false;
+		areaInfos = areaIds.map((id) => ({
+			id,
+			name: 'Loading area name...',
+			nameStatus: 'loading'
+		}));
 
 		const getAreaInfos = async () => {
 			const areaNames = await areaSelectionInteractionStore.getAreaNamesByLayerId(layerId, areaIds);
@@ -233,10 +247,16 @@
 				return;
 			}
 
+			const canQueryLayer = areaSelectionInteractionStore.canQueryAreaLayer(layerId);
 			areaInfos = areaIds.map((id, i) => {
+				const name = areaNames[i];
+				const isLoaded = !!name;
+				const isUnavailable = !isLoaded && canQueryLayer;
+
 				return {
 					id,
-					name: areaNames[i] || 'Unknown Area'
+					name: name || (isUnavailable ? 'Unknown Area' : 'Loading area name...'),
+					nameStatus: isLoaded ? 'loaded' : isUnavailable ? 'unavailable' : 'loading'
 				};
 			});
 		};
@@ -398,7 +418,13 @@
 							</span>
 						</div>
 
-						<span class="node-name">{sNode.name}</span>
+						<span
+							class={sNode.nameStatus === 'loading'
+								? 'node-name text-muted-foreground italic'
+								: 'node-name'}
+						>
+							{sNode.name}
+						</span>
 
 						<!-- svelte-ignore a11y_click_events_have_key_events -->
 						<!-- svelte-ignore a11y_no_static_element_interactions -->

@@ -309,7 +309,8 @@
 			? new AreaSelectionInteractionStore(
 					areaSelectionStore,
 					new LayerViewProvider(mapView),
-					appConfig.content.map.selectableLayers
+					appConfig.content.map.selectableLayers,
+					webMapStore
 				)
 			: null;
 	});
@@ -1064,6 +1065,7 @@
 											{areaSelectionStore}
 											areaSelectionInteractionStore={areaSelectionInteractionStore!}
 											{dataSelectionStore}
+											webMapLoaded={webMapStore?.isLoaded ?? false}
 										/>
 									</div>
 								{/if}
