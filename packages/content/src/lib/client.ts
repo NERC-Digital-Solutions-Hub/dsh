@@ -24,7 +24,7 @@ export function getContentEnvironment(): string {
 
 export function getContentApiBaseUrl(): string {
 	const configuredBaseUrl = env.PUBLIC_DSH_CONTENT_API_BASE_URL?.trim();
-	const baseUrl = configuredBaseUrl || asset('/content-api');
+	const baseUrl = configuredBaseUrl || asset('/content');
 	return baseUrl.replace(/\/+$/, '');
 }
 

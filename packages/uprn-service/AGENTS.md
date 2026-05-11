@@ -88,7 +88,7 @@ Static config files include:
 - `static/config/apps/uprn/api/*.json`
 - `static/config/apps/uprn/maps/*.json`
 
-When changing config-related code, keep the operational local config and remote content-api enrichment separate. Do not hardcode environment-specific URLs in components.
+When changing config-related code, keep the operational local config and remote content enrichment separate. Do not hardcode environment-specific URLs in components.
 
 ### Treeview flow
 

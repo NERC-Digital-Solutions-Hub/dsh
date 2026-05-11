@@ -1,11 +1,11 @@
 {
-	"name": "@dsh/content-api",
+	"name": "@dsh/content",
 	"version": "0.0.1",
 	"scripts": {
 		"dev": "vite dev",
 		"dev:linked": "pnpm run package:watch",
 		"dev:workspace": "pnpm run package:watch",
-		"generate": "tsx scripts/generate-static-content-api.ts",
+		"generate": "tsx scripts/generate-static-content.ts",
 		"build": "vite build && pnpm run prepack",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",

@@ -29,13 +29,13 @@ export interface DbUserDownload extends Omit<DownloadEntry, 'displayInfo'> {
 }
 
 /**
- * A cached treeview-config record keyed by the content-api endpoint.
+ * A cached treeview-config record keyed by the content endpoint.
  *
  * Stores the ready `TreeviewNodeConfig[]` alongside the source version exposed
- * by content-api.
+ * by content.
  */
 export interface DbCachedTransformedConfig {
-	/** The content-api endpoint key - used as the primary key. */
+	/** The content endpoint key - used as the primary key. */
 	url: string;
 	/** The source version that produced this treeview config. */
 	version: number;
@@ -185,14 +185,14 @@ export const clearDatabase = async () => {
 // ---------------------------------------------------------------------------
 
 /**
- * Retrieves a cached transformed config for the given content-api key, if one exists.
+ * Retrieves a cached transformed config for the given content key, if one exists.
  */
 export const getCachedConfig = async (
 	url: string
 ): Promise<DbCachedTransformedConfig | undefined> => await db.cachedConfigs.get(url);
 
 /**
- * Inserts or replaces the cached transformed config for a given content-api key.
+ * Inserts or replaces the cached transformed config for a given content key.
  */
 export const putCachedConfig = async (
 	url: string,

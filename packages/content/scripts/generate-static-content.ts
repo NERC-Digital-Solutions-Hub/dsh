@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { generateStaticContentApi } from '../src/lib/static-generator';
 
-const outDir = getArgValue('--out') ?? 'static/content-api';
+const outDir = getArgValue('--out') ?? 'static/content';
 
 await generateStaticContentApi({
 	outDir: resolve(outDir),

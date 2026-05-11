@@ -19,9 +19,9 @@ importers:
       '@dsh/common':
         specifier: workspace:*
         version: link:../packages/common
-      '@dsh/content-api':
+      '@dsh/content':
         specifier: workspace:*
-        version: link:../packages/content-api
+        version: link:../packages/content
       '@dsh/maps-page':
         specifier: workspace:*
         version: link:../packages/maps-page
@@ -528,7 +528,7 @@ importers:
         specifier: ^7.2.2
         version: 7.2.7(@types/node@22.19.2)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
 
-  packages/content-api:
+  packages/content:
     dependencies:
       '@tanstack/svelte-virtual':
         specifier: ^3.13.23
@@ -920,9 +920,9 @@ importers:
       '@dsh/common':
         specifier: workspace:*
         version: link:../common
-      '@dsh/content-api':
+      '@dsh/content':
         specifier: workspace:*
-        version: link:../content-api
+        version: link:../content
       '@internationalized/date':
         specifier: ^3.10.0
         version: 3.10.0

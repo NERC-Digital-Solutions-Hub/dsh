@@ -1,6 +1,6 @@
 <script lang="ts">
 	import IntroductionDialog from '$lib/components/introduction-dialog/introduction-dialog.svelte';
-	import { getHubIntroduction, getHubSettings, type HubSettings } from '@dsh/content-api';
+	import { getHubIntroduction, getHubSettings, type HubSettings } from '@dsh/content';
 	import { onMount } from 'svelte';
 
 	let introduction = $state<string | null>(null);

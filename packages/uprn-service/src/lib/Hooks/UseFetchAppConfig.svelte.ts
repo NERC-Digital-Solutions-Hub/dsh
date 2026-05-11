@@ -8,13 +8,13 @@ import {
 	getUprnIntroduction,
 	getUprnSettings,
 	getUprnTreeviewLayerPayload
-} from '@dsh/content-api';
+} from '@dsh/content';
 
-const TREEVIEW_CONFIG_CACHE_KEY = 'content-api:uprn/treeview-layers';
+const TREEVIEW_CONFIG_CACHE_KEY = 'content:uprn/treeview-layers';
 
 /**
  * Fetches the local operational app config, then enriches it with content served
- * through @dsh/content-api.
+ * through @dsh/content.
  */
 export function useFetchAppConfig() {
 	let content = $state<AppsUprnConfig | null>(null);
@@ -89,13 +89,13 @@ async function getTreeviewLayersFromCache(payload: {
 	const cached = await getCachedConfig(TREEVIEW_CONFIG_CACHE_KEY).catch(() => undefined);
 	if (cached && cached.version === payload.version) {
 		console.log(
-			'[config-cache] Cache hit - version %d matches, using cached content-api treeview config',
+			'[config-cache] Cache hit - version %d matches, using cached content treeview config',
 			payload.version
 		);
 		return cached.layers;
 	}
 
 	await putCachedConfig(TREEVIEW_CONFIG_CACHE_KEY, payload.version, [...payload.layers]);
-	console.log('[config-cache] Stored content-api treeview config for version %d', payload.version);
+	console.log('[config-cache] Stored content treeview config for version %d', payload.version);
 	return payload.layers;
 }

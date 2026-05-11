@@ -10,10 +10,10 @@
   ],
   "scripts": {
     "dev": "pnpm --filter hub dev",
-    "dev:uprn-service": "pnpm --filter @dsh/common --filter @dsh/content-api run package && pnpm --parallel --stream --filter @dsh/common --filter @dsh/content-api --filter @dsh/uprn-service run dev:linked",
+    "dev:uprn-service": "pnpm --filter @dsh/common --filter @dsh/content run package && pnpm --parallel --stream --filter @dsh/common --filter @dsh/content --filter @dsh/uprn-service run dev:linked",
     "dev:ai-catalogue": "pnpm --filter @dsh/common run package && pnpm --parallel --stream --filter @dsh/common --filter @dsh/ai-catalogue run dev:linked",
-    "package:libs": "pnpm --filter @dsh/common --filter @dsh/content-api --filter @dsh/ai-catalogue --filter @dsh/ai-where-to-build --filter @dsh/maps-page --filter @dsh/research-page --filter @dsh/uprn-service run package",
-    "dev:watch": "pnpm --parallel --stream --filter @dsh/common --filter @dsh/content-api --filter @dsh/ai-catalogue --filter @dsh/ai-where-to-build --filter @dsh/maps-page --filter @dsh/research-page --filter @dsh/uprn-service --filter hub run dev:workspace",
+    "package:libs": "pnpm --filter @dsh/common --filter @dsh/content --filter @dsh/ai-catalogue --filter @dsh/ai-where-to-build --filter @dsh/maps-page --filter @dsh/research-page --filter @dsh/uprn-service run package",
+    "dev:watch": "pnpm --parallel --stream --filter @dsh/common --filter @dsh/content --filter @dsh/ai-catalogue --filter @dsh/ai-where-to-build --filter @dsh/maps-page --filter @dsh/research-page --filter @dsh/uprn-service --filter hub run dev:workspace",
     "build": "pnpm -r run build",
     "lint": "pnpm -r run lint",
     "test": "pnpm -r run test"

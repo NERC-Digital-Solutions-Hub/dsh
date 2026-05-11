@@ -69,7 +69,7 @@ export async function generateStaticContentApi(
 	);
 
 	console.log(
-		`[content-api] Generated ${endpoints.length} endpoint files for "${environment}" in ${outDir}`
+		`[content] Generated ${endpoints.length} endpoint files for "${environment}" in ${outDir}`
 	);
 }
 

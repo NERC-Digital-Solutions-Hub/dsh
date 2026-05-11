@@ -42,7 +42,7 @@
 		"@arcgis/core": "^4.33.13",
 		"@arcgis/map-components": "^4.34.9",
 		"@dsh/common": "workspace:*",
-		"@dsh/content-api": "workspace:*",
+		"@dsh/content": "workspace:*",
 		"@internationalized/date": "^3.10.0",
 		"@keenmate/svelte-treeview": "^4.8.0",
 		"@lucide/svelte": "^0.544.0",

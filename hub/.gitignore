@@ -9,7 +9,7 @@ node_modules
 /.svelte-kit
 /build
 /dist
-/static/content-api
+/static/content
 
 # OS
 .DS_Store
