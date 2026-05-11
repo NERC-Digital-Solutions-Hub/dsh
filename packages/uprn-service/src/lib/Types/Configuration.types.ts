@@ -8,7 +8,7 @@ export type AppUprnContentConfig = {
 };
 
 export type AppUprnContent = {
-	settings: GeneralRemoteSettings;
+	settings: GeneralSettings;
 	introductionMarkdown: string;
 	customRenderers: CustomRenderers;
 };
@@ -60,7 +60,7 @@ export type TagDefinition = {
 /**
  * Configuration for the AI UPRN chatbot, including the initial message and example questions to guide users.
  */
-export type ChatbotRemoteConfig = {
+export type ChatbotConfig = {
 	/** The initial message that the chatbot will display when a user starts a conversation */
 	initialMessage: string;
 	/** A list of example questions that users can ask the chatbot to understand its capabilities */
@@ -70,7 +70,7 @@ export type ChatbotRemoteConfig = {
 /**
  * General settings for the UPRN service.
  */
-export type GeneralRemoteSettings = {
+export type GeneralSettings = {
 	enableIntroductionPopup: boolean;
-	chatbot: ChatbotRemoteConfig;
+	chatbot: ChatbotConfig;
 };

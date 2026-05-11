@@ -19,8 +19,8 @@ The hub mounts this package at `/apps/uprn`.
 ## External Dependencies
 
 - DSH content site:
-  - `https://nerc-digital-solutions-hub.github.io/dsh-content/`
-  - Used for app introduction, settings, and remote content manifests.
+  - `https://nerc-digital-solutions-hub.github.io/dsh-content-temp/`
+  - Used at build time for app introduction, settings, renderers, and generated CSV config.
 - DSH UPRN Download API configured in `static/config/apps/uprn/config.json`:
   - Base URL: `https://dshapitest.xyz/uprn-download/api/v1`
   - Health: `/healthz`

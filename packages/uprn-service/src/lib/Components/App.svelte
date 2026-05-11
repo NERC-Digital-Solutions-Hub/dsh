@@ -25,7 +25,6 @@
 	import { clearDatabase, updateSelection } from '$lib/db';
 	import { setItemInfoDialogEvents } from '$lib/Events/ItemInfoDialogEvents';
 	import { useAiChatbotHealth } from '$lib/Hooks/UseAiChatbotHealth.svelte';
-	import { useFetchAppConfig } from '$lib/Hooks/UseFetchAppConfig.svelte';
 	import { useLoadSelectionsFromIndexDb } from '$lib/Hooks/UseLoadSelectionsFromIndexDb.svelte';
 	import { useUprnDownloadHealth } from '$lib/Hooks/UseUprnDownloadHealth.svelte';
 	import { SelectionState } from '$lib/Models/Treeview/SelectionState';
@@ -58,14 +57,20 @@
 	import { installBrowserPolyfills } from '$lib/Utilities/browser-polyfills';
 	import { InfoIcon, Plus } from '@lucide/svelte';
 	import { onMount } from 'svelte';
-	import { SvelteSet } from 'svelte/reactivity';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { useUprnDownloadSelectionAreaLimits } from '$lib/Hooks/UseUprnDownloadSelectionAreaLimits.svelte';
 	import Button from '$lib/Components/shadcn/button/button.svelte';
-	import type { ChatbotRemoteConfig } from '$lib/Types/Configuration.types';
+	import type { AppsUprnConfig, ChatbotConfig } from '$lib/Types/Configuration.types';
 	import { ScrollArea } from '$lib/Components/shadcn/scroll-area';
 	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 
 	installBrowserPolyfills();
+
+	type Props = {
+		config: AppsUprnConfig;
+	};
+
+	let { config }: Props = $props();
 
 	const tabBarTriggers = [
 		{
@@ -125,8 +130,17 @@
 	const downloadsStore: DownloadsStore = new DownloadsStore();
 	const persistentUprnVisibilityGroupId = 'group:uprn';
 
-	/** Hook for fetching the app configuration. */
-	const appConfig = useFetchAppConfig();
+	const appConfig = {
+		get content() {
+			return config;
+		},
+		get error() {
+			return null;
+		},
+		get isLoading() {
+			return false;
+		}
+	};
 
 	/** State to track whether initial selections have been loaded from the database. */
 	let initializedSelectionsFromDb = $state(false);
@@ -159,7 +173,7 @@
 	let currentTab: TabType = $state(TabType.AreaOfInterest);
 
 	/** State for tracking tabs that have been mounted at least once. */
-	const mountedTabs: Set<TabType> = $state(new SvelteSet<TabType>([TabType.AreaOfInterest]));
+	const mountedTabs: Set<TabType> = new SvelteSet<TabType>([TabType.AreaOfInterest]);
 
 	/** State for tracking the tab bar progress that contains the tabs the user has visited. */
 	let tabProgressByValue: Record<string, TabProgress | undefined> = $state({});
@@ -168,7 +182,7 @@
 	let tabBarWidth: number | null = $state(null);
 
 	/** State of the IDs of currently selected tags to filter by. */
-	const selectedTagIds: Set<string> = $state(new SvelteSet<string>());
+	const selectedTagIds: Set<string> = new SvelteSet<string>();
 
 	/** State of the ArcGIS MapView instance. */
 	let mapView: __esri.MapView | null = $state(null);
@@ -233,10 +247,10 @@
 	/** Derived state to create a map of area selection limits by layer ID for easy lookup. */
 	const areaSelectionLimitsMap: Map<string, number> = $derived.by(() => {
 		if (!areaSelectionLimits || !areaSelectionLimits.content) {
-			return new Map<string, number>();
+			return new SvelteMap<string, number>();
 		}
 
-		const map = new Map<string, number>();
+		const map = new SvelteMap<string, number>();
 		areaSelectionLimits.content.layers.forEach((limit) => {
 			map.set(limit.layerId, limit.areaLimit);
 		});
@@ -250,7 +264,7 @@
 	const settings = $derived(appConfig.content?.content.settings ?? null);
 
 	/** Derived state for the chatbot settings. */
-	const chatbotSettings: ChatbotRemoteConfig | null = $derived.by(() => {
+	const chatbotSettings: ChatbotConfig | null = $derived.by(() => {
 		if (!settings?.chatbot) {
 			return null;
 		}
@@ -692,7 +706,6 @@
 		mapSyncedWithNodeVisibility = false;
 		mapView = null;
 
-		appConfig.fetch();
 		const async = async () => {
 			const { default: MapView } = await import('@arcgis/core/views/MapView');
 			mapView = new MapView();

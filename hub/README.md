@@ -35,8 +35,8 @@ The sync keeps the hub's `home` config and refreshes package config from:
 
 ## External Dependencies
 
-- DSH content site: `https://nerc-digital-solutions-hub.github.io/dsh-content/` for home, site, and research content manifests.
-- GitHub raw content from `NERC-Digital-Solutions-Hub/dsh-content` for research markdown and article metadata.
+- DSH content site: `https://nerc-digital-solutions-hub.github.io/dsh-content-temp/` for build-time home and app content manifests.
+- GitHub raw content from `NERC-Digital-Solutions-Hub/dsh-content-temp` for research markdown and article metadata.
 - DSH catalogue API, UPRN download API, UPRN chatbot API, and ArcGIS portals indirectly through the mounted package configs.
 - ArcGIS services used by the maps, UPRN, and AI where-to-build packages.
 

@@ -1,25 +1,23 @@
 export {
-	getContentApiBaseUrl,
-	getContentEnvironment,
-	getHubIntroduction,
-	getHubSettings,
-	getUprnCustomRenderers,
-	getUprnIntroduction,
-	getUprnSettings,
-	getUprnTreeviewLayerPayload,
-	getUprnTreeviewLayers
-} from './client';
+	createContentSource,
+	DEFAULT_CONTENT_ENVIRONMENT,
+	DEFAULT_DSH_CONTENT_BASE_URL,
+	fetchJson,
+	fetchText,
+	resolveContentEnvironment,
+	resolveDshContentBaseUrl,
+	rewriteRelativeMarkdownPaths
+} from './dsh-content-source';
 
 export type {
-	ChatbotRemoteConfig,
 	ContentEnvironment,
-	HubSettings,
-	InheritanceGroupConfig,
-	TreeviewConfig,
-	TreeviewNodeConfig,
-	UprnSettings,
-	UprnTreeviewLayersPayload,
-	VisibilityGroupConfig
-} from './content-types';
+	ContentSource,
+	ContentSourceOptions,
+	FetchLike,
+	ManifestAsset,
+	ManifestPage,
+	SiteManifest
+} from './dsh-content-source';
 
-export { TreeviewNodeLayerType, TreeviewNodeTypology, TreeviewType } from './content-types';
+export { createTypeScriptModule } from './module-generator';
+export type { TypeScriptExport, TypeScriptModuleOptions } from './module-generator';

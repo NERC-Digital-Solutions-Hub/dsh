@@ -1,26 +1,12 @@
 <script lang="ts">
 	import IntroductionDialog from '$lib/components/introduction-dialog/introduction-dialog.svelte';
-	import { getHubIntroduction, getHubSettings, type HubSettings } from '@dsh/content';
-	import { onMount } from 'svelte';
+	import type { PageData } from './$types';
 
-	let introduction = $state<string | null>(null);
-	let settings = $state<HubSettings | null>(null);
-
-	async function fetchHomeContent() {
-		try {
-			[introduction, settings] = await Promise.all([getHubIntroduction(), getHubSettings()]);
-		} catch (error) {
-			console.error('[hub] Failed to load content API home content', error);
-		}
-	}
-
-	onMount(() => {
-		void fetchHomeContent();
-	});
+	let { data }: { data: PageData } = $props();
 </script>
 
-{#if introduction && settings?.enableIntroductionPopup}
-	<IntroductionDialog {introduction} />
+{#if data.homeContent.introduction && data.homeContent.settings.enableIntroductionPopup}
+	<IntroductionDialog introduction={data.homeContent.introduction} />
 {/if}
 <div class="hero-section">
 	<h1 class="title">NERC Digital Solutions Hub</h1>

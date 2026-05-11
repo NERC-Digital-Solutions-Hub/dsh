@@ -5,7 +5,6 @@
 		"dev": "vite dev",
 		"dev:linked": "pnpm run package:watch",
 		"dev:workspace": "pnpm run package:watch",
-		"generate": "tsx scripts/generate-static-content.ts",
 		"build": "vite build && pnpm run prepack",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -15,7 +14,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
-		"lint": "prettier --check . && eslint ."
+		"lint": "prettier --check . && eslint .",
+		"test": "tsx --test \"src/**/*.test.ts\""
 	},
 	"files": [
 		"dist",
@@ -31,7 +31,8 @@
 	"exports": {
 		".": {
 			"types": "./dist/index.d.ts",
-			"svelte": "./dist/index.js"
+			"svelte": "./dist/index.js",
+			"default": "./dist/index.js"
 		},
 		"./styles.css": "./dist/styles.css"
 	},

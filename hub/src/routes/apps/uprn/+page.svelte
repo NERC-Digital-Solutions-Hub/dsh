@@ -2,15 +2,16 @@
 	import { browser } from '$app/environment';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { UprnServiceApp } from '@dsh/uprn-service';
+	import type { PageData } from './$types';
 
 	import * as Card from '$lib/components/shadcn/card/index.js';
 	import * as Alert from '$lib/components/shadcn/alert/index.js';
-	import { Button } from '$lib/components/shadcn/button/index.js';
 
 	import MonitorSmartphone from '@lucide/svelte/icons/monitor-smartphone';
 	import Laptop from '@lucide/svelte/icons/laptop';
 
 	const mobile = browser ? new MediaQuery('(max-width: 500px)') : null;
+	let { data }: { data: PageData } = $props();
 </script>
 
 {#if mobile?.current}
@@ -40,5 +41,5 @@
 		</Card.Root>
 	</div>
 {:else}
-	<UprnServiceApp />
+	<UprnServiceApp config={data.uprnAppConfig} />
 {/if}

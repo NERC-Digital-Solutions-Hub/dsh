@@ -1,9 +1,3 @@
-/**
- * Represents a single row from the dataset/variable table.
- *
- * Use this type when consuming data where the keys match the source columns exactly
- * (e.g. CSV headers, SQL results, etc.).
- */
 export type DatasetVariableRowRaw = {
 	DbId: number;
 	DatasetName: string | null;
@@ -27,9 +21,6 @@ export type DatasetVariableRowRaw = {
 	MetadataTabInfoUrl: string | null;
 };
 
-/**
- * Camel-cased representation of {@link DatasetVariableRowRaw} for use within the app.
- */
 export type DatasetVariableRow = {
 	dbId: number;
 	datasetName: string | null;
@@ -41,10 +32,6 @@ export type DatasetVariableRow = {
 	isEnabled: boolean;
 	defaultExported: boolean | null;
 	tvVariablePath: string | null;
-	/**
-	 * Tags as delivered by the source.
-	 * If/when the API formalizes tag structure, we can change this to `string[]`.
-	 */
 	tvTags: string | null;
 	tvMetadataConfigUrl: string | null;
 	treeviewId: number | null;
@@ -57,9 +44,6 @@ export type DatasetVariableRow = {
 	metadataTabInfoUrl: string | null;
 };
 
-/**
- * Represents a single row from the dataset table.
- */
 export type DatasetRowRaw = {
 	DbId: number;
 	WmId: string;
@@ -84,9 +68,6 @@ export type DatasetRowRaw = {
 	DisabledReason: string | null;
 };
 
-/**
- * Camel-cased representation of {@link DatasetRowRaw} for use within the app.
- */
 export type DatasetRow = {
 	dbId: number;
 	wmId: string;
@@ -111,9 +92,6 @@ export type DatasetRow = {
 	disabledReason: string | null;
 };
 
-/**
- * Represents a single row from the folder table.
- */
 export type FolderRowRaw = {
 	DbId: number;
 	FolderName: string | null;
@@ -129,9 +107,6 @@ export type FolderRowRaw = {
 	Description: string | null;
 };
 
-/**
- * Camel-cased representation of {@link FolderRowRaw} for use within the app.
- */
 export type FolderRow = {
 	dbId: number;
 	folderName: string | null;
