@@ -22,12 +22,21 @@ export class LayerViewProvider {
 		return await this.#mapView.whenLayerView(layer);
 	}
 
+	/**
+	 * Gets a layer from the underlying map without waiting for it to render.
+	 * @param layerId The ID of the layer to retrieve.
+	 * @returns The layer with the provided ID, if it exists in the map.
+	 */
+	public getLayerById(layerId: string): __esri.Layer | undefined {
+		return this.#mapView.map?.findLayerById(layerId) ?? undefined;
+	}
+
 	/**	 *
 	 * @param layerId The ID of the layer to get the layer view of.
 	 * @returns The layer view of the layer with the provided ID.
 	 */
 	public async getLayerViewById(layerId: string): Promise<__esri.LayerView | undefined> {
-		const layer = this.#mapView.map?.findLayerById(layerId);
+		const layer = this.getLayerById(layerId);
 		if (!layer) {
 			return undefined;
 		}

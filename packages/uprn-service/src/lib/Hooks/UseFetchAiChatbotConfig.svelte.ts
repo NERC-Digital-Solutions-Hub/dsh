@@ -1,4 +1,4 @@
-import type { ChatbotRemoteConfig } from '$lib/Types/Configuration.types';
+import type { ChatbotConfig } from '$lib/Types/Configuration.types';
 
 /**
  * Hook used to fetch the configuration for the AI UPRN chatbot service. It manages the loading state,
@@ -7,7 +7,7 @@ import type { ChatbotRemoteConfig } from '$lib/Types/Configuration.types';
  * @returns The loading, error, content states as well as a fetch method.
  */
 export function useFetchAiChatbotConfig(url: string) {
-	let content = $state<ChatbotRemoteConfig | null>(null);
+	let content = $state<ChatbotConfig | null>(null);
 	let error = $state<unknown>(null);
 	let isLoading = $state(false);
 
@@ -22,7 +22,7 @@ export function useFetchAiChatbotConfig(url: string) {
 				throw new Error(`Configuration fetch failed: ${response.statusText}`);
 			}
 
-			content = (await response.json()) as ChatbotRemoteConfig;
+			content = (await response.json()) as ChatbotConfig;
 		} catch (err) {
 			error = err;
 			content = null;

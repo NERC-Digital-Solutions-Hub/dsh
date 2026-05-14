@@ -8,7 +8,7 @@
 	import { useFetchAiChatbotConfig } from '$lib/Hooks/UseFetchAiChatbotConfig.svelte';
 	import { useSubmitAiChatbotChat } from '$lib/Hooks/UseSubmitAiChatbotChat.svelte';
 	import type { AppTabState } from '$lib/Types/Chatbot.types';
-	import type { ChatbotRemoteConfig } from '$lib/Types/Configuration.types';
+	import type { ChatbotConfig } from '$lib/Types/Configuration.types';
 	import { cn } from '$lib/utils';
 	import { SendIcon, Flag } from '@lucide/svelte';
 	import { onMount, tick } from 'svelte';
@@ -36,7 +36,7 @@
 	};
 
 	type Props = {
-		chatbotConfig: ChatbotRemoteConfig;
+		chatbotConfig: ChatbotConfig;
 		chatEndpoint: string;
 		feedbackEndpoint: string;
 		getTabState: () => Promise<AppTabState>;

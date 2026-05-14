@@ -1,8 +1,4 @@
 {
-    "content": {
-        "baseUrl": "https://nerc-digital-solutions-hub.github.io/dsh-content/",
-        "sitePath": "site.json"
-    },
     "uprnDownload": {
         "baseUrl": "https://dshapitest.xyz/uprn-download/api/v1",
         "healthRoute": "/healthz",

@@ -5,7 +5,8 @@
 	import Spinner from '$lib/Components/shadcn/spinner/spinner.svelte';
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 	import type { AreaSelectionInteractionStore } from '$lib/Stores/AreaSelectionInteractionStore.svelte';
-	import { DataSelectionStore } from '$lib/Stores/DataSelectionStore.svelte';
+	import type { AreaSelectionStore } from '$lib/Stores/AreaSelectionStore.svelte';
+	import type { DataSelectionStore } from '$lib/Stores/DataSelectionStore.svelte';
 	import type DownloadsStore from '$lib/Stores/DownloadsStore.svelte';
 	import { TreeviewNodeLayerType } from '$lib/Types/Treeview.types';
 	import { Check, TriangleAlert } from '@lucide/svelte';
@@ -18,7 +19,6 @@
 	import { onDestroy } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
-	import { AreaSelectionStore } from '$lib/Stores/AreaSelectionStore.svelte';
 
 	type Props = {
 		onExportSuccess?: () => void;
@@ -42,7 +42,7 @@
 
 	const areRequirementsMet = $derived.by(() => {
 		return (
-			areaSelectionInteractionStore.selectionViewState?.areaHandles.size > 0 &&
+			areaSelectionStore.areaIds.size > 0 &&
 			dataSelectionStore.getAllSelections().length > 0 &&
 			!exceedsAreaSelectionLimits()
 		);
@@ -83,8 +83,13 @@
 	 * Validates that areas and data are selected, then initiates the export process.
 	 */
 	function handleExportClick() {
-		if (areaSelectionInteractionStore.selectionViewState?.areaHandles.size <= 0) {
+		if (areaSelectionStore.areaIds.size <= 0) {
 			toast.error('Please select at least one area to export.');
+			return;
+		}
+
+		if (!areaSelectionStore.layerId) {
+			toast.error('Please select an area layer to export.');
 			return;
 		}
 
@@ -99,23 +104,27 @@
 		console.log('Starting export...');
 
 		const addDownload = async () => {
-			const areaFieldCodes: string[] = await areaSelectionInteractionStore.getAreaCodesById(
-				areaSelectionInteractionStore.selectionViewState.areaHandles.keys().toArray()
+			const selectedAreaIds = Array.from(areaSelectionStore.areaIds);
+			const layerId = areaSelectionStore.layerId;
+			if (!layerId) {
+				toast.error('Please select an area layer to export.');
+				return;
+			}
+
+			const areaFieldCodes: string[] = await areaSelectionInteractionStore.getAreaCodesByLayerId(
+				layerId,
+				selectedAreaIds
 			);
 
-			const areaFieldInfos: AreaFieldInfoWithCode[] =
-				areaSelectionInteractionStore.selectionViewState.areaHandles
-					.entries()
-					.map(([area, _], index) => {
-						return {
-							id: area,
-							code: areaFieldCodes[index]
-						};
-					})
-					.toArray();
+			const areaFieldInfos: AreaFieldInfoWithCode[] = selectedAreaIds.map((area, index) => {
+				return {
+					id: area,
+					code: areaFieldCodes[index]
+				};
+			});
 
 			const areaSelection: AreaSelectionInfoWithCode = {
-				layerId: areaSelectionInteractionStore.selectionViewState.layerView?.layer.id || '',
+				layerId,
 				areaFieldInfos: areaFieldInfos
 			};
 
@@ -182,7 +191,7 @@
 					The current area selection exceeds the maximum allowed for export. The Beta2 limit for the
 					selected area layer is {limit} areas.
 				</p>
-			{:else if areaSelectionInteractionStore.selectionViewState?.areaHandles.size === 0}
+			{:else if areaSelectionStore.areaIds.size === 0}
 				<p class="text-sm text-muted-foreground">Please select at least one area to export.</p>
 			{:else if dataSelectionStore.getAllSelections().length === 0}
 				<p class="text-sm text-muted-foreground">Please select at least one dataset to export.</p>
@@ -212,7 +221,7 @@
 						{@const limit = areaSelectionLimits.get(areaSelectionStore.layerId)}
 						The current area selection exceeds the maximum allowed for export. The Beta2 limit for the
 						selected area layer is {limit} areas.
-					{:else if areaSelectionInteractionStore.selectionViewState?.areaHandles.size === 0}
+					{:else if areaSelectionStore.areaIds.size === 0}
 						Please select at least one area to export.
 					{:else if dataSelectionStore.getAllSelections().length === 0}
 						Please select at least one dataset to export.

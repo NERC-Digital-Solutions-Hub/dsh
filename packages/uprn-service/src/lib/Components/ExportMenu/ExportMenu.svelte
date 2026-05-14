@@ -6,10 +6,8 @@
 	import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 	import type { INodeProvider } from '$lib/Services/INodeProvider';
-	import type {
-		AreaFieldHandleInfo,
-		AreaSelectionInteractionStore
-	} from '$lib/Stores/AreaSelectionInteractionStore.svelte';
+	import type { AreaSelectionInteractionStore } from '$lib/Stores/AreaSelectionInteractionStore.svelte';
+	import type { AreaSelectionStore } from '$lib/Stores/AreaSelectionStore.svelte';
 	import type { DataSelectionStore } from '$lib/Stores/DataSelectionStore.svelte';
 	import DatabaseIcon from '@lucide/svelte/icons/database';
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
@@ -27,44 +25,51 @@
 	type AreaInfo = {
 		id: number;
 		name: string;
-		HighlightAreaInfo: AreaFieldHandleInfo;
+		nameStatus: 'loading' | 'loaded' | 'unavailable';
 	};
 
-	type SelectionTreeviewNodeTypeWithParent = SelectionTreeviewNodeType & {
+	type ExportSelectionTreeviewNode = SelectionTreeviewNodeType & {
+		nameStatus?: AreaInfo['nameStatus'];
 		parentId?: string;
 	};
 
 	type Props = {
 		nodeProvider: INodeProvider;
 		nodeConfigProvider: INodeConfigProvider;
+		areaSelectionStore: AreaSelectionStore;
 		areaSelectionInteractionStore: AreaSelectionInteractionStore;
 		dataSelectionStore: DataSelectionStore;
+		webMapLoaded?: boolean;
 	};
 
 	const {
 		nodeProvider,
 		nodeConfigProvider,
+		areaSelectionStore,
 		areaSelectionInteractionStore,
-		dataSelectionStore
+		dataSelectionStore,
+		webMapLoaded = false
 	}: Props = $props();
 
 	let areaInfos: AreaInfo[] = $state<AreaInfo[]>([]);
 
 	/** Extended flat node that carries the original SelectionTreeviewNode reference. */
 	interface ExportFlatNode extends FlatTreeNode {
-		selectionNode: SelectionTreeviewNodeType;
+		selectionNode: ExportSelectionTreeviewNode;
 		hasChildren: boolean;
 	}
+
+	type ExportTreeNode = LTreeNode<ExportFlatNode>;
 
 	/**
 	 * Flatten a hierarchical SelectionTreeviewNode tree into a flat array
 	 * for the BaseTreeview component.
 	 */
-	function flattenSelectionTree(roots: SelectionTreeviewNodeType[]): ExportFlatNode[] {
+	function flattenSelectionTree(roots: ExportSelectionTreeviewNode[]): ExportFlatNode[] {
 		const result: ExportFlatNode[] = [];
 
 		function walk(
-			nodes: SelectionTreeviewNodeType[],
+			nodes: ExportSelectionTreeviewNode[],
 			parentPath: string,
 			ancestorGuides: GuideType[]
 		) {
@@ -103,18 +108,17 @@
 	 * Builds a hierarchical tree structure from selected area infos.
 	 * Areas are grouped under their parent layer.
 	 */
-	let areaSelectionTree: SelectionTreeviewNodeType[] = $derived.by(() => {
+	let areaSelectionTree: ExportSelectionTreeviewNode[] = $derived.by(() => {
 		if (areaInfos.length === 0) {
 			return [];
 		}
 
-		// All areas belong to the same layer, so group them under the layer
-		const layerTitle =
-			areaSelectionInteractionStore.selectionViewState?.layerView?.layer?.title ?? 'Selected Areas';
+		const layerTitle = getAreaLayerTitle(areaSelectionStore.layerId);
 
-		const childNodes: SelectionTreeviewNodeType[] = areaInfos.map((area) => ({
-			id: String(area.HighlightAreaInfo?.id),
+		const childNodes: ExportSelectionTreeviewNode[] = areaInfos.map((area) => ({
+			id: String(area.id),
 			name: area.name,
+			nameStatus: area.nameStatus,
 			isVariable: false,
 			isLeaf: true,
 			children: [],
@@ -124,7 +128,7 @@
 		// Return a single root node representing the layer with areas as children
 		return [
 			{
-				id: 'area-layer-root',
+				id: areaSelectionStore.layerId ?? 'area-layer-root',
 				name: layerTitle,
 				isVariable: false,
 				isLeaf: false,
@@ -138,20 +142,20 @@
 	 * Builds a hierarchical tree structure from selected data nodes.
 	 * Nodes are grouped by their parent nodes (including ancestors).
 	 */
-	let dataSelectionTree: SelectionTreeviewNodeType[] = $derived.by(() => {
+	let dataSelectionTree: ExportSelectionTreeviewNode[] = $derived.by(() => {
 		const selections = dataSelectionStore.getAllSelections();
 		if (selections.length === 0) return [];
 
-		const nodeMap = new Map<string, SelectionTreeviewNodeTypeWithParent>();
+		const nodeMap = new Map<string, ExportSelectionTreeviewNode>();
 
-		const ensureNode = (node: TreeviewNode): SelectionTreeviewNodeTypeWithParent | null => {
+		const ensureNode = (node: TreeviewNode): ExportSelectionTreeviewNode | null => {
 			const existing = nodeMap.get(node.id);
 			if (existing) return existing;
 
 			const nodeConfig: TreeviewNodeConfig | undefined = nodeConfigProvider.getConfig(node.id);
 			if (!nodeConfig) return null;
 
-			const created: SelectionTreeviewNodeTypeWithParent = {
+			const created: ExportSelectionTreeviewNode = {
 				id: node.id,
 				name: nodeConfig.displayName || nodeConfig.name || node.id,
 				isVariable: isVariableNode(node),
@@ -190,7 +194,7 @@
 			}
 		}
 
-		const rootNodes: SelectionTreeviewNodeType[] = [];
+		const rootNodes: ExportSelectionTreeviewNode[] = [];
 
 		for (const node of nodeMap.values()) {
 			if (!node.parentId) {
@@ -217,38 +221,51 @@
 	let flatDataData = $derived(flattenSelectionTree(dataSelectionTree));
 
 	$effect(() => {
-		if (!areaSelectionInteractionStore) {
+		const layerId = areaSelectionStore.layerId;
+		const areaIds = Array.from(areaSelectionStore.areaIds);
+		const selectedLayerViewId =
+			areaSelectionInteractionStore.selectionViewState.layerView?.layer?.id;
+		void webMapLoaded;
+		void selectedLayerViewId;
+
+		if (!layerId || areaIds.length === 0) {
 			areaInfos = [];
 			return;
 		}
 
-		if (!areaSelectionInteractionStore.selectionViewState?.areaHandles.size) {
-			areaInfos = [];
-			return;
-		}
+		let cancelled = false;
+		areaInfos = areaIds.map((id) => ({
+			id,
+			name: 'Loading area name...',
+			nameStatus: 'loading'
+		}));
 
 		const getAreaInfos = async () => {
-			const areaIds = areaSelectionInteractionStore.selectionViewState.areaHandles.keys().toArray();
-			const areaNames = await areaSelectionInteractionStore.getAreaNamesById(areaIds);
+			const areaNames = await areaSelectionInteractionStore.getAreaNamesByLayerId(layerId, areaIds);
 
-			const fieldHandleInfos: AreaFieldHandleInfo[] =
-				areaSelectionInteractionStore.selectionViewState.areaHandles
-					.entries()
-					.toArray()
-					.map(([id, handle]) => ({ id, handle }));
-
-			const newAreaInfos: AreaInfo[] = [];
-			for (let i = 0; i < areaNames.length; i++) {
-				newAreaInfos.push({
-					id: areaIds[i],
-					name: areaNames[i] || 'Unknown Area',
-					HighlightAreaInfo: fieldHandleInfos[i]
-				});
+			if (cancelled) {
+				return;
 			}
-			areaInfos = newAreaInfos;
+
+			const canQueryLayer = areaSelectionInteractionStore.canQueryAreaLayer(layerId);
+			areaInfos = areaIds.map((id, i) => {
+				const name = areaNames[i];
+				const isLoaded = !!name;
+				const isUnavailable = !isLoaded && canQueryLayer;
+
+				return {
+					id,
+					name: name || (isUnavailable ? 'Unknown Area' : 'Loading area name...'),
+					nameStatus: isLoaded ? 'loaded' : isUnavailable ? 'unavailable' : 'loading'
+				};
+			});
 		};
 
 		getAreaInfos();
+
+		return () => {
+			cancelled = true;
+		};
 	});
 
 	/**
@@ -331,6 +348,33 @@
 	function isVariableNode(node: TreeviewNode): node is VariableTreeviewNode {
 		return node.type === TreeviewNodeType.Variable;
 	}
+
+	function getAreaLayerTitle(layerId: string | null): string {
+		const node = layerId ? findDatasetNodeByLayerId(layerId) : null;
+		if (!node) return 'Selected Areas';
+
+		const nodeConfig = nodeConfigProvider.getConfig(node.id);
+		return nodeConfig?.displayName || nodeConfig?.name || node.name || 'Selected Areas';
+	}
+
+	function findDatasetNodeByLayerId(layerId: string): DatasetTreeviewNode | null {
+		const walk = (nodes: TreeviewNode[]): DatasetTreeviewNode | null => {
+			for (const node of nodes) {
+				if (isDatasetNode(node) && node.layerId === layerId) {
+					return node;
+				}
+
+				const match = walk(node.children);
+				if (match) {
+					return match;
+				}
+			}
+
+			return null;
+		};
+
+		return walk(nodeProvider.getAllTreeviewNodes());
+	}
 </script>
 
 <div class="section">
@@ -348,7 +392,7 @@
 			virtualScroll={{ enabled: false }}
 			rowPadding="0rem"
 		>
-			{#snippet nodeContent(treeNode: LTreeNode)}
+			{#snippet nodeContent(treeNode: ExportTreeNode)}
 				{@const sNode = treeNode.data!.selectionNode}
 				{@const isFolder = treeNode.data!.hasChildren}
 				{@const icon = getNodeIcon(
@@ -374,7 +418,13 @@
 							</span>
 						</div>
 
-						<span class="node-name">{sNode.name}</span>
+						<span
+							class={sNode.nameStatus === 'loading'
+								? 'node-name text-muted-foreground italic'
+								: 'node-name'}
+						>
+							{sNode.name}
+						</span>
 
 						<!-- svelte-ignore a11y_click_events_have_key_events -->
 						<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -421,7 +471,7 @@
 			virtualScroll={{ enabled: false }}
 			rowPadding="0rem"
 		>
-			{#snippet nodeContent(treeNode: LTreeNode)}
+			{#snippet nodeContent(treeNode: ExportTreeNode)}
 				{@const sNode = treeNode.data!.selectionNode}
 				{@const isFolder = treeNode.data!.hasChildren}
 				{@const icon = getNodeIcon(

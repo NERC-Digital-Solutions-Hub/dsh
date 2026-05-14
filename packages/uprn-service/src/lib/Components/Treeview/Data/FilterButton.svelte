@@ -43,11 +43,11 @@
 	aria-pressed={isActive}
 	title="Filter"
 >
-{#if isActive}
-	<FilterEnabledIcon />
-{:else}
-	<FilterDisabledIcon />
-{/if}
+	{#if isActive}
+		<FilterEnabledIcon />
+	{:else}
+		<FilterDisabledIcon />
+	{/if}
 </button>
 
 <style>

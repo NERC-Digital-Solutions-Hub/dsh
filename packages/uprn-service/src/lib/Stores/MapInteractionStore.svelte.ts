@@ -156,6 +156,10 @@ export class MapInteractionStore {
 	 */
 	private setupClickHandler(view: MapView): void {
 		this.clickHandle = view.on('immediate-click', async (event) => {
+			if (event.button !== 0) {
+				return;
+			}
+
 			const { results } = await view.hitTest(event);
 			const result = results[0];
 

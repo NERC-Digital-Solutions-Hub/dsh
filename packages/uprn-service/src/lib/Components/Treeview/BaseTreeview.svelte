@@ -43,10 +43,10 @@
 	import { Tree, type LTreeNode } from '@keenmate/svelte-treeview';
 	import '@keenmate/svelte-treeview/styles.css';
 	import './treeview-common.css';
-	import ExpandableSearchBar from '$lib/Components/ExpandableSearchBar/ExpandableSearchBar.svelte';
-	import { Input } from '$lib/Components/shadcn/input/index.js';
-	import { Search, X } from '@lucide/svelte';
+	import TreeviewToolbar from './TreeviewToolbar.svelte';
 	import type { Snippet } from 'svelte';
+
+	type TypedTreeNode = LTreeNode<T>;
 
 	type Props = {
 		/** Flat tree data to render. */
@@ -62,9 +62,9 @@
 		/** Initial expand level. @default 0 */
 		expandLevel?: number;
 		/** Called when a tree node is clicked. */
-		onNodeClicked?: (node: LTreeNode<T>) => void;
+		onNodeClicked?: (node: TypedTreeNode) => void;
 		/** Snippet for rendering each node row. Receives the LTreeNode and guide line info. */
-		nodeContent: Snippet<[LTreeNode<T>]>;
+		nodeContent: Snippet<[TypedTreeNode]>;
 		/** Optional snippet for the toolbar area next to the search bar. */
 		toolbarEnd?: Snippet;
 		/** Extra CSS classes for the outer container. */
@@ -97,33 +97,16 @@
 			: null
 	);
 
-	/**
-	 * Tracks which node IDs are currently expanded.
-	 * Kept in sync via handleNodeClicked.
-	 */
-	let expandedSet = $state(new Set<string>());
-
-	/** Sync expandedSet when data changes (initial expansion state). */
-	$effect(() => {
-		expandedSet = new Set(data.filter((n) => n.isExpanded).map((n) => n.nodeId));
-	});
-
 	/** Measured height for the virtual scroll container. */
-	let treeHeight = $state(300);
+	let treeHeight = $state<number | null>(null);
+	let virtualLayoutRefreshKey = $state(0);
+	// KeenMate reads clientHeight inside a derived value, but clientHeight itself is not reactive.
+	// Toggling overscan after layout measurement makes it recalculate the visible virtual window.
+	const virtualOverscan = $derived(
+		vsConfig ? vsConfig.overscan + (virtualLayoutRefreshKey % 2) : 0
+	);
 
-	function handleNodeClicked(node: LTreeNode<T>): void {
-		if (node.hasChildren) {
-			const nodeId = node.data?.nodeId;
-			if (nodeId) {
-				const next = new Set(expandedSet);
-				if (next.has(nodeId)) {
-					next.delete(nodeId);
-				} else {
-					next.add(nodeId);
-				}
-				expandedSet = next;
-			}
-		}
+	function handleNodeClicked(node: TypedTreeNode): void {
 		onNodeClicked?.(node);
 	}
 
@@ -132,6 +115,9 @@
 	 * scroll-area-viewport or card-content ancestor.
 	 */
 	function fitToScrollViewport(el: HTMLElement) {
+		let animationFrame: number | null = null;
+		let virtualRefreshFrame: number | null = null;
+
 		function findViewport(node: HTMLElement | null): HTMLElement | null {
 			while (node) {
 				const slot = node.getAttribute('data-slot');
@@ -141,25 +127,113 @@
 			return null;
 		}
 
+		function isHidden(node: HTMLElement): boolean {
+			return !!node.closest('[hidden]');
+		}
+
 		function measure() {
+			if (isHidden(el)) return;
+
 			const viewport = findViewport(el.parentElement);
 			if (!viewport) return;
+
 			const treeWrapper = el.querySelector<HTMLElement>('.tree-wrapper');
 			if (!treeWrapper) return;
+
 			const viewportBottom = viewport.getBoundingClientRect().bottom;
 			const treeTop = treeWrapper.getBoundingClientRect().top;
-			treeHeight = Math.max(100, viewportBottom - treeTop);
+			const nextTreeHeight = viewportBottom - treeTop;
+
+			if (nextTreeHeight <= 0) return;
+
+			const measuredHeight = Math.max(100, Math.floor(nextTreeHeight));
+			if (treeHeight === measuredHeight) return;
+
+			treeHeight = measuredHeight;
+			scheduleVirtualLayoutRefresh();
+		}
+
+		function updateScrollbarCompensation() {
+			if (isHidden(el)) return;
+
+			const treeWrapper = el.querySelector<HTMLElement>('.tree-wrapper');
+			const virtualScroller = el.querySelector<HTMLElement>('.ltree-virtual-scroll');
+			if (!treeWrapper || !virtualScroller) return;
+
+			const scrollbarWidth = virtualScroller.offsetWidth - virtualScroller.clientWidth;
+			const hasScrollbar =
+				scrollbarWidth > 0 && virtualScroller.scrollHeight > virtualScroller.clientHeight;
+			const compensatedWidth = `${hasScrollbar ? scrollbarWidth : 0}px`;
+
+			treeWrapper.classList.toggle('treeview-has-scrollbar', hasScrollbar);
+			if (treeWrapper.style.getPropertyValue('--tree-scrollbar-width') !== compensatedWidth) {
+				treeWrapper.style.setProperty('--tree-scrollbar-width', compensatedWidth);
+			}
+		}
+
+		function scheduleMeasure() {
+			if (animationFrame !== null) {
+				cancelAnimationFrame(animationFrame);
+			}
+
+			animationFrame = requestAnimationFrame(() => {
+				animationFrame = requestAnimationFrame(() => {
+					animationFrame = null;
+					measure();
+					updateScrollbarCompensation();
+				});
+			});
+		}
+
+		function scheduleVirtualLayoutRefresh() {
+			if (virtualRefreshFrame !== null) {
+				cancelAnimationFrame(virtualRefreshFrame);
+			}
+
+			virtualRefreshFrame = requestAnimationFrame(() => {
+				virtualRefreshFrame = requestAnimationFrame(() => {
+					virtualRefreshFrame = null;
+					virtualLayoutRefreshKey += 1;
+				});
+			});
 		}
 
 		const viewport = findViewport(el.parentElement);
-		const ro = new ResizeObserver(measure);
+		const ro = new ResizeObserver(scheduleMeasure);
 		if (viewport) ro.observe(viewport);
 		ro.observe(el);
-		measure();
+
+		const mo = new MutationObserver(() => {
+			updateScrollbarCompensation();
+			scheduleMeasure();
+		});
+		mo.observe(el, {
+			attributes: true,
+			childList: true,
+			subtree: true,
+			attributeFilter: ['class', 'style']
+		});
+
+		let ancestor = el.parentElement;
+		while (ancestor) {
+			mo.observe(ancestor, {
+				attributeFilter: ['hidden', 'data-state', 'class', 'style']
+			});
+			ancestor = ancestor.parentElement;
+		}
+
+		scheduleMeasure();
 
 		return {
 			destroy() {
+				if (animationFrame !== null) {
+					cancelAnimationFrame(animationFrame);
+				}
+				if (virtualRefreshFrame !== null) {
+					cancelAnimationFrame(virtualRefreshFrame);
+				}
 				ro.disconnect();
+				mo.disconnect();
 			}
 		};
 	}
@@ -167,84 +241,51 @@
 
 <div use:fitToScrollViewport class="flex flex-col pt-1 {className}">
 	{#if searchBar.enabled || toolbarEnd}
-		<div class="flex mb-1 h-auto w-full items-end" style="padding-inline: {rowPadding};">
-			{#if searchBar.enabled}
-				{#if searchBar.collapsible}
-					<ExpandableSearchBar
-						bind:searchText
-						placeholder={searchBar.placeholder ?? 'Search...'}
-						collapsible
-					/>
-				{:else}
-					<div class="relative h-8 min-w-0 flex-1">
-						<Search
-							class="text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2"
-						/>
-						<Input
-							type="text"
-							placeholder={searchBar.placeholder ?? 'Search...'}
-							class="h-8 pl-8 pr-8 text-sm"
-							bind:value={searchText}
-						/>
-						{#if searchText}
-							<button
-								type="button"
-								class="text-muted-foreground hover:text-foreground absolute right-2 top-1/2 -translate-y-1/2 transition-colors"
-								onclick={() => (searchText = '')}
-								aria-label="Clear search"
-							>
-								<X class="size-4" />
-							</button>
-						{/if}
-					</div>
-				{/if}
-			{/if}
-			{#if toolbarEnd}
-				{@render toolbarEnd()}
-			{/if}
-		</div>
+		<TreeviewToolbar {searchBar} bind:searchText {toolbarEnd} {rowPadding} />
 	{/if}
 
 	<div class="tree-wrapper overflow-hidden">
-		<Tree
-			{data}
-			idMember="nodeId"
-			pathMember="path"
-			displayValueMember="name"
-			searchValueMember="name"
-			orderMember="order"
-			shouldUseInternalSearchIndex={true}
-			isExpandedMember="isExpanded"
-			bind:searchText
-			virtualScroll={!!vsConfig}
-			virtualRowHeight={vsConfig?.rowHeight ?? 44}
-			virtualOverscan={vsConfig?.overscan ?? 1}
-			virtualContainerHeight={vsConfig ? `${treeHeight}px` : '100%'}
-			{shouldToggleOnNodeClick}
-			{expandLevel}
-			onNodeClicked={handleNodeClicked}
-		>
-			{#snippet nodeTemplate(treeNode: LTreeNode)}
-				{@const guideLines = treeNode.data!.guideLines}
-				{@const indentLevel = guideLines.length}
-				<div class="node-row" style="padding-inline: {rowPadding};">
-					{#each guideLines as guide, i}
-						{#if guide !== 'none'}
-							<div
-								class="tree-guide-line"
-								style="left: calc({rowPadding} + {i + 0.5} * var(--tree-step, 1.5rem));"
-							></div>
-						{/if}
-					{/each}
-					<div
-						class="node-indent-wrap"
-						style="margin-left: calc({indentLevel} * var(--tree-step, 1.5rem));"
-					>
-						{@render nodeContent(treeNode as LTreeNode)}
+		{#if !vsConfig || treeHeight !== null}
+			<Tree
+				{data}
+				idMember="nodeId"
+				pathMember="path"
+				displayValueMember="name"
+				searchValueMember="name"
+				orderMember="order"
+				shouldUseInternalSearchIndex={true}
+				isExpandedMember="isExpanded"
+				bind:searchText
+				virtualScroll={!!vsConfig}
+				virtualRowHeight={vsConfig?.rowHeight ?? 44}
+				{virtualOverscan}
+				virtualContainerHeight={vsConfig ? `${treeHeight}px` : '100%'}
+				{shouldToggleOnNodeClick}
+				{expandLevel}
+				onNodeClicked={handleNodeClicked}
+			>
+				{#snippet nodeTemplate(treeNode: TypedTreeNode)}
+					{@const guideLines = treeNode.data!.guideLines}
+					{@const indentLevel = guideLines.length}
+					<div class="node-row" style="padding-inline: {rowPadding};">
+						{#each guideLines as guide, i (`${treeNode.data!.nodeId}-${i}`)}
+							{#if guide !== 'none'}
+								<div
+									class="tree-guide-line"
+									style="left: calc({rowPadding} + {i + 0.5} * var(--tree-step, 1.5rem));"
+								></div>
+							{/if}
+						{/each}
+						<div
+							class="node-indent-wrap"
+							style="margin-left: calc({indentLevel} * var(--tree-step, 1.5rem));"
+						>
+							{@render nodeContent(treeNode as TypedTreeNode)}
+						</div>
 					</div>
-				</div>
-			{/snippet}
-		</Tree>
+				{/snippet}
+			</Tree>
+		{/if}
 	</div>
 </div>
 

@@ -23,7 +23,7 @@ The hub is intentionally thin: most feature work lives in packages under `../pac
 
 ## Configuration
 
-The hub keeps its own home-page config in `static/config/home/config.json`. Package configuration is copied into `static/config` by `scripts/sync-configs.ts`, which runs from `vite.config.ts` when the hub starts or builds.
+Package configuration is copied into `static/config` by `scripts/sync-configs.ts`, which runs from `vite.config.ts` when the hub starts or builds. Build-time DSH content is loaded from `PUBLIC_DSH_CONTENT_BASE_URL`, falling back to the shared default from `@dsh/content`.
 
 The sync keeps the hub's `home` config and refreshes package config from:
 
@@ -35,8 +35,7 @@ The sync keeps the hub's `home` config and refreshes package config from:
 
 ## External Dependencies
 
-- DSH content site: `https://nerc-digital-solutions-hub.github.io/dsh-content/` for home, site, and research content manifests.
-- GitHub raw content from `NERC-Digital-Solutions-Hub/dsh-content` for research markdown and article metadata.
+- DSH content site configured by `PUBLIC_DSH_CONTENT_BASE_URL` for build-time home, app content, research markdown, and article metadata.
 - DSH catalogue API, UPRN download API, UPRN chatbot API, and ArcGIS portals indirectly through the mounted package configs.
 - ArcGIS services used by the maps, UPRN, and AI where-to-build packages.
 

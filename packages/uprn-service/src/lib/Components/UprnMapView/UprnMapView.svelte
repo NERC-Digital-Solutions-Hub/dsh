@@ -1,26 +1,31 @@
 <script lang="ts">
-	import { onDestroy, mount, unmount } from 'svelte';
-	import { SvelteSet } from 'svelte/reactivity';
+	import { onDestroy } from 'svelte';
+	import type { SvelteSet } from 'svelte/reactivity';
 
-	import { Spinner } from '$lib/Components/shadcn/spinner';
+	import * as ContextMenu from '$lib/Components/shadcn/context-menu';
 	import { LayerViewProvider } from '$lib/Services/LayerViewProvider';
 	import type { AreaSelectionInteractionStore } from '$lib/Stores/AreaSelectionInteractionStore.svelte';
 	import { MapInteractionStore } from '$lib/Stores/MapInteractionStore.svelte';
 	import { TabType } from '$lib/Types/Uprn.types';
+	import { cn } from '$lib/utils';
+	import { Eraser, EyeOff, List, ZoomIn, ZoomOut } from '@lucide/svelte';
+
+	import { ArcgisMapWidgets } from './ArcgisMapWidgets';
+	import { applyTabInteractionMode } from './mapInteractionMode';
+	import { configureMapView, loadFallbackMap } from './mapViewSetup';
+	import UprnMapContextMenu, { type UprnMapContextMenuEntries } from './UprnMapContextMenu.svelte';
 
 	import type MapView from '@arcgis/core/views/MapView';
-	import type { ArcgisExpand } from '@arcgis/map-components/components/arcgis-expand';
-	import type { ArcgisLegend } from '@arcgis/map-components/components/arcgis-legend';
-	import type { ArcgisSearch } from '@arcgis/map-components/components/arcgis-search';
-
-	type ArcgisExpandElement = HTMLElement & ArcgisExpand;
-	type ArcgisLegendElement = HTMLElement & ArcgisLegend;
-	type ArcgisSearchElement = HTMLElement & ArcgisSearch;
 
 	/**
 	 * Props accepted by the map view component.
+	 *
+	 * The parent owns the component's outer layout and size through `class`.
+	 * This component owns ArcGIS MapView lifecycle, widget setup, and interaction state.
 	 */
 	type Props = {
+		class?: string;
+
 		/**
 		 * The web map to render in the provided ArcGIS MapView.
 		 * When undefined or null, the component will not attempt to update the map.
@@ -46,33 +51,81 @@
 		 * Currently active application tab.
 		 */
 		currentTab: TabType;
+
+		/**
+		 * Clears area selections and hides hideable data layers.
+		 */
+		onClearSelections?: () => void;
+
+		/**
+		 * Hides visible data layers.
+		 */
+		onHideVisibleDataLayer?: () => void;
+
+		/**
+		 * True when at least one data layer is currently visible on the map.
+		 */
+		hasVisibleDataLayer?: boolean;
 	};
 
-	const { webMap, mapView, areaSelectionInteractionStore, interactableLayers, currentTab }: Props =
-		$props();
-
-	const MAP_BACKGROUND = '#CFD3D4';
-	const FALLBACK_BASEMAP = 'streets-vector';
-	const SEARCH_PLACEHOLDER = 'Search UK locations';
-	const SEARCH_URL = 'https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer';
-	const SEARCH_COUNTRY_CODE = 'GB';
-	const MAP_ZOOM_CONSTRAINTS = {
-		minZoom: 4,
-		maxZoom: 17
-	} as const;
+	const {
+		class: className,
+		webMap,
+		mapView,
+		areaSelectionInteractionStore,
+		interactableLayers,
+		currentTab,
+		onClearSelections,
+		onHideVisibleDataLayer,
+		hasVisibleDataLayer = false
+	}: Props = $props();
 
 	let mapContainer: HTMLDivElement | null = null;
-
+	let contextMenuShell = $state<HTMLDivElement | null>(null);
+	let contextMenuTrigger = $state<HTMLDivElement | null>(null);
 	let mapInteractionStore: MapInteractionStore | null = null;
-	let searchComponent: ArcgisSearchElement | null = null;
-	let legendComponent: ArcgisLegendElement | null = null;
-	let legendExpandComponent: ArcgisExpandElement | null = null;
-	let mapLoadingHandle: __esri.WatchHandle | null = null;
-
-	let searchRowEl: HTMLDivElement | null = null;
-	let spinnerSlotEl: HTMLDivElement | null = null;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	let spinnerInstance: any = null;
+	let mapWidgets: ArcgisMapWidgets | null = null;
+	let mapWidgetsView: MapView | null = null;
+	let contextMenuOpen = $state(false);
+	let legendIsOpen = $state(false);
+	let dispatchingSyntheticContextMenu = false;
+	let mapContextMenuEntries: UprnMapContextMenuEntries = $derived.by(() => ({
+		zoomIn: {
+			action: zoomIn,
+			icon: ZoomIn,
+			kind: 'action',
+			label: 'Zoom In'
+		},
+		zoomOut: {
+			action: zoomOut,
+			icon: ZoomOut,
+			kind: 'action',
+			label: 'Zoom Out'
+		},
+		toggleLegend: {
+			action: toggleLegend,
+			icon: List,
+			kind: 'action',
+			label: legendIsOpen ? 'Close Legend' : 'Open Legend'
+		},
+		selectionSeparator: {
+			kind: 'separator'
+		},
+		hideDataLayer: {
+			action: () => onHideVisibleDataLayer?.(),
+			disabled: !hasVisibleDataLayer,
+			icon: EyeOff,
+			kind: 'action',
+			label: 'Hide Data Layer'
+		},
+		clear: {
+			action: () => onClearSelections?.(),
+			disabled: areaSelectionInteractionStore.selectedAreaCount === 0,
+			icon: Eraser,
+			kind: 'action',
+			label: 'Clear Area(s)'
+		}
+	}));
 
 	/**
 	 * Creates a layer view provider for the current map view.
@@ -88,170 +141,28 @@
 	}
 
 	/**
-	 * Creates a fallback ArcGIS Map instance to be used when a WebMap cannot be loaded.
-	 */
-	async function createFallbackMap(): Promise<__esri.Map> {
-		const { default: Map } = await import('@arcgis/core/Map');
-
-		return new Map({
-			basemap: FALLBACK_BASEMAP
-		});
-	}
-
-	/**
-	 * Applies common, one-time view configuration.
-	 */
-	function configureMapView(): void {
-		mapView.container = mapContainer;
-		mapView.background = { color: MAP_BACKGROUND };
-		mapView.popupEnabled = false;
-		mapView.ui.move('zoom', 'bottom-left');
-		mapView.constraints = {
-			...mapView.constraints,
-			...MAP_ZOOM_CONSTRAINTS
-		};
-
-		configurePopupDocking();
-	}
-
-	/**
-	 * Configures popup docking behavior for small-screen-friendly placement.
-	 */
-	function configurePopupDocking(): void {
-		if (!mapView.popup) {
-			return;
-		}
-
-		mapView.popup.dockEnabled = true;
-		mapView.popup.dockOptions = {
-			position: 'bottom-right',
-			breakpoint: false
-		};
-	}
-
-	/**
 	 * Attaches a WebMap to the current MapView and configures map UI/state.
 	 */
-	async function updateMapWithWebMap(): Promise<void> {
-		if (!webMap || !mapContainer) {
-			return;
-		}
-
+	async function updateMapWithWebMap(
+		activeWebMap: __esri.WebMap,
+		container: HTMLDivElement
+	): Promise<void> {
 		try {
-			mapView.map = webMap;
-			configureMapView();
-			await setupMapLoadingWatcher();
+			mapView.map = activeWebMap;
+			configureMapView(mapView, container);
 
-			await ensureSearchComponent();
-			await ensureLegendComponent();
+			const widgets = getMapWidgets();
+			await widgets.setupMapLoadingWatcher();
+			await widgets.ensureSearchComponent();
+			await widgets.ensureLegendComponent();
 			await areaSelectionInteractionStore.refreshLayerView();
 			await areaSelectionInteractionStore.refreshAreas();
 
-			//applyTabInteractionMode(currentTab, interactableLayers);
 			console.log('[uprn-map-view] MapView updated with new webMap');
 		} catch (error) {
 			console.error('Error updating MapView with new webMap:', error);
-			await loadFallbackMap();
+			await loadFallbackMap(mapView, container);
 		}
-	}
-
-	/**
-	 * Loads a fallback basemap into the current MapView when the main web map cannot be shown.
-	 */
-	async function loadFallbackMap(): Promise<void> {
-		try {
-			const fallbackMap = await createFallbackMap();
-
-			mapView.map = fallbackMap;
-			configureMapView();
-			await mapView.when();
-
-			console.log('[uprn-map-view] Fallback map loaded');
-		} catch (fallbackError) {
-			console.error('Error loading fallback map:', fallbackError);
-		}
-	}
-
-	/**
-	 * Creates and adds the search component once, placing it to the right of a spinner slot
-	 * inside a shared flex-row container added to the ArcGIS top-right UI.
-	 */
-	async function ensureSearchComponent(): Promise<void> {
-		if (searchComponent) {
-			searchComponent.view = mapView;
-			return;
-		}
-
-		const [{ default: LocatorSearchSource }, { default: Collection }] = await Promise.all([
-			import('@arcgis/core/widgets/Search/LocatorSearchSource.js'),
-			import('@arcgis/core/core/Collection.js'),
-			import('@arcgis/map-components/components/arcgis-search')
-		]);
-
-		const ukSource = new LocatorSearchSource({
-			url: SEARCH_URL,
-			countryCode: SEARCH_COUNTRY_CODE,
-			placeholder: SEARCH_PLACEHOLDER
-		});
-
-		const sources = new Collection<__esri.LayerSearchSource | __esri.LocatorSearchSource>();
-		sources.add(ukSource);
-
-		// Flex row container that holds [spinner | search]
-		searchRowEl = document.createElement('div');
-		searchRowEl.style.cssText =
-			'display: flex; flex-direction: row; align-items: center; gap: 6px;';
-
-		// Spinner slot – hidden until the map is loading
-		spinnerSlotEl = document.createElement('div');
-		spinnerSlotEl.style.cssText = 'display: none; align-items: center;';
-		spinnerInstance = mount(Spinner, { target: spinnerSlotEl, props: { class: 'size-5' } });
-		searchRowEl.appendChild(spinnerSlotEl);
-
-		// Search component container
-		const searchContainerEl = document.createElement('div');
-		searchRowEl.appendChild(searchContainerEl);
-
-		searchComponent = document.createElement('arcgis-search') as ArcgisSearchElement;
-		searchComponent.view = mapView;
-		searchComponent.popupDisabled = true;
-		searchComponent.includeDefaultSourcesDisabled = true;
-		searchComponent.allPlaceholder = SEARCH_PLACEHOLDER;
-		searchComponent.sources = sources;
-		searchContainerEl.appendChild(searchComponent);
-
-		mapView.ui.add(searchRowEl, 'top-right');
-	}
-
-	/**
-	 * Creates and adds the legend component once.
-	 */
-	async function ensureLegendComponent(): Promise<void> {
-		if (legendComponent || legendExpandComponent) {
-			if (legendComponent) {
-				legendComponent.view = mapView;
-			}
-			if (legendExpandComponent) {
-				legendExpandComponent.view = mapView;
-			}
-			return;
-		}
-
-		await Promise.all([
-			import('@arcgis/map-components/components/arcgis-legend'),
-			import('@arcgis/map-components/components/arcgis-expand')
-		]);
-
-		legendComponent = document.createElement('arcgis-legend') as ArcgisLegendElement;
-		legendComponent.view = mapView;
-
-		legendExpandComponent = document.createElement('arcgis-expand') as ArcgisExpandElement;
-		legendExpandComponent.view = mapView;
-		legendExpandComponent.label = 'Legend';
-		legendExpandComponent.expandTooltip = 'Legend';
-		legendExpandComponent.appendChild(legendComponent);
-
-		mapView.ui.add(legendExpandComponent, 'top-right');
 	}
 
 	/**
@@ -269,331 +180,123 @@
 	}
 
 	/**
-	 * Applies interaction mode based on the current active tab.
-	 *
-	 * Area of Interest tab:
-	 * - area selection interaction enabled
-	 * - popups disabled
-	 *
-	 * Other tabs:
-	 * - area selection interaction disabled
-	 * - popups enabled
+	 * Creates or reuses the ArcGIS widget manager for the current MapView instance.
 	 */
-	async function applyTabInteractionMode(tab: TabType, layers: SvelteSet<string>): Promise<void> {
-		if (!mapView.map || !mapInteractionStore) {
+	function getMapWidgets(): ArcgisMapWidgets {
+		if (mapWidgets && mapWidgetsView === mapView) {
+			return mapWidgets;
+		}
+
+		mapWidgets?.cleanup();
+		mapWidgets = new ArcgisMapWidgets(mapView);
+		mapWidgetsView = mapView;
+
+		return mapWidgets;
+	}
+
+	/**
+	 * Zooms the map in by one ArcGIS zoom level.
+	 */
+	function zoomIn(): void {
+		void mapView.goTo({ zoom: mapView.zoom + 1 });
+	}
+
+	/**
+	 * Zooms the map out by one ArcGIS zoom level.
+	 */
+	function zoomOut(): void {
+		void mapView.goTo({ zoom: mapView.zoom - 1 });
+	}
+
+	/**
+	 * Opens or closes the ArcGIS legend expand widget.
+	 */
+	function toggleLegend(): void {
+		mapWidgets?.toggleLegend();
+		syncLegendState();
+	}
+
+	/**
+	 * Synchronises local menu label state with the ArcGIS expand widget state.
+	 */
+	function syncLegendState(): void {
+		legendIsOpen = mapWidgets?.isLegendExpanded() ?? false;
+	}
+
+	/**
+	 * Returns true when the context menu event originated from ArcGIS UI chrome rather than the map surface.
+	 */
+	function isMapWidgetContextMenuTarget(target: EventTarget | null): boolean {
+		if (!(target instanceof Element)) {
+			return false;
+		}
+
+		return !!target.closest(
+			[
+				'.esri-ui',
+				'.esri-popup',
+				'.esri-widget',
+				'.esri-component',
+				'.uprn-map-search-row',
+				'arcgis-expand',
+				'arcgis-legend',
+				'arcgis-search'
+			].join(', ')
+		);
+	}
+
+	function isRightButtonEvent(event: MouseEvent): boolean {
+		return event.button === 2 || (event.buttons & 2) === 2;
+	}
+
+	function stopMapRightClickInteraction(event: Event): void {
+		if (!(event instanceof MouseEvent) || !isRightButtonEvent(event)) {
 			return;
 		}
 
-		const isAreaTab = tab === TabType.AreaOfInterest;
-		mapInteractionStore.updateInteractableLayers(isAreaTab ? layers : new SvelteSet());
-
-		if (isAreaTab) {
-			mapView.popupEnabled = false;
-			if (mapView.popup?.visible) {
-				mapView.popup.close();
-			}
-		} else {
-			mapView.popupEnabled = true;
-			areaSelectionInteractionStore.clearHoveredArea();
+		if (isMapWidgetContextMenuTarget(event.target)) {
+			return;
 		}
 
-		for (const layer of mapView.map.allLayers.toArray()) {
-			await configureLayerPopupsAndLegend(layer);
-		}
+		event.stopImmediatePropagation();
+		event.stopPropagation();
 	}
 
 	/**
-	 * Configures popup and legend behavior for a layer and its descendants.
-	 *
-	 * Rules:
-	 * - interactable layers never show popups and are hidden from the legend
-	 * - non-interactable feature layers get a generated field-based popup
-	 * - raster cell layers get a custom identify-driven popup
+	 * Captures map right-clicks before ArcGIS consumes them, while leaving widget right-clicks alone.
 	 */
-	async function configureLayerPopupsAndLegend(
-		layer: __esri.Layer | __esri.Sublayer
-	): Promise<void> {
-		const id = String(layer.id);
-		const title = layer.title?.toLowerCase() ?? '';
-		const isInteractable = interactableLayers.has(id);
-		const isRasterCellsLayer = title.includes('raster cells');
-
-		if (isRasterCellsLayer) {
-			if ('legendEnabled' in layer) {
-				layer.legendEnabled = false;
-			}
-			if ('popupEnabled' in layer) {
-				layer.popupEnabled = true;
-				layer.popupTemplate = await createRasterCellsPopupTemplate();
-			}
-		} else if (isInteractable) {
-			if ('popupEnabled' in layer) {
-				layer.popupEnabled = false;
-			}
-			if ('legendEnabled' in layer) {
-				layer.legendEnabled = false;
-			}
-		} else if (layer.type === 'feature') {
-			const featureLayer = layer as __esri.FeatureLayer;
-			featureLayer.popupEnabled = true;
-			featureLayer.popupTemplate = await createFeatureLayerPopupTemplate(featureLayer);
+	function handleCapturedContextMenu(event: MouseEvent): void {
+		if (dispatchingSyntheticContextMenu) {
+			return;
 		}
 
-		if (layer.type === 'group') {
-			for (const childLayer of (layer as __esri.GroupLayer).layers.toArray()) {
-				await configureLayerPopupsAndLegend(childLayer);
-			}
+		if (isMapWidgetContextMenuTarget(event.target)) {
+			event.stopPropagation();
+			return;
 		}
 
-		if (layer.type === 'map-image') {
-			for (const sublayer of (layer as __esri.MapImageLayer).allSublayers.toArray()) {
-				await configureLayerPopupsAndLegend(sublayer);
-			}
+		if (!contextMenuTrigger) {
+			return;
 		}
-	}
 
-	/**
-	 * Creates a popup template for raster cell features.
-	 * The popup performs an identify request against the active visible raster sublayer.
-	 */
-	async function createRasterCellsPopupTemplate(): Promise<__esri.PopupTemplate> {
-		const { default: PopupTemplate } = await import('@arcgis/core/PopupTemplate.js');
+		event.preventDefault();
+		event.stopPropagation();
 
-		return new PopupTemplate({
-			title: 'Cell {gridcode}',
-			outFields: ['*'],
-			content: async ({ graphic }: { graphic: __esri.Graphic }) => {
-				const gridcode = graphic.attributes.gridcode;
-				const activeRaster = getActiveRasterSublayer();
-
-				if (!activeRaster) {
-					return `
-						<b>Gridcode:</b> ${gridcode}<br>
-						No active raster layer.
-					`;
-				}
-
-				const center = graphic.geometry?.extent?.center;
-				if (!center) {
-					return `
-						<b>Gridcode:</b> ${gridcode}<br>
-						No geometry center available.
-					`;
-				}
-
-				const [{ default: IdentifyParameters }, identify] = await Promise.all([
-					import('@arcgis/core/rest/support/IdentifyParameters.js'),
-					import('@arcgis/core/rest/identify.js')
-				]);
-
-				const params = new IdentifyParameters({
-					geometry: center,
-					tolerance: 1,
-					mapExtent: mapView.extent,
-					width: mapView.width,
-					height: mapView.height,
-					dpi: 96,
-					returnGeometry: false,
-					layerOption: 'visible',
-					layerIds: [activeRaster.id],
-					spatialReference: mapView.spatialReference
-				});
-
-				try {
-					const response = await identify.identify(activeRaster.mapServiceUrl, params);
-					const hit = response.results?.[0];
-
-					if (!hit) {
-						return `
-							<b>Gridcode:</b> ${gridcode}<br>
-							No raster value found.
-						`;
-					}
-
-					const attrs = (hit.feature?.attributes ?? {}) as Record<string, unknown>;
-					const valueField = findBestRasterValueField(attrs);
-					const fixedValue = Number(attrs[valueField ?? '']).toFixed(3);
-
-					return `
-						<b>Gridcode:</b> ${gridcode}<br>
-						<b>Value:</b> ${valueField ? fixedValue : 'N/A'}
-					`;
-				} catch (error) {
-					console.error('Identify failed', error);
-					return `
-						<b>Gridcode:</b> ${gridcode}<br>
-						Failed to identify raster value.
-					`;
-				}
-			}
-		});
-	}
-
-	/**
-	 * Returns the most relevant field name for displaying a raster identify value.
-	 */
-	function findBestRasterValueField(attributes: Record<string, unknown>): string | undefined {
-		const keys = Object.keys(attributes);
-
-		return (
-			keys.find((key) => key.includes('Value')) ??
-			keys.find((key) => key.includes('value')) ??
-			Object.entries(attributes).find(([, value]) => isNumericValue(value))?.[0]
+		dispatchingSyntheticContextMenu = true;
+		contextMenuTrigger.dispatchEvent(
+			new MouseEvent('contextmenu', {
+				bubbles: true,
+				button: 2,
+				buttons: event.buttons || 2,
+				cancelable: true,
+				clientX: event.clientX,
+				clientY: event.clientY,
+				ctrlKey: event.ctrlKey,
+				metaKey: event.metaKey,
+				shiftKey: event.shiftKey
+			})
 		);
-	}
-
-	/**
-	 * Finds the currently visible raster sublayer from the active map structure.
-	 */
-	function getActiveRasterSublayer(): {
-		id: number;
-		title: string;
-		mapServiceUrl: string;
-	} | null {
-		if (!mapView.map) {
-			return null;
-		}
-
-		return findActiveRasterInLayers(mapView.map.layers);
-	}
-
-	/**
-	 * Recursively searches layer collections for the first visible raster-capable map-image sublayer.
-	 */
-	function findActiveRasterInLayers(layers: __esri.Collection<__esri.Layer>): {
-		id: number;
-		title: string;
-		mapServiceUrl: string;
-	} | null {
-		for (const layer of layers.toArray()) {
-			if (!layer.visible) {
-				continue;
-			}
-
-			if (layer.type === 'map-image') {
-				const mapImageLayer = layer as __esri.MapImageLayer;
-				const visibleSublayer = mapImageLayer.allSublayers.find((sublayer) => sublayer.visible);
-
-				if (visibleSublayer) {
-					return {
-						id: visibleSublayer.id,
-						title: visibleSublayer.title ?? 'Unnamed Layer',
-						mapServiceUrl: mapImageLayer.url ?? 'Unknown URL'
-					};
-				}
-			}
-
-			if ('layers' in layer && layer.layers) {
-				const found = findActiveRasterInLayers(layer.layers as __esri.Collection<__esri.Layer>);
-				if (found) {
-					return found;
-				}
-			}
-		}
-
-		return null;
-	}
-
-	/**
-	 * Determines whether a value can be safely treated as numeric.
-	 */
-	function isNumericValue(value: unknown): boolean {
-		if (typeof value === 'number') {
-			return Number.isFinite(value);
-		}
-
-		if (typeof value === 'string') {
-			const trimmed = value.trim();
-			return trimmed !== '' && !Number.isNaN(Number(trimmed));
-		}
-
-		return false;
-	}
-
-	/**
-	 * Returns true when the ArcGIS field type is a floating point numeric type.
-	 */
-	function isFloatingNumericFieldType(type: string): boolean {
-		return type === 'single' || type === 'double';
-	}
-
-	/**
-	 * Creates a readable popup template for feature layers by using visible, non-system fields.
-	 */
-	async function createFeatureLayerPopupTemplate(
-		layer: __esri.FeatureLayer
-	): Promise<__esri.PopupTemplate> {
-		const { default: PopupTemplate } = await import('@arcgis/core/PopupTemplate.js');
-
-		const hiddenFieldTypes = new Set([
-			'oid',
-			'global-id',
-			'guid',
-			'geometry',
-			'blob',
-			'raster',
-			'xml'
-		]);
-
-		const fieldInfos: __esri.FieldInfo[] = (layer.fields ?? [])
-			.filter((field) => !hiddenFieldTypes.has(field.type))
-			.map((field) => {
-				const info: __esri.FieldInfo = {
-					fieldName: field.name,
-					label: field.alias || field.name,
-					visible: true
-				} as __esri.FieldInfo;
-
-				if (isFloatingNumericFieldType(field.type)) {
-					info.format = {
-						digitSeparator: true,
-						places: 3
-					};
-				}
-
-				return info;
-			});
-
-		return new PopupTemplate({
-			title: layer.title ?? '{OBJECTID}',
-			outFields: ['*'],
-			content: [
-				{
-					type: 'fields',
-					fieldInfos
-				}
-			]
-		});
-	}
-
-	/**
-	 * Watches `mapView.updating` to show/hide the spinner slot in the ArcGIS UI.
-	 */
-	async function setupMapLoadingWatcher(): Promise<void> {
-		mapLoadingHandle?.remove();
-
-		const reactiveUtils = await import('@arcgis/core/core/reactiveUtils.js');
-
-		mapLoadingHandle = reactiveUtils.watch(
-			() => mapView.updating,
-			(updating) => {
-				if (spinnerSlotEl) {
-					spinnerSlotEl.style.display = updating ? 'flex' : 'none';
-				}
-			},
-			{ initial: true }
-		);
-	}
-
-	/**
-	 * Removes the map loading watcher and hides the spinner slot.
-	 */
-	function cleanupMapLoadingWatcher(): void {
-		mapLoadingHandle?.remove();
-		mapLoadingHandle = null;
-		if (spinnerSlotEl) {
-			spinnerSlotEl.style.display = 'none';
-		}
+		dispatchingSyntheticContextMenu = false;
 	}
 
 	/**
@@ -607,34 +310,9 @@
 		mapInteractionStore?.cleanup();
 		mapInteractionStore = null;
 
-		if (spinnerInstance) {
-			unmount(spinnerInstance);
-			spinnerInstance = null;
-		}
-
-		if (searchComponent) {
-			void searchComponent.destroy();
-			searchComponent = null;
-		}
-
-		if (searchRowEl) {
-			mapView.ui.remove(searchRowEl);
-			searchRowEl = null;
-			spinnerSlotEl = null;
-		}
-
-		if (legendExpandComponent) {
-			mapView.ui.remove(legendExpandComponent);
-			void legendExpandComponent.destroy();
-			legendExpandComponent = null;
-		}
-
-		if (legendComponent) {
-			void legendComponent.destroy();
-			legendComponent = null;
-		}
-
-		cleanupMapLoadingWatcher();
+		mapWidgets?.cleanup();
+		mapWidgets = null;
+		mapWidgetsView = null;
 
 		if (mapView.container === mapContainer) {
 			mapView.container = null;
@@ -665,19 +343,76 @@
 			return;
 		}
 
-		updateMapWithWebMap();
+		void updateMapWithWebMap(webMap, mapContainer);
 	});
 
 	/**
 	 * Reapplies interaction mode when the tab or layer interaction set changes.
 	 */
 	$effect(() => {
-		if (!mapView?.map || !mapInteractionStore) return;
+		if (!mapView?.map || !mapInteractionStore) {
+			return;
+		}
 
-		const tab = currentTab;
-		const layers = interactableLayers;
+		void applyTabInteractionMode({
+			areaSelectionInteractionStore,
+			interactableLayers,
+			mapInteractionStore,
+			mapView,
+			tab: currentTab
+		});
+	});
 
-		void applyTabInteractionMode(tab, layers);
+	/**
+	 * Refreshes the legend menu label from the ArcGIS widget whenever the menu is opened.
+	 */
+	$effect(() => {
+		if (!contextMenuOpen) {
+			return;
+		}
+
+		syncLegendState();
+	});
+
+	/**
+	 * ArcGIS handles map pointer events internally, so capture native context menu events
+	 * and forward allowed map-surface right-clicks to the shadcn trigger.
+	 */
+	$effect(() => {
+		if (!contextMenuShell) {
+			return;
+		}
+
+		const blockedRightClickEvents = [
+			'pointerdown',
+			'pointerup',
+			'mousedown',
+			'mouseup',
+			'click',
+			'auxclick'
+		];
+
+		for (const eventName of blockedRightClickEvents) {
+			contextMenuShell.addEventListener(eventName, stopMapRightClickInteraction, {
+				capture: true
+			});
+		}
+
+		contextMenuShell.addEventListener('contextmenu', handleCapturedContextMenu, {
+			capture: true
+		});
+
+		return () => {
+			for (const eventName of blockedRightClickEvents) {
+				contextMenuShell?.removeEventListener(eventName, stopMapRightClickInteraction, {
+					capture: true
+				});
+			}
+
+			contextMenuShell?.removeEventListener('contextmenu', handleCapturedContextMenu, {
+				capture: true
+			});
+		};
 	});
 
 	onDestroy(() => {
@@ -685,24 +420,27 @@
 	});
 </script>
 
-<div class="map-shell">
-	<div class="map-view" bind:this={mapContainer}></div>
+<div class={cn('relative', className)} bind:this={contextMenuShell}>
+	<ContextMenu.ContextMenu bind:open={contextMenuOpen}>
+		<ContextMenu.ContextMenuTrigger bind:ref={contextMenuTrigger} class="block h-full w-full">
+			<div class="h-full w-full" bind:this={mapContainer}></div>
+		</ContextMenu.ContextMenuTrigger>
+
+		<UprnMapContextMenu entries={mapContextMenuEntries} />
+	</ContextMenu.ContextMenu>
 </div>
 
 <style>
-	.map-shell {
-		position: relative;
-		flex: 1 1 auto;
-		min-height: 0;
-		width: 100%;
+	:global(.uprn-map-search-row) {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 6px;
 	}
 
-	.map-view {
-		flex: 1 1 auto;
-		min-height: 0;
-		width: 100%;
-		height: 100%;
-		z-index: 1;
+	:global(.uprn-map-spinner-slot) {
+		display: none;
+		align-items: center;
 	}
 
 	/* ArcGIS focus outline - older selector */

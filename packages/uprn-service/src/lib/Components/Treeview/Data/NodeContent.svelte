@@ -4,6 +4,7 @@
 	import { getNodeStyles } from '../NodeContentStyles.js';
 	import { Button } from '$lib/Components/shadcn/button/index.js';
 	import type { TagDefinition } from '$lib/Types/Configuration.types.js';
+	import TreeviewNodeIcon from '../TreeviewNodeIcon.svelte';
 
 	/**
 	 * Props for the NodeContent component.
@@ -50,7 +51,7 @@
 	{#if tagDefinitions && tagDefinitions.length > 0}
 		<div class="tag-rail-left" aria-hidden="true">
 			{#each tagDefinitions as tagDef (tagDef.id)}
-				<!-- <span class="tag-line" style={`background-color: ${tagDef.color};`}></span> -->
+				<span class="tag-line" style={`background-color: ${tagDef.color};`}></span>
 			{/each}
 		</div>
 	{/if}
@@ -62,14 +63,7 @@
 					<OpenIndicator {isOpen} />
 				</span>
 			{/if}
-			<span class="icon-slot">
-				{#if typeof icon === 'string'}
-					{@html icon}
-				{:else}
-					{@const Icon = icon}
-					<Icon />
-				{/if}
-			</span>
+			<TreeviewNodeIcon {icon} />
 		</div>
 
 		<span class="min-w-0 whitespace-normal break-words text-left leading-snug">

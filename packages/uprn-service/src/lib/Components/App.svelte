@@ -25,8 +25,6 @@
 	import { clearDatabase, updateSelection } from '$lib/db';
 	import { setItemInfoDialogEvents } from '$lib/Events/ItemInfoDialogEvents';
 	import { useAiChatbotHealth } from '$lib/Hooks/UseAiChatbotHealth.svelte';
-	import { useFetchAppConfig } from '$lib/Hooks/UseFetchAppConfig.svelte';
-	import { useFetchCustomRenderers } from '$lib/Hooks/UseFetchCustomRenderers.svelte';
 	import { useLoadSelectionsFromIndexDb } from '$lib/Hooks/UseLoadSelectionsFromIndexDb.svelte';
 	import { useUprnDownloadHealth } from '$lib/Hooks/UseUprnDownloadHealth.svelte';
 	import { SelectionState } from '$lib/Models/Treeview/SelectionState';
@@ -59,15 +57,20 @@
 	import { installBrowserPolyfills } from '$lib/Utilities/browser-polyfills';
 	import { InfoIcon, Plus } from '@lucide/svelte';
 	import { onMount } from 'svelte';
-	import { SvelteSet } from 'svelte/reactivity';
+	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { useUprnDownloadSelectionAreaLimits } from '$lib/Hooks/UseUprnDownloadSelectionAreaLimits.svelte';
 	import Button from '$lib/Components/shadcn/button/button.svelte';
-	import { useFetchGeneralSettings } from '$lib/Hooks/UseFetchGeneralSettings.svelte';
-	import type { ChatbotRemoteConfig } from '$lib/Types/Configuration.types';
+	import type { AppsUprnConfig, ChatbotConfig } from '$lib/Types/Configuration.types';
 	import { ScrollArea } from '$lib/Components/shadcn/scroll-area';
 	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 
 	installBrowserPolyfills();
+
+	type Props = {
+		config: AppsUprnConfig;
+	};
+
+	let { config }: Props = $props();
 
 	const tabBarTriggers = [
 		{
@@ -125,9 +128,19 @@
 	const dataSelectionStore: DataSelectionStore = new DataSelectionStore();
 	const areaSelectionStore: AreaSelectionStore = new AreaSelectionStore();
 	const downloadsStore: DownloadsStore = new DownloadsStore();
+	const persistentUprnVisibilityGroupId = 'group:uprn';
 
-	/** Hook for fetching the app configuration. */
-	const appConfig = useFetchAppConfig();
+	const appConfig = {
+		get content() {
+			return config;
+		},
+		get error() {
+			return null;
+		},
+		get isLoading() {
+			return false;
+		}
+	};
 
 	/** State to track whether initial selections have been loaded from the database. */
 	let initializedSelectionsFromDb = $state(false);
@@ -159,6 +172,9 @@
 	/** State for managing the current active tab. */
 	let currentTab: TabType = $state(TabType.AreaOfInterest);
 
+	/** State for tracking tabs that have been mounted at least once. */
+	const mountedTabs: Set<TabType> = new SvelteSet<TabType>([TabType.AreaOfInterest]);
+
 	/** State for tracking the tab bar progress that contains the tabs the user has visited. */
 	let tabProgressByValue: Record<string, TabProgress | undefined> = $state({});
 
@@ -166,7 +182,7 @@
 	let tabBarWidth: number | null = $state(null);
 
 	/** State of the IDs of currently selected tags to filter by. */
-	const selectedTagIds: Set<string> = $state(new SvelteSet<string>());
+	const selectedTagIds: Set<string> = new SvelteSet<string>();
 
 	/** State of the ArcGIS MapView instance. */
 	let mapView: __esri.MapView | null = $state(null);
@@ -211,24 +227,6 @@
 		return selections;
 	});
 
-	/** Hook to fetch custom renderers for the map based on the app configuration. */
-	const customRenderers = $derived.by(() => {
-		if (
-			!appConfig.content?.content.baseUrl ||
-			!appConfig.content.content.manifest.files.climatejustRenderers
-		) {
-			return null;
-		}
-
-		const url: string = new URL(
-			appConfig.content.content.manifest.files.climatejustRenderers,
-			appConfig.content.content.baseUrl
-		).toString();
-		const renderers = useFetchCustomRenderers(url);
-		renderers.fetch();
-		return renderers;
-	});
-
 	/** Hook to fetch area selection limits for the UPRN download service. */
 	const areaSelectionLimits = $derived.by(() => {
 		if (!appConfig.content?.uprnDownload || !appConfig.content.map.selectableLayers) {
@@ -249,55 +247,30 @@
 	/** Derived state to create a map of area selection limits by layer ID for easy lookup. */
 	const areaSelectionLimitsMap: Map<string, number> = $derived.by(() => {
 		if (!areaSelectionLimits || !areaSelectionLimits.content) {
-			return new Map<string, number>();
+			return new SvelteMap<string, number>();
 		}
 
-		const map = new Map<string, number>();
+		const map = new SvelteMap<string, number>();
 		areaSelectionLimits.content.layers.forEach((limit) => {
 			map.set(limit.layerId, limit.areaLimit);
 		});
 		return map;
 	});
 
-	/** Derived state to compute the introduction content URL based on the app configuration. */
-	const introductionUrl: string | null = $derived.by(() => {
-		if (
-			!appConfig.content?.content.baseUrl ||
-			!appConfig.content.content.manifest.files.introduction
-		) {
-			return null;
-		}
+	const introductionMarkdown: string | null = $derived(
+		appConfig.content?.content.introductionMarkdown ?? null
+	);
 
-		return new URL(
-			appConfig.content.content.manifest.files.introduction,
-			appConfig.content.content.baseUrl
-		).toString();
-	});
-
-	const settings: ReturnType<typeof useFetchGeneralSettings> | null = $derived.by(() => {
-		if (!appConfig.content?.content.baseUrl || !appConfig.content.content.manifest.files.settings) {
-			return null;
-		}
-
-		const url: string = new URL(
-			appConfig.content.content.manifest.files.settings,
-			appConfig.content.content.baseUrl
-		).toString();
-
-		const settingsHook = useFetchGeneralSettings(url);
-		settingsHook.fetch();
-
-		return settingsHook;
-	});
+	const settings = $derived(appConfig.content?.content.settings ?? null);
 
 	/** Derived state for the chatbot settings. */
-	const chatbotSettings: ChatbotRemoteConfig | null = $derived.by(() => {
-		if (!settings?.content || !settings.content.chatbot) {
+	const chatbotSettings: ChatbotConfig | null = $derived.by(() => {
+		if (!settings?.chatbot) {
 			return null;
 		}
 
-		console.log('[uprn/app] Fetched general settings:', settings.content);
-		return settings.content.chatbot;
+		console.log('[uprn/app] Fetched general settings:', settings);
+		return settings.chatbot;
 	});
 
 	/** The web map store instance. */
@@ -313,8 +286,8 @@
 
 	/** The custom renderer service instance. */
 	let customRendererService: CustomRendererService | null = $derived.by(() => {
-		return customRenderers && customRenderers.content
-			? new CustomRendererService(customRenderers.content)
+		return appConfig.content?.content.customRenderers
+			? new CustomRendererService(appConfig.content.content.customRenderers)
 			: null;
 	});
 
@@ -350,7 +323,8 @@
 			? new AreaSelectionInteractionStore(
 					areaSelectionStore,
 					new LayerViewProvider(mapView),
-					appConfig.content.map.selectableLayers
+					appConfig.content.map.selectableLayers,
+					webMapStore
 				)
 			: null;
 	});
@@ -456,12 +430,17 @@
 		!!(areaSelectionInteractionStore && treeviewNodeProvider && treeviewConfigStore)
 	);
 
+	/** True when any data layer is currently visible on the map. */
+	let hasVisibleDataLayer: boolean = $derived.by(() => {
+		return getVisibleDataLayerNodeIds().length > 0;
+	});
+
 	onMount(() => {
 		startApp();
 	});
 
 	$effect(() => {
-		if (!settings?.content?.enableIntroductionPopup) {
+		if (!settings?.enableIntroductionPopup) {
 			return;
 		}
 
@@ -724,9 +703,9 @@
 	function startApp() {
 		initializedNodeVisibility = false;
 		initializedSelectionsFromDb = false;
+		mapSyncedWithNodeVisibility = false;
 		mapView = null;
 
-		appConfig.fetch();
 		const async = async () => {
 			const { default: MapView } = await import('@arcgis/core/views/MapView');
 			mapView = new MapView();
@@ -771,6 +750,7 @@
 	 */
 	function onTabValueChange(value: string): void {
 		currentTab = value as TabType;
+		mountedTabs.add(currentTab);
 		tabStateService.setCurrentTab(value);
 		console.log(`[uprn/app] Switched to tab: ${value}`);
 	}
@@ -888,6 +868,54 @@
 	}
 
 	/**
+	 * Clears selected areas from the map without changing area or data layer visibility.
+	 */
+	function clearSelectedMapAreas(): void {
+		console.log('[uprn/app] Clearing selected map areas');
+		areaSelectionInteractionStore?.clearSelections();
+	}
+
+	/**
+	 * Gets visible data layer node IDs from the data tree/map visibility state.
+	 */
+	function getVisibleDataLayerNodeIds(): string[] {
+		if (!dataTreeviewStore) {
+			return [];
+		}
+
+		return dataTreeviewStore
+			.getVisibleNodes()
+			.filter((node) => node.type !== TreeviewNodeType.Folder && isHideableDataLayer(node.id))
+			.map((node) => node.id);
+	}
+
+	/**
+	 * Returns true when a data layer can be hidden by map-level context menu actions.
+	 */
+	function isHideableDataLayer(nodeId: string): boolean {
+		const config = treeviewConfigStore?.getConfig(nodeId);
+
+		if (!config || config.isHidden) {
+			return false;
+		}
+
+		return config.visibilityGroupId !== persistentUprnVisibilityGroupId;
+	}
+
+	/**
+	 * Hides data layer nodes that are currently visible on the map.
+	 */
+	function hideVisibleDataLayers(): void {
+		if (!dataTreeviewStore) {
+			return;
+		}
+
+		for (const nodeId of getVisibleDataLayerNodeIds()) {
+			dataTreeviewStore.setVisibilityState(nodeId, false);
+		}
+	}
+
+	/**
 	 * Clears all downloads by clearing the downloads store.
 	 */
 	function clearDownloads() {
@@ -939,7 +967,7 @@
 	});
 </script>
 
-<IntroductionDialog bind:isOpen={introductionDialogOpen} contentUrl={introductionUrl} />
+<IntroductionDialog bind:isOpen={introductionDialogOpen} content={introductionMarkdown} />
 
 <Toaster visibleToasts={1} position="bottom-right" />
 {#if webMapStore?.isLoaded && treeviewConfigStore}
@@ -1017,7 +1045,7 @@
 
 					<SidebarLayout.Content>
 						<UprnTabBarContent value={TabType.AreaOfInterest}>
-							{#if currentTab === TabType.AreaOfInterest && loadAreaTreeview}
+							{#if mountedTabs.has(TabType.AreaOfInterest) && loadAreaTreeview}
 								<AreaSelectionTreeview
 									treeviewStore={areaTreeviewStore!}
 									nodeConfigProvider={treeviewConfigStore!}
@@ -1028,7 +1056,7 @@
 						</UprnTabBarContent>
 
 						<UprnTabBarContent value={TabType.Data}>
-							{#if currentTab === TabType.Data && loadDataTreeview}
+							{#if mountedTabs.has(TabType.Data) && loadDataTreeview}
 								<DataSelectionTreeview
 									treeviewStore={dataTreeviewStore!}
 									nodeConfigProvider={treeviewConfigStore!}
@@ -1047,8 +1075,10 @@
 										<ExportMenu
 											nodeProvider={treeviewNodeProvider!}
 											nodeConfigProvider={treeviewConfigStore!}
+											{areaSelectionStore}
 											areaSelectionInteractionStore={areaSelectionInteractionStore!}
 											{dataSelectionStore}
+											webMapLoaded={webMapStore?.isLoaded ?? false}
 										/>
 									</div>
 								{/if}
@@ -1127,11 +1157,15 @@
 	{#snippet mainContent()}
 		{#if loadMapView}
 			<UprnMapView
-				webMap={webMapStore?.data!}
+				webMap={webMapStore!.data!}
 				mapView={mapView!}
 				areaSelectionInteractionStore={areaSelectionInteractionStore!}
 				interactableLayers={interactableLayers!}
 				{currentTab}
+				onClearSelections={clearSelectedMapAreas}
+				onHideVisibleDataLayer={hideVisibleDataLayers}
+				{hasVisibleDataLayer}
+				class="h-full min-h-0 w-full flex-1"
 			/>
 		{:else}
 			<div class="flex h-full w-full items-center justify-center">

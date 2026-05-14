@@ -1,6 +1,6 @@
 # @dsh/research-page
 
-`@dsh/research-page` renders research content for the Digital Solutions Hub. It loads markdown and article metadata from the DSH content repository, converts markdown to HTML, and exposes Svelte components for the research landing page and individual article pages.
+`@dsh/research-page` renders research content for the Digital Solutions Hub. It loads markdown through the DSH content manifest, parses article metadata from markdown frontmatter, converts markdown to HTML, and exposes Svelte components for the research landing page and individual article pages.
 
 The hub mounts this package at `/research` and `/research/articles/[title]`.
 
@@ -9,32 +9,22 @@ The hub mounts this package at `/research` and `/research/articles/[title]`.
 - `ResearchPage`, the main research landing-page component.
 - `ArticlePage`, the individual article component.
 - Server load helpers for research and article routes.
-- Article index loading and metadata lookup.
+- Manifest-based article discovery and metadata lookup.
 - Markdown processing with frontmatter, GitHub-flavoured markdown, raw HTML support, heading links, external links, and Mermaid support.
-- Static content config under `static/config/content.json`.
 
 ## External Dependencies
 
-- GitHub raw content from the `NERC-Digital-Solutions-Hub/dsh-content` repository.
-- Content paths are configured by `static/config/content.json`:
-  - Organisation: `NERC-Digital-Solutions-Hub`
-  - Repo: `dsh-content`
-  - Relative path: `pages`
-  - Research main page: `pages/research/main.md`
-  - Article index: `pages/research/articles/index.txt`
+- DSH content site configured by `PUBLIC_DSH_CONTENT_BASE_URL`, falling back to the shared default from `@dsh/content`.
+- Content environment configured by `PUBLIC_DSH_ENVIRONMENT`, falling back to the shared default from `@dsh/content`.
+- Research content is discovered from the content manifest:
+  - `/research` page asset `main`
+  - `/research/articles` assets ending in `.article`
+  - article metadata frontmatter in each markdown file
 - Markdown and diagram processing libraries, including `gray-matter`, `unified`, `remark-*`, `rehype-*`, `mermaid`, and `sql.js`.
 
 ## Configuration
 
-Content config lives in:
-
-```txt
-static/config/content.json
-```
-
-When running inside the hub, this config is copied into `hub/static/config/content.json`.
-
-The route loaders currently read content from the `dev` branch of the configured GitHub repository.
+The route loaders read the configured content manifest and resolve all markdown URLs from manifest assets. Set `PUBLIC_DSH_CONTENT_BASE_URL` to override the default content site.
 
 ## Useful Commands
 

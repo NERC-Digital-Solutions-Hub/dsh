@@ -29,16 +29,15 @@ export interface DbUserDownload extends Omit<DownloadEntry, 'displayInfo'> {
 }
 
 /**
- * A cached transformed-config record keyed by the manifest URL.
+ * A cached treeview-config record keyed by the content endpoint.
  *
- * Stores the fully transformed `TreeviewNodeConfig[]` alongside the manifest
- * version so subsequent loads can skip the CSV fetch + transform pipeline when
- * the remote manifest version has not changed.
+ * Stores the ready `TreeviewNodeConfig[]` alongside the source version exposed
+ * by content.
  */
 export interface DbCachedTransformedConfig {
-	/** The manifest endpoint URL – used as the primary key. */
+	/** The content endpoint key - used as the primary key. */
 	url: string;
-	/** The manifest version that produced this transformed config. */
+	/** The source version that produced this treeview config. */
 	version: number;
 	/** The transformed treeview node configs derived from the CSV data. */
 	layers: TreeviewNodeConfig[];
@@ -186,14 +185,14 @@ export const clearDatabase = async () => {
 // ---------------------------------------------------------------------------
 
 /**
- * Retrieves a cached transformed config for the given manifest URL, if one exists.
+ * Retrieves a cached transformed config for the given content key, if one exists.
  */
 export const getCachedConfig = async (
 	url: string
 ): Promise<DbCachedTransformedConfig | undefined> => await db.cachedConfigs.get(url);
 
 /**
- * Inserts or replaces the cached transformed config for a given manifest URL.
+ * Inserts or replaces the cached transformed config for a given content key.
  */
 export const putCachedConfig = async (
 	url: string,

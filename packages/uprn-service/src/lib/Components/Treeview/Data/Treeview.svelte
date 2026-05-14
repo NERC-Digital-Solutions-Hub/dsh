@@ -1,13 +1,14 @@
 <script lang="ts">
 	import type { LTreeNode } from '@keenmate/svelte-treeview';
 	import BaseTreeview, { type FlatTreeNode } from '$lib/Components/Treeview/BaseTreeview.svelte';
-	import OpenIndicator from '$lib/Components/OpenIndicator/OpenIndicator.svelte';
 	import DownloadButton from '$lib/Components/Treeview/Data/DownloadButton.svelte';
 	import InfoButton from '$lib/Components/Treeview/Data/InfoButton.svelte';
 	import { getNodeIcon } from '$lib/Components/Treeview/GetNodeIcon.js';
+	import TreeviewNodeCard from '$lib/Components/Treeview/TreeviewNodeCard.svelte';
+	import TreeviewVisibilityAction from '$lib/Components/Treeview/TreeviewVisibilityAction.svelte';
+	import { flattenDataNodes } from '$lib/Components/Treeview/treeviewFlattening';
 	import { setTreeEvents } from '$lib/Events/DataTreeviewEvents.js';
-	import VisibilityCheckbox from '$lib/Components/VisibilityCheckbox/VisibilityCheckbox.svelte';
-	import { NodeDrawState, SelectionState, type TreeviewNode } from '$lib/Models/Treeview/Index.js';
+	import { SelectionState, type TreeviewNode } from '$lib/Models/Treeview/Index.js';
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 	import type { INodeTagProvider } from '$lib/Services/INodeTagProvider';
 	import type { ITagDefinitionProvider } from '$lib/Services/ITagDefinitionProvider';
@@ -38,6 +39,8 @@
 		selectionCount?: number;
 	};
 
+	type DataTreeNode = LTreeNode<FlatTreeNode>;
+
 	let {
 		treeviewStore,
 		nodeConfigProvider,
@@ -48,6 +51,11 @@
 		selectionCount = 0
 	}: Props = $props();
 
+	$effect(() => {
+		// Kept as part of the public component API for callers that provide full treeview services.
+		void tagDefinitionProvider;
+	});
+
 	/** Use $state.raw to avoid deep proxy overhead on large arrays. */
 	let flatData = $state.raw<FlatTreeNode[]>([]);
 
@@ -55,72 +63,8 @@
 	$effect(() => {
 		const nodes = treeviewStore.getNodes();
 		const tags = selectedTagIds;
-		flatData = flattenDataNodes(nodes, tags);
+		flatData = flattenDataNodes(nodes, tags, nodeConfigProvider, nodeTagProvider);
 	});
-
-	/**
-	 * Flatten the hierarchical tree into a flat array with dot-separated paths.
-	 * Applies tag filtering at all levels and excludes hidden nodes.
-	 */
-	function flattenDataNodes(nodes: TreeviewNode[], activeTags: Set<string>): FlatTreeNode[] {
-		const result: FlatTreeNode[] = [];
-
-		function walk(nodes: TreeviewNode[], parentPath: string) {
-			const visible: {
-				node: TreeviewNode;
-				config: ReturnType<typeof nodeConfigProvider.getConfig>;
-			}[] = [];
-
-			for (const node of nodes) {
-				const config = nodeConfigProvider.getConfig(node.id);
-				if (config?.isHidden) continue;
-				if (activeTags.size > 0 && !nodeMatchesTagFilter(node)) continue;
-				visible.push({ node, config });
-			}
-
-			let index = 1;
-
-			for (const { node, config } of visible) {
-				const path = parentPath ? `${parentPath}.${index}` : `${index}`;
-				const indentLevel = path.split('.').length - 1;
-
-				result.push({
-					path,
-					nodeId: node.id,
-					name: node.name,
-					order: index,
-					nodeRef: node,
-					isExpanded: config?.isOpenOnInit ?? false,
-					guideLines: Array.from({ length: indentLevel }, () => 'full' as const)
-				});
-
-				if (node.children?.length) {
-					walk(node.children, path);
-				}
-
-				index++;
-			}
-		}
-
-		walk(nodes, '');
-		return result;
-	}
-
-	/**
-	 * Checks if a node or any of its descendants match the selected tag filters.
-	 */
-	function nodeMatchesTagFilter(node: TreeviewNode): boolean {
-		if (selectedTagIds.size === 0) return true;
-
-		const nodeTags = nodeTagProvider.getTags(node.id);
-		if (nodeTags.some((tagId) => selectedTagIds.has(tagId))) return true;
-
-		if (node.children?.length) {
-			return node.children.some((child) => nodeMatchesTagFilter(child));
-		}
-
-		return false;
-	}
 
 	function onDownloadStateChanged(node: TreeviewNode, downloadState: SelectionState): void {
 		treeviewStore.setSelectionState(node, downloadState);
@@ -161,7 +105,7 @@
 		</p>
 	{/snippet}
 
-	{#snippet nodeContent(treeNode: LTreeNode)}
+	{#snippet nodeContent(treeNode: DataTreeNode)}
 		{@const nodeRef = treeNode.data!.nodeRef}
 		{@const config = nodeConfigProvider.getConfig(nodeRef.id)}
 		{@const isDownloadable = config?.isEnabled ?? true}
@@ -174,57 +118,34 @@
 			treeNode.isExpanded
 		)}
 
-		<div class="node-card relative overflow-hidden rounded-md">
-			<div class="node-grid">
-				<div class="node-icons">
-					{#if hasChildren}
-						<span class="icon-slot">
-							<OpenIndicator isOpen={treeNode.isExpanded} />
-						</span>
-					{/if}
-					<span class="icon-slot">
-						{#if typeof icon === 'string'}
-							{@html icon}
-						{:else}
-							{@const Icon = icon}
-							<Icon />
-						{/if}
+		<TreeviewNodeCard
+			{hasChildren}
+			isOpen={treeNode.isExpanded}
+			{icon}
+			name={nodeRef.name}
+			stopActionClickPropagation
+		>
+			{#snippet actions()}
+				{#if config?.metadataTabInfoUrl}
+					<span class="action-slot">
+						<InfoButton layerId={nodeRef.id} />
 					</span>
-				</div>
+				{/if}
 
-				<span class="node-name">{nodeRef.name}</span>
+				{#if isDownloadable}
+					<span class="action-slot">
+						<DownloadButton node={nodeRef} {onDownloadStateChanged} {getDownloadState} />
+					</span>
+				{/if}
 
-				<!-- svelte-ignore a11y_click_events_have_key_events -->
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<div class="node-end" onclick={(e) => e.stopPropagation()}>
-					{#if config?.metadataTabInfoUrl}
-						<span class="action-slot">
-							<InfoButton layerId={nodeRef.id} />
-						</span>
-					{/if}
-
-					{#if isDownloadable}
-						<span class="action-slot">
-							<DownloadButton node={nodeRef} {onDownloadStateChanged} {getDownloadState} />
-						</span>
-					{/if}
-
-					{#if showVisibility}
-						<span class="action-slot visibility-wrapper visible">
-							<span class="visibility-inner">
-								<VisibilityCheckbox
-									checked={isVisible}
-									indeterminate={drawState === NodeDrawState.Suspended}
-									onCheckedChange={() => treeviewStore.setVisibilityState(nodeRef.id, !isVisible)}
-								/>
-							</span>
-							{#if drawState === NodeDrawState.Suspended}
-								<span class="indeterminate-label">zoom</span>
-							{/if}
-						</span>
-					{/if}
-				</div>
-			</div>
-		</div>
+				{#if showVisibility}
+					<TreeviewVisibilityAction
+						checked={isVisible}
+						{drawState}
+						onCheckedChange={() => treeviewStore.setVisibilityState(nodeRef.id, !isVisible)}
+					/>
+				{/if}
+			{/snippet}
+		</TreeviewNodeCard>
 	{/snippet}
 </BaseTreeview>

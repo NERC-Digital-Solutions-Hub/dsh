@@ -1,21 +1,5 @@
 import type { SvelteSet } from 'svelte/reactivity';
 
-// export interface UprnConfiguration {
-// 	contentConfig: ContentConfig;
-// 	uprnDownloadApiConfig: ConfigurationItemInfo;
-// 	aiUprnChatbotApiConfig: ConfigurationItemInfo;
-// 	mapsConfig: ConfigurationItemInfo[];
-// 	mainSidebarSizes?: SidebarSize[];
-// }
-
-// export type ContentConfig = {
-// 	baseUrl: string;
-// 	manifestPath: string;
-// 	climateJustRenderersPath: string;
-// 	introductionPath: string;
-// 	chatbotConfigPath: string;
-// };
-
 export interface SidebarSize {
 	breakpoint: number;
 	originalSize: string;
@@ -288,76 +272,3 @@ export type UserState = {
 	dataSelections: UserStateSelection[];
 };
 
-/**
- * Manifest produced by the Excel → CSV export workflow.
- *
- * It describes:
- * - the source Excel workbook that was processed
- * - the generated CSV files (one per sheet)
- * - a monotonically increasing version number (as defined by your generator)
- */
-export type UprnServiceConfigManifest = {
-	/**
-	 * Manifest schema/version for consumers.
-	 *
-	 * This is incremented by the generator when it detects a meaningful change
-	 * (in your current implementation: when the source Excel file's sha256 changes).
-	 */
-	version: number;
-
-	/**
-	 * Repository-relative directory where CSV outputs are written.
-	 *
-	 * Example: "pages/apps/uprn-service/generated/csv"
-	 */
-	generated_dir: string;
-
-	/**
-	 * Information about the source Excel workbook used to generate the CSV outputs.
-	 */
-	source: {
-		/**
-		 * Repository-relative path to the Excel workbook.
-		 *
-		 * Example: "pages/apps/uprn-service/config.xlsx"
-		 */
-		path: string;
-
-		/**
-		 * SHA-256 hash of the source workbook file bytes.
-		 *
-		 * Used to detect whether the workbook has changed between runs.
-		 * Hex-encoded (64 characters).
-		 */
-		sha256: string;
-	};
-
-	/**
-	 * CSV outputs generated from each sheet in the workbook.
-	 *
-	 * Each entry corresponds to a single worksheet.
-	 */
-	output: Array<{
-		/**
-		 * The original worksheet name in the Excel workbook.
-		 *
-		 * Example: "datasets"
-		 */
-		sheet_name: string;
-
-		/**
-		 * Repository-relative path to the generated CSV file for this sheet.
-		 *
-		 * Example: "pages/apps/uprn-service/generated/csv/config/datasets.csv"
-		 */
-		csv_path: string;
-
-		/**
-		 * SHA-256 hash of the generated CSV file bytes.
-		 *
-		 * Useful for integrity checking and detecting changes to a specific sheet's output.
-		 * Hex-encoded (64 characters).
-		 */
-		sha256: string;
-	}>;
-};
