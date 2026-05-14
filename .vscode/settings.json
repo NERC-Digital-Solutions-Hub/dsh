@@ -7,5 +7,11 @@
 		"watchDirectory": "dynamicPriorityPolling",
 		"fallbackPolling": "dynamicPriorityPolling",
 		"synchronousWatchDirectory": false
+	},
+	"servers": {
+		"playwright": {
+			"command": "npx",
+			"args": ["@playwright/mcp@latest"]
+		}
 	}
 }

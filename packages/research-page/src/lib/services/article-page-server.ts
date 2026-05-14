@@ -2,37 +2,52 @@ import { markdownToHtml } from '$lib/utils/markdown-to-html';
 import type { ContentConfig } from '$lib/types/config';
 import { base } from '$app/paths';
 import { researchArticleIndexer } from '$lib/services/research-article-indexer';
-import type { ArticleMetadata } from '$lib/types/article';
+import {
+	DEFAULT_DSH_CONTENT_BASE_URL,
+	resolveContentEnvironment,
+	resolveDshContentBaseUrl
+} from '@dsh/content';
+import { error, type ServerLoadEvent } from '@sveltejs/kit';
 
 let contentConfig: ContentConfig | null = null;
 
-export const load: PageServerLoad = async ({ params, fetch, setHeaders }) => {
+export const load = async ({ params, fetch, setHeaders }: ServerLoadEvent) => {
 	try {
 		const contentConfig = await getContentConfig(fetch);
-
-		const baseUrl = `https://github.com/${contentConfig.content.organisation}/${contentConfig.content.repo}/raw/refs/heads/dev/${contentConfig.content.relativePath}/${contentConfig.content.research.dir}/${contentConfig.content.research.articles.dir}`;
-		const indexUrl = `https://github.com/${contentConfig.content.organisation}/${contentConfig.content.repo}/raw/refs/heads/dev/${contentConfig.content.relativePath}/${contentConfig.content.research.dir}/${contentConfig.content.research.articles.dir}/${contentConfig.content.research.articles.index}`;
-		await researchArticleIndexer.initialize(baseUrl, indexUrl);
-
-		const metadata: ArticleMetadata | undefined = researchArticleIndexer.getMetadataBySlug(
-			params.title
+		const contentBaseUrl = resolveDshContentBaseUrl(
+			contentConfig.content.baseUrl || DEFAULT_DSH_CONTENT_BASE_URL
 		);
+		const assetBaseUrl = resolveDshContentBaseUrl(
+			contentConfig.content.assetBaseUrl || contentBaseUrl
+		);
+		const environment = resolveContentEnvironment(contentConfig.content.environment);
 
-		if (!metadata) {
-			return;
-			//throw new Error(`Article metadata not found for slug: ${params.title}`);
+		await researchArticleIndexer.initialize({
+			baseUrl: contentBaseUrl,
+			assetBaseUrl,
+			environment,
+			fetch
+		});
+
+		const slug = params.title;
+		if (!slug) {
+			error(404, 'Article not found');
 		}
 
-		const mdPath = `${metadata.path}/${metadata.source.split('./')[1]}`;
-		const url = `https://github.com/${contentConfig.content.organisation}/${contentConfig.content.repo}/raw/refs/heads/dev/${contentConfig.content.relativePath}/${contentConfig.content.research.dir}/${contentConfig.content.research.articles.dir}/${mdPath}`;
+		const articleUrl = researchArticleIndexer.getArticleUrlBySlug(slug);
 
-		return await markdownToHtml(url, fetch, setHeaders);
-	} catch (error) {
-		console.error('Error loading article page:', error);
+		if (!articleUrl) {
+			error(404, `Article not found: ${slug}`);
+		}
+
+		return await markdownToHtml(articleUrl, fetch, setHeaders);
+	} catch (loadError) {
+		console.error('Error loading article page:', loadError);
+		throw loadError;
 	}
 };
 
-async function getContentConfig(fetch: any): Promise<ContentConfig> {
+async function getContentConfig(fetch: ServerLoadEvent['fetch']): Promise<ContentConfig> {
 	if (contentConfig) {
 		return contentConfig;
 	}
