@@ -32,7 +32,7 @@ export async function generateUprnAppConfig(
 ): Promise<AppsUprnConfig> {
 	const environment = resolveContentEnvironment(options.environment);
 	const contentBaseUrl = resolveDshContentBaseUrl(
-		options.contentBaseUrl || options.localConfig.content.baseUrl || DEFAULT_DSH_CONTENT_BASE_URL
+		options.contentBaseUrl || DEFAULT_DSH_CONTENT_BASE_URL
 	);
 	const fetchImpl = options.fetch ?? fetch;
 	const source = createContentSource({ environment, baseUrl: contentBaseUrl, fetch: fetchImpl });

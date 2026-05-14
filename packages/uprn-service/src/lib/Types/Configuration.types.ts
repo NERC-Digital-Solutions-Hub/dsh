@@ -2,11 +2,6 @@ import type { TreeviewConfig } from '$lib/Types/Treeview.types';
 import type { CustomRenderers } from '$lib/Types/CustomRenderers.types';
 import type { AiUprnChatbotEndpoints, UprnDownloadEndpoints } from '$lib/Types/Uprn.types';
 
-export type AppUprnContentConfig = {
-	baseUrl: string;
-	sitePath?: string;
-};
-
 export type AppUprnContent = {
 	settings: GeneralSettings;
 	introductionMarkdown: string;
@@ -14,7 +9,6 @@ export type AppUprnContent = {
 };
 
 export type LocalAppsUprnConfig = {
-	content: AppUprnContentConfig;
 	uprnDownload: UprnDownloadEndpoints;
 	aiUprnChatbot: AiUprnChatbotEndpoints;
 	mapConfig: MapConfig;

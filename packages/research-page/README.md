@@ -11,12 +11,11 @@ The hub mounts this package at `/research` and `/research/articles/[title]`.
 - Server load helpers for research and article routes.
 - Manifest-based article discovery and metadata lookup.
 - Markdown processing with frontmatter, GitHub-flavoured markdown, raw HTML support, heading links, external links, and Mermaid support.
-- Static content config under `static/config/content.json`.
 
 ## External Dependencies
 
-- DSH content site: `https://nerc-digital-solutions-hub.github.io/dsh-content-temp/`.
-- Content manifest base URL, optional asset mirror base URL, and environment are configured by `static/config/content.json`.
+- DSH content site configured by `PUBLIC_DSH_CONTENT_BASE_URL`, falling back to the shared default from `@dsh/content`.
+- Content environment configured by `PUBLIC_DSH_ENVIRONMENT`, falling back to the shared default from `@dsh/content`.
 - Research content is discovered from the content manifest:
   - `/research` page asset `main`
   - `/research/articles` assets ending in `.article`
@@ -25,15 +24,7 @@ The hub mounts this package at `/research` and `/research/articles/[title]`.
 
 ## Configuration
 
-Content config lives in:
-
-```txt
-static/config/content.json
-```
-
-When running inside the hub, this config is copied into `hub/static/config/content.json`.
-
-The route loaders read the configured content manifest and resolve all markdown URLs from manifest assets.
+The route loaders read the configured content manifest and resolve all markdown URLs from manifest assets. Set `PUBLIC_DSH_CONTENT_BASE_URL` to override the default content site.
 
 ## Useful Commands
 
