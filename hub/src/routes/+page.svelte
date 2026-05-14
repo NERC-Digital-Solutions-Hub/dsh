@@ -9,11 +9,12 @@
 	<IntroductionDialog introduction={data.homeContent.introduction} />
 {/if}
 <div class="hero-section">
-	<h1 class="title">NERC Digital Solutions Hub</h1>
+	<h1 class="title">
+		<span>{data.homeContent.body.title}</span>
+		<span class="version">{data.homeContent.body.version}</span>
+	</h1>
 	<p class="slogan">
-		Developing a Digital Hub and set of Toolkits that exploits environmental and other data (social,
-		economic & health) to create innovative digital services that deliver economic, societal and
-		environmental benefits across the UK
+		{data.homeContent.body.description}
 	</p>
 </div>
 
@@ -31,12 +32,25 @@
 	}
 
 	.title {
+		display: inline-flex;
+		align-items: baseline;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+		justify-content: center;
 		font-size: 3rem;
 		font-weight: 700;
 		color: #1a365d;
 		margin-bottom: 2rem;
 		line-height: 1.2;
 		letter-spacing: -0.025em;
+	}
+
+	.version {
+		font-size: 0.35em;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: #718096;
 	}
 
 	.slogan {

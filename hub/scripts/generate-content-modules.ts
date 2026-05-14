@@ -9,7 +9,7 @@ import {
 } from '@dsh/content';
 import { generateUprnAppConfig } from '@dsh/uprn-service/content-build';
 import type { LocalAppsUprnConfig } from '@dsh/uprn-service';
-import type { HomeContent } from '../src/lib/types/content.types';
+import { type HomeContent } from '../src/lib/types/content.types';
 
 const projectRoot = resolve(import.meta.dirname, '..');
 const outDir = resolve(projectRoot, 'src/lib/generated/content');
@@ -27,6 +27,7 @@ async function generateHomeContent(): Promise<void> {
 	const page = await source.getPage('/');
 	const homeContent: HomeContent = {
 		introduction: await source.readText(page, 'introduction'),
+		body: await source.readJson(page, 'content'),
 		settings: await source.readJson(page, 'settings')
 	};
 
