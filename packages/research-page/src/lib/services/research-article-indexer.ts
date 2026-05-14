@@ -50,12 +50,12 @@ class ResearchArticleIndexer {
 		});
 		const page = await source.getPage<Record<string, ManifestAsset>>('/research/articles');
 		const articleEntries = Object.entries(page.assets)
-			.filter(([key, asset]) => key.endsWith('.article') && asset.type === 'markdown')
+			.filter(([key, asset]) => isArticleMarkdownAsset(key, asset))
 			.sort(([left], [right]) => left.localeCompare(right));
 
 		this.#articleMetadata = await Promise.all(
 			articleEntries.map(async ([key]) => {
-				const slug = key.slice(0, -'.article'.length);
+				const slug = key;
 				const articleUrl = source.resolvePageFileUrl(page, key);
 				const assetArticleUrl = assetSource.resolvePageFileUrl(page, key);
 				const { metadata, resolvedUrl } = await this.#loadArticleMetadata(
@@ -65,6 +65,7 @@ class ResearchArticleIndexer {
 				);
 
 				this.#slugToMetadata.set(slug, metadata);
+
 				this.#slugToArticleUrl.set(slug, resolvedUrl);
 
 				return metadata;
@@ -117,6 +118,18 @@ class ResearchArticleIndexer {
 
 export const researchArticleIndexer = new ResearchArticleIndexer();
 
+function isArticleMarkdownAsset(key: string, asset: ManifestAsset): boolean {
+	if (asset.type !== 'markdown') {
+		return false;
+	}
+
+	if (key === 'index' || key === 'main') {
+		return false;
+	}
+
+	return asset.path.endsWith('.md');
+}
+
 async function fetchFirstAvailableArticle(
 	slug: string,
 	urls: string[],
@@ -136,7 +149,6 @@ async function fetchFirstAvailableArticle(
 
 	throw new Error(`Failed to fetch research article "${slug}". Tried ${failures.join('; ')}`);
 }
-
 function normalizeArticleMetadata(
 	slug: string,
 	data: Record<string, unknown>,

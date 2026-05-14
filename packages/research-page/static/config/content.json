@@ -1,7 +1,7 @@
 {
     "content": {
         "baseUrl": "https://nerc-digital-solutions-hub.github.io/dsh-content-temp/",
-        "assetBaseUrl": "https://raw.githubusercontent.com/NERC-Digital-Solutions-Hub/dsh-content-temp/dev/",
+        "assetBaseUrl": "https://raw.githubusercontent.com/NERC-Digital-Solutions-Hub/dsh-content-temp/main/",
         "environment": "production"
     }
 }

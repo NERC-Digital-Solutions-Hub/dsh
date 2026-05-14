@@ -12,6 +12,25 @@
 	};
 
 	const { title, description, date, image = '', link, class: className = '' }: Props = $props();
+
+	const formattedDate = $derived(formatDate(date));
+
+	function formatDate(value: string): string {
+		if (!value.trim()) {
+			return '';
+		}
+
+		const parsed = new Date(value);
+		if (Number.isNaN(parsed.getTime())) {
+			return value;
+		}
+
+		return new Intl.DateTimeFormat('en-GB', {
+			day: 'numeric',
+			month: 'long',
+			year: 'numeric'
+		}).format(parsed);
+	}
 </script>
 
 <a class={`article-link ${className}`.trim()} href={resolve(link)}>
@@ -34,9 +53,11 @@
 			<p class="card-description">{description}</p>
 		</Card.Content>
 
-		<Card.Footer class="card-footer px-4 pb-4 pt-0 sm:px-5">
-			<p class="card-date">{date}</p>
-		</Card.Footer>
+		{#if formattedDate}
+			<Card.Footer class="card-footer px-4 pb-4 pt-0 sm:px-5">
+				<p class="card-date">{formattedDate}</p>
+			</Card.Footer>
+		{/if}
 	</Card.Root>
 </a>
 
@@ -48,7 +69,7 @@
 		color: inherit;
 	}
 
-	.article-card {
+	:global(.article-card) {
 		display: flex;
 		flex-direction: column;
 		height: 100%;
@@ -63,7 +84,7 @@
 			border-color 0.2s ease;
 	}
 
-	.article-card:hover {
+	:global(.article-card:hover) {
 		box-shadow: 0 14px 24px rgb(15 23 42 / 10%);
 		transform: translateY(-2px);
 		border-color: rgb(160 174 192);
@@ -97,17 +118,17 @@
 		text-align: center;
 	}
 
-	.card-body {
+	:global(.card-body) {
 		display: grid;
 		gap: 0.6rem;
 	}
 
-	.card-footer {
+	:global(.card-footer) {
 		margin-top: auto;
 		align-items: flex-end;
 	}
 
-	.card-title {
+	:global(.card-title) {
 		margin: 0;
 		font-size: 1.1rem;
 		line-height: 1.35;
