@@ -32,7 +32,13 @@ export const load = async ({ params, fetch, setHeaders }: ServerLoadEvent) => {
 			error(404, `Article not found: ${slug}`);
 		}
 
-		return await markdownToHtml(articleUrl, fetch, setHeaders);
+		const articleMetadata = researchArticleIndexer.getAllMetadata();
+
+		return {
+			...(await markdownToHtml(articleUrl, fetch, setHeaders)),
+			articleMetadata,
+			currentArticlePath: slug
+		};
 	} catch (loadError) {
 		console.error('Error loading article page:', loadError);
 		throw loadError;
