@@ -13,3 +13,14 @@ export type HomeContentBody = {
 	version: string;
 	description: string;
 };
+
+export type AppsContent = {
+	items: AppCardContent[];
+};
+
+export type AppCardContent = {
+	title: string;
+	description: string;
+	image: string;
+	href: string;
+};
