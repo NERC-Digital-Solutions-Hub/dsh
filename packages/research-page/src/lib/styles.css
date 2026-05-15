@@ -137,7 +137,8 @@
 }
 
 .prose-lg :where(h1):not(:where([class~='not-prose'], [class~='not-prose'] *)) {
-	@apply mb-10 text-5xl;
+	@apply mt-0 mb-0 text-4xl leading-tight font-bold tracking-tight text-foreground;
+	color: #1a365d;
 }
 
 .prose-lg :where(h2):not(:where([class~='not-prose'], [class~='not-prose'] *)) {
