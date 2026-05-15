@@ -7,7 +7,7 @@
 
 <section class="apps-container" aria-labelledby="apps-heading">
 	<div class="apps-wrapper">
-		<div class="apps-header">
+		<div class="prose apps-header">
 			<h1 id="apps-heading">Apps</h1>
 		</div>
 
@@ -38,14 +38,6 @@
 
 	.apps-header {
 		margin-bottom: 1.25rem;
-	}
-
-	.apps-header h1 {
-		margin: 0;
-		color: #1a365d;
-		font-size: 2rem;
-		font-weight: 700;
-		line-height: 1.2;
 	}
 
 	.cards-grid {
