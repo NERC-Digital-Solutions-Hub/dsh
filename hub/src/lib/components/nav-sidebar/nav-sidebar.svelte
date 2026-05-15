@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import { page } from '$app/state';
-	import navItems from '$lib/components/nav.json';
+	import { navigation } from '$lib/generated/content/navigation';
 	import * as Sidebar from '$lib/components/shadcn/sidebar/index.js';
 	import type { NavFolder, NavItem, NavLink } from '$lib/types/nav.types';
 
-	const navigation = navItems as NavItem[];
 	const folders = navigation.filter((item): item is NavFolder => item.type === 'folder');
 	const links = navigation.filter((item): item is NavLink => item.type === 'link');
 	const absoluteUrlPattern = /^[a-z][a-z\d+\-.]*:/i;

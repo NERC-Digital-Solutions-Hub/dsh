@@ -10,6 +10,7 @@ import {
 import { generateUprnAppConfig } from '@dsh/uprn-service/content-build';
 import type { LocalAppsUprnConfig } from '@dsh/uprn-service';
 import { type HomeContent } from '../src/lib/types/content.types';
+import type { NavItem } from '../src/lib/types/nav.types';
 
 const projectRoot = resolve(import.meta.dirname, '..');
 const outDir = resolve(projectRoot, 'src/lib/generated/content');
@@ -18,7 +19,7 @@ const contentBaseUrl = resolveDshContentBaseUrl(
 	process.env.PUBLIC_DSH_CONTENT_BASE_URL || DEFAULT_DSH_CONTENT_BASE_URL
 );
 
-await Promise.all([generateHomeContent(), generateUprnContent()]);
+await Promise.all([generateHomeContent(), generateNavigationContent(), generateUprnContent()]);
 
 console.log(`[hub/content] Generated build-time content modules for "${environment}" in ${outDir}`);
 
@@ -36,6 +37,20 @@ async function generateHomeContent(): Promise<void> {
 		createTypeScriptModule({
 			imports: ["import type { HomeContent } from '../../types/content.types';"],
 			exports: [{ name: 'homeContent', type: 'HomeContent', value: homeContent }]
+		})
+	);
+}
+
+async function generateNavigationContent(): Promise<void> {
+	const source = createContentSource({ environment, baseUrl: contentBaseUrl });
+	const page = await source.getPage('/');
+	const navigationContent = await source.readJson<{ items: NavItem[] }>(page, 'navigation');
+
+	await writeModule(
+		'navigation.ts',
+		createTypeScriptModule({
+			imports: ["import type { NavItem } from '../../types/nav.types';"],
+			exports: [{ name: 'navigation', type: 'NavItem[]', value: navigationContent.items }]
 		})
 	);
 }
