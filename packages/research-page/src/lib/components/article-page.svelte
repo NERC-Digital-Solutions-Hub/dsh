@@ -37,7 +37,7 @@
 	<div class="article-layout">
 		<main class="article-main">
 			<div class="article-wrapper">
-				<article class="prose prose-lg max-w-none">
+				<article class="prose prose-neutral max-w-none dark:prose-invert">
 					{@html data.html}
 				</article>
 			</div>
