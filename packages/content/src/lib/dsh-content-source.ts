@@ -1,6 +1,6 @@
 export const DEFAULT_CONTENT_ENVIRONMENT = 'production';
 export const DEFAULT_DSH_CONTENT_BASE_URL =
-	'https://nerc-digital-solutions-hub.github.io/dsh-content-temp/';
+	'https://nerc-digital-solutions-hub.github.io/dsh-content/';
 
 export type FetchLike = typeof fetch;
 export type ContentEnvironment = string;
