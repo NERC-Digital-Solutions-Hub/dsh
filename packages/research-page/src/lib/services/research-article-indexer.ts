@@ -36,8 +36,11 @@ class ResearchArticleIndexer {
 			return;
 		}
 
+		const contentBaseUrl = resolveDshContentBaseUrl(
+			options.baseUrl || DEFAULT_DSH_CONTENT_BASE_URL
+		);
 		const source = createContentSource({
-			baseUrl: resolveDshContentBaseUrl(options.baseUrl || DEFAULT_DSH_CONTENT_BASE_URL),
+			baseUrl: contentBaseUrl,
 			environment: resolveContentEnvironment(options.environment),
 			fetch: options.fetch
 		});
@@ -61,6 +64,7 @@ class ResearchArticleIndexer {
 				const { metadata, resolvedUrl } = await this.#loadArticleMetadata(
 					slug,
 					[articleUrl, assetArticleUrl],
+					contentBaseUrl,
 					options.fetch ?? fetch
 				);
 
@@ -104,13 +108,14 @@ class ResearchArticleIndexer {
 	async #loadArticleMetadata(
 		slug: string,
 		articleUrls: string[],
+		contentBaseUrl: string,
 		fetchImpl: Fetch
 	): Promise<{ metadata: ArticleMetadata; resolvedUrl: string }> {
 		const { text, url } = await fetchFirstAvailableArticle(slug, articleUrls, fetchImpl);
 		const { content, data } = matter(text);
 
 		return {
-			metadata: normalizeArticleMetadata(slug, data, content),
+			metadata: normalizeArticleMetadata(slug, data, content, contentBaseUrl),
 			resolvedUrl: url
 		};
 	}
@@ -152,12 +157,13 @@ async function fetchFirstAvailableArticle(
 function normalizeArticleMetadata(
 	slug: string,
 	data: Record<string, unknown>,
-	content: string
+	content: string,
+	baseUrl: string
 ): ArticleMetadata {
 	const title = readString(data, 'title') || extractTitle(content) || slug;
 	const description = readString(data, 'description') || extractDescription(content);
 	const date = readString(data, 'date') || '';
-	const image = readString(data, 'thumbnail') || '';
+	const image = resolveContentRootUrl(readString(data, 'thumbnail'), baseUrl);
 	const tags = Array.isArray(data.tags) ? data.tags.filter(isString) : [];
 	const hidden = typeof data.hidden === 'boolean' ? data.hidden : false;
 
@@ -170,6 +176,19 @@ function normalizeArticleMetadata(
 		path: slug,
 		hidden
 	};
+}
+
+function resolveContentRootUrl(path: string, baseUrl: string): string {
+	const trimmed = path.trim();
+	if (!trimmed) {
+		return '';
+	}
+
+	try {
+		return new URL(trimmed).toString();
+	} catch {
+		return new URL(trimmed.replace(/^\/+/, ''), baseUrl).toString();
+	}
 }
 
 function readString(data: Record<string, unknown>, key: string): string {

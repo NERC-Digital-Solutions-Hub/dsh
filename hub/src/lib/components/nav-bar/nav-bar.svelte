@@ -1,11 +1,9 @@
 <script lang="ts">
 	import { base } from '$app/paths';
-	import navItems from '$lib/components/nav.json';
 	import * as NavigationMenu from '$lib/components/shadcn/navigation-menu/index.js';
 	import { navigationMenuTriggerStyle } from '$lib/components/shadcn/navigation-menu/navigation-menu-trigger.svelte';
-	import type { NavItem } from '$lib/types/nav.types';
+	import { navigation } from '$lib/generated/content/navigation';
 
-	const navigation = navItems as NavItem[];
 	const absoluteUrlPattern = /^[a-z][a-z\d+\-.]*:/i;
 
 	const resolveHref = (href: string) => {
