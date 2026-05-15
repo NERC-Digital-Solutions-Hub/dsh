@@ -16,7 +16,7 @@
 <div>
 	<div class="article-container">
 		<div class="article-wrapper">
-			<article class="prose prose-lg max-w-none">
+			<article class="prose-lg max-w-none">
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 				{@html data.html}
 			</article>
