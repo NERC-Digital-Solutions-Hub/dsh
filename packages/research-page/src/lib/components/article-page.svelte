@@ -1,6 +1,6 @@
 <!-- src/routes/articles/[slug]/+page.svelte -->
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import ArticleMoreCard from '$lib/components/article-more-card/article-more-card.svelte';
 	import type { ArticleMetadata } from '$lib/types/article';
 	import mermaid from 'mermaid';
 	import { onMount } from 'svelte';
@@ -18,23 +18,6 @@
 
 	function getLink(metadata: ArticleMetadata): `/research/articles/${string}` {
 		return `/research/articles/${metadata.path}`;
-	}
-
-	function formatDate(value: string): string {
-		if (!value.trim()) {
-			return '';
-		}
-
-		const parsed = new Date(value);
-		if (Number.isNaN(parsed.getTime())) {
-			return value;
-		}
-
-		return new Intl.DateTimeFormat('en-GB', {
-			day: 'numeric',
-			month: 'long',
-			year: 'numeric'
-		}).format(parsed);
 	}
 
 	onMount(() => {
@@ -65,23 +48,13 @@
 				<h2 id="more-articles-heading">More</h2>
 				<div class="more-list">
 					{#each moreArticles as metadata (metadata.path)}
-						<a class="more-card" href={resolve(getLink(metadata))}>
-							<div class="more-card-media" aria-hidden={!metadata.image}>
-								{#if metadata.image}
-									<img src={metadata.image} alt={metadata.title} loading="lazy" />
-								{:else}
-									<div class="more-card-placeholder">Image coming soon</div>
-								{/if}
-							</div>
-
-							<div class="more-card-body">
-								<h3>{metadata.title}</h3>
-								<p>{metadata.description}</p>
-								{#if formatDate(metadata.date)}
-									<time datetime={metadata.date}>{formatDate(metadata.date)}</time>
-								{/if}
-							</div>
-						</a>
+						<ArticleMoreCard
+							title={metadata.title}
+							description={metadata.description}
+							date={metadata.date}
+							image={metadata.image}
+							link={getLink(metadata)}
+						/>
 					{/each}
 				</div>
 			</aside>
@@ -157,98 +130,6 @@
 		.more-list {
 			display: grid;
 			gap: 0.9rem;
-		}
-
-		.more-card {
-			display: grid;
-			grid-template-columns: 5.5rem minmax(0, 1fr);
-			gap: 0.85rem;
-			min-height: 7rem;
-			padding: 0.75rem;
-			border: 1px solid rgb(210 214 220);
-			border-radius: 0.5rem;
-			background: rgb(249 250 251);
-			color: inherit;
-			text-decoration: none;
-			transition:
-				box-shadow 0.2s ease,
-				transform 0.2s ease,
-				border-color 0.2s ease;
-		}
-
-		.more-card:hover {
-			box-shadow: 0 10px 18px rgb(15 23 42 / 10%);
-			transform: translateY(-1px);
-			border-color: rgb(160 174 192);
-		}
-
-		.more-card-media {
-			width: 100%;
-			aspect-ratio: 1;
-			overflow: hidden;
-			border-radius: 0.35rem;
-			background: rgb(228 231 235);
-		}
-
-		.more-card-media img {
-			display: block;
-			width: 100%;
-			height: 100%;
-			object-fit: cover;
-		}
-
-		.more-card-placeholder {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			width: 100%;
-			height: 100%;
-			padding: 0.5rem;
-			background: linear-gradient(135deg, rgb(229 231 235), rgb(243 244 246));
-			color: rgb(75 85 99);
-			font-size: 0.68rem;
-			font-weight: 600;
-			line-height: 1.2;
-			text-align: center;
-		}
-
-		.more-card-body {
-			display: flex;
-			min-width: 0;
-			flex-direction: column;
-			gap: 0.35rem;
-		}
-
-		.more-card-body h3 {
-			margin: 0;
-			font-size: 0.92rem;
-			line-height: 1.25;
-			font-weight: 700;
-			color: rgb(17 24 39);
-			line-clamp: 2;
-			display: -webkit-box;
-			-webkit-line-clamp: 2;
-			-webkit-box-orient: vertical;
-			overflow: hidden;
-		}
-
-		.more-card-body p {
-			margin: 0;
-			color: rgb(75 85 99);
-			font-size: 0.78rem;
-			line-height: 1.35;
-			line-clamp: 2;
-			display: -webkit-box;
-			-webkit-line-clamp: 2;
-			-webkit-box-orient: vertical;
-			overflow: hidden;
-		}
-
-		.more-card-body time {
-			margin-top: auto;
-			color: rgb(107 114 128);
-			font-size: 0.75rem;
-			line-height: 1.2;
 		}
 	}
 </style>
