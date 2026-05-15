@@ -18,6 +18,25 @@ const environment = resolveContentEnvironment(process.env.PUBLIC_DSH_ENVIRONMENT
 const contentBaseUrl = resolveDshContentBaseUrl(
 	process.env.PUBLIC_DSH_CONTENT_BASE_URL || DEFAULT_DSH_CONTENT_BASE_URL
 );
+const contentAssetFieldNames = new Set([
+	'image',
+	'images',
+	'imageurl',
+	'imageurls',
+	'thumbnail',
+	'thumbnails',
+	'thumbnailurl',
+	'thumbnailurls',
+	'icon',
+	'icons',
+	'iconurl',
+	'iconurls',
+	'logo',
+	'logos',
+	'logourl',
+	'logourls',
+	'src'
+]);
 
 await Promise.all([
 	generateHomeContent(),
@@ -49,7 +68,10 @@ async function generateHomeContent(): Promise<void> {
 async function generateAppsContent(): Promise<void> {
 	const source = createContentSource({ environment, baseUrl: contentBaseUrl });
 	const page = await source.getPage('/apps');
-	const appsContent = await source.readJson<AppsContent>(page, 'apps');
+	const appsContent = resolveContentAssetUrls(
+		await source.readJson<AppsContent>(page, 'apps'),
+		contentBaseUrl
+	);
 
 	await writeModule(
 		'apps.ts',
@@ -101,4 +123,46 @@ async function writeModule(fileName: string, content: string): Promise<void> {
 
 async function readJsonFile<T>(filePath: string): Promise<T> {
 	return JSON.parse(await readFile(filePath, 'utf8')) as T;
+}
+
+function resolveContentAssetUrls<T>(value: T, baseUrl: string): T {
+	return resolveContentAssetValue(value, baseUrl) as T;
+}
+
+function resolveContentAssetValue(value: unknown, baseUrl: string, fieldName = ''): unknown {
+	if (typeof value === 'string') {
+		return isContentAssetField(fieldName) ? resolveContentRootUrl(value, baseUrl) : value;
+	}
+
+	if (Array.isArray(value)) {
+		return value.map((item) => resolveContentAssetValue(item, baseUrl, fieldName));
+	}
+
+	if (value && typeof value === 'object') {
+		return Object.fromEntries(
+			Object.entries(value).map(([key, nestedValue]) => [
+				key,
+				resolveContentAssetValue(nestedValue, baseUrl, key)
+			])
+		);
+	}
+
+	return value;
+}
+
+function isContentAssetField(fieldName: string): boolean {
+	return contentAssetFieldNames.has(fieldName.toLowerCase());
+}
+
+function resolveContentRootUrl(path: string, baseUrl: string): string {
+	const trimmed = path.trim();
+	if (!trimmed) {
+		return '';
+	}
+
+	try {
+		return new URL(trimmed).toString();
+	} catch {
+		return new URL(trimmed.replace(/^\/+/, ''), baseUrl).toString();
+	}
 }
