@@ -36,10 +36,16 @@ interface ClipPointsOptions {
 
 	targetLayer: GraphicsLayer;
 	symbol?: __esri.SimpleFillSymbolProperties;
+	zoomToResult?: boolean;
 
 	/** Optional IDs of the source features that were unioned to create `input` */
 	sourceIds?: Array<number | string>;
 }
+
+type TitledLayer = {
+	title?: string;
+	id?: string;
+};
 
 /**
  * Similar to clipPolygon, but uses a point/multipoint clip layer.
@@ -60,7 +66,8 @@ export async function clipPoints(options: ClipPointsOptions): Promise<Graphic[] 
 		clipLayerValueField,
 		bufferDistance,
 		bufferUnit,
-		sourceIds
+		sourceIds,
+		zoomToResult = true
 	} = options;
 
 	if (bufferDistance <= 0) {
@@ -93,7 +100,8 @@ export async function clipPoints(options: ClipPointsOptions): Promise<Graphic[] 
 	}
 
 	const results: Graphic[] = [];
-	const clipLayerTitle = (clipLayer as any).title || (clipLayer as any).id || 'clip-layer';
+	const { title, id } = clipLayer as TitledLayer;
+	const clipLayerTitle = title || id || 'clip-layer';
 
 	// -----------------------------------------------------------------------
 	// Per-value behaviour: one result polygon per unique value in clipLayerValueField
@@ -140,7 +148,7 @@ export async function clipPoints(options: ClipPointsOptions): Promise<Graphic[] 
 			return null;
 		}
 
-		if (view) {
+		if (view && zoomToResult) {
 			view.goTo(results.map((g) => g.geometry)).catch((err) => console.warn('goTo failed:', err));
 		}
 
@@ -181,7 +189,7 @@ export async function clipPoints(options: ClipPointsOptions): Promise<Graphic[] 
 
 	addGraphicToLayer(targetLayer, g, view);
 
-	if (view) {
+	if (view && zoomToResult) {
 		view.goTo(unionClipGeometry).catch((err) => console.warn('goTo failed:', err));
 	}
 

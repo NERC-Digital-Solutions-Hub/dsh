@@ -21,39 +21,24 @@ interface Piece {
  * @param layer - The graphics layer containing polygons to merge
  * @param options - Optional configuration
  * @param options.sourceId - If provided, only process polygons with this sourceId
+ * @param options.analysisRunId - If provided, only process polygons from this analysis run
  * @returns The final graphics that were added to the layer
  */
 export function mergeClippedPolygons(
 	layer: GraphicsLayer,
-	options?: { sourceId?: number | string }
+	options?: { sourceId?: number | string; analysisRunId?: string }
 ): Graphic[] {
-	console.log('[merge-clipped-polygons] merging in layer:', layer.id, 'opts:', options);
-
-	const candidates = filterCandidatePolygons(layer, options?.sourceId);
+	const candidates = filterCandidatePolygons(layer, options);
 
 	if (candidates.length <= 1) return candidates;
 
-	console.log('[merge-clipped-polygons] candidate polygons:', candidates.length);
-
 	const pieces = overlayPolygonsIntoPieces(candidates);
-
-	console.log('[merge-clipped-polygons] overlay pieces count:', pieces.length);
 
 	if (!pieces.length) return [];
 
 	const groups = groupPiecesByLayerSet(pieces);
 
-	console.log('[merge-clipped-polygons] groups by layer set:', groups.size);
-
 	const mergedGraphics = buildMergedGraphics(groups);
-
-	console.log(
-		'[merge-clipped-polygons] replacing',
-		candidates.length,
-		'originals with',
-		mergedGraphics.length,
-		'final polygons.'
-	);
 
 	layer.graphics.removeMany(candidates);
 	layer.graphics.addMany(mergedGraphics);
@@ -78,13 +63,18 @@ type Group = {
  * @param sourceId - Optional sourceId to filter by
  * @returns Array of candidate graphics
  */
-function filterCandidatePolygons(layer: GraphicsLayer, sourceId?: number | string): Graphic[] {
+function filterCandidatePolygons(
+	layer: GraphicsLayer,
+	options?: { sourceId?: number | string; analysisRunId?: string }
+): Graphic[] {
 	const allGraphics = layer.graphics.toArray();
 
 	return allGraphics.filter((g) => {
 		if (!g.geometry || g.geometry.type !== 'polygon') return false;
-		if (!sourceId) return true;
-		return g.attributes?.sourceId === sourceId;
+		if (options?.sourceId && g.attributes?.sourceId !== options.sourceId) return false;
+		if (options?.analysisRunId && g.attributes?.analysisRunId !== options.analysisRunId)
+			return false;
+		return true;
 	});
 }
 
@@ -387,12 +377,7 @@ function buildMergedAttributes(members: Graphic[]): Record<string, unknown> {
 		{ titles: Set<string>; values: Set<string>; weights: number[] }
 	>();
 
-	const addLayerData = (
-		layerId: string,
-		title?: string,
-		values?: string[],
-		weight?: number
-	) => {
+	const addLayerData = (layerId: string, title?: string, values?: string[], weight?: number) => {
 		if (!layerId) return;
 		let entry = byLayerId.get(layerId);
 		if (!entry) {
@@ -418,8 +403,7 @@ function buildMergedAttributes(members: Graphic[]): Record<string, unknown> {
 		const attrs = g.attributes ?? {};
 
 		// per-graphic weight
-		const memberWeight =
-			typeof attrs.weight === 'number' ? (attrs.weight as number) : undefined;
+		const memberWeight = typeof attrs.weight === 'number' ? (attrs.weight as number) : undefined;
 		const memberTitle = attrs.layerTitle as string | undefined;
 
 		// ---------- RAW ARRAY: one entry per original graphic ----------
@@ -477,8 +461,7 @@ function buildMergedAttributes(members: Graphic[]): Record<string, unknown> {
 		layerValues.push(values.join(', '));
 
 		// choose how you want to aggregate per layer; here: min
-		const w =
-			entry.weights.length > 0 ? Math.min(...entry.weights) : 0;
+		const w = entry.weights.length > 0 ? Math.min(...entry.weights) : 0;
 		layerWeightsGrouped.push(w);
 	}
 
@@ -515,8 +498,6 @@ function buildMergedAttributes(members: Graphic[]): Record<string, unknown> {
 
 	return result;
 }
-
-
 
 /**
  * Check if two extents intersect using simple numeric comparison.

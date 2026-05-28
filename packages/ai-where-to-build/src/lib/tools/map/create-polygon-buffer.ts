@@ -25,6 +25,7 @@ interface CreatePolygonBufferOptions {
 
 	/** Optional custom symbol for the buffer polygon */
 	symbol?: __esri.SimpleFillSymbolProperties;
+	zoomToResult?: boolean;
 
 	/** Optional IDs of the source features that were unioned to create `input` */
 	sourceIds?: Array<number | string>;
@@ -42,7 +43,16 @@ interface CreatePolygonBufferOptions {
 export async function createPolygonBuffer(
 	options: CreatePolygonBufferOptions
 ): Promise<Graphic | null> {
-	const { view, input, targetLayer, bufferDistance, bufferUnit, symbol, sourceIds } = options;
+	const {
+		view,
+		input,
+		targetLayer,
+		bufferDistance,
+		bufferUnit,
+		symbol,
+		sourceIds,
+		zoomToResult = true
+	} = options;
 
 	if (bufferDistance <= 0) {
 		console.warn('createPolygonBuffer: bufferDistance must be greater than zero.');
@@ -115,7 +125,7 @@ export async function createPolygonBuffer(
 
 	addGraphicToLayer(targetLayer, bufferGraphic, view);
 
-	if (view) {
+	if (view && zoomToResult) {
 		view.goTo(ringPolygon).catch((err) => console.warn('goTo failed:', err));
 	}
 
