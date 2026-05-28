@@ -30,8 +30,8 @@
 	import { SelectionState } from '$lib/Models/Treeview/SelectionState';
 	import { TreeviewNode } from '$lib/Models/Treeview/TreeviewNode';
 	import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
-	import { VariableSubType } from '$lib/Models/Treeview/VariableSubType';
-	import type { VariableTreeviewNode } from '$lib/Models/Treeview/VariableTreeviewNode';
+	import { ArcgisNodeStyleRenderer } from '$lib/Services/ArcgisNodeStyleRenderer';
+	import { ArcgisNodeVisibilityRenderer } from '$lib/Services/ArcgisNodeVisibilityRenderer';
 	import { CustomRendererService } from '$lib/Services/CustomRendererService';
 	import type { INodeProvider } from '$lib/Services/INodeProvider';
 	import { LayerViewProvider } from '$lib/Services/LayerViewProvider';
@@ -49,7 +49,11 @@
 	import DownloadsStore from '$lib/Stores/DownloadsStore.svelte';
 	import { TreeviewConfigStore } from '$lib/Stores/TreeviewConfigStore';
 	import { TreeviewStore } from '$lib/Stores/TreeviewStore.svelte';
-	import { WebMapStore } from '$lib/Stores/WebMapStore.svelte';
+	import {
+		getWebMapSourcePersistenceKey,
+		resolveWebMapSource,
+		WebMapStore
+	} from '$lib/Stores/WebMapStore.svelte';
 	import type { AppTabState } from '$lib/Types/Chatbot.types';
 	import { TreeviewType } from '$lib/Types/Treeview.types';
 	import { TabProgress, TabType, type DownloadEntry } from '$lib/Types/Uprn.types';
@@ -216,13 +220,22 @@
 		return health;
 	});
 
-	/** Hook to load previous selections from indexedDb based on the portal item ID in the app configuration. */
-	const selectionsFromDb = $derived.by(() => {
-		if (!appConfig.content?.map.portalItemId) {
+	/** Stable key used to persist selections for portal, static, and API-backed webmaps. */
+	const webMapPersistenceKey: string | null = $derived.by(() => {
+		if (!appConfig.content?.map) {
 			return null;
 		}
 
-		const selections = useLoadSelectionsFromIndexDb(appConfig.content.map.portalItemId);
+		return getWebMapSourcePersistenceKey(resolveWebMapSource(appConfig.content.map));
+	});
+
+	/** Hook to load previous selections from indexedDb for the configured webmap. */
+	const selectionsFromDb = $derived.by(() => {
+		if (!webMapPersistenceKey) {
+			return null;
+		}
+
+		const selections = useLoadSelectionsFromIndexDb(webMapPersistenceKey);
 		selections.fetch();
 		return selections;
 	});
@@ -277,8 +290,7 @@
 	let webMapStore: WebMapStore | null = $derived.by(() => {
 		return appConfig.content
 			? new WebMapStore({
-					portalUrl: appConfig.content.map.portalUrl,
-					itemId: appConfig.content.map.portalItemId || '',
+					source: resolveWebMapSource(appConfig.content.map),
 					proxy: undefined
 				})
 			: null;
@@ -500,7 +512,9 @@
 		}
 
 		console.log('[uprn/app] Syncing treeview visibility states to map');
-		nodeVisibilityController.setLayerViewProvider(new LayerViewProvider(mapView));
+		nodeVisibilityController.setVisibilityRenderer(
+			new ArcgisNodeVisibilityRenderer(new LayerViewProvider(mapView))
+		);
 		mapSyncedWithNodeVisibility = true;
 	});
 
@@ -590,18 +604,17 @@
 	 * It listens for changes in the area selection snapshot and updates the stored selection for the current portal item.
 	 */
 	$effect(() => {
-		const portalItemId = appConfig.content?.map.portalItemId;
-		if (!portalItemId || !initializedSelectionsFromDb) {
+		if (!webMapPersistenceKey || !initializedSelectionsFromDb) {
 			return;
 		}
 
 		const snapshot = areaSelectionStore.exportSnapshot();
 		if (!snapshot.nodeId) {
-			updateSelection(portalItemId, { areas: null });
+			updateSelection(webMapPersistenceKey, { areas: null });
 			return;
 		}
 
-		updateSelection(portalItemId, { areas: snapshot });
+		updateSelection(webMapPersistenceKey, { areas: snapshot });
 	});
 
 	/**
@@ -610,14 +623,13 @@
 	 */
 
 	$effect(() => {
-		const portalItemId = appConfig.content?.map.portalItemId;
-		if (!portalItemId || !initializedSelectionsFromDb) {
+		if (!webMapPersistenceKey || !initializedSelectionsFromDb) {
 			return;
 		}
 
 		const selections = [...dataSelectionStore.dataSelections.values()];
 		const snapshots = $state.snapshot(selections) as DataSelectionSnapshot[];
-		updateSelection(portalItemId, {
+		updateSelection(webMapPersistenceKey, {
 			data: snapshots
 		});
 	});
@@ -659,42 +671,33 @@
 			return;
 		}
 
-		let variableNode: TreeviewNode | undefined;
+		let styledNode: TreeviewNode | undefined;
 		for (const [nodeId, isVisible] of nodeVisibilityController.visibilityStates) {
 			if (!isVisible) {
 				continue;
 			}
 
 			const node = treeviewNodeProvider.getTreeviewNode(nodeId);
-			if (!node || !isVariableNode(node)) {
+			if (!node?.capabilities.style) {
 				continue;
 			}
 
-			if (node.variableSubType === VariableSubType.Field) {
-				variableNode = node;
-				break;
-			}
+			styledNode = node;
+			break;
 		}
 
-		if (!variableNode || !isVariableNode(variableNode)) {
+		if (!styledNode?.capabilities.style) {
 			return;
 		}
 
-		const layer: __esri.Layer | nullish = mapView.map?.findLayerById(variableNode.layerId);
-		if (!layer) {
-			console.warn(
-				`[uprn/app] Could not find layer for variable node ${variableNode.id} with layer ID ${variableNode.layerId}`
-			);
-			return;
-		}
-
-		customRendererService.applyCustomRenderer(
-			layer as __esri.FeatureLayer,
-			variableNode.variableId
+		const styleRenderer = new ArcgisNodeStyleRenderer(
+			new LayerViewProvider(mapView),
+			customRendererService
 		);
-		console.log(
-			`[uprn/app] Applied custom renderer for variable node ${variableNode.id} on layer ${layer.id}`
-		);
+		styleRenderer.applyStyle({
+			sourceNode: styledNode,
+			style: styledNode.capabilities.style
+		});
 	});
 
 	/**
@@ -831,15 +834,6 @@
 				resizeObserver.disconnect();
 			}
 		};
-	}
-
-	/**
-	 * Checks if a given node is a VariableTreeviewNode.
-	 * @param node The node to check.
-	 * @returns True if the node is a VariableTreeviewNode, false otherwise.
-	 */
-	function isVariableNode(node: TreeviewNode): node is VariableTreeviewNode {
-		return node.type === TreeviewNodeType.Variable;
 	}
 
 	/**

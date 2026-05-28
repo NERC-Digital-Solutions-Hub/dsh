@@ -1,11 +1,29 @@
 import { browser } from '$app/environment';
 import type { IWebMapService } from '$lib/Services/IWebMapService.js';
+import type { MapConfig } from '$lib/Types/Configuration.types';
+import { createWebMapFromJson } from '$lib/Stores/WebMapCustomLoader';
 import { getSublayerId } from '$lib/Utilities/TreeviewUtilities';
 import { SvelteMap } from 'svelte/reactivity';
 
-export type WebMapStoreParams = {
-	portalUrl?: string | null;
+export type WebMapPortalItemSource = {
+	kind: 'portal-item';
 	itemId: string;
+	portalUrl?: string | null;
+};
+
+export type WebMapJsonUrlSource = {
+	kind: 'webmap-json-url';
+	url: string;
+	portalUrl?: string | null;
+	credentials?: RequestCredentials;
+};
+
+export type WebMapSource = WebMapPortalItemSource | WebMapJsonUrlSource;
+
+export type WebMapStoreParams = {
+	source?: WebMapSource;
+	portalUrl?: string | null;
+	itemId?: string;
 	proxy?: Proxy | null;
 };
 
@@ -51,30 +69,19 @@ export class WebMapStore implements IWebMapService {
 	public loading: boolean = $state<boolean>(false);
 	public error: string | null = $state<string | null>(null);
 
+	private readonly source: WebMapSource;
+	private readonly proxy: Proxy | null;
 	private initialPortalUrl: string | null = null;
 
 	constructor(params: WebMapStoreParams) {
+		this.source = resolveWebMapSource(params);
+		this.proxy = params.proxy ?? null;
+
 		if (!browser) {
 			return;
 		}
 
-		this.loading = true;
-		this.error = null;
-
-		const async = async () => {
-			try {
-				const { portalUrl, itemId, proxy } = params;
-				await this.configurePortalAsync(portalUrl, proxy);
-				await this.loadwebmapAsync(itemId);
-			} catch (error) {
-				console.error('Error initializing webmap:', error);
-				this.error = (error as Error).message;
-			} finally {
-				this.loading = false;
-			}
-		};
-
-		async();
+		void this.loadAsync();
 	}
 
 	/**
@@ -83,7 +90,39 @@ export class WebMapStore implements IWebMapService {
 	 * @return The layer or sublayer with the specified ID, or null if not found.
 	 */
 	public getLayerById(layerId: string): __esri.Layer | __esri.Sublayer | null {
-		return this.dataLookup.get(layerId) || null;
+		return findLayerById(this.data?.layers, layerId) ?? this.dataLookup.get(layerId) ?? null;
+	}
+
+	/**
+	 * Loads the configured webmap source.
+	 */
+	public async loadAsync(): Promise<void> {
+		if (this.data || this.loading) {
+			return;
+		}
+
+		this.loading = true;
+		this.error = null;
+		this.isLoaded = false;
+
+		try {
+			if (this.source.portalUrl || this.proxy) {
+				await this.configurePortalAsync(this.source.portalUrl, this.proxy);
+			}
+
+			if (this.source.kind === 'portal-item') {
+				await this.loadPortalWebmapAsync(this.source.itemId);
+			} else {
+				await this.loadWebmapJsonUrlAsync(this.source);
+			}
+		} catch (error) {
+			console.error('Error initializing webmap:', error);
+			this.error = error instanceof Error ? error.message : String(error);
+			this.data = null;
+			this.isLoaded = false;
+		} finally {
+			this.loading = false;
+		}
 	}
 
 	/**
@@ -97,19 +136,15 @@ export class WebMapStore implements IWebMapService {
 	): Promise<void> {
 		const { default: esriConfig } = await import('@arcgis/core/config.js');
 
-		if (!portalUrl) {
-			if (this.initialPortalUrl) {
-				esriConfig.portalUrl = this.initialPortalUrl;
+		if (portalUrl) {
+			if (!this.initialPortalUrl) {
+				this.initialPortalUrl = esriConfig.portalUrl;
 			}
-			return;
-		}
 
-		if (!this.initialPortalUrl) {
-			this.initialPortalUrl = esriConfig.portalUrl;
+			esriConfig.portalUrl = portalUrl;
+		} else if (this.initialPortalUrl) {
+			esriConfig.portalUrl = this.initialPortalUrl;
 		}
-
-		esriConfig.portalUrl = portalUrl as string;
-		//console.log(esriConfig);
 
 		if (!proxy) {
 			return;
@@ -118,12 +153,40 @@ export class WebMapStore implements IWebMapService {
 		const { addProxyRule } = await import('@arcgis/core/core/urlUtils.js');
 		console.log('Adding proxy rule for portal traffic');
 		addProxyRule({
-			urlPrefix: proxy?.urlPrefix as string,
-			proxyUrl: proxy?.proxyUrl as string
+			urlPrefix: proxy.urlPrefix,
+			proxyUrl: proxy.proxyUrl
 		});
 	}
 
 	public async loadwebmapAsync(itemId: string): Promise<void> {
+		await this.loadPortalWebmapAsync(itemId);
+	}
+
+	/**
+	 * Clear the current webmap data
+	 */
+	public clear(): void {
+		this.data = null;
+		this.isLoaded = false;
+		this.loading = false;
+		this.error = null;
+	}
+
+	/**
+	 * Reset the error state
+	 */
+	public clearError(): void {
+		this.error = null;
+	}
+
+	/**
+	 * Get the current webmap instance
+	 */
+	public getWebmap(): __esri.WebMap | null {
+		return this.data;
+	}
+
+	private async loadPortalWebmapAsync(itemId: string): Promise<void> {
 		if (this.data) {
 			return;
 		}
@@ -142,38 +205,97 @@ export class WebMapStore implements IWebMapService {
 			id: itemId
 		});
 
-		const webmap = new WebMap({
-			portalItem: portalItem
+		await this.setWebmapAsync(
+			new WebMap({
+				portalItem: portalItem
+			})
+		);
+	}
+
+	private async loadWebmapJsonUrlAsync(source: WebMapJsonUrlSource): Promise<void> {
+		const response = await fetch(source.url, {
+			credentials: source.credentials
 		});
 
+		if (!response.ok) {
+			throw new Error(
+				`Failed to load webmap JSON from ${source.url}: ${response.status} ${response.statusText}`
+			);
+		}
+
+		const webmapJson = (await response.json()) as unknown;
+		await this.setWebmapAsync(await createWebMapFromJson(webmapJson));
+	}
+
+	private async setWebmapAsync(webmap: __esri.WebMap): Promise<void> {
 		this.data = webmap;
 
-		await this.data.loadAll();
+		await this.data.load();
 		if (this.data.loaded) {
 			this.isLoaded = true;
 		}
 	}
+}
 
-	/**
-	 * Clear the current webmap data
-	 */
-	public clear(): void {
-		this.data = null;
-		this.loading = false;
-		this.error = null;
+export function resolveWebMapSource(
+	params: WebMapStoreParams | Pick<MapConfig, 'portalUrl' | 'portalItemId' | 'source'>
+): WebMapSource {
+	if (params.source) {
+		return params.source;
 	}
 
-	/**
-	 * Reset the error state
-	 */
-	public clearError(): void {
-		this.error = null;
+	if ('itemId' in params && params.itemId) {
+		return {
+			kind: 'portal-item',
+			itemId: params.itemId,
+			portalUrl: params.portalUrl
+		};
 	}
 
-	/**
-	 * Get the current webmap instance
-	 */
-	public getWebmap(): __esri.WebMap | null {
-		return this.data;
+	if ('portalItemId' in params && params.portalItemId) {
+		return {
+			kind: 'portal-item',
+			itemId: params.portalItemId,
+			portalUrl: params.portalUrl
+		};
 	}
+
+	throw new Error('Map configuration must provide either a webmap source or a portal item ID.');
+}
+
+export function getWebMapSourcePersistenceKey(source: WebMapSource): string {
+	return source.kind === 'portal-item' ? source.itemId : source.url;
+}
+
+function findLayerById(
+	layers: __esri.Collection<__esri.Layer> | undefined,
+	layerId: string
+): __esri.Layer | __esri.Sublayer | null {
+	if (!layers) {
+		return null;
+	}
+
+	for (const layer of layers.toArray()) {
+		if (layer.id === layerId) {
+			return layer;
+		}
+
+		if (layer.type === 'group') {
+			const found = findLayerById((layer as __esri.GroupLayer).layers, layerId);
+			if (found) {
+				return found;
+			}
+		}
+
+		if (layer.type === 'map-image') {
+			const found = (layer as __esri.MapImageLayer).sublayers?.find(
+				(sublayer) => getSublayerId(sublayer, layer) === layerId
+			);
+			if (found) {
+				return found;
+			}
+		}
+	}
+
+	return null;
 }

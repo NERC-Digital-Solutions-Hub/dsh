@@ -1,11 +1,4 @@
-import {
-	DatasetTreeviewNode,
-	SelectionState,
-	TreeviewNode,
-	VariableTreeviewNode
-} from '$lib/Models/Treeview/Index';
-import { LayerType } from '$lib/Models/Treeview/LayerType';
-import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
+import { SelectionState, TreeviewNode } from '$lib/Models/Treeview/Index';
 import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 import type { INodeSelectionController } from '$lib/Services/INodeSelectionController';
 import type {
@@ -36,7 +29,7 @@ export class NodeSelectionController implements INodeSelectionController {
 
 	/** @inheritdoc */
 	public getSelectionState(node: TreeviewNode): SelectionState {
-		if (!this.isDatasetNode(node) && !this.isVariableNode(node)) {
+		if (!node.capabilities.selection) {
 			return this.determineSelectionStateFromChildren(node);
 		}
 
@@ -45,18 +38,22 @@ export class NodeSelectionController implements INodeSelectionController {
 		}
 
 		let selection;
-		if (this.isVariableNode(node)) {
-			selection = this.#dataSelectionStore.getSelection(node.layerId);
+		if (node.capabilities.selection?.kind === 'field') {
+			selection = this.#dataSelectionStore.getSelection(node.capabilities.selection.sourceId);
 			if (!selection) {
 				return SelectionState.Inactive;
 			}
 
-			return selection.selectedFieldIds.has(node.variableId)
+			return selection.selectedFieldIds.has(node.capabilities.selection.fieldId)
 				? SelectionState.Active
 				: SelectionState.Inactive;
 		}
 
-		selection = this.#dataSelectionStore.getSelection(node.id);
+		if (node.capabilities.selection?.kind !== 'dataset') {
+			return SelectionState.Inactive;
+		}
+
+		selection = this.#dataSelectionStore.getSelection(node.capabilities.selection.sourceId);
 		if (!selection) {
 			return SelectionState.Inactive;
 		}
@@ -76,13 +73,13 @@ export class NodeSelectionController implements INodeSelectionController {
 			return; // hidden nodes should not be selectable
 		}
 
-		if (!this.isDatasetNode(node) && !this.isVariableNode(node)) {
+		if (!node.capabilities.selection) {
 			// in this case, either all its children are selected or none are.
 			this.updateChildrenSelection(node, state);
 			return;
 		}
 
-		if (this.isVariableNode(node)) {
+		if (node.capabilities.selection.kind === 'field') {
 			this.updateFieldSelection(node, state);
 			return;
 		}
@@ -106,13 +103,19 @@ export class NodeSelectionController implements INodeSelectionController {
 	 * @param node - The LayerTreeviewNode to update.
 	 * @param state - The desired DownloadState for the layer.
 	 */
-	private updateLayerSelection(node: DatasetTreeviewNode, state: SelectionState) {
-		let selection = this.#dataSelectionStore.getSelection(node.id);
+	private updateLayerSelection(node: TreeviewNode, state: SelectionState) {
+		const selectionTarget = node.capabilities.selection;
+		if (selectionTarget?.kind !== 'dataset') {
+			this.updateChildrenSelection(node, state);
+			return;
+		}
+
+		let selection = this.#dataSelectionStore.getSelection(selectionTarget.sourceId);
 
 		switch (state) {
 			case SelectionState.Active:
 				if (!selection && (!node.children || node.children.length === 0)) {
-					selection = this.createAndAddDataSelection(node.id);
+					selection = this.createAndAddDataSelection(selectionTarget.sourceId);
 					break;
 				}
 
@@ -122,7 +125,7 @@ export class NodeSelectionController implements INodeSelectionController {
 				break;
 			case SelectionState.Inactive:
 				if (selection && (!node.children || node.children.length === 0)) {
-					this.#dataSelectionStore.removeSelection(node.id);
+					this.#dataSelectionStore.removeSelection(selectionTarget.sourceId);
 					break;
 				}
 
@@ -142,18 +145,23 @@ export class NodeSelectionController implements INodeSelectionController {
 	 * @param node - The VariableTreeviewNode representing the field.
 	 * @param state - The desired DownloadState for the field.
 	 */
-	private updateFieldSelection(node: VariableTreeviewNode, state: SelectionState) {
-		let selection = this.#dataSelectionStore.getSelection(node.layerId);
+	private updateFieldSelection(node: TreeviewNode, state: SelectionState) {
+		const selectionTarget = node.capabilities.selection;
+		if (selectionTarget?.kind !== 'field') {
+			return;
+		}
+
+		let selection = this.#dataSelectionStore.getSelection(selectionTarget.sourceId);
 
 		switch (state) {
 			case SelectionState.Active:
 				if (!selection) {
-					selection = this.createAndAddDataSelection(node.layerId);
+					selection = this.createAndAddDataSelection(selectionTarget.sourceId);
 				}
 
-				this.#dataSelectionStore.addOrUpdateSelection(node.layerId, [
+				this.#dataSelectionStore.addOrUpdateSelection(selectionTarget.sourceId, [
 					...selection.selectedFieldIds,
-					node.variableId
+					selectionTarget.fieldId
 				]);
 				break;
 			case SelectionState.Inactive: {
@@ -162,8 +170,10 @@ export class NodeSelectionController implements INodeSelectionController {
 				}
 
 				const updatedFieldIds = new SvelteSet<string>(selection.selectedFieldIds);
-				updatedFieldIds.delete(node.variableId);
-				this.#dataSelectionStore.addOrUpdateSelection(node.layerId, [...updatedFieldIds]);
+				updatedFieldIds.delete(selectionTarget.fieldId);
+				this.#dataSelectionStore.addOrUpdateSelection(selectionTarget.sourceId, [
+					...updatedFieldIds
+				]);
 
 				// selection.selectedFieldIds.delete(node.field.name);
 				if (updatedFieldIds.size === 0) {
@@ -214,9 +224,7 @@ export class NodeSelectionController implements INodeSelectionController {
 			const childState = this.getSelectionState(child);
 			if (
 				childState === SelectionState.Active ||
-				(this.isDatasetNode(child) &&
-					child.layerType === LayerType.Feature &&
-					childState !== SelectionState.Inactive) // NOTE: This condition ensures that feature layers with some fields selected are counted as active
+				(this.hasFieldSelectionDescendant(child) && childState !== SelectionState.Inactive)
 			) {
 				selectedCount++;
 			} else if (childState === SelectionState.Indeterminate) {
@@ -233,6 +241,14 @@ export class NodeSelectionController implements INodeSelectionController {
 		}
 
 		return SelectionState.Indeterminate;
+	}
+
+	private hasFieldSelectionDescendant(node: TreeviewNode): boolean {
+		if (node.capabilities.selection?.kind === 'field') {
+			return true;
+		}
+
+		return node.children.some((child) => this.hasFieldSelectionDescendant(child));
 	}
 
 	/**
@@ -253,32 +269,5 @@ export class NodeSelectionController implements INodeSelectionController {
 
 		this.#dataSelectionStore.addSelection(selection);
 		return selection;
-	}
-
-	/**
-	 * Checks if a given node is a folder TreeviewNode.
-	 * @param node The node to check.
-	 * @returns True if the node is a folder TreeviewNode, false otherwise.
-	 */
-	private isFolderNode(node: TreeviewNode): node is TreeviewNode {
-		return node.type === TreeviewNodeType.Folder;
-	}
-
-	/**
-	 * Checks if a given node is a DatasetTreeviewNode.
-	 * @param node The node to check.
-	 * @returns True if the node is a DatasetTreeviewNode, false otherwise.
-	 */
-	private isDatasetNode(node: TreeviewNode): node is DatasetTreeviewNode {
-		return node.type === TreeviewNodeType.Dataset;
-	}
-
-	/**
-	 * Checks if a given node is a VariableTreeviewNode.
-	 * @param node The node to check.
-	 * @returns True if the node is a VariableTreeviewNode, false otherwise.
-	 */
-	private isVariableNode(node: TreeviewNode): node is VariableTreeviewNode {
-		return node.type === TreeviewNodeType.Variable;
 	}
 }

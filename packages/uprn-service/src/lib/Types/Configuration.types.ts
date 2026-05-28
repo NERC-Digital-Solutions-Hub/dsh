@@ -22,11 +22,25 @@ export type AppsUprnConfig = {
 	treeviewConfig: TreeviewConfig;
 };
 
+export type WebMapSourceConfig =
+	| {
+			kind: 'portal-item';
+			itemId: string;
+			portalUrl?: string | null;
+	  }
+	| {
+			kind: 'webmap-json-url';
+			url: string;
+			portalUrl?: string | null;
+			credentials?: RequestCredentials;
+	  };
+
 export type MapConfig = {
 	_name?: string;
 	title: string;
 	portalUrl?: string | null;
-	portalItemId: string;
+	portalItemId?: string;
+	source?: WebMapSourceConfig;
 	treeview?: TreeviewConfig;
 	tagDefinitions?: TagDefinition[];
 	selectableLayers?: { _name: string; id: string; nameField: string; codeField: string }[];

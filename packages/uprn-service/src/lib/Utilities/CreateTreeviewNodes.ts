@@ -3,9 +3,7 @@ import {
 	TreeviewNode,
 	VariableTreeviewNode
 } from '$lib/Models/Treeview/Index';
-import { LayerType } from '$lib/Models/Treeview/LayerType';
-import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
-import { VariableSubType } from '$lib/Models/Treeview/VariableSubType';
+import type { TreeviewNodeCapabilities } from '$lib/Models/Treeview/TreeviewNodeCapabilities';
 import { TreeviewNodeTypology, type TreeviewNodeConfig } from '$lib/Types/Treeview.types';
 
 /**
@@ -25,7 +23,8 @@ export function createTreeviewNodes(configs: TreeviewNodeConfig[]): TreeviewNode
  */
 function createNodeFromConfig(
 	config: TreeviewNodeConfig,
-	parent: TreeviewNode | null = null
+	parent: TreeviewNode | null = null,
+	parentConfig: TreeviewNodeConfig | null = null
 ): TreeviewNode {
 	switch (config.typology) {
 		case TreeviewNodeTypology.Folder: {
@@ -37,7 +36,9 @@ function createNodeFromConfig(
 			);
 
 			const childNodes =
-				config.children?.map((childConfig) => createNodeFromConfig(childConfig, folderNode)) || [];
+				config.children?.map((childConfig) =>
+					createNodeFromConfig(childConfig, folderNode, config)
+				) || [];
 			folderNode.children.push(...childNodes);
 
 			return folderNode;
@@ -47,14 +48,15 @@ function createNodeFromConfig(
 			const datasetNode = new DatasetTreeviewNode(
 				config.id,
 				config.displayName || config.name || config.id,
-				config.layerId || '',
-				config.typology === TreeviewNodeTypology.DatasetRaster ? LayerType.Tile : LayerType.Feature,
+				createDatasetCapabilities(config),
 				[],
 				parent
 			);
 
 			const childNodes =
-				config.children?.map((childConfig) => createNodeFromConfig(childConfig, datasetNode)) || [];
+				config.children?.map((childConfig) =>
+					createNodeFromConfig(childConfig, datasetNode, config)
+				) || [];
 			datasetNode.children.push(...childNodes);
 
 			return datasetNode;
@@ -63,12 +65,7 @@ function createNodeFromConfig(
 			return new VariableTreeviewNode(
 				config.id,
 				config.displayName || config.name || config.id,
-				config.layerId || '',
-				parent && isDatasetNode(parent) ? parent.layerType : LayerType.Feature,
-				parent && isDatasetNode(parent) && parent.layerType === LayerType.Tile
-					? VariableSubType.Tile
-					: VariableSubType.Field,
-				config.variableId || '',
+				createVariableCapabilities(config, parent, parentConfig),
 				[],
 				parent
 			);
@@ -77,29 +74,56 @@ function createNodeFromConfig(
 	}
 }
 
-/**
- * Checks if a given node is a folder TreeviewNode.
- * @param node The node to check.
- * @returns True if the node is a folder TreeviewNode, false otherwise.
- */
-function isFolderNode(node: TreeviewNode): node is TreeviewNode {
-	return node.type === TreeviewNodeType.Folder;
+function createDatasetCapabilities(config: TreeviewNodeConfig): TreeviewNodeCapabilities {
+	const sourceId = config.layerId || config.id;
+	return {
+		render: {
+			kind: 'source',
+			sourceId,
+			drawStateNodeId: config.id
+		},
+		selection: {
+			kind: 'dataset',
+			sourceId
+		}
+	};
 }
 
-/**
- * Checks if a given node is a DatasetTreeviewNode.
- * @param node The node to check.
- * @returns True if the node is a DatasetTreeviewNode, false otherwise.
- */
-function isDatasetNode(node: TreeviewNode): node is DatasetTreeviewNode {
-	return node.type === TreeviewNodeType.Dataset;
-}
+function createVariableCapabilities(
+	config: TreeviewNodeConfig,
+	parent: TreeviewNode | null,
+	parentConfig: TreeviewNodeConfig | null
+): TreeviewNodeCapabilities {
+	const parentSourceId = parent?.capabilities.render?.sourceId;
+	const sourceId = config.layerId || parentSourceId || config.id;
+	const memberOrFieldId = config.variableId || config.id;
 
-/**
- * Checks if a given node is a VariableTreeviewNode.
- * @param node The node to check.
- * @returns True if the node is a VariableTreeviewNode, false otherwise.
- */
-function isVariableNode(node: TreeviewNode): node is VariableTreeviewNode {
-	return node.type === TreeviewNodeType.Variable;
+	if (parentConfig?.typology === TreeviewNodeTypology.DatasetRaster) {
+		return {
+			render: {
+				kind: 'source-member',
+				sourceId,
+				memberId: memberOrFieldId,
+				drawStateNodeId: config.id
+			}
+		};
+	}
+
+	return {
+		render: {
+			kind: 'source',
+			sourceId,
+			drawStateNodeId: parent?.id
+		},
+		selection: {
+			kind: 'field',
+			sourceId,
+			fieldId: memberOrFieldId
+		},
+		style: {
+			kind: 'field',
+			sourceId,
+			fieldId: memberOrFieldId
+		}
+	};
 }

@@ -1,5 +1,5 @@
-import type { LayerType } from '$lib/Models/Treeview/LayerType';
 import { TreeviewNode } from '$lib/Models/Treeview/TreeviewNode';
+import type { TreeviewNodeCapabilities } from '$lib/Models/Treeview/TreeviewNodeCapabilities';
 import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 
 /**
@@ -10,31 +10,26 @@ export class DatasetTreeviewNode extends TreeviewNode {
 	/** The type of the node */
 	public readonly type: TreeviewNodeType = TreeviewNodeType.Dataset;
 
-	/** The associated layer ID. */
-	public readonly layerId: string;
-
-	/** The type of the layer. */
-	public readonly layerType: LayerType;
-
 	/**
 	 * Initializes a new instance of the DatasetTreeviewNode class.
 	 * @param id - Unique identifier.
 	 * @param name - Display name.
-	 * @param layerId - The layer ID.
-	 * @param layerType - The layer type.
+	 * @param capabilities - Renderer-neutral capabilities for this dataset.
 	 * @param children - Initial child nodes.
 	 * @param parent - Parent node.
 	 */
 	constructor(
 		id: string,
 		name: string,
-		layerId: string,
-		layerType: LayerType,
+		capabilities: TreeviewNodeCapabilities = {},
 		children: TreeviewNode[] = [],
 		parent: TreeviewNode | null = null
 	) {
-		super(id, name, children, parent);
-		this.layerId = layerId;
-		this.layerType = layerType;
+		super(id, name, children, parent, capabilities);
+	}
+
+	/** @deprecated Use capabilities.render/selection sourceId instead. */
+	public get layerId(): string {
+		return this.capabilities.render?.sourceId ?? this.capabilities.selection?.sourceId ?? this.id;
 	}
 }

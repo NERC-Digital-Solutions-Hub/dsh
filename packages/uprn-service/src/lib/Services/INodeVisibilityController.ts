@@ -1,4 +1,5 @@
 import type { NodeDrawState, TreeviewNode } from '$lib/Models/Treeview/Index';
+import type { INodeVisibilityRenderer } from '$lib/Services/INodeVisibilityRenderer';
 
 /**
  * Interface for controlling the visibility associated with treeview nodes.
@@ -31,6 +32,12 @@ export interface INodeVisibilityController {
 	 */
 	setVisibilityState(node: TreeviewNode, isVisible: boolean): void;
 
-	/** Resets all tracked draw states and their associated handles. */
+	/**
+	 * Sets the renderer bridge used to apply visibility state outside the tree.
+	 * @param renderer The renderer bridge to use.
+	 */
+	setVisibilityRenderer(renderer: INodeVisibilityRenderer): void;
+
+	/** Resets all tracked draw states and renderer state. */
 	reset(): void;
 }

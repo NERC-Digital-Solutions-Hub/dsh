@@ -1,4 +1,5 @@
 import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
+import type { TreeviewNodeCapabilities } from '$lib/Models/Treeview/TreeviewNodeCapabilities';
 
 /**
  * Base class representing a node in the treeview.
@@ -20,6 +21,9 @@ export class TreeviewNode {
 	/** Parent node, if any. */
 	public readonly parent: TreeviewNode | null;
 
+	/** Renderer-neutral domain capabilities for this node. */
+	public readonly capabilities: TreeviewNodeCapabilities;
+
 	/**
 	 * Initializes a new instance of the TreeviewNode class.
 	 * @param id - Unique identifier.
@@ -31,11 +35,13 @@ export class TreeviewNode {
 		id: string,
 		name: string,
 		children: TreeviewNode[] = [],
-		parent: TreeviewNode | null = null
+		parent: TreeviewNode | null = null,
+		capabilities: TreeviewNodeCapabilities = {}
 	) {
 		this.id = id;
 		this.name = name;
 		this.children = children;
 		this.parent = parent;
+		this.capabilities = capabilities;
 	}
 }

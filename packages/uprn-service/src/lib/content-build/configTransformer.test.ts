@@ -1,6 +1,5 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
 import { TreeviewNodeTypology } from '$lib/Types/Treeview.types';
+import { expect, test } from 'vitest';
 import { ConfigTransformer } from './configTransformer';
 import { CsvConfigFetcher } from './csvConfigFetcher';
 
@@ -19,22 +18,22 @@ test('builds a treeview with synthesized folders and resolved dependencies', asy
 	);
 	const csvConfig = await fetcher.fetch();
 
-	assert.deepEqual(
-		csvConfig.folders.map((folder) => `${folder.tvPath}/${folder.folderName}`),
-		['//Group', '/Group/Dataset A/Sub']
-	);
+	expect(csvConfig.folders.map((folder) => `${folder.tvPath}/${folder.folderName}`)).toEqual([
+		'//Group',
+		'/Group/Dataset A/Sub'
+	]);
 
 	const layers = new ConfigTransformer().transform(csvConfig);
 	const group = layers.find((layer) => layer.id === 'folder:/Group');
-	assert.equal(group?.typology, TreeviewNodeTypology.Folder);
+	expect(group?.typology).toBe(TreeviewNodeTypology.Folder);
 
 	const datasetA = group?.children?.find((node) => node.id === 'layer-a');
 	const datasetB = group?.children?.find((node) => node.id === 'layer-b');
 	const subFolder = datasetA?.children?.find((node) => node.id === 'folder:/Group/Dataset A/Sub');
 
-	assert.equal(subFolder?.typology, TreeviewNodeTypology.Folder);
-	assert.equal(subFolder?.children?.[0]?.id, 'layer-a-var1');
-	assert.deepEqual(datasetB?.visibilityDependencyIds, ['layer-a']);
+	expect(subFolder?.typology).toBe(TreeviewNodeTypology.Folder);
+	expect(subFolder?.children?.[0]?.id).toBe('layer-a-var1');
+	expect(datasetB?.visibilityDependencyIds).toEqual(['layer-a']);
 });
 
 const datasetsCsv = [
