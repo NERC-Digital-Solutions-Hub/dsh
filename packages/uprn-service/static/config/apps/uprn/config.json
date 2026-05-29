@@ -14,7 +14,7 @@
         "chatStreamRoute": "/chat_stream",
         "feedbackRoute": "/feedbacks"
     },
-    "mapConfig": {
+    "_mapConfig": {
         "title": "UPRN PoC UK Web Map v1.7",
         "portalUrl": "https://nercdsh.dev.azure.manchester.ac.uk/portal",
         "portalItemId": "8f476de7ee4244e7894be2ed2d6dbaca",
@@ -136,11 +136,11 @@
             }
         ]
     },
-    "_mapConfig": {
+    "mapConfig": {
         "title": "UPRN PoC UK Web Map v1.7",
         "source": {
             "kind": "webmap-json-url",
-            "url": "/webmap.json"
+            "url": "/config/apps/uprn/webmap.json"
         },
         "treeview": {
             "visibilityGroups": [

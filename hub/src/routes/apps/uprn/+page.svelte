@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 	import { MediaQuery } from 'svelte/reactivity';
-	import { UprnServiceApp } from '@dsh/uprn-service';
 	import type { PageData } from './$types';
+	import type { Component } from 'svelte';
+	import type { AppsUprnConfig } from '@dsh/uprn-service';
 
 	import * as Card from '$lib/components/shadcn/card/index.js';
 	import * as Alert from '$lib/components/shadcn/alert/index.js';
@@ -12,6 +14,11 @@
 
 	const mobile = browser ? new MediaQuery('(max-width: 500px)') : null;
 	let { data }: { data: PageData } = $props();
+	let UprnServiceApp: Component<{ config: AppsUprnConfig }> | null = $state(null);
+
+	onMount(async () => {
+		UprnServiceApp = (await import('@dsh/uprn-service')).UprnServiceApp;
+	});
 </script>
 
 {#if mobile?.current}
@@ -41,5 +48,7 @@
 		</Card.Root>
 	</div>
 {:else}
-	<UprnServiceApp config={data.uprnAppConfig} />
+	{#if UprnServiceApp}
+		<UprnServiceApp config={data.uprnAppConfig} />
+	{/if}
 {/if}
