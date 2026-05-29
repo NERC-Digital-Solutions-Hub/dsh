@@ -681,6 +681,12 @@
 			return;
 		}
 
+		// Depend on parquet hydration so the custom renderer is (re)applied to the
+		// live hydrated layer rather than the placeholder it was created as. Parquet
+		// layers start as placeholders and are swapped out asynchronously when first
+		// made visible, after the initial style pass has already run.
+		const hydrationVersion = webMapStore.hydrationVersion;
+
 		let styledNode: TreeviewNode | undefined;
 		for (const [nodeId, isVisible] of nodeVisibilityController.visibilityStates) {
 			if (!isVisible) {
@@ -708,6 +714,9 @@
 			sourceNode: styledNode,
 			style: styledNode.capabilities.style
 		});
+		console.debug(
+			`[uprn/app] Applied custom renderer for ${styledNode.id} (hydration v${hydrationVersion})`
+		);
 	});
 
 	/**
@@ -1021,15 +1030,13 @@
 											actions={resetActions}
 											buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
 										>
-											{#snippet children()}
-												{#if appConfig.content}
-													<DebugDialog
-														class="w-5 h-5"
-														sources={appConfig.content.map.sources}
-														bind:selectedIndex={selectedMapSourceIndex}
-													/>
-												{/if}
-											{/snippet}
+											{#if appConfig.content}
+												<DebugDialog
+													class="w-5 h-5"
+													sources={appConfig.content.map.sources}
+													bind:selectedIndex={selectedMapSourceIndex}
+												/>
+											{/if}
 										</ResetDialog>
 										<Tooltip.Provider disableHoverableContent>
 											<Tooltip.Root>

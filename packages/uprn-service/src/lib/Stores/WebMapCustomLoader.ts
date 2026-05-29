@@ -21,12 +21,27 @@ type LayerCreationContext = {
 	};
 	rootLayers?: __esri.Collection<__esri.Layer>;
 	rendererFromJson?: (json: JsonRecord) => unknown;
+	onLayerHydrated?: (layer: __esri.Layer) => void;
 };
 
-export async function createWebMapFromJson(webmapJson: unknown): Promise<__esri.WebMap> {
+export type CreateWebMapOptions = {
+	/**
+	 * Invoked after a lazily-loaded parquet layer has been hydrated (and possibly
+	 * replaced), with the live layer instance. Consumers can use this to re-apply
+	 * state that targets the layer, such as custom renderers, since the placeholder
+	 * the layer was created as is discarded on hydration.
+	 */
+	onLayerHydrated?: (layer: __esri.Layer) => void;
+};
+
+export async function createWebMapFromJson(
+	webmapJson: unknown,
+	options?: CreateWebMapOptions
+): Promise<__esri.WebMap> {
 	const json = asRecord(webmapJson);
 	const [{ default: WebMap }] = await Promise.all([import('@arcgis/core/WebMap')]);
 	const context = await createLayerCreationContext();
+	context.onLayerHydrated = options?.onLayerHydrated;
 	const webmap = WebMap.fromJSON({
 		...getWebMapJsonForArcgis(json),
 		operationalLayers: []
@@ -383,6 +398,7 @@ async function hydrateParquetLayer(
 				visible: shouldRestoreVisible
 			});
 			configureParquetLayer(layer as __esri.ParquetLayer, json);
+			context.onLayerHydrated?.(layer);
 			return;
 		}
 
@@ -392,6 +408,7 @@ async function hydrateParquetLayer(
 		});
 		configureParquetLayer(hydratedLayer as __esri.ParquetLayer, json);
 		replaceLayer(layer, hydratedLayer as __esri.Layer, context);
+		context.onLayerHydrated?.(hydratedLayer as __esri.Layer);
 	} catch (error) {
 		layer.visible = false;
 		console.error(`Failed to prepare GeoParquet layer ${options.title}.`, error);

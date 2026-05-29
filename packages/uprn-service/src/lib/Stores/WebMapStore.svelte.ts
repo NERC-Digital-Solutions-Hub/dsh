@@ -67,6 +67,14 @@ export class WebMapStore implements IWebMapService {
 	public loading: boolean = $state<boolean>(false);
 	public error: string | null = $state<string | null>(null);
 
+	/**
+	 * Incremented whenever a lazily-loaded (parquet) layer finishes hydrating and is
+	 * swapped into the map. Reactive consumers can depend on this to re-apply
+	 * layer-targeted state (e.g. custom renderers) against the live hydrated layer
+	 * rather than the discarded placeholder it was created as.
+	 */
+	public hydrationVersion: number = $state<number>(0);
+
 	private readonly source: WebMapSource;
 	private readonly proxy: Proxy | null;
 	private initialPortalUrl: string | null = null;
@@ -222,7 +230,13 @@ export class WebMapStore implements IWebMapService {
 		}
 
 		const webmapJson = (await response.json()) as unknown;
-		await this.setWebmapAsync(await createWebMapFromJson(webmapJson));
+		await this.setWebmapAsync(
+			await createWebMapFromJson(webmapJson, {
+				onLayerHydrated: () => {
+					this.hydrationVersion++;
+				}
+			})
+		);
 	}
 
 	private async setWebmapAsync(webmap: __esri.WebMap): Promise<void> {

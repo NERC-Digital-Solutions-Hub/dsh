@@ -102,7 +102,10 @@ describe('WebMapStore', () => {
 		await store.loadAsync();
 
 		expect(fetch).toHaveBeenCalledWith('/webmap.json', { credentials: undefined });
-		expect(customLoader.createWebMapFromJson).toHaveBeenCalledWith(webmapJson);
+		expect(customLoader.createWebMapFromJson).toHaveBeenCalledWith(
+			webmapJson,
+			expect.objectContaining({ onLayerHydrated: expect.any(Function) })
+		);
 		expect(arcgis.FakePortalItem.instances).toHaveLength(0);
 		expect(store.isLoaded).toBe(true);
 	});
