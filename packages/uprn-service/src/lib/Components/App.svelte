@@ -814,13 +814,24 @@
 			})
 			.map((node) => {
 				if (node.children) {
-					return {
-						...node,
-						children: filterTreeviewNodesByType(node.children, type)
-					};
+					return cloneNodeWithChildren(node, filterTreeviewNodesByType(node.children, type));
 				}
 				return node;
 			});
+	}
+
+	function cloneNodeWithChildren<T extends TreeviewNode>(node: T, children: TreeviewNode[]): T {
+		const clone = Object.create(Object.getPrototypeOf(node)) as T;
+
+		Object.defineProperties(clone, Object.getOwnPropertyDescriptors(node));
+		Object.defineProperty(clone, 'children', {
+			value: children,
+			enumerable: true,
+			configurable: true,
+			writable: true
+		});
+
+		return clone;
 	}
 
 	/**
