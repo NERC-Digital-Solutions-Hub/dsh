@@ -21,9 +21,7 @@ export type WebMapJsonUrlSource = {
 export type WebMapSource = WebMapPortalItemSource | WebMapJsonUrlSource;
 
 export type WebMapStoreParams = {
-	source?: WebMapSource;
-	portalUrl?: string | null;
-	itemId?: string;
+	source: WebMapSource;
 	proxy?: Proxy | null;
 };
 
@@ -74,7 +72,7 @@ export class WebMapStore implements IWebMapService {
 	private initialPortalUrl: string | null = null;
 
 	constructor(params: WebMapStoreParams) {
-		this.source = resolveWebMapSource(params);
+		this.source = params.source;
 		this.proxy = params.proxy ?? null;
 
 		if (!browser) {
@@ -235,32 +233,6 @@ export class WebMapStore implements IWebMapService {
 			this.isLoaded = true;
 		}
 	}
-}
-
-export function resolveWebMapSource(
-	params: WebMapStoreParams | Pick<MapConfig, 'portalUrl' | 'portalItemId' | 'source'>
-): WebMapSource {
-	if (params.source) {
-		return params.source;
-	}
-
-	if ('itemId' in params && params.itemId) {
-		return {
-			kind: 'portal-item',
-			itemId: params.itemId,
-			portalUrl: params.portalUrl
-		};
-	}
-
-	if ('portalItemId' in params && params.portalItemId) {
-		return {
-			kind: 'portal-item',
-			itemId: params.portalItemId,
-			portalUrl: params.portalUrl
-		};
-	}
-
-	throw new Error('Map configuration must provide either a webmap source or a portal item ID.');
 }
 
 export function getWebMapSourcePersistenceKey(source: WebMapSource): string {

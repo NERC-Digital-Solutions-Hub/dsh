@@ -38,9 +38,7 @@ export type WebMapSourceConfig =
 export type MapConfig = {
 	_name?: string;
 	title: string;
-	portalUrl?: string | null;
-	portalItemId?: string;
-	source?: WebMapSourceConfig;
+	source: WebMapSourceConfig;
 	treeview?: TreeviewConfig;
 	tagDefinitions?: TagDefinition[];
 	selectableLayers?: { _name: string; id: string; nameField: string; codeField: string }[];

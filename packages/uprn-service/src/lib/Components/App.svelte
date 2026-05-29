@@ -51,7 +51,6 @@
 	import { TreeviewStore } from '$lib/Stores/TreeviewStore.svelte';
 	import {
 		getWebMapSourcePersistenceKey,
-		resolveWebMapSource,
 		WebMapStore
 	} from '$lib/Stores/WebMapStore.svelte';
 	import type { AppTabState } from '$lib/Types/Chatbot.types';
@@ -226,7 +225,7 @@
 			return null;
 		}
 
-		return getWebMapSourcePersistenceKey(resolveWebMapSource(appConfig.content.map));
+		return getWebMapSourcePersistenceKey(appConfig.content.map.source);
 	});
 
 	/** Hook to load previous selections from indexedDb for the configured webmap. */
@@ -290,7 +289,7 @@
 	let webMapStore: WebMapStore | null = $derived.by(() => {
 		return appConfig.content
 			? new WebMapStore({
-					source: resolveWebMapSource(appConfig.content.map),
+					source: appConfig.content.map.source,
 					proxy: undefined
 				})
 			: null;
