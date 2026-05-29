@@ -1,3 +1,4 @@
+import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
 import type MapView from '@arcgis/core/views/MapView';
 
 export type ActiveRasterSublayer = {
@@ -14,7 +15,9 @@ export async function createRasterCellsPopupTemplate(
 	mapView: MapView,
 	getActiveRasterSublayer: () => ActiveRasterSublayer | null
 ): Promise<__esri.PopupTemplate> {
-	const { default: PopupTemplate } = await import('@arcgis/core/PopupTemplate.js');
+	const PopupTemplate = await arcgisImport<typeof import('@arcgis/core/PopupTemplate.js').default>(
+		'@arcgis/core/PopupTemplate.js'
+	);
 
 	return new PopupTemplate({
 		title: 'Cell {gridcode}',
@@ -38,10 +41,12 @@ export async function createRasterCellsPopupTemplate(
 				`;
 			}
 
-			const [{ default: IdentifyParameters }, identify] = await Promise.all([
-				import('@arcgis/core/rest/support/IdentifyParameters.js'),
-				import('@arcgis/core/rest/identify.js')
-			]);
+			const [IdentifyParameters, identify] = await arcgisImport<
+				[
+					typeof import('@arcgis/core/rest/support/IdentifyParameters.js').default,
+					typeof import('@arcgis/core/rest/identify.js')
+				]
+			>(['@arcgis/core/rest/support/IdentifyParameters.js', '@arcgis/core/rest/identify.js']);
 
 			const params = new IdentifyParameters({
 				geometry: center,
@@ -92,7 +97,9 @@ export async function createRasterCellsPopupTemplate(
 export async function createFeatureLayerPopupTemplate(
 	layer: __esri.FeatureLayer
 ): Promise<__esri.PopupTemplate> {
-	const { default: PopupTemplate } = await import('@arcgis/core/PopupTemplate.js');
+	const PopupTemplate = await arcgisImport<typeof import('@arcgis/core/PopupTemplate.js').default>(
+		'@arcgis/core/PopupTemplate.js'
+	);
 
 	const hiddenFieldTypes = new Set([
 		'oid',

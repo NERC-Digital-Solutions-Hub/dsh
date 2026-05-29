@@ -1,6 +1,7 @@
 import { NodeDrawState } from '$lib/Models/Treeview/Index';
 import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 import type { LayerViewProvider } from '$lib/Services/LayerViewProvider';
+import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
 import type {
 	INodeVisibilityRenderer,
 	NodeVisibilityDependencyChange,
@@ -105,7 +106,9 @@ export class ArcgisNodeVisibilityRenderer implements INodeVisibilityRenderer {
 
 		layerView.visible = true;
 
-		const reactiveUtils = await import('@arcgis/core/core/reactiveUtils.js');
+		const reactiveUtils = await arcgisImport<typeof import('@arcgis/core/core/reactiveUtils.js')>(
+			'@arcgis/core/core/reactiveUtils.js'
+		);
 		const handle: IHandle = reactiveUtils.watch(
 			() => layerView.suspended,
 			(isSuspended, wasSuspended) => {

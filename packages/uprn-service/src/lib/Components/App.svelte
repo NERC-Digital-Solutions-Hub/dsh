@@ -51,6 +51,7 @@
 	import { TreeviewConfigStore } from '$lib/Stores/TreeviewConfigStore';
 	import { TreeviewStore } from '$lib/Stores/TreeviewStore.svelte';
 	import { getWebMapSourcePersistenceKey, WebMapStore } from '$lib/Stores/WebMapStore.svelte';
+	import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
 	import type { AppTabState } from '$lib/Types/Chatbot.types';
 	import { TreeviewType } from '$lib/Types/Treeview.types';
 	import { TabProgress, TabType, type DownloadEntry } from '$lib/Types/Uprn.types';
@@ -729,7 +730,9 @@
 		mapView = null;
 
 		const async = async () => {
-			const { default: MapView } = await import('@arcgis/core/views/MapView');
+			const MapView = await arcgisImport<typeof import('@arcgis/core/views/MapView').default>(
+				'@arcgis/core/views/MapView.js'
+			);
 			mapView = new MapView();
 		};
 		async();

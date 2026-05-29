@@ -1,6 +1,7 @@
 import { mount, unmount } from 'svelte';
 
 import { Spinner } from '$lib/Components/shadcn/spinner';
+import { arcgisImport, loadArcgis } from '$lib/Utilities/ArcgisLoader';
 
 import type MapView from '@arcgis/core/views/MapView';
 import type { ArcgisExpand } from '@arcgis/map-components/components/arcgis-expand';
@@ -44,11 +45,14 @@ export class ArcgisMapWidgets {
 			return;
 		}
 
-		const [{ default: LocatorSearchSource }, { default: Collection }] = await Promise.all([
-			import('@arcgis/core/widgets/Search/LocatorSearchSource.js'),
-			import('@arcgis/core/core/Collection.js'),
-			import('@arcgis/map-components/components/arcgis-search')
-		]);
+		// Loading any core module via arcgisImport also loads the CDN bundle, which registers the
+		// <arcgis-search> custom element used below — no separate map-components import is needed.
+		const [LocatorSearchSource, Collection] = await arcgisImport<
+			[
+				typeof import('@arcgis/core/widgets/Search/LocatorSearchSource.js').default,
+				typeof import('@arcgis/core/core/Collection.js').default
+			]
+		>(['@arcgis/core/widgets/Search/LocatorSearchSource.js', '@arcgis/core/core/Collection.js']);
 
 		const ukSource = new LocatorSearchSource({
 			url: SEARCH_URL,
@@ -98,10 +102,9 @@ export class ArcgisMapWidgets {
 			return;
 		}
 
-		await Promise.all([
-			import('@arcgis/map-components/components/arcgis-legend'),
-			import('@arcgis/map-components/components/arcgis-expand')
-		]);
+		// The CDN bundle registers the <arcgis-legend>/<arcgis-expand> custom elements; just ensure
+		// it is loaded before creating them.
+		await loadArcgis();
 
 		this.legendComponent = document.createElement('arcgis-legend') as ArcgisLegendElement;
 		this.legendComponent.view = this.mapView;
@@ -121,7 +124,9 @@ export class ArcgisMapWidgets {
 	public async setupMapLoadingWatcher(): Promise<void> {
 		this.cleanupMapLoadingWatcher();
 
-		const reactiveUtils = await import('@arcgis/core/core/reactiveUtils.js');
+		const reactiveUtils = await arcgisImport<typeof import('@arcgis/core/core/reactiveUtils.js')>(
+			'@arcgis/core/core/reactiveUtils.js'
+		);
 
 		this.mapLoadingHandle = reactiveUtils.watch(
 			() => this.mapView.updating,

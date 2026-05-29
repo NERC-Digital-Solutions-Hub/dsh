@@ -1,3 +1,4 @@
+import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
 import type MapView from '@arcgis/core/views/MapView';
 
 const MAP_BACKGROUND = '#CFD3D4';
@@ -53,7 +54,7 @@ function configurePopupDocking(mapView: MapView): void {
 }
 
 async function createFallbackMap(): Promise<__esri.Map> {
-	const { default: Map } = await import('@arcgis/core/Map');
+	const Map = await arcgisImport<typeof import('@arcgis/core/Map').default>('@arcgis/core/Map.js');
 
 	return new Map({
 		basemap: FALLBACK_BASEMAP

@@ -16,6 +16,11 @@ export default defineConfig({
 	ssr: {
 		noExternal: svelteSsrPackages
 	},
+	// ArcGIS is loaded at runtime from the CDN via window.$arcgis.import() and must never be
+	// bundled or dep-optimised (it is huge and causes out-of-memory during the build).
+	optimizeDeps: {
+		exclude: ['@arcgis/core', '@arcgis/map-components']
+	},
 	test: {
 		environment: 'node',
 		include: ['src/**/*.test.ts']

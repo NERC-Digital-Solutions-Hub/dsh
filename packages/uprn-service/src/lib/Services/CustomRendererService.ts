@@ -6,13 +6,22 @@ import type {
 	CustomRendererSymbol,
 	LODSize
 } from '$lib/Types/CustomRenderers.types';
-import Color from '@arcgis/core/Color';
+import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
 import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import ClassBreaksRenderer from '@arcgis/core/renderers/ClassBreaksRenderer';
-import Renderer from '@arcgis/core/renderers/Renderer';
-import SimpleRenderer from '@arcgis/core/renderers/SimpleRenderer';
-import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
-import SimpleLineSymbol from '@arcgis/core/symbols/SimpleLineSymbol';
+import type Renderer from '@arcgis/core/renderers/Renderer';
+
+/**
+ * ArcGIS renderer/symbol classes loaded from the CDN at runtime (never bundled).
+ * The constructor types are derived purely at the type level via `typeof import(...)`,
+ * which TypeScript erases — it does not emit a runtime import.
+ */
+type ArcgisRendererModules = {
+	Color: typeof import('@arcgis/core/Color').default;
+	ClassBreaksRenderer: typeof import('@arcgis/core/renderers/ClassBreaksRenderer').default;
+	SimpleRenderer: typeof import('@arcgis/core/renderers/SimpleRenderer').default;
+	SimpleFillSymbol: typeof import('@arcgis/core/symbols/SimpleFillSymbol').default;
+	SimpleLineSymbol: typeof import('@arcgis/core/symbols/SimpleLineSymbol').default;
+};
 
 type CustomRendererSymbolWithAppearances = CustomRendererSymbol & {
 	Appearances: CustomRenderersSymbolAppearance[];
@@ -111,6 +120,9 @@ export class CustomRendererService {
 	/** The custom renderers data. */
 	readonly #data: CustomRenderers;
 
+	/** ArcGIS renderer/symbol classes, lazily loaded from the CDN on first use. */
+	#modules: ArcgisRendererModules | null = null;
+
 	/**
 	 * Initializes an instance of CustomRendererService.
 	 * @param customRenderersData The custom renderers data.
@@ -119,7 +131,59 @@ export class CustomRendererService {
 		this.#data = customRenderersData;
 	}
 
+	/**
+	 * Loads (once) and returns the ArcGIS renderer/symbol classes used to build renderers.
+	 * Awaited by the public async entrypoints before any synchronous construction occurs.
+	 */
+	async #ensureModules(): Promise<ArcgisRendererModules> {
+		if (this.#modules) {
+			return this.#modules;
+		}
+
+		const [Color, ClassBreaksRenderer, SimpleRenderer, SimpleFillSymbol, SimpleLineSymbol] =
+			await arcgisImport<
+				[
+					ArcgisRendererModules['Color'],
+					ArcgisRendererModules['ClassBreaksRenderer'],
+					ArcgisRendererModules['SimpleRenderer'],
+					ArcgisRendererModules['SimpleFillSymbol'],
+					ArcgisRendererModules['SimpleLineSymbol']
+				]
+			>([
+				'@arcgis/core/Color.js',
+				'@arcgis/core/renderers/ClassBreaksRenderer.js',
+				'@arcgis/core/renderers/SimpleRenderer.js',
+				'@arcgis/core/symbols/SimpleFillSymbol.js',
+				'@arcgis/core/symbols/SimpleLineSymbol.js'
+			]);
+
+		this.#modules = {
+			Color,
+			ClassBreaksRenderer,
+			SimpleRenderer,
+			SimpleFillSymbol,
+			SimpleLineSymbol
+		};
+		return this.#modules;
+	}
+
+	/**
+	 * Returns the loaded ArcGIS modules, throwing if they have not been loaded yet.
+	 * Used by synchronous builder methods that always run after {@link #ensureModules}.
+	 */
+	#requireModules(): ArcgisRendererModules {
+		if (!this.#modules) {
+			throw new Error(
+				'[custom-renderer-service] ArcGIS modules are not loaded. Call applyCustomRenderer/setCustomOutlines first.'
+			);
+		}
+
+		return this.#modules;
+	}
+
 	public async applyCustomRenderer(featureLayer: FeatureLayer, fieldName: string) {
+		await this.#ensureModules();
+
 		// Find the feature layer by name
 		const featureLayerRecord = this.#data.FeatureLayers.find(
 			(fl) => fl.Name === featureLayer.title
@@ -261,6 +325,8 @@ export class CustomRendererService {
 	}
 
 	public async setCustomOutlines(featureLayer: FeatureLayer, lodsGroupId: number) {
+		const { ClassBreaksRenderer, SimpleRenderer } = await this.#ensureModules();
+
 		// Find all LODs for the given group ID, sorted by Lod
 		const lodsResult = this.#data.CustomRenderers_Lods.filter(
 			(lod) => lod.GroupId === lodsGroupId
@@ -360,7 +426,10 @@ export class CustomRendererService {
 		customSymbols: CustomRendererSymbolWithAppearances,
 		customClassBreaks: CustomRendererClassBreak[],
 		lodSizes: LODSize[]
-	): ClassBreaksRenderer {
+	): __esri.ClassBreaksRenderer {
+		const { Color, ClassBreaksRenderer, SimpleFillSymbol, SimpleLineSymbol } =
+			this.#requireModules();
+
 		const renderer = new ClassBreaksRenderer({
 			field: fieldId
 		});
@@ -534,7 +603,9 @@ export class CustomRendererService {
 		fieldName: string,
 		fieldLabel: string,
 		range: { min: number; max: number }
-	): ClassBreaksRenderer {
+	): __esri.ClassBreaksRenderer {
+		const { ClassBreaksRenderer } = this.#requireModules();
+
 		const renderer = new ClassBreaksRenderer({
 			field: fieldName,
 			defaultLabel: defaultClassBreakFallbackLabel,
@@ -582,7 +653,9 @@ export class CustomRendererService {
 		color: string,
 		outlineColor: string = '#475569',
 		outlineWidth: number = 0.5
-	): SimpleFillSymbol {
+	): __esri.SimpleFillSymbol {
+		const { Color, SimpleFillSymbol, SimpleLineSymbol } = this.#requireModules();
+
 		return new SimpleFillSymbol({
 			color: Color.fromHex(color)!,
 			outline: new SimpleLineSymbol({
@@ -635,7 +708,9 @@ export class CustomRendererService {
 	#createSimpleRenderer(
 		customSymbols: CustomRendererSymbolWithAppearances,
 		lodSizes: LODSize[]
-	): SimpleRenderer {
+	): __esri.SimpleRenderer {
+		const { Color, SimpleRenderer, SimpleFillSymbol, SimpleLineSymbol } = this.#requireModules();
+
 		const symbolColorField = 'SymbolColor';
 		const outlineColorField = 'OutlineColor';
 		const outlineWidthField = 'OutlineWidth';
@@ -659,7 +734,10 @@ export class CustomRendererService {
 		return renderer;
 	}
 
-	#setVisualVariables(renderer: ClassBreaksRenderer | SimpleRenderer, lodSizes: LODSize[]): void {
+	#setVisualVariables(
+		renderer: __esri.ClassBreaksRenderer | __esri.SimpleRenderer,
+		lodSizes: LODSize[]
+	): void {
 		renderer.visualVariables = [
 			{
 				type: 'size',

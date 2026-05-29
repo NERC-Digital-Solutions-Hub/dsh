@@ -2,6 +2,7 @@ import { browser } from '$app/environment';
 import type { IWebMapService } from '$lib/Services/IWebMapService.js';
 import type { MapConfig } from '$lib/Types/Configuration.types';
 import { createWebMapFromJson } from '$lib/Stores/WebMapCustomLoader';
+import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
 import { getSublayerId } from '$lib/Utilities/TreeviewUtilities';
 import { SvelteMap } from 'svelte/reactivity';
 
@@ -140,7 +141,8 @@ export class WebMapStore implements IWebMapService {
 		portalUrl?: string | null,
 		proxy?: Proxy | null
 	): Promise<void> {
-		const { default: esriConfig } = await import('@arcgis/core/config.js');
+		const esriConfig =
+			await arcgisImport<typeof import('@arcgis/core/config.js').default>('@arcgis/core/config.js');
 
 		if (portalUrl) {
 			if (!this.initialPortalUrl) {
@@ -156,7 +158,9 @@ export class WebMapStore implements IWebMapService {
 			return;
 		}
 
-		const { addProxyRule } = await import('@arcgis/core/core/urlUtils.js');
+		const { addProxyRule } = await arcgisImport<typeof import('@arcgis/core/core/urlUtils.js')>(
+			'@arcgis/core/core/urlUtils.js'
+		);
 		console.log('Adding proxy rule for portal traffic');
 		addProxyRule({
 			urlPrefix: proxy.urlPrefix,
@@ -197,12 +201,13 @@ export class WebMapStore implements IWebMapService {
 			return;
 		}
 
-		const [{ default: WebMap }, { default: esriConfig }, { default: PortalItem }] =
-			await Promise.all([
-				import('@arcgis/core/WebMap'),
-				import('@arcgis/core/config.js'),
-				import('@arcgis/core/portal/PortalItem')
-			]);
+		const [WebMap, esriConfig, PortalItem] = await arcgisImport<
+			[
+				typeof import('@arcgis/core/WebMap').default,
+				typeof import('@arcgis/core/config.js').default,
+				typeof import('@arcgis/core/portal/PortalItem').default
+			]
+		>(['@arcgis/core/WebMap.js', '@arcgis/core/config.js', '@arcgis/core/portal/PortalItem.js']);
 
 		const portalItem = new PortalItem({
 			portal: {

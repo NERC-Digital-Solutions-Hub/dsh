@@ -3,6 +3,7 @@ import {
 	type GeoParquetLayerOptions,
 	type ParquetLayerInfo as PipelineParquetLayerInfo
 } from '$lib/Services/GeoparquetPipeline2';
+import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
 
 type JsonRecord = Record<string, unknown>;
 type LayerWithOriginalId = __esri.Layer & { readonly __uprnOriginalLayerId?: string };
@@ -39,7 +40,8 @@ export async function createWebMapFromJson(
 	options?: CreateWebMapOptions
 ): Promise<__esri.WebMap> {
 	const json = asRecord(webmapJson);
-	const [{ default: WebMap }] = await Promise.all([import('@arcgis/core/WebMap')]);
+	const WebMap =
+		await arcgisImport<typeof import('@arcgis/core/WebMap').default>('@arcgis/core/WebMap.js');
 	const context = await createLayerCreationContext();
 	context.onLayerHydrated = options?.onLayerHydrated;
 	const webmap = WebMap.fromJSON({
@@ -98,7 +100,9 @@ async function createGroupLayer(
 	context: LayerCreationContext,
 	runtimeId: string | undefined
 ): Promise<__esri.GroupLayer> {
-	const { default: GroupLayer } = await import('@arcgis/core/layers/GroupLayer');
+	const GroupLayer = await arcgisImport<typeof import('@arcgis/core/layers/GroupLayer').default>(
+		'@arcgis/core/layers/GroupLayer.js'
+	);
 	const layers = await createChildLayers(json, context, runtimeId);
 	const groupLayer = new GroupLayer({
 		id: runtimeId,
@@ -179,29 +183,19 @@ async function getFallbackLayerConstructor(
 ): Promise<LayerConstructor | null> {
 	switch (layerType) {
 		case 'FeatureLayer':
-		case 'ArcGISFeatureLayer': {
-			const { default: FeatureLayer } = await import('@arcgis/core/layers/FeatureLayer');
-			return FeatureLayer as unknown as LayerConstructor;
-		}
+		case 'ArcGISFeatureLayer':
+			return (await arcgisImport('@arcgis/core/layers/FeatureLayer.js')) as LayerConstructor;
 		case 'MapImageLayer':
-		case 'ArcGISMapServiceLayer': {
-			const { default: MapImageLayer } = await import('@arcgis/core/layers/MapImageLayer');
-			return MapImageLayer as unknown as LayerConstructor;
-		}
+		case 'ArcGISMapServiceLayer':
+			return (await arcgisImport('@arcgis/core/layers/MapImageLayer.js')) as LayerConstructor;
 		case 'TileLayer':
-		case 'ArcGISTiledMapServiceLayer': {
-			const { default: TileLayer } = await import('@arcgis/core/layers/TileLayer');
-			return TileLayer as unknown as LayerConstructor;
-		}
-		case 'VectorTileLayer': {
-			const { default: VectorTileLayer } = await import('@arcgis/core/layers/VectorTileLayer');
-			return VectorTileLayer as unknown as LayerConstructor;
-		}
+		case 'ArcGISTiledMapServiceLayer':
+			return (await arcgisImport('@arcgis/core/layers/TileLayer.js')) as LayerConstructor;
+		case 'VectorTileLayer':
+			return (await arcgisImport('@arcgis/core/layers/VectorTileLayer.js')) as LayerConstructor;
 		case 'ImageryLayer':
-		case 'Raster Layer': {
-			const { default: ImageryLayer } = await import('@arcgis/core/layers/ImageryLayer');
-			return ImageryLayer as unknown as LayerConstructor;
-		}
+		case 'Raster Layer':
+			return (await arcgisImport('@arcgis/core/layers/ImageryLayer.js')) as LayerConstructor;
 		default:
 			return null;
 	}
@@ -534,22 +528,34 @@ export function getOriginalLayerId(layer: __esri.Layer): string | undefined {
 
 async function createLayerCreationContext(): Promise<LayerCreationContext> {
 	const [
-		{ default: ParquetLayer },
-		{ default: GraphicsLayer },
-		{ default: ParquetGeometryEncodingWkb },
-		{ default: Extent },
-		{ getParquetLayerInfo },
+		ParquetLayer,
+		GraphicsLayer,
+		ParquetGeometryEncodingWkb,
+		Extent,
+		parquetUtils,
 		reactiveUtils,
 		rendererUtils
-	] = await Promise.all([
-		import('@arcgis/core/layers/ParquetLayer'),
-		import('@arcgis/core/layers/GraphicsLayer'),
-		import('@arcgis/core/layers/support/ParquetGeometryEncodingWkb.js'),
-		import('@arcgis/core/geometry/Extent.js'),
-		import('@arcgis/core/layers/support/parquetUtils.js'),
-		import('@arcgis/core/core/reactiveUtils.js'),
-		import('@arcgis/core/renderers/support/jsonUtils.js')
+	] = await arcgisImport<
+		[
+			typeof import('@arcgis/core/layers/ParquetLayer').default,
+			typeof import('@arcgis/core/layers/GraphicsLayer').default,
+			typeof import('@arcgis/core/layers/support/ParquetGeometryEncodingWkb.js').default,
+			typeof import('@arcgis/core/geometry/Extent.js').default,
+			typeof import('@arcgis/core/layers/support/parquetUtils.js'),
+			typeof import('@arcgis/core/core/reactiveUtils.js'),
+			typeof import('@arcgis/core/renderers/support/jsonUtils.js')
+		]
+	>([
+		'@arcgis/core/layers/ParquetLayer.js',
+		'@arcgis/core/layers/GraphicsLayer.js',
+		'@arcgis/core/layers/support/ParquetGeometryEncodingWkb.js',
+		'@arcgis/core/geometry/Extent.js',
+		'@arcgis/core/layers/support/parquetUtils.js',
+		'@arcgis/core/core/reactiveUtils.js',
+		'@arcgis/core/renderers/support/jsonUtils.js'
 	]);
+
+	const { getParquetLayerInfo } = parquetUtils;
 
 	return {
 		parquetPipeline: new GeoParquetPipeline({

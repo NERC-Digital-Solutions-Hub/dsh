@@ -1,5 +1,5 @@
 <script lang="ts">
-	import esriRequest from '@arcgis/core/request.js';
+	import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
 	import {
 		Card,
 		CardContent,
@@ -68,6 +68,10 @@
 		const load = async (url: string) => {
 			console.log('[ArcgisInfoRenderer] Loading layer metadata from URL:', url);
 			try {
+				const esriRequest =
+					await arcgisImport<typeof import('@arcgis/core/request.js').default>(
+						'@arcgis/core/request.js'
+					);
 				const { data } = await esriRequest(url, {
 					query: { f: 'json' },
 					responseType: 'json'

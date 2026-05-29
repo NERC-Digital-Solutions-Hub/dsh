@@ -15,6 +15,7 @@ import {
 	GeoParquetPipeline,
 	type ParquetLayerInfo as PipelineParquetLayerInfo
 } from './GeoparquetPipeline2';
+import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
 
 /**
  * Compatibility factory for existing imports.
@@ -23,19 +24,24 @@ import {
  * ArcGIS parquet construction path in the app.
  */
 export async function createArcgisGeoParquetPipeline(): Promise<GeoParquetPipeline> {
-	const [
-		{ default: ParquetLayer },
-		{ default: ParquetGeometryEncodingWkb },
-		{ default: Extent },
-		{ getParquetLayerInfo },
-		rendererUtils
-	] = await Promise.all([
-		import('@arcgis/core/layers/ParquetLayer'),
-		import('@arcgis/core/layers/support/ParquetGeometryEncodingWkb.js'),
-		import('@arcgis/core/geometry/Extent.js'),
-		import('@arcgis/core/layers/support/parquetUtils.js'),
-		import('@arcgis/core/renderers/support/jsonUtils.js')
-	]);
+	const [ParquetLayer, ParquetGeometryEncodingWkb, Extent, parquetUtils, rendererUtils] =
+		await arcgisImport<
+			[
+				typeof import('@arcgis/core/layers/ParquetLayer').default,
+				typeof import('@arcgis/core/layers/support/ParquetGeometryEncodingWkb.js').default,
+				typeof import('@arcgis/core/geometry/Extent.js').default,
+				typeof import('@arcgis/core/layers/support/parquetUtils.js'),
+				typeof import('@arcgis/core/renderers/support/jsonUtils.js')
+			]
+		>([
+			'@arcgis/core/layers/ParquetLayer.js',
+			'@arcgis/core/layers/support/ParquetGeometryEncodingWkb.js',
+			'@arcgis/core/geometry/Extent.js',
+			'@arcgis/core/layers/support/parquetUtils.js',
+			'@arcgis/core/renderers/support/jsonUtils.js'
+		]);
+
+	const { getParquetLayerInfo } = parquetUtils;
 
 	return new GeoParquetPipeline({
 		ParquetLayer,
