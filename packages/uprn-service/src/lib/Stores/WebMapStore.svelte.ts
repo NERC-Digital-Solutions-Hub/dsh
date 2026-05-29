@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import { asset } from '$app/paths';
 import type { IWebMapService } from '$lib/Services/IWebMapService.js';
 import { createWebMapFromJson } from '$lib/Stores/WebMapCustomLoader';
 import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
@@ -235,7 +236,7 @@ export class WebMapStore implements IWebMapService {
 	}
 
 	private async loadWebmapJsonUrlAsync(source: WebMapJsonUrlSource): Promise<void> {
-		const response = await fetch(source.url, {
+		const response = await fetch(asset(source.url), {
 			credentials: source.credentials
 		});
 
