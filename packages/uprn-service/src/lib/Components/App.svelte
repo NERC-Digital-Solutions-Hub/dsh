@@ -11,6 +11,7 @@
 	import ItemInfoDialog from '$lib/Components/ItemInfoDialog/ItemInfoDialog.svelte';
 	import type { ResetAction } from '$lib/Components/ResetDialog/ResetDialog.svelte';
 	import ResetDialog from '$lib/Components/ResetDialog/ResetDialog.svelte';
+	import DebugDialog from '$lib/Components/DebugDialog/DebugDialog.svelte';
 	import * as Card from '$lib/Components/shadcn/card/index.js';
 	import * as Tabs from '$lib/Components/shadcn/tabs/index.js';
 	import { Toaster } from '$lib/Components/shadcn/sonner';
@@ -49,10 +50,7 @@
 	import DownloadsStore from '$lib/Stores/DownloadsStore.svelte';
 	import { TreeviewConfigStore } from '$lib/Stores/TreeviewConfigStore';
 	import { TreeviewStore } from '$lib/Stores/TreeviewStore.svelte';
-	import {
-		getWebMapSourcePersistenceKey,
-		WebMapStore
-	} from '$lib/Stores/WebMapStore.svelte';
+	import { getWebMapSourcePersistenceKey, WebMapStore } from '$lib/Stores/WebMapStore.svelte';
 	import type { AppTabState } from '$lib/Types/Chatbot.types';
 	import { TreeviewType } from '$lib/Types/Treeview.types';
 	import { TabProgress, TabType, type DownloadEntry } from '$lib/Types/Uprn.types';
@@ -219,13 +217,26 @@
 		return health;
 	});
 
-	/** Stable key used to persist selections for portal, static, and API-backed webmaps. */
-	const webMapPersistenceKey: string | null = $derived.by(() => {
-		if (!appConfig.content?.map) {
+	/** Index of the active web map source (resets to the default on each load). */
+	let selectedMapSourceIndex = $state(0);
+
+	/** The currently selected web map source, falling back to the default. */
+	const selectedMapSource = $derived.by(() => {
+		const sources = appConfig.content?.map.sources;
+		if (!sources?.length) {
 			return null;
 		}
 
-		return getWebMapSourcePersistenceKey(appConfig.content.map.source);
+		return sources[selectedMapSourceIndex] ?? sources[0];
+	});
+
+	/** Stable key used to persist selections for portal, static, and API-backed webmaps. */
+	const webMapPersistenceKey: string | null = $derived.by(() => {
+		if (!selectedMapSource) {
+			return null;
+		}
+
+		return getWebMapSourcePersistenceKey(selectedMapSource);
 	});
 
 	/** Hook to load previous selections from indexedDb for the configured webmap. */
@@ -287,9 +298,9 @@
 
 	/** The web map store instance. */
 	let webMapStore: WebMapStore | null = $derived.by(() => {
-		return appConfig.content
+		return selectedMapSource
 			? new WebMapStore({
-					source: appConfig.content.map.source,
+					source: selectedMapSource,
 					proxy: undefined
 				})
 			: null;
@@ -1009,7 +1020,17 @@
 											bind:open={resetDialogOpen}
 											actions={resetActions}
 											buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
-										/>
+										>
+											{#snippet children()}
+												{#if appConfig.content}
+													<DebugDialog
+														class="w-5 h-5"
+														sources={appConfig.content.map.sources}
+														bind:selectedIndex={selectedMapSourceIndex}
+													/>
+												{/if}
+											{/snippet}
+										</ResetDialog>
 										<Tooltip.Provider disableHoverableContent>
 											<Tooltip.Root>
 												<Tooltip.Trigger>

@@ -5,6 +5,7 @@
 	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 	import { cn } from '$lib/utils';
 	import { AlertCircleIcon, RotateCcw } from '@lucide/svelte';
+	import type { Snippet } from 'svelte';
 
 	export type ResetAction = {
 		label: string;
@@ -17,9 +18,11 @@
 		actions: ResetAction[];
 		buttonClass?: string;
 		open?: boolean;
+		/** Optional extra content rendered at the bottom-left of the dialog footer. */
+		children?: Snippet;
 	};
 
-	let { actions, buttonClass, open = $bindable(false) }: Props = $props();
+	let { actions, buttonClass, open = $bindable(false), children }: Props = $props();
 
 	function handleAction(action: ResetAction) {
 		action.onReset();
@@ -81,5 +84,12 @@
 				</Button>
 			{/each}
 		</div>
+		{#if children}
+			<div class="relative">
+				<div class="absolute top-0">
+					{@render children()}
+				</div>
+			</div>
+		{/if}
 	</Dialog.Content>
 </Dialog.Root>

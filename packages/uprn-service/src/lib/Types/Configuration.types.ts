@@ -24,11 +24,15 @@ export type AppsUprnConfig = {
 
 export type WebMapSourceConfig =
 	| {
+			/** Display label for this source, used when toggling sources in the UI. */
+			name: string;
 			kind: 'portal-item';
 			itemId: string;
 			portalUrl?: string | null;
 	  }
 	| {
+			/** Display label for this source, used when toggling sources in the UI. */
+			name: string;
 			kind: 'webmap-json-url';
 			url: string;
 			portalUrl?: string | null;
@@ -38,7 +42,8 @@ export type WebMapSourceConfig =
 export type MapConfig = {
 	_name?: string;
 	title: string;
-	source: WebMapSourceConfig;
+	/** Available web map sources. The first entry is the default. */
+	sources: WebMapSourceConfig[];
 	treeview?: TreeviewConfig;
 	tagDefinitions?: TagDefinition[];
 	selectableLayers?: { _name: string; id: string; nameField: string; codeField: string }[];

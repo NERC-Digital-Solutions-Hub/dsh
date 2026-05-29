@@ -1,4 +1,4 @@
-import { resolveWebMapSource, WebMapStore } from '$lib/Stores/WebMapStore.svelte';
+import { WebMapStore } from '$lib/Stores/WebMapStore.svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const arcgis = vi.hoisted(() => {
@@ -61,19 +61,6 @@ describe('WebMapStore', () => {
 
 	afterEach(() => {
 		vi.unstubAllGlobals();
-	});
-
-	it('resolves legacy portal map config to a portal source', () => {
-		expect(
-			resolveWebMapSource({
-				portalItemId: 'portal-item-id',
-				portalUrl: 'https://portal.example.test'
-			})
-		).toEqual({
-			kind: 'portal-item',
-			itemId: 'portal-item-id',
-			portalUrl: 'https://portal.example.test'
-		});
 	});
 
 	it('loads portal item sources through PortalItem and WebMap', async () => {

@@ -138,15 +138,19 @@
     },
     "mapConfig": {
         "title": "UPRN PoC UK Web Map v1.7",
-        "_source": {
-            "kind": "webmap-json-url",
-            "url": "/config/apps/uprn/webmap.json"
-        },
-        "source": {
-            "kind": "portal-item",
-            "itemId": "8f476de7ee4244e7894be2ed2d6dbaca",
-            "portalUrl": "https://nercdsh.dev.azure.manchester.ac.uk/portal"
-        },
+        "sources": [
+            {
+                "name": "Portal Item (ArcGIS)",
+                "kind": "portal-item",
+                "itemId": "8f476de7ee4244e7894be2ed2d6dbaca",
+                "portalUrl": "https://nercdsh.dev.azure.manchester.ac.uk/portal"
+            },
+            {
+                "name": "Local WebMap JSON",
+                "kind": "webmap-json-url",
+                "url": "/config/apps/uprn/webmap.json"
+            }
+        ],
         "treeview": {
             "visibilityGroups": [
                 {
