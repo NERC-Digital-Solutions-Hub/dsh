@@ -45,6 +45,32 @@ vi.mock('@arcgis/core/WebMap', () => ({ default: arcgis.FakeWebMap }));
 vi.mock('@arcgis/core/config.js', () => ({ default: arcgis.esriConfig }));
 vi.mock('@arcgis/core/portal/PortalItem', () => ({ default: arcgis.FakePortalItem }));
 vi.mock('@arcgis/core/core/urlUtils.js', () => ({ addProxyRule: arcgis.addProxyRule }));
+vi.mock('$lib/Utilities/ArcgisLoader', () => {
+	const modules = new Map<string, unknown>([
+		['@arcgis/core/WebMap.js', arcgis.FakeWebMap],
+		['@arcgis/core/config.js', arcgis.esriConfig],
+		['@arcgis/core/portal/PortalItem.js', arcgis.FakePortalItem],
+		['@arcgis/core/core/urlUtils.js', { addProxyRule: arcgis.addProxyRule }]
+	]);
+
+	const arcgisImport = vi.fn(async (specifier: string | string[]) => {
+		const resolve = (module: string) => {
+			if (!modules.has(module)) {
+				throw new Error(`Unexpected ArcGIS module import: ${module}`);
+			}
+
+			return modules.get(module);
+		};
+
+		return Array.isArray(specifier) ? specifier.map(resolve) : resolve(specifier);
+	});
+
+	return {
+		arcgisImport,
+		loadArcgis: vi.fn(async () => {}),
+		preloadArcgis: vi.fn(async () => {})
+	};
+});
 vi.mock('$lib/Stores/WebMapCustomLoader', () => ({
 	createWebMapFromJson: customLoader.createWebMapFromJson
 }));

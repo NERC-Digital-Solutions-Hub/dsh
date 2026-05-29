@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { onMount } from 'svelte';
+	import { loadArcgis, type AppsUprnConfig } from '@dsh/uprn-service';
 	import { MediaQuery } from 'svelte/reactivity';
+	import { onMount, type Component } from 'svelte';
 	import type { PageData } from './$types';
-	import type { Component } from 'svelte';
-	import type { AppsUprnConfig } from '@dsh/uprn-service';
 
 	import * as Card from '$lib/components/shadcn/card/index.js';
 	import * as Alert from '$lib/components/shadcn/alert/index.js';
+	import Spinner from '$lib/components/shadcn/spinner/spinner.svelte';
 
 	import MonitorSmartphone from '@lucide/svelte/icons/monitor-smartphone';
 	import Laptop from '@lucide/svelte/icons/laptop';
@@ -15,9 +15,16 @@
 	const mobile = browser ? new MediaQuery('(max-width: 500px)') : null;
 	let { data }: { data: PageData } = $props();
 	let UprnServiceApp: Component<{ config: AppsUprnConfig }> | null = $state(null);
+	let arcgisLoadError: string | null = $state(null);
 
 	onMount(async () => {
-		UprnServiceApp = (await import('@dsh/uprn-service')).UprnServiceApp;
+		try {
+			await loadArcgis();
+			UprnServiceApp = (await import('@dsh/uprn-service')).UprnServiceApp;
+		} catch (error) {
+			console.error('[hub/uprn] Failed to preload ArcGIS before mounting UPRN app', error);
+			arcgisLoadError = error instanceof Error ? error.message : String(error);
+		}
 	});
 </script>
 
@@ -47,8 +54,19 @@
 			</Card.Content>
 		</Card.Root>
 	</div>
+{:else if arcgisLoadError}
+	<div class="flex min-h-screen items-center justify-center bg-muted/30 p-6">
+		<Card.Root class="w-full max-w-md shadow-lg">
+			<Card.Header class="space-y-2 text-center">
+				<Card.Title>Map failed to load</Card.Title>
+				<Card.Description>{arcgisLoadError}</Card.Description>
+			</Card.Header>
+		</Card.Root>
+	</div>
+{:else if UprnServiceApp}
+	<UprnServiceApp config={data.uprnAppConfig} />
 {:else}
-	{#if UprnServiceApp}
-		<UprnServiceApp config={data.uprnAppConfig} />
-	{/if}
+	<div class="flex min-h-screen items-center justify-center bg-muted/30">
+		<Spinner class="h-10 w-10" />
+	</div>
 {/if}

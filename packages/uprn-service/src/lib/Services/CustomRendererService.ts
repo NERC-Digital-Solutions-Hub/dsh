@@ -738,13 +738,13 @@ export class CustomRendererService {
 		renderer: __esri.ClassBreaksRenderer | __esri.SimpleRenderer,
 		lodSizes: LODSize[]
 	): void {
-		renderer.visualVariables = [
-			{
-				type: 'size',
-				target: 'outline', // this is right, Ersi's type declaration for the VisualVariable is incorrect.
-				valueExpression: '$view.scale',
-				stops: lodSizes
-			} as __esri.VisualVariableProperties
-		];
+		const outlineSizeVariable = {
+			type: 'size',
+			target: 'outline', // Esri supports this, but the local type declaration is too narrow.
+			valueExpression: '$view.scale',
+			stops: lodSizes
+		} as unknown as __esri.SizeVariableProperties & { type: 'size' };
+
+		renderer.visualVariables = [outlineSizeVariable];
 	}
 }

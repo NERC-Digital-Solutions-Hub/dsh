@@ -50,7 +50,11 @@
 	import DownloadsStore from '$lib/Stores/DownloadsStore.svelte';
 	import { TreeviewConfigStore } from '$lib/Stores/TreeviewConfigStore';
 	import { TreeviewStore } from '$lib/Stores/TreeviewStore.svelte';
-	import { getWebMapSourcePersistenceKey, WebMapStore } from '$lib/Stores/WebMapStore.svelte';
+	import {
+		describeWebMapSource,
+		getWebMapSourcePersistenceKey,
+		WebMapStore
+	} from '$lib/Stores/WebMapStore.svelte';
 	import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
 	import type { AppTabState } from '$lib/Types/Chatbot.types';
 	import { TreeviewType } from '$lib/Types/Treeview.types';
@@ -220,6 +224,12 @@
 
 	/** Index of the active web map source (resets to the default on each load). */
 	let selectedMapSourceIndex = $state(0);
+
+	/** Tracks failed sources so the app only falls forward through configured map sources once. */
+	const failedWebMapSourceKeys: Set<string> = new SvelteSet<string>();
+
+	/** Error message shown when all configured web map sources fail to load. */
+	let webMapLoadErrorMessage: string | null = $state(null);
 
 	/** The currently selected web map source, falling back to the default. */
 	const selectedMapSource = $derived.by(() => {
@@ -469,6 +479,48 @@
 
 		console.log('[uprn/app] Introduction popup enabled, showing dialog');
 		introductionDialogOpen = true;
+	});
+
+	/**
+	 * Falls back to the next configured map source if the current source fails to load.
+	 */
+	$effect(() => {
+		if (!webMapStore?.error || !selectedMapSource) {
+			webMapLoadErrorMessage = null;
+			return;
+		}
+
+		const currentSourceKey = getWebMapSourcePersistenceKey(selectedMapSource);
+		const currentSourceLabel = describeWebMapSource(selectedMapSource);
+
+		if (!failedWebMapSourceKeys.has(currentSourceKey)) {
+			failedWebMapSourceKeys.add(currentSourceKey);
+			console.error('[uprn/app] Web map source failed', {
+				source: currentSourceLabel,
+				error: webMapStore.error
+			});
+		}
+
+		const sources = appConfig.content?.map.sources ?? [];
+		const nextSourceIndex = sources.findIndex((source, index) => {
+			return (
+				index > selectedMapSourceIndex &&
+				!failedWebMapSourceKeys.has(getWebMapSourcePersistenceKey(source))
+			);
+		});
+
+		if (nextSourceIndex !== -1) {
+			const nextSource = sources[nextSourceIndex];
+			console.warn('[uprn/app] Falling back to next web map source', {
+				from: currentSourceLabel,
+				to: describeWebMapSource(nextSource)
+			});
+			webMapLoadErrorMessage = null;
+			selectedMapSourceIndex = nextSourceIndex;
+			return;
+		}
+
+		webMapLoadErrorMessage = webMapStore.error;
 	});
 
 	/** Effect to set initial visibility of treeview nodes based on their configurations when they are loaded. */
@@ -727,6 +779,8 @@
 		initializedNodeVisibility = false;
 		initializedSelectionsFromDb = false;
 		mapSyncedWithNodeVisibility = false;
+		failedWebMapSourceKeys.clear();
+		webMapLoadErrorMessage = null;
 		mapView = null;
 
 		const async = async () => {
@@ -1191,6 +1245,13 @@
 				{hasVisibleDataLayer}
 				class="h-full min-h-0 w-full flex-1"
 			/>
+		{:else if webMapLoadErrorMessage}
+			<div class="flex h-full w-full items-center justify-center p-6">
+				<div class="max-w-md rounded-md border bg-background p-4 text-center shadow-sm">
+					<p class="text-sm font-medium text-foreground">Map failed to load.</p>
+					<p class="mt-2 text-sm text-muted-foreground">{webMapLoadErrorMessage}</p>
+				</div>
+			</div>
 		{:else}
 			<div class="flex h-full w-full items-center justify-center">
 				<Spinner class="w-10 h-10" />

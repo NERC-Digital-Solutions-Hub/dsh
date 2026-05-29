@@ -19,6 +19,7 @@ const ARCGIS_THEME_HREF = `${ARCGIS_CDN_BASE}esri/themes/light/main.css`;
 const READY_TIMEOUT_MS = 15000;
 /** Poll interval used while waiting for `window.$arcgis` to attach. */
 const READY_POLL_MS = 25;
+const LOG_PREFIX = '[uprn/arcgis-loader]';
 
 let loadPromise: Promise<void> | null = null;
 
@@ -28,6 +29,7 @@ function isLoaded(): boolean {
 
 function injectThemeCss(): void {
 	if (document.querySelector(`link[href="${ARCGIS_THEME_HREF}"]`)) {
+		console.debug(`${LOG_PREFIX} ArcGIS theme CSS already present`);
 		return;
 	}
 
@@ -35,6 +37,7 @@ function injectThemeCss(): void {
 	link.rel = 'stylesheet';
 	link.href = ARCGIS_THEME_HREF;
 	document.head.appendChild(link);
+	console.info(`${LOG_PREFIX} Injected ArcGIS theme CSS`, { href: ARCGIS_THEME_HREF });
 }
 
 /**
@@ -46,11 +49,13 @@ function waitForArcgisReady(): Promise<void> {
 		const start = Date.now();
 		const check = () => {
 			if (isLoaded()) {
+				console.info(`${LOG_PREFIX} window.$arcgis is ready`);
 				resolve();
 				return;
 			}
 
 			if (Date.now() - start > READY_TIMEOUT_MS) {
+				console.error(`${LOG_PREFIX} Timed out waiting for window.$arcgis`);
 				reject(new Error('Timed out waiting for window.$arcgis to initialise.'));
 				return;
 			}
@@ -64,6 +69,7 @@ function waitForArcgisReady(): Promise<void> {
 function injectScript(): Promise<void> {
 	const existing = document.querySelector<HTMLScriptElement>(`script[src="${ARCGIS_SCRIPT_SRC}"]`);
 	if (existing) {
+		console.info(`${LOG_PREFIX} Found existing ArcGIS CDN script`, { src: ARCGIS_SCRIPT_SRC });
 		return waitForArcgisReady();
 	}
 
@@ -71,12 +77,18 @@ function injectScript(): Promise<void> {
 		const script = document.createElement('script');
 		script.type = 'module';
 		script.src = ARCGIS_SCRIPT_SRC;
+		console.info(`${LOG_PREFIX} Injecting ArcGIS CDN script`, { src: ARCGIS_SCRIPT_SRC });
 		script.addEventListener('load', () => waitForArcgisReady().then(resolve, reject), {
 			once: true
 		});
 		script.addEventListener(
 			'error',
-			() => reject(new Error(`Failed to load the ArcGIS CDN script from ${ARCGIS_SCRIPT_SRC}`)),
+			() => {
+				console.error(`${LOG_PREFIX} Failed to load ArcGIS CDN script`, {
+					src: ARCGIS_SCRIPT_SRC
+				});
+				reject(new Error(`Failed to load the ArcGIS CDN script from ${ARCGIS_SCRIPT_SRC}`));
+			},
 			{ once: true }
 		);
 		document.head.appendChild(script);
@@ -95,16 +107,19 @@ export function loadArcgis(): Promise<void> {
 		return Promise.reject(new Error('loadArcgis() can only be called in the browser.'));
 	}
 
+	injectThemeCss();
+
 	if (isLoaded()) {
+		console.info(`${LOG_PREFIX} ArcGIS SDK already loaded`);
 		return Promise.resolve();
 	}
 
 	if (!loadPromise) {
 		loadPromise = (async () => {
-			injectThemeCss();
 			await injectScript();
 		})().catch((error) => {
 			// Allow a later call to retry rather than caching a rejected promise forever.
+			console.error(`${LOG_PREFIX} ArcGIS SDK load failed`, error);
 			loadPromise = null;
 			throw error;
 		});
@@ -112,6 +127,8 @@ export function loadArcgis(): Promise<void> {
 
 	return loadPromise;
 }
+
+export const preloadArcgis = loadArcgis;
 
 /**
  * Loads one or more ArcGIS modules from the CDN via `window.$arcgis.import()`, ensuring the
@@ -135,5 +152,10 @@ export async function arcgisImport<T extends readonly unknown[]>(
 ): Promise<T>;
 export async function arcgisImport(modules: string | readonly string[]): Promise<unknown> {
 	await loadArcgis();
-	return window.$arcgis.import(modules as never);
+	try {
+		return await window.$arcgis.import(modules as never);
+	} catch (error) {
+		console.error(`${LOG_PREFIX} Failed to import ArcGIS module(s)`, { modules, error });
+		throw error;
+	}
 }

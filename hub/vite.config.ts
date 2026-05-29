@@ -10,14 +10,7 @@ export default defineConfig({
 		__dirname: 'import.meta.dirname'
 	},
 	ssr: {
-		external: [
-			'@arcgis/core',
-			'@arcgis/map-components',
-			'@dsh/uprn-service',
-			'rehype-mermaid',
-			'playwright-core',
-			'mermaid-isomorphic'
-		],
+		external: ['rehype-mermaid', 'playwright-core', 'mermaid-isomorphic'],
 		noExternal: ['svelte-sonner']
 	}
 });

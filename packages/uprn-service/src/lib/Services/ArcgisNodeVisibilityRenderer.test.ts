@@ -6,6 +6,19 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('@arcgis/core/core/reactiveUtils.js', () => ({
 	watch: vi.fn(() => ({ remove: vi.fn() }))
 }));
+vi.mock('$lib/Utilities/ArcgisLoader', () => ({
+	arcgisImport: vi.fn(async (specifier: string) => {
+		if (specifier !== '@arcgis/core/core/reactiveUtils.js') {
+			throw new Error(`Unexpected ArcGIS module import: ${specifier}`);
+		}
+
+		return {
+			watch: vi.fn(() => ({ remove: vi.fn() }))
+		};
+	}),
+	loadArcgis: vi.fn(async () => {}),
+	preloadArcgis: vi.fn(async () => {})
+}));
 
 type FakeLayer = {
 	id: string;

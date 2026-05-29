@@ -1,10 +1,11 @@
 import { browser } from '$app/environment';
 import type { IWebMapService } from '$lib/Services/IWebMapService.js';
-import type { MapConfig } from '$lib/Types/Configuration.types';
 import { createWebMapFromJson } from '$lib/Stores/WebMapCustomLoader';
 import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
 import { getSublayerId } from '$lib/Utilities/TreeviewUtilities';
 import { SvelteMap } from 'svelte/reactivity';
+
+const WEBMAP_LOAD_TIMEOUT_MS = 20000;
 
 export type WebMapPortalItemSource = {
 	kind: 'portal-item';
@@ -113,6 +114,10 @@ export class WebMapStore implements IWebMapService {
 		this.isLoaded = false;
 
 		try {
+			console.info('[uprn/webmap-store] Loading web map source', {
+				source: describeWebMapSource(this.source)
+			});
+
 			if (this.source.portalUrl || this.proxy) {
 				await this.configurePortalAsync(this.source.portalUrl, this.proxy);
 			}
@@ -122,8 +127,14 @@ export class WebMapStore implements IWebMapService {
 			} else {
 				await this.loadWebmapJsonUrlAsync(this.source);
 			}
+			console.info('[uprn/webmap-store] Loaded web map source', {
+				source: describeWebMapSource(this.source)
+			});
 		} catch (error) {
-			console.error('Error initializing webmap:', error);
+			console.error('[uprn/webmap-store] Error initializing web map', {
+				source: describeWebMapSource(this.source),
+				error
+			});
 			this.error = error instanceof Error ? error.message : String(error);
 			this.data = null;
 			this.isLoaded = false;
@@ -245,10 +256,14 @@ export class WebMapStore implements IWebMapService {
 	}
 
 	private async setWebmapAsync(webmap: __esri.WebMap): Promise<void> {
-		this.data = webmap;
+		await withTimeout(
+			webmap.load(),
+			WEBMAP_LOAD_TIMEOUT_MS,
+			`Timed out loading web map source ${describeWebMapSource(this.source)} after ${WEBMAP_LOAD_TIMEOUT_MS / 1000} seconds.`
+		);
 
-		await this.data.load();
-		if (this.data.loaded) {
+		this.data = webmap;
+		if (webmap.loaded) {
 			this.isLoaded = true;
 		}
 	}
@@ -256,6 +271,28 @@ export class WebMapStore implements IWebMapService {
 
 export function getWebMapSourcePersistenceKey(source: WebMapSource): string {
 	return source.kind === 'portal-item' ? source.itemId : source.url;
+}
+
+export function describeWebMapSource(source: WebMapSource): string {
+	return source.kind === 'portal-item'
+		? `portal-item:${source.portalUrl ?? 'default'}:${source.itemId}`
+		: `webmap-json-url:${source.url}`;
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+	let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+	const timeout = new Promise<never>((_, reject) => {
+		timeoutId = setTimeout(() => reject(new Error(message)), timeoutMs);
+	});
+
+	try {
+		return await Promise.race([promise, timeout]);
+	} finally {
+		if (timeoutId) {
+			clearTimeout(timeoutId);
+		}
+	}
 }
 
 function findLayerById(

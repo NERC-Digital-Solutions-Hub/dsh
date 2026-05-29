@@ -261,6 +261,50 @@ vi.mock('@arcgis/core/core/reactiveUtils.js', () => ({ watch: undefined }));
 vi.mock('@arcgis/core/renderers/support/jsonUtils.js', () => ({
 	fromJSON: arcgis.rendererFromJSON
 }));
+vi.mock('$lib/Utilities/ArcgisLoader', () => {
+	const modules = new Map<string, unknown>([
+		['@arcgis/core/WebMap.js', arcgis.FakeWebMap],
+		['@arcgis/core/layers/FeatureLayer.js', arcgis.FakeLayer],
+		['@arcgis/core/layers/GraphicsLayer.js', arcgis.FakeGraphicsLayer],
+		['@arcgis/core/layers/GroupLayer.js', arcgis.FakeGroupLayer],
+		['@arcgis/core/layers/ImageryLayer.js', arcgis.FakeLayer],
+		['@arcgis/core/layers/MapImageLayer.js', arcgis.FakeMapImageLayer],
+		['@arcgis/core/layers/ParquetLayer.js', arcgis.FakeParquetLayer],
+		['@arcgis/core/layers/TileLayer.js', arcgis.FakeLayer],
+		['@arcgis/core/layers/VectorTileLayer.js', arcgis.FakeLayer],
+		[
+			'@arcgis/core/layers/support/ParquetGeometryEncodingWkb.js',
+			arcgis.FakeParquetGeometryEncodingWkb
+		],
+		['@arcgis/core/geometry/Extent.js', arcgis.FakeExtent],
+		[
+			'@arcgis/core/layers/support/parquetUtils.js',
+			{
+				getParquetLayerInfo: arcgis.getParquetLayerInfo
+			}
+		],
+		['@arcgis/core/core/reactiveUtils.js', { watch: undefined }],
+		['@arcgis/core/renderers/support/jsonUtils.js', { fromJSON: arcgis.rendererFromJSON }]
+	]);
+
+	const arcgisImport = vi.fn(async (specifier: string | string[]) => {
+		const resolve = (module: string) => {
+			if (!modules.has(module)) {
+				throw new Error(`Unexpected ArcGIS module import: ${module}`);
+			}
+
+			return modules.get(module);
+		};
+
+		return Array.isArray(specifier) ? specifier.map(resolve) : resolve(specifier);
+	});
+
+	return {
+		arcgisImport,
+		loadArcgis: vi.fn(async () => {}),
+		preloadArcgis: vi.fn(async () => {})
+	};
+});
 
 describe('WebMapCustomLoader', () => {
 	beforeEach(() => {
