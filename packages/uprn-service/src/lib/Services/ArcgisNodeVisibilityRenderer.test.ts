@@ -116,6 +116,40 @@ describe('ArcgisNodeVisibilityRenderer', () => {
 		expect(drawState).toBe(NodeDrawState.Visible);
 	});
 
+	it('hides non-parquet source layer views when source layers are hidden', async () => {
+		const { groupLayer, layer } = createLayerFixture('feature');
+		groupLayer.visible = true;
+		layer.visible = true;
+		const layerView: FakeLayerView = {
+			layer: layer as unknown as __esri.Layer,
+			suspended: false,
+			visible: true
+		};
+		const provider = createLayerViewProvider(layer, layerView);
+		const renderer = new ArcgisNodeVisibilityRenderer(provider as unknown as LayerViewProvider);
+		let drawState: NodeDrawState | undefined = NodeDrawState.Visible;
+
+		await renderer.applyVisibility({
+			sourceNode: new TreeviewNode('node', 'Node'),
+			target: {
+				kind: 'source',
+				nodeId: 'node',
+				sourceId: layer.id,
+				drawStateNodeId: 'node'
+			},
+			isVisible: false,
+			setDrawState: (nextDrawState) => {
+				drawState = nextDrawState;
+			}
+		});
+
+		expect(layer.visible).toBe(false);
+		expect(groupLayer.visible).toBe(false);
+		expect(provider.getLayerView).toHaveBeenCalledWith(layer);
+		expect(layerView.visible).toBe(false);
+		expect(drawState).toBeUndefined();
+	});
+
 	it('applies parquet dependency visibility directly', async () => {
 		const { groupLayer, layer } = createLayerFixture('parquet');
 		const provider = createLayerViewProvider(layer);

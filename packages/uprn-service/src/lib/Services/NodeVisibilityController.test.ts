@@ -238,6 +238,32 @@ describe('NodeVisibilityController', () => {
 		expect(controller.getVisibilityState(second)).toBe(true);
 	});
 
+	it('renders hidden and visible states when visibility group eviction occurs', () => {
+		const renderer = createVisibilityRenderer();
+		const { configs, controller, nodeMap, nodes, visibilityGroups } = createControllerFixture({
+			renderer
+		});
+		const second = createDataset('second-dataset', 'Second dataset', {}, nodes.folder);
+		nodes.folder.children.push(second);
+		nodeMap.set(second.id, second);
+		configs.set(nodes.dataset.id, nodeConfig(nodes.dataset.id, { visibilityGroupId: 'group' }));
+		configs.set(second.id, nodeConfig(second.id, { visibilityGroupId: 'group' }));
+		visibilityGroups.set('group', { id: 'group', maxVisibleLayers: 1 });
+
+		controller.setVisibilityState(nodes.dataset, true);
+		controller.setVisibilityState(second, true);
+
+		expect(renderer.applyVisibility).toHaveBeenCalledTimes(3);
+		expect(renderer.applyVisibility.mock.calls.map(([change]) => ({
+			nodeId: change.sourceNode.id,
+			isVisible: change.isVisible
+		}))).toEqual([
+			{ nodeId: nodes.dataset.id, isVisible: true },
+			{ nodeId: nodes.dataset.id, isVisible: false },
+			{ nodeId: second.id, isVisible: true }
+		]);
+	});
+
 	it('evicts the oldest visible node when a visibility group limit is exceeded', () => {
 		const { configs, controller, nodeMap, nodes, visibilityGroups } = createControllerFixture();
 		const second = createDataset('second-dataset', 'Second dataset', {}, nodes.folder);

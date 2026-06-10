@@ -85,6 +85,13 @@ export class ArcgisNodeVisibilityRenderer implements INodeVisibilityRenderer {
 
 		if (!change.isVisible) {
 			this.setLayerVisibility(layer, false);
+			if (!this.isParquetLayer(layer)) {
+				const layerView: __esri.LayerView | undefined = await this.getLayerView(layer);
+				if (layerView) {
+					layerView.visible = false;
+				}
+			}
+
 			change.setDrawState(undefined);
 			return;
 		}
