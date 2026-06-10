@@ -74,9 +74,10 @@
 
 	type Props = {
 		config: AppsUprnConfig;
+		defaultSourceIndex?: number;
 	};
 
-	let { config }: Props = $props();
+	let { config, defaultSourceIndex }: Props = $props();
 
 	const tabBarTriggers = [
 		{
@@ -223,7 +224,7 @@
 	});
 
 	/** Index of the active web map source (resets to the default on each load). */
-	let selectedMapSourceIndex = $state(0);
+	let selectedMapSourceIndex = $state(defaultSourceIndex ?? 0);
 
 	/** Tracks failed sources so the app only falls forward through configured map sources once. */
 	const failedWebMapSourceKeys: Set<string> = new SvelteSet<string>();
@@ -238,7 +239,7 @@
 			return null;
 		}
 
-		return sources[selectedMapSourceIndex] ?? sources[0];
+		return sources[selectedMapSourceIndex] ?? sources[defaultSourceIndex ?? 0];
 	});
 
 	/** Stable key used to persist selections for portal, static, and API-backed webmaps. */
