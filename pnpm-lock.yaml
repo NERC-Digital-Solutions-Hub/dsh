@@ -294,16 +294,19 @@ importers:
 
   packages/ai-where-to-build:
     dependencies:
-      '@arcgis/map-components':
-        specifier: ^4.34.9
-        version: 4.34.9(@arcgis/core@4.34.8)(@esri/calcite-components@5.1.0)
+      '@dsh/common':
+        specifier: workspace:*
+        version: link:../common
       '@esri/calcite-ui-icons':
         specifier: ^4.3.0
         version: 4.3.0
     devDependencies:
       '@arcgis/core':
-        specifier: ^4.33.13
-        version: 4.34.8
+        specifier: ~5.0.0
+        version: 5.0.19
+      '@arcgis/map-components':
+        specifier: ~5.0.0
+        version: 5.0.19(@arcgis/core@5.0.19)(@esri/calcite-components@5.1.0)
       '@eslint/compat':
         specifier: ^1.4.0
         version: 1.4.1(eslint@9.39.1(jiti@2.6.1))
@@ -663,16 +666,19 @@ importers:
 
   packages/maps-page:
     dependencies:
-      '@arcgis/map-components':
-        specifier: ^4.34.9
-        version: 4.34.9(@arcgis/core@4.34.8)(@esri/calcite-components@5.1.0)
+      '@dsh/common':
+        specifier: workspace:*
+        version: link:../common
       '@esri/calcite-ui-icons':
         specifier: ^4.3.0
         version: 4.3.0
     devDependencies:
       '@arcgis/core':
-        specifier: ^4.33.13
-        version: 4.34.8
+        specifier: ~5.0.0
+        version: 5.0.19
+      '@arcgis/map-components':
+        specifier: ~5.0.0
+        version: 5.0.19(@arcgis/core@5.0.19)(@esri/calcite-components@5.1.0)
       '@eslint/compat':
         specifier: ^1.4.0
         version: 1.4.1(eslint@9.39.1(jiti@2.6.1))
@@ -1119,12 +1125,6 @@ packages:
     peerDependenciesMeta:
       '@lit/context':
         optional: true
-
-  '@arcgis/map-components@4.34.9':
-    resolution: {integrity: sha512-L97da549rKltUnT391fhgCTP0skufyqkuts5aQkXZDBbX4Kp+kCoSToMwMP01YrEQf5ukAAt5dFZBWvrmVtHEQ==}
-    peerDependencies:
-      '@arcgis/core': ~4.34.0
-      '@esri/calcite-components': ^3.3.2
 
   '@arcgis/map-components@5.0.19':
     resolution: {integrity: sha512-QDLPSHlUXwXOgQvRfQrBjPqySBVJ0p7RNw9IUIp+g3d3d0DZk2UCY0eRn4n9ewJUhU0yG2JvxhMybhoQ3ibsqA==}
@@ -4852,18 +4852,6 @@ snapshots:
       lit: 3.3.1
       tslib: 2.8.1
 
-  '@arcgis/map-components@4.34.9(@arcgis/core@4.34.8)(@esri/calcite-components@5.1.0)':
-    dependencies:
-      '@amcharts/amcharts5': 5.14.4
-      '@arcgis/core': 4.34.8
-      '@arcgis/lumina': 4.34.9(lit@3.3.1)
-      '@arcgis/toolkit': 4.34.9
-      '@esri/calcite-components': 5.1.0
-      lit: 3.3.1
-      tslib: 2.8.1
-    transitivePeerDependencies:
-      - '@lit/context'
-
   '@arcgis/map-components@5.0.19(@arcgis/core@5.0.19)(@esri/calcite-components@5.1.0)':
     dependencies:
       '@amcharts/amcharts5': 5.15.6
@@ -6311,7 +6299,7 @@ snapshots:
   chevrotain-allstar@0.3.1(chevrotain@11.0.3):
     dependencies:
       chevrotain: 11.0.3
-      lodash-es: 4.17.21
+      lodash-es: 4.18.1
 
   chevrotain@11.0.3:
     dependencies:

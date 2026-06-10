@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
+	import { arcgisImport } from '@dsh/common/arcgis';
 	import {
 		Card,
 		CardContent,

@@ -45,7 +45,7 @@ vi.mock('@arcgis/core/WebMap', () => ({ default: arcgis.FakeWebMap }));
 vi.mock('@arcgis/core/config.js', () => ({ default: arcgis.esriConfig }));
 vi.mock('@arcgis/core/portal/PortalItem', () => ({ default: arcgis.FakePortalItem }));
 vi.mock('@arcgis/core/core/urlUtils.js', () => ({ addProxyRule: arcgis.addProxyRule }));
-vi.mock('$lib/Utilities/ArcgisLoader', () => {
+vi.mock('@dsh/common/arcgis', () => {
 	const modules = new Map<string, unknown>([
 		['@arcgis/core/WebMap.js', arcgis.FakeWebMap],
 		['@arcgis/core/config.js', arcgis.esriConfig],

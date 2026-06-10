@@ -1,5 +1,4 @@
-import Graphic from '@arcgis/core/Graphic.js';
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer.js';
+import type Graphic from '@arcgis/core/Graphic.js';
 import type GraphicsLayer from '@arcgis/core/layers/GraphicsLayer.js';
 import type MapView from '@arcgis/core/views/MapView.js';
 import type Polygon from '@arcgis/core/geometry/Polygon.js';
@@ -63,7 +62,7 @@ export async function clipPolygon(options: ClipPolygonOptions): Promise<Graphic[
 	} = options;
 
 	// Normalise to a Polygon geometry
-	const rawGeom = input instanceof Graphic ? input.geometry : input;
+	const rawGeom = 'geometry' in input ? input.geometry : input;
 
 	if (!rawGeom) {
 		console.warn('clipPolygon: no input geometry provided.');
@@ -77,7 +76,7 @@ export async function clipPolygon(options: ClipPolygonOptions): Promise<Graphic[
 
 	const inputPolygon = rawGeom as Polygon;
 
-	if (clipLayer instanceof FeatureLayer && clipLayer.geometryType !== 'polygon') {
+	if (clipLayer.type === 'feature' && clipLayer.geometryType !== 'polygon') {
 		console.error('clipPolygon: clipLayer is not of polygon geometry type.');
 		return null;
 	}
@@ -116,7 +115,7 @@ export async function clipPolygon(options: ClipPolygonOptions): Promise<Graphic[
 				value
 			};
 
-			const g = createClippedGraphic(geometry, attrs, symbol);
+			const g = await createClippedGraphic(geometry, attrs, symbol);
 			addGraphicToLayer(targetLayer, g, view);
 			results.push(g);
 		}
@@ -126,7 +125,8 @@ export async function clipPolygon(options: ClipPolygonOptions): Promise<Graphic[
 		}
 
 		if (view && zoomToResult) {
-			view.goTo(results.map((g) => g.geometry)).catch((err) => console.warn('goTo failed:', err));
+			const geometries = results.map((g) => g.geometry).filter(Boolean) as __esri.GoToTarget2D;
+			view.goTo(geometries).catch((err) => console.warn('goTo failed:', err));
 		}
 
 		return results;
@@ -145,7 +145,7 @@ export async function clipPolygon(options: ClipPolygonOptions): Promise<Graphic[
 		return null;
 	}
 
-	const g = createClippedGraphic(unionClipGeometry, { sourceIds }, symbol);
+	const g = await createClippedGraphic(unionClipGeometry, { sourceIds }, symbol);
 	addGraphicToLayer(targetLayer, g, view);
 
 	if (view && zoomToResult) {

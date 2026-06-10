@@ -1,9 +1,8 @@
-import Graphic from '@arcgis/core/Graphic';
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { clipPolygon } from '$lib/tools/map/clip-polygon';
 import { mergeClippedPolygons } from '$lib/tools/map/merge-clipped-polygons';
 import { queryPolygonFieldValue } from '$lib/tools/map/query-polygon-field-value';
 import { getUnionPolygonGeometryByIds } from '$lib/tools/map/utils';
+import { arcgisImport } from '@dsh/common/arcgis';
 import {
 	createAnalysisRunId,
 	createFillSymbol,
@@ -62,32 +61,33 @@ export class AnalyserServiceV1 {
 		const allLayers = flattenLayers(this.#mapView.map!.layers.toArray());
 
 		for (const layer of allLayers) {
-			if (!(layer instanceof FeatureLayer)) {
+			if (layer.type !== 'feature') {
 				console.log(`Skipping non-feature layer: ${layer.title}, type: ${layer.type}`);
 				continue;
 			}
+			const featureLayer = layer as __esri.FeatureLayer;
 
-			if (layer.id === parcelsLayer.id) {
-				console.log(`Skipping parcels layer itself: ${layer.title}`);
+			if (featureLayer.id === parcelsLayer.id) {
+				console.log(`Skipping parcels layer itself: ${featureLayer.title}`);
 				continue;
 			}
 
-			if (layer.geometryType !== 'polygon') {
+			if (featureLayer.geometryType !== 'polygon') {
 				console.log(
-					`Skipping non-polygon layer: ${layer.title}, geometry type: ${layer.geometryType}`
+					`Skipping non-polygon layer: ${featureLayer.title}, geometry type: ${featureLayer.geometryType}`
 				);
 				continue;
 			}
 
 			try {
-				await this.#processFeatureLayer(layer, parcelPolygon, analysisRunId);
+				await this.#processFeatureLayer(featureLayer, parcelPolygon, analysisRunId);
 			} catch (error) {
-				console.error(`Error processing layer ${layer.title}:`, error);
+				console.error(`Error processing layer ${featureLayer.title}:`, error);
 				continue;
 			}
 		}
 
-		const mergedPolygons = mergeClippedPolygons(this.#graphicLayer, { analysisRunId });
+		const mergedPolygons = await mergeClippedPolygons(this.#graphicLayer, { analysisRunId });
 		styleMergedPolygons(mergedPolygons);
 		goToGraphics(this.#mapView, mergedPolygons);
 
@@ -115,6 +115,10 @@ export class AnalyserServiceV1 {
 
 		tagAnalysisGraphics(polygons, analysisRunId);
 
+		const Graphic =
+			await arcgisImport<typeof import('@arcgis/core/Graphic.js').default>(
+				'@arcgis/core/Graphic.js'
+			);
 		const displayValue = layer.displayField
 			? await queryPolygonFieldValue(
 					layer,

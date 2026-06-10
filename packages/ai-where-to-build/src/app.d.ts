@@ -1,3 +1,6 @@
+/// <reference types="@arcgis/core/interfaces" />
+/// <reference types="@arcgis/map-components" />
+
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
 declare global {

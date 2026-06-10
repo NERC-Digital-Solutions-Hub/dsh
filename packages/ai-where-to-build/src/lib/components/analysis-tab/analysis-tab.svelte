@@ -25,7 +25,7 @@
 	const DEFAULT_WARD_LAYER_TITLE = 'UK Wards (Boundary Fully Clipped) (2022)';
 
 	onMount(async () => {
-		graphicLayer = addGraphicLayer(mapView, 'Analysis Results Layer');
+		graphicLayer = await addGraphicLayer(mapView, 'Analysis Results Layer');
 		analyserServiceV1 = new AnalyserServiceV1({ mapView, graphicLayer });
 		analyserServiceV2 = new AnalyserServiceV2({ mapView, graphicLayer });
 		await initializeStores();

@@ -16,8 +16,8 @@ declare global {
 
 	/**
 	 * Global helper attached by the ArcGIS Maps SDK CDN bundle (https://js.arcgis.com/5.0/).
-	 * Used to load ArcGIS modules at runtime so they are never bundled. Prefer the typed
-	 * wrapper in `$lib/Utilities/ArcgisLoader` (`arcgisImport`) over touching this directly.
+	 * Used to load ArcGIS modules at runtime so they are never bundled. Prefer the shared typed
+	 * wrapper in `@dsh/common/arcgis` (`arcgisImport`) over touching this directly.
 	 */
 	interface Window {
 		$arcgis: {

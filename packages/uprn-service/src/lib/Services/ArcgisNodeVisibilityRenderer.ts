@@ -1,7 +1,7 @@
 import { NodeDrawState } from '$lib/Models/Treeview/Index';
 import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 import type { LayerViewProvider } from '$lib/Services/LayerViewProvider';
-import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
+import { arcgisImport } from '@dsh/common/arcgis';
 import type {
 	INodeVisibilityRenderer,
 	NodeVisibilityDependencyChange,

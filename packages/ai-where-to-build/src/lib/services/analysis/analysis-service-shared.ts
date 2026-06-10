@@ -1,6 +1,3 @@
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import GroupLayer from '@arcgis/core/layers/GroupLayer';
-
 export type AnalyserServiceContext = {
 	mapView: __esri.MapView;
 	graphicLayer: __esri.GraphicsLayer;
@@ -35,9 +32,9 @@ export function goToGraphics(mapView: __esri.MapView, graphics: __esri.Graphic[]
 export function flattenLayers(layers: __esri.Layer[]): __esri.Layer[] {
 	const result: __esri.Layer[] = [];
 	for (const layer of layers) {
-		if (layer instanceof GroupLayer) {
-			result.push(...flattenLayers(layer.layers.toArray()));
-		} else if (layer instanceof FeatureLayer) {
+		if (layer.type === 'group') {
+			result.push(...flattenLayers((layer as __esri.GroupLayer).layers.toArray()));
+		} else if (layer.type === 'feature') {
 			result.push(layer);
 		}
 	}

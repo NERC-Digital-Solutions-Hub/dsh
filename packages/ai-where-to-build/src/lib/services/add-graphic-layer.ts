@@ -1,15 +1,24 @@
-import Graphic from '@arcgis/core/Graphic';
-import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
+import { arcgisImport } from '@dsh/common/arcgis';
 
 /**
  * Add a graphic layer to the map view with click interaction for highlighting and popups.
  * @param mapView The map view.
  * @param layerTitle The graphic layer title.
  */
-export function addGraphicLayer(mapView: __esri.MapView, layerTitle: string): __esri.GraphicsLayer {
+export async function addGraphicLayer(
+	mapView: __esri.MapView,
+	layerTitle: string
+): Promise<__esri.GraphicsLayer> {
 	if (!mapView || !mapView.map) {
 		throw new Error('MapView is not initialized');
 	}
+
+	const [Graphic, GraphicsLayer] = await arcgisImport<
+		[
+			typeof import('@arcgis/core/Graphic.js').default,
+			typeof import('@arcgis/core/layers/GraphicsLayer.js').default
+		]
+	>(['@arcgis/core/Graphic.js', '@arcgis/core/layers/GraphicsLayer.js']);
 
 	const graphicLayer = new GraphicsLayer({
 		title: layerTitle,

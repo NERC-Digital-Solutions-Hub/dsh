@@ -1,4 +1,10 @@
-import esriRequest from '@arcgis/core/request.js';
+import { arcgisImport } from '@dsh/common/arcgis';
+
+export type EsriRequestError = Error & {
+	details?: {
+		httpStatus?: number;
+	};
+};
 
 /**
  * The Esri request hook for fetching JSON data from the ArcGIS portal API.
@@ -8,13 +14,17 @@ import esriRequest from '@arcgis/core/request.js';
 export default class UseEsriRequest {
 	#data: any | null = $state<any | null>(null);
 	#isLoading: boolean = $state(false);
-	#error: Error | null = $state<Error | null>(null);
+	#error: EsriRequestError | null = $state<EsriRequestError | null>(null);
 
 	public load = async (url: string, options?: __esri.RequestOptions) => {
 		this.#isLoading = true;
 		this.#error = null;
 
 		try {
+			const esriRequest =
+				await arcgisImport<typeof import('@arcgis/core/request.js').default>(
+					'@arcgis/core/request.js'
+				);
 			console.log('Esri Request URL:', url, options);
 			const response = await esriRequest(url, { ...options, responseType: 'json' });
 			console.log('Esri Request Response:', response, response.data.url);
@@ -22,7 +32,7 @@ export default class UseEsriRequest {
 			// TODO: TEMP
 			//this.#data = JSON.parse(temp);
 		} catch (e) {
-			this.#error = e as Error;
+			this.#error = e as EsriRequestError;
 		} finally {
 			this.#isLoading = false;
 		}

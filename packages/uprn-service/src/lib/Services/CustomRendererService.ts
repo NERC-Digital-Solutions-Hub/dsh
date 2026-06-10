@@ -6,7 +6,7 @@ import type {
 	CustomRendererSymbol,
 	LODSize
 } from '$lib/Types/CustomRenderers.types';
-import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
+import { arcgisImport } from '@dsh/common/arcgis';
 import type FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import type Renderer from '@arcgis/core/renderers/Renderer';
 

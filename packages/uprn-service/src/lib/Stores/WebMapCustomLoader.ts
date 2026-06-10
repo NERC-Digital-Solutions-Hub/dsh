@@ -3,7 +3,7 @@ import {
 	type GeoParquetLayerOptions,
 	type ParquetLayerInfo as PipelineParquetLayerInfo
 } from '$lib/Services/GeoparquetPipeline2';
-import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
+import { arcgisImport } from '@dsh/common/arcgis';
 
 type JsonRecord = Record<string, unknown>;
 type LayerWithOriginalId = __esri.Layer & { readonly __uprnOriginalLayerId?: string };

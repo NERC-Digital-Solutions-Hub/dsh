@@ -55,7 +55,7 @@
 		getWebMapSourcePersistenceKey,
 		WebMapStore
 	} from '$lib/Stores/WebMapStore.svelte';
-	import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
+	import { arcgisImport } from '@dsh/common/arcgis';
 	import type { AppTabState } from '$lib/Types/Chatbot.types';
 	import { TreeviewType } from '$lib/Types/Treeview.types';
 	import { TabProgress, TabType, type DownloadEntry } from '$lib/Types/Uprn.types';

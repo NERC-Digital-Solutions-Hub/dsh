@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('@arcgis/core/core/reactiveUtils.js', () => ({
 	watch: vi.fn(() => ({ remove: vi.fn() }))
 }));
-vi.mock('$lib/Utilities/ArcgisLoader', () => ({
+vi.mock('@dsh/common/arcgis', () => ({
 	arcgisImport: vi.fn(async (specifier: string) => {
 		if (specifier !== '@arcgis/core/core/reactiveUtils.js') {
 			throw new Error(`Unexpected ArcGIS module import: ${specifier}`);

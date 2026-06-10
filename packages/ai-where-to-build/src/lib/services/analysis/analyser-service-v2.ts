@@ -1,5 +1,3 @@
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import Graphic from '@arcgis/core/Graphic';
 import { getAiWhereToBuildConfig } from '$lib/services/ai-where-to-build-config-provider';
 import {
 	EnumFieldLayerAnalysisSettings,
@@ -15,6 +13,7 @@ import { clipPolygon } from '$lib/tools/map/clip-polygon';
 import { createPolygonBuffer } from '$lib/tools/map/create-polygon-buffer';
 import { mergeClippedPolygons } from '$lib/tools/map/merge-clipped-polygons';
 import { getUnionPolygonGeometryByIds } from '$lib/tools/map/utils';
+import { arcgisImport } from '@dsh/common/arcgis';
 import {
 	createAnalysisRunId,
 	createFillSymbol,
@@ -75,7 +74,9 @@ export class AnalyserServiceV2 {
 		const allLayers = flattenLayers(this.#mapView.map!.layers.toArray());
 		for (const layerSetting of config.analysisSettings as LayerAnalysisSettings[]) {
 			const layer = allLayers.find(
-				(layer) => layer instanceof FeatureLayer && layer.portalItem?.id === layerSetting.id
+				(layer) =>
+					layer.type === 'feature' &&
+					(layer as __esri.FeatureLayer).portalItem?.id === layerSetting.id
 			) as __esri.FeatureLayer | undefined;
 
 			if (!layer) {
@@ -100,8 +101,8 @@ export class AnalyserServiceV2 {
 			}
 		}
 
-		this.#addBaseWeightPolygon(parcelPolygon, analysisRunId);
-		const mergedPolygons = mergeClippedPolygons(this.#graphicLayer, { analysisRunId });
+		await this.#addBaseWeightPolygon(parcelPolygon, analysisRunId);
+		const mergedPolygons = await mergeClippedPolygons(this.#graphicLayer, { analysisRunId });
 		this.#calculateTotalWeight(mergedPolygons);
 		this.#styleMergedPolygonsWithWeights(mergedPolygons);
 		goToGraphics(this.#mapView, mergedPolygons);
@@ -330,7 +331,11 @@ export class AnalyserServiceV2 {
 		}
 	}
 
-	#addBaseWeightPolygon(polygon: __esri.Polygon, analysisRunId: string) {
+	async #addBaseWeightPolygon(polygon: __esri.Polygon, analysisRunId: string): Promise<void> {
+		const Graphic =
+			await arcgisImport<typeof import('@arcgis/core/Graphic.js').default>(
+				'@arcgis/core/Graphic.js'
+			);
 		const baseWeightPolygon = new Graphic({
 			geometry: polygon.clone(),
 			attributes: {

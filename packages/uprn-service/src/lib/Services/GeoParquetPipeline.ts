@@ -15,7 +15,7 @@ import {
 	GeoParquetPipeline,
 	type ParquetLayerInfo as PipelineParquetLayerInfo
 } from './GeoparquetPipeline2';
-import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
+import { arcgisImport } from '@dsh/common/arcgis';
 
 /**
  * Compatibility factory for existing imports.

@@ -261,7 +261,7 @@ vi.mock('@arcgis/core/core/reactiveUtils.js', () => ({ watch: undefined }));
 vi.mock('@arcgis/core/renderers/support/jsonUtils.js', () => ({
 	fromJSON: arcgis.rendererFromJSON
 }));
-vi.mock('$lib/Utilities/ArcgisLoader', () => {
+vi.mock('@dsh/common/arcgis', () => {
 	const modules = new Map<string, unknown>([
 		['@arcgis/core/WebMap.js', arcgis.FakeWebMap],
 		['@arcgis/core/layers/FeatureLayer.js', arcgis.FakeLayer],

@@ -5,6 +5,7 @@
 	import { onMount } from 'svelte';
 	import { List, Map, Brain } from '@lucide/svelte';
 	import AnalysisTab from '$lib/components/analysis-tab/analysis-tab.svelte';
+	import { loadArcgis } from '@dsh/common/arcgis';
 
 	let mapElement: HTMLArcgisMapElement | null = $state(null);
 	let arcgisLayerListComponent: HTMLArcgisLayerListElement | null = $state(null);
@@ -21,9 +22,7 @@
 
 	// Initialize map
 	onMount(async () => {
-		await import('@arcgis/map-components/components/arcgis-map');
-		await import('@arcgis/map-components/components/arcgis-basemap-gallery');
-		await import('@arcgis/map-components/components/arcgis-layer-list');
+		await loadArcgis();
 	});
 
 	$effect(() => {

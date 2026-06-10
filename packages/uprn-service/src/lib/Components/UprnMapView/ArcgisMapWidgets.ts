@@ -1,7 +1,7 @@
 import { mount, unmount } from 'svelte';
 
 import { Spinner } from '$lib/Components/shadcn/spinner';
-import { arcgisImport, loadArcgis } from '$lib/Utilities/ArcgisLoader';
+import { arcgisImport, loadArcgis } from '@dsh/common/arcgis';
 
 import type MapView from '@arcgis/core/views/MapView';
 import type { ArcgisExpand } from '@arcgis/map-components/components/arcgis-expand';

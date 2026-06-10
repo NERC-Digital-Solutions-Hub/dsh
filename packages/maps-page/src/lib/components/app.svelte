@@ -11,8 +11,7 @@
 	import { ScrollArea } from '$lib/components/shadcn/scroll-area';
 	import { MapViewService } from '$lib/services/command-search/map-view-service';
 	import { getCommand } from '$lib/services/command-search/command-registry';
-	import Color from '@arcgis/core/Color';
-	import ColorBackground from '@arcgis/core/webmap/background/ColorBackground';
+	import { arcgisImport, loadArcgis } from '@dsh/common/arcgis';
 
 	import { addWebMapCommand } from '$lib/services/command-search/commands/add-web-map';
 	import { addLayerCommand } from '$lib/services/command-search/commands/add-layer';
@@ -70,6 +69,13 @@
 		mapView = arcgisMapComponent.view as __esri.MapView;
 		commandSearchContext.add(MapViewService, new MapViewService(mapView));
 
+		const [Color, ColorBackground] = await arcgisImport<
+			[
+				typeof import('@arcgis/core/Color.js').default,
+				typeof import('@arcgis/core/webmap/background/ColorBackground.js').default
+			]
+		>(['@arcgis/core/Color.js', '@arcgis/core/webmap/background/ColorBackground.js']);
+
 		const backgroundColour = new Color('#cfd3d4');
 		arcgisMapComponent.background = new ColorBackground({
 			color: backgroundColour
@@ -96,9 +102,7 @@
 			return;
 		}
 
-		await import('@arcgis/map-components/components/arcgis-layer-list');
-		await import('@arcgis/map-components/components/arcgis-legend');
-		await import('@arcgis/map-components/components/arcgis-map');
+		await loadArcgis();
 	}
 </script>
 

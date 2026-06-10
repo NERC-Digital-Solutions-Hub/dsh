@@ -1,4 +1,4 @@
-import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
+import { arcgisImport } from '@dsh/common/arcgis';
 import type MapView from '@arcgis/core/views/MapView';
 
 export type ActiveRasterSublayer = {

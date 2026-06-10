@@ -12,6 +12,7 @@
 	import { SvelteMap } from 'svelte/reactivity';
 	import { asset } from '$app/paths';
 	import { MapViewService } from '$lib/services/command-search/map-view-service';
+	import { arcgisImport } from '@dsh/common/arcgis';
 
 	type Props = {
 		commandSearchContext: CommandSearchContext;
@@ -61,16 +62,6 @@
 		if (!browser) return;
 
 		mapView = commandSearchContext.get(MapViewService).mapView;
-
-		// // Force the basemap to gray and keep it stable.
-		// try {
-		// 	const { default: Basemap } = await import('@arcgis/core/Basemap');
-		// 	if (mapView?.map) {
-		// 		mapView.map.basemap = await Basemap.fromId(DESIRED_BASEMAP_ID);
-		// 	}
-		// } catch (e) {
-		// 	console.warn(`Failed to set basemap "${DESIRED_BASEMAP_ID}"`, e);
-		// }
 
 		const organisationService = commandSearchContext.get(OrganisationCommandService);
 		const activeOrgId = organisationService.getActiveOrganisationId();
@@ -186,7 +177,9 @@
 	}
 
 	function wkidOf(sr?: __esri.SpatialReference | null): number | undefined {
-		return sr?.wkid ?? sr?.latestWkid ?? undefined;
+		return (
+			sr?.wkid ?? (sr as (__esri.SpatialReference & { latestWkid?: number }) | null)?.latestWkid
+		);
 	}
 
 	async function getTiledLayerWkid(
@@ -239,35 +232,35 @@
 		layerIdError.delete(itemId);
 
 		try {
-			// Keep basemap pinned to gray (in case anything else changed it)
-			// try {
-			// 	const { default: Basemap } = await import('@arcgis/core/Basemap');
-			// 	mapView.map.basemap = await Basemap.fromId(DESIRED_BASEMAP_ID);
-			// } catch {}
-
 			const organisationService = commandSearchContext.get(OrganisationCommandService);
 			const portalUrl: string = organisationService.getActiveOrganisationPortalUrl();
 
-			const [
-				{ default: Layer },
-				{ default: Portal },
-				{ default: FeatureLayer },
-				{ default: MapImageLayer },
-				{ default: TileLayer },
-				{ default: VectorTileLayer }
-			] = await Promise.all([
-				import('@arcgis/core/layers/Layer'),
-				import('@arcgis/core/portal/Portal'),
-				import('@arcgis/core/layers/FeatureLayer'),
-				import('@arcgis/core/layers/MapImageLayer'),
-				import('@arcgis/core/layers/TileLayer'),
-				import('@arcgis/core/layers/VectorTileLayer')
-			]);
+			const [Layer, Portal, PortalItem, FeatureLayer, MapImageLayer, TileLayer, VectorTileLayer] =
+				await arcgisImport<
+					[
+						typeof import('@arcgis/core/layers/Layer.js').default,
+						typeof import('@arcgis/core/portal/Portal.js').default,
+						typeof import('@arcgis/core/portal/PortalItem.js').default,
+						typeof import('@arcgis/core/layers/FeatureLayer.js').default,
+						typeof import('@arcgis/core/layers/MapImageLayer.js').default,
+						typeof import('@arcgis/core/layers/TileLayer.js').default,
+						typeof import('@arcgis/core/layers/VectorTileLayer.js').default
+					]
+				>([
+					'@arcgis/core/layers/Layer.js',
+					'@arcgis/core/portal/Portal.js',
+					'@arcgis/core/portal/PortalItem.js',
+					'@arcgis/core/layers/FeatureLayer.js',
+					'@arcgis/core/layers/MapImageLayer.js',
+					'@arcgis/core/layers/TileLayer.js',
+					'@arcgis/core/layers/VectorTileLayer.js'
+				]);
 
 			const portal = new Portal({ url: portalUrl });
+			const portalItem = new PortalItem({ id: itemId, portal });
 
 			const layer = (await Layer.fromPortalItem({
-				portalItem: { id: itemId, portal }
+				portalItem
 			})) as __esri.Layer;
 
 			if (
@@ -276,7 +269,9 @@
 				!(layer instanceof TileLayer) &&
 				!(layer instanceof VectorTileLayer)
 			) {
-				throw new Error(`Currently Unsupported layer type '${layer.type}' We aim to implement support in the future.`);
+				throw new Error(
+					`Currently Unsupported layer type '${layer.type}' We aim to implement support in the future.`
+				);
 			}
 
 			console.log(`Adding layer to the map: ${itemId}`);

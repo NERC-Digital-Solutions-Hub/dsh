@@ -2,7 +2,7 @@ import { browser } from '$app/environment';
 import { asset } from '$app/paths';
 import type { IWebMapService } from '$lib/Services/IWebMapService.js';
 import { createWebMapFromJson } from '$lib/Stores/WebMapCustomLoader';
-import { arcgisImport } from '$lib/Utilities/ArcgisLoader';
+import { arcgisImport } from '@dsh/common/arcgis';
 import { getSublayerId } from '$lib/Utilities/TreeviewUtilities';
 import { SvelteMap } from 'svelte/reactivity';
 

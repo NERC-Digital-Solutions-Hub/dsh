@@ -1,6 +1,6 @@
 @source './Components'; /* this is needed so tailwind applies the app styling when this package is added as a dependency! */
 
-/* The ArcGIS theme CSS is loaded from the CDN at runtime by $lib/Utilities/ArcgisLoader
+/* The ArcGIS theme CSS is loaded from the CDN at runtime by @dsh/common/arcgis
    (and in src/app.html for the demo), so it is intentionally not imported here. */
 @import '@dsh/common/styles.css';
 

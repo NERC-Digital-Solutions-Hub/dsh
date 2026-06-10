@@ -1,14 +1,14 @@
 /**
  * Runtime loader for the ArcGIS Maps SDK for JavaScript via Esri's CDN.
  *
- * This package is consumed as a library that may be mounted in hosts which do not
- * add the ArcGIS CDN script to their HTML. To keep the package self-contained — and,
- * crucially, to keep `@arcgis/core` out of the bundler's module graph (it is huge and
- * causes out-of-memory during the build) — ArcGIS modules are loaded at runtime through
- * the global `window.$arcgis.import()` helper rather than via `import`/`import()`.
+ * This package is consumed by library packages that may be mounted in hosts which do not
+ * add the ArcGIS CDN script to their HTML. To keep those packages self-contained - and,
+ * crucially, to keep `@arcgis/core` out of the bundler's module graph - ArcGIS modules are
+ * loaded at runtime through the global `window.$arcgis.import()` helper rather than via
+ * `import`/`import()`.
  *
- * `@arcgis/core` / `@arcgis/map-components` remain installed as devDependencies for types
- * only; never value-import them. Always load modules through {@link arcgisImport}.
+ * `@arcgis/core` / `@arcgis/map-components` should remain installed only where needed for
+ * types; never value-import them. Always load modules through {@link arcgisImport}.
  */
 
 const ARCGIS_CDN_BASE = 'https://js.arcgis.com/5.0/';
@@ -19,9 +19,18 @@ const ARCGIS_THEME_HREF = `${ARCGIS_CDN_BASE}esri/themes/light/main.css`;
 const READY_TIMEOUT_MS = 15000;
 /** Poll interval used while waiting for `window.$arcgis` to attach. */
 const READY_POLL_MS = 25;
-const LOG_PREFIX = '[uprn/arcgis-loader]';
+const LOG_PREFIX = '[dsh/arcgis-loader]';
 
 let loadPromise: Promise<void> | null = null;
+
+declare global {
+	interface Window {
+		$arcgis: {
+			import<T = unknown>(module: string): Promise<T>;
+			import<T extends readonly unknown[]>(modules: readonly string[]): Promise<T>;
+		};
+	}
+}
 
 function isLoaded(): boolean {
 	return typeof window !== 'undefined' && Boolean(window.$arcgis);
@@ -29,7 +38,6 @@ function isLoaded(): boolean {
 
 function injectThemeCss(): void {
 	if (document.querySelector(`link[href="${ARCGIS_THEME_HREF}"]`)) {
-		console.debug(`${LOG_PREFIX} ArcGIS theme CSS already present`);
 		return;
 	}
 
@@ -159,3 +167,5 @@ export async function arcgisImport(modules: string | readonly string[]): Promise
 		throw error;
 	}
 }
+
+export {};

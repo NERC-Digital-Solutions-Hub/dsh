@@ -1,7 +1,4 @@
-import * as bufferOperator from '@arcgis/core/geometry/operators/bufferOperator.js';
-
-import Graphic from '@arcgis/core/Graphic.js';
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer.js';
+import type Graphic from '@arcgis/core/Graphic.js';
 import type GraphicsLayer from '@arcgis/core/layers/GraphicsLayer.js';
 import type MapView from '@arcgis/core/views/MapView.js';
 import type Polygon from '@arcgis/core/geometry/Polygon.js';
@@ -18,6 +15,7 @@ import {
 	type ClipValue,
 	type GroupedClipGeometry
 } from '$lib/tools/map/utils';
+import { loadGeometryOperators } from './arcgis-runtime';
 
 interface ClipPointsOptions {
 	view?: MapView;
@@ -76,7 +74,7 @@ export async function clipPoints(options: ClipPointsOptions): Promise<Graphic[] 
 	}
 
 	// Normalise to a Polygon geometry
-	const rawGeom = input instanceof Graphic ? input.geometry : input;
+	const rawGeom = 'geometry' in input ? input.geometry : input;
 
 	if (!rawGeom) {
 		console.warn('clipPoints: no input geometry provided.');
@@ -91,7 +89,7 @@ export async function clipPoints(options: ClipPointsOptions): Promise<Graphic[] 
 	const inputPolygon = rawGeom as Polygon;
 
 	// Enforce that the clip layer is point/multipoint (for FeatureLayer case)
-	if (clipLayer instanceof FeatureLayer) {
+	if (clipLayer.type === 'feature') {
 		const gt = clipLayer.geometryType;
 		if (gt !== 'point' && gt !== 'multipoint') {
 			console.error('clipPoints: clipLayer must be point or multipoint.');
@@ -139,7 +137,7 @@ export async function clipPoints(options: ClipPointsOptions): Promise<Graphic[] 
 				bufferUnit
 			};
 
-			const g = createClippedGraphic(geometry, attrs, symbol);
+			const g = await createClippedGraphic(geometry, attrs, symbol);
 			addGraphicToLayer(targetLayer, g, view);
 			results.push(g);
 		}
@@ -149,7 +147,8 @@ export async function clipPoints(options: ClipPointsOptions): Promise<Graphic[] 
 		}
 
 		if (view && zoomToResult) {
-			view.goTo(results.map((g) => g.geometry)).catch((err) => console.warn('goTo failed:', err));
+			const geometries = results.map((g) => g.geometry).filter(Boolean) as __esri.GoToTarget2D;
+			view.goTo(geometries).catch((err) => console.warn('goTo failed:', err));
 		}
 
 		return results;
@@ -176,7 +175,7 @@ export async function clipPoints(options: ClipPointsOptions): Promise<Graphic[] 
 		return null;
 	}
 
-	const g = createClippedGraphic(
+	const g = await createClippedGraphic(
 		unionClipGeometry,
 		{
 			clippedByPoints: true,
@@ -221,6 +220,7 @@ async function getUnionBufferedClipGeometryFromLayer(
 	}
 
 	// Buffer all geometries by the same distance
+	const { bufferOperator } = await loadGeometryOperators();
 	let buffered: (Polygon | null | undefined)[];
 	try {
 		buffered = bufferOperator.executeMany(
@@ -278,6 +278,7 @@ async function getGroupedBufferedClipGeometriesFromLayer(
 
 	const results: GroupedClipGeometry[] = [];
 	const distances = [bufferDistance];
+	const { bufferOperator } = await loadGeometryOperators();
 
 	for (const group of groups.values()) {
 		let buffered: (Polygon | null | undefined)[];
@@ -302,7 +303,7 @@ async function getGroupedBufferedClipGeometriesFromLayer(
 			continue;
 		}
 
-		const unionGeom = computeUnionOfIntersections(polygon, bufferPolygons);
+		const unionGeom = await computeUnionOfIntersections(polygon, bufferPolygons);
 		if (unionGeom) {
 			results.push({
 				geometry: unionGeom,
