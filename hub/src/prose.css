@@ -11,7 +11,11 @@
 }
 
 .prose-home-intro-dialog :where(h3) {
-	@apply mb-0 text-xl text-foreground;
+	@apply mt-4 mb-0 text-xl text-foreground;
+}
+
+.prose-home-intro-dialog :where(h4) {
+	@apply mt-2;
 }
 
 .prose-home-intro-dialog :where(hr) {
