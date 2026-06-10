@@ -146,7 +146,7 @@
                 "portalUrl": "https://nercdsh.dev.azure.manchester.ac.uk/portal"
             },
             {
-                "name": "Local WebMap JSON",
+                "name": "GeoParquet WebMap JSON",
                 "kind": "webmap-json-url",
                 "url": "/config/apps/uprn/webmap.json"
             }
