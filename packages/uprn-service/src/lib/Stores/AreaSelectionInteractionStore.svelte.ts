@@ -23,7 +23,16 @@ type QueryableAreaLayer = (__esri.FeatureLayer | __esri.Sublayer) & {
 	id: string;
 	objectIdField: string;
 	uid?: string;
+	fields?: AreaLayerField[];
+	fieldsIndex?: {
+		get: (fieldName: string) => AreaLayerField | null | undefined;
+	};
+	getField?: (fieldName: string) => AreaLayerField | null | undefined;
 	queryFeatures: (query: __esri.QueryProperties) => Promise<__esri.FeatureSet>;
+};
+
+type AreaLayerField = {
+	name: string;
 };
 
 /**
@@ -274,16 +283,17 @@ export class AreaSelectionInteractionStore {
 		}
 
 		const objectIdField: string = layer.objectIdField;
+		const resolvedNameField = this.resolveLayerFieldName(layer, nameField);
 		try {
 			const result = await layer.queryFeatures({
 				objectIds: missingIds,
-				outFields: [nameField, objectIdField],
+				outFields: [resolvedNameField, objectIdField],
 				returnGeometry: false
 			});
 
 			for (const feature of result.features) {
-				const id = feature.attributes[objectIdField] as number;
-				const name = feature.attributes[nameField] as string;
+				const id = getAttributeValue(feature.attributes, objectIdField) as number;
+				const name = getAttributeValue(feature.attributes, resolvedNameField) as string;
 				const idx = idToIndex.get(id);
 				if (idx !== undefined) {
 					names[idx] = name ?? '';
@@ -314,6 +324,7 @@ export class AreaSelectionInteractionStore {
 		if (!layer) return ids.map(() => '');
 
 		const objectIdField = layer.objectIdField;
+		const resolvedCodeField = this.resolveLayerFieldName(layer, codeField);
 
 		const idToIndex = new SvelteMap<number, number>();
 		const codes: string[] = new Array(ids.length).fill('');
@@ -325,13 +336,13 @@ export class AreaSelectionInteractionStore {
 		try {
 			const result = await layer.queryFeatures({
 				objectIds: ids,
-				outFields: [codeField, objectIdField],
+				outFields: [resolvedCodeField, objectIdField],
 				returnGeometry: false
 			});
 
 			for (const feature of result.features) {
-				const id = feature.attributes[objectIdField] as number;
-				const code = feature.attributes[codeField] as string;
+				const id = getAttributeValue(feature.attributes, objectIdField) as number;
+				const code = getAttributeValue(feature.attributes, resolvedCodeField) as string;
 				const index = idToIndex.get(id);
 
 				if (index !== undefined) {
@@ -460,6 +471,24 @@ export class AreaSelectionInteractionStore {
 		return this.getQueryableAreaLayerById(layerId);
 	}
 
+	private resolveLayerFieldName(layer: QueryableAreaLayer, fieldName: string): string {
+		const directField = layer.getField?.(fieldName);
+		if (directField?.name) {
+			return directField.name;
+		}
+
+		const indexedField = layer.fieldsIndex?.get(fieldName);
+		if (indexedField?.name) {
+			return indexedField.name;
+		}
+
+		const lowerFieldName = fieldName.toLowerCase();
+		const matchingField = layer.fields?.find(
+			(field) => field.name.toLowerCase() === lowerFieldName
+		);
+		return matchingField?.name ?? fieldName;
+	}
+
 	private getQueryableAreaLayerById(layerId: string, shouldWarn = true): QueryableAreaLayer | null {
 		const layer =
 			this.layerViewProvider.getLayerById(layerId) ?? this.webMapService?.getLayerById(layerId);
@@ -474,4 +503,21 @@ export class AreaSelectionInteractionStore {
 
 		return layer as QueryableAreaLayer;
 	}
+}
+
+function getAttributeValue(
+	attributes: Record<string, unknown> | null | undefined,
+	fieldName: string
+): unknown {
+	if (!attributes) {
+		return undefined;
+	}
+
+	if (fieldName in attributes) {
+		return attributes[fieldName];
+	}
+
+	const lowerFieldName = fieldName.toLowerCase();
+	const matchingKey = Object.keys(attributes).find((key) => key.toLowerCase() === lowerFieldName);
+	return matchingKey ? attributes[matchingKey] : undefined;
 }
