@@ -166,17 +166,26 @@ export class NodeVisibilityController implements INodeVisibilityController {
 	}
 
 	private syncVisibilityStatesToRenderer(): void {
-		for (const [nodeId, isVisible] of this.visibilityStates) {
+		const visibilityStates = this.getRendererSyncVisibilityStates();
+		for (const [nodeId, isVisible] of visibilityStates) {
 			const node = this.#nodeProvider.getTreeviewNode(nodeId);
 			if (!node) continue;
 			this.applyNodeRenderTarget(node, isVisible);
 		}
 
-		for (const [nodeId, isVisible] of this.visibilityStates) {
+		for (const [nodeId, isVisible] of visibilityStates) {
 			const node = this.#nodeProvider.getTreeviewNode(nodeId);
 			if (!node) continue;
 			this.updateDependencyVisibility(node, isVisible);
 		}
+	}
+
+	private getRendererSyncVisibilityStates(): [string, boolean][] {
+		const visibilityStates = [...this.visibilityStates];
+		return [
+			...visibilityStates.filter(([, isVisible]) => !isVisible),
+			...visibilityStates.filter(([, isVisible]) => isVisible)
+		];
 	}
 
 	private setDrawState(nodeId: string, drawState: NodeDrawState | undefined): void {

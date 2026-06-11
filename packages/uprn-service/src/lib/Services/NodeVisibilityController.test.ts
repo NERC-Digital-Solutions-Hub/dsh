@@ -377,6 +377,31 @@ describe('NodeVisibilityController', () => {
 		});
 	});
 
+	it('replays hidden states before visible states when a renderer is attached', () => {
+		const renderer = createVisibilityRenderer();
+		const { controller, nodes } = createControllerFixture();
+
+		controller.setVisibilityState(nodes.dataset, false);
+		controller.setVisibilityState(nodes.fieldVariable, false);
+		controller.setVisibilityState(nodes.dataset, true);
+		controller.setVisibilityRenderer(renderer);
+
+		const datasetSourceCalls = renderer.applyVisibility.mock.calls
+			.map(([change]) => change)
+			.filter((change) => change.target.sourceId === nodes.dataset.layerId);
+
+		expect(
+			datasetSourceCalls.map((change) => ({
+				nodeId: change.sourceNode.id,
+				isVisible: change.isVisible
+			}))
+		).toEqual([
+			{ nodeId: nodes.fieldVariable.id, isVisible: false },
+			{ nodeId: nodes.dataset.id, isVisible: true }
+		]);
+		expect(datasetSourceCalls[datasetSourceCalls.length - 1].isVisible).toBe(true);
+	});
+
 	it('updates draw states from renderer callbacks', () => {
 		const renderer = createVisibilityRenderer();
 		const { controller, nodes } = createControllerFixture({ renderer });
