@@ -21,8 +21,8 @@
 	}
 
 	onMount(() => {
-		mermaid.initialize({ startOnLoad: true });
-		mermaid.run();
+		mermaid.initialize({ startOnLoad: false, theme: 'default' });
+		void mermaid.run({ querySelector: '.article-wrapper .mermaid' });
 	});
 </script>
 
@@ -89,6 +89,20 @@
 		max-width: 100%;
 	}
 
+	:global(.article-wrapper .prose pre.mermaid) {
+		background: transparent;
+		color: inherit;
+		padding: 1rem 0;
+		overflow-x: auto;
+	}
+
+	:global(.article-wrapper .prose pre.mermaid svg) {
+		display: block;
+		max-width: 100%;
+		height: auto;
+		margin: 0 auto;
+	}
+
 	.more-section {
 		display: none;
 	}
@@ -124,7 +138,6 @@
 			font-size: 1rem;
 			line-height: 1.3;
 			font-weight: 700;
-			color: rgb(17 24 39);
 		}
 
 		.more-list {
