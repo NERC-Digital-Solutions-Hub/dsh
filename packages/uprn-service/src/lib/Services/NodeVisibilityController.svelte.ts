@@ -116,6 +116,12 @@ export class NodeVisibilityController implements INodeVisibilityController {
 		this.#visibilityRenderer?.reset();
 	}
 
+	/** @inheritdoc */
+	public clearVisibilityRenderer(): void {
+		this.#visibilityRenderer?.reset();
+		this.#visibilityRenderer = null;
+	}
+
 	/**
 	 * Sets the renderer bridge and syncs tracked visibility states into it.
 	 * @param renderer The renderer bridge used to apply visibility state outside the tree.

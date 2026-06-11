@@ -1,12 +1,16 @@
 import { browser } from '$app/environment';
 import { asset } from '$app/paths';
 import type { IWebMapService } from '$lib/Services/IWebMapService.js';
-import { createWebMapFromJson } from '$lib/Stores/WebMapCustomLoader';
+import {
+	cleanupUprnWebMapLayerResources,
+	createWebMapFromJson
+} from '$lib/Stores/WebMapCustomLoader';
 import { arcgisImport } from '@dsh/common/arcgis';
 import { getSublayerId } from '$lib/Utilities/TreeviewUtilities';
 import { SvelteMap } from 'svelte/reactivity';
 
 const WEBMAP_LOAD_TIMEOUT_MS = 20000;
+let defaultPortalUrl: string | null = null;
 
 export type WebMapPortalItemSource = {
 	kind: 'portal-item';
@@ -80,7 +84,9 @@ export class WebMapStore implements IWebMapService {
 
 	private readonly source: WebMapSource;
 	private readonly proxy: Proxy | null;
-	private initialPortalUrl: string | null = null;
+	private appliedPortalUrl: string | null = null;
+	private isDestroyed = false;
+	private loadGeneration = 0;
 
 	constructor(params: WebMapStoreParams) {
 		this.source = params.source;
@@ -106,10 +112,11 @@ export class WebMapStore implements IWebMapService {
 	 * Loads the configured webmap source.
 	 */
 	public async loadAsync(): Promise<void> {
-		if (this.data || this.loading) {
+		if (this.isDestroyed || this.data || this.loading) {
 			return;
 		}
 
+		const currentLoadGeneration = ++this.loadGeneration;
 		this.loading = true;
 		this.error = null;
 		this.isLoaded = false;
@@ -119,8 +126,10 @@ export class WebMapStore implements IWebMapService {
 				source: describeWebMapSource(this.source)
 			});
 
-			if (this.source.portalUrl || this.proxy) {
-				await this.configurePortalAsync(this.source.portalUrl, this.proxy);
+			await this.configurePortalAsync(this.source.portalUrl, this.proxy);
+
+			if (!this.isCurrentLoad(currentLoadGeneration)) {
+				return;
 			}
 
 			if (this.source.kind === 'portal-item') {
@@ -128,10 +137,19 @@ export class WebMapStore implements IWebMapService {
 			} else {
 				await this.loadWebmapJsonUrlAsync(this.source);
 			}
+
+			if (!this.isCurrentLoad(currentLoadGeneration)) {
+				return;
+			}
+
 			console.info('[uprn/webmap-store] Loaded web map source', {
 				source: describeWebMapSource(this.source)
 			});
 		} catch (error) {
+			if (!this.isCurrentLoad(currentLoadGeneration)) {
+				return;
+			}
+
 			console.error('[uprn/webmap-store] Error initializing web map', {
 				source: describeWebMapSource(this.source),
 				error
@@ -140,7 +158,9 @@ export class WebMapStore implements IWebMapService {
 			this.data = null;
 			this.isLoaded = false;
 		} finally {
-			this.loading = false;
+			if (this.isCurrentLoad(currentLoadGeneration)) {
+				this.loading = false;
+			}
 		}
 	}
 
@@ -155,16 +175,15 @@ export class WebMapStore implements IWebMapService {
 	): Promise<void> {
 		const esriConfig =
 			await arcgisImport<typeof import('@arcgis/core/config.js').default>('@arcgis/core/config.js');
+		const configuredDefaultPortalUrl = getDefaultPortalUrl(esriConfig);
+		const nextPortalUrl = portalUrl ?? configuredDefaultPortalUrl;
 
-		if (portalUrl) {
-			if (!this.initialPortalUrl) {
-				this.initialPortalUrl = esriConfig.portalUrl;
-			}
-
-			esriConfig.portalUrl = portalUrl;
-		} else if (this.initialPortalUrl) {
-			esriConfig.portalUrl = this.initialPortalUrl;
+		if (this.isDestroyed) {
+			return;
 		}
+
+		esriConfig.portalUrl = nextPortalUrl;
+		this.appliedPortalUrl = nextPortalUrl;
 
 		if (!proxy) {
 			return;
@@ -192,6 +211,24 @@ export class WebMapStore implements IWebMapService {
 		this.isLoaded = false;
 		this.loading = false;
 		this.error = null;
+	}
+
+	/**
+	 * Destroy transient ArcGIS resources owned by this store.
+	 */
+	public async destroy(): Promise<void> {
+		this.isDestroyed = true;
+		this.loadGeneration++;
+
+		const webmap = this.data;
+		this.clear();
+
+		if (webmap) {
+			cleanupUprnWebMapLayerResources(webmap);
+			(webmap as { destroy?: () => void }).destroy?.();
+		}
+
+		await this.restorePortalUrlAsync();
 	}
 
 	/**
@@ -263,11 +300,40 @@ export class WebMapStore implements IWebMapService {
 			`Timed out loading web map source ${describeWebMapSource(this.source)} after ${WEBMAP_LOAD_TIMEOUT_MS / 1000} seconds.`
 		);
 
+		if (this.isDestroyed) {
+			cleanupUprnWebMapLayerResources(webmap);
+			(webmap as { destroy?: () => void }).destroy?.();
+			return;
+		}
+
 		this.data = webmap;
 		if (webmap.loaded) {
 			this.isLoaded = true;
 		}
 	}
+
+	private isCurrentLoad(loadGeneration: number): boolean {
+		return !this.isDestroyed && loadGeneration === this.loadGeneration;
+	}
+
+	private async restorePortalUrlAsync(): Promise<void> {
+		if (this.appliedPortalUrl === null) {
+			return;
+		}
+
+		const esriConfig =
+			await arcgisImport<typeof import('@arcgis/core/config.js').default>('@arcgis/core/config.js');
+		if (esriConfig.portalUrl === this.appliedPortalUrl) {
+			esriConfig.portalUrl = getDefaultPortalUrl(esriConfig);
+		}
+
+		this.appliedPortalUrl = null;
+	}
+}
+
+function getDefaultPortalUrl(esriConfig: { portalUrl: string }): string {
+	defaultPortalUrl ??= esriConfig.portalUrl;
+	return defaultPortalUrl;
 }
 
 export function getWebMapSourcePersistenceKey(source: WebMapSource): string {

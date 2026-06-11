@@ -10,7 +10,16 @@ type LayerWithOriginalId = __esri.Layer & { readonly __uprnOriginalLayerId?: str
 type UprnParquetLayer = __esri.Layer & {
 	readonly __uprnParquetLayer?: boolean;
 	readonly __uprnOriginalLayerId?: string;
+	__uprnParquetVisibilityHandle?: IHandle;
 };
+type LayerCollectionLike<T> =
+	| T[]
+	| {
+			forEach?: (callback: (item: T) => void) => void;
+			toArray?: () => T[];
+	  }
+	| null
+	| undefined;
 type LayerConstructor = {
 	new (properties?: JsonRecord): __esri.Layer;
 	fromJSON?: (json: JsonRecord) => __esri.Layer | null;
@@ -73,6 +82,28 @@ export async function createOperationalLayers(
 	}
 
 	return layers;
+}
+
+export function cleanupUprnWebMapLayerResources(webmap: __esri.WebMap): void {
+	forEachCollectionItem(webmap.layers, cleanupUprnLayerResources);
+}
+
+export function cleanupUprnLayerResources(layer: __esri.Layer | __esri.Sublayer): void {
+	removeParquetVisibilityHandle(layer as __esri.Layer);
+
+	if (layer.type === 'group') {
+		forEachCollectionItem((layer as __esri.GroupLayer).layers, cleanupUprnLayerResources);
+		return;
+	}
+
+	if (layer.type === 'map-image') {
+		forEachCollectionItem((layer as __esri.MapImageLayer).sublayers, cleanupUprnLayerResources);
+		return;
+	}
+
+	if ('sublayers' in layer) {
+		forEachCollectionItem(layer.sublayers, cleanupUprnLayerResources);
+	}
 }
 
 async function createOperationalLayer(
@@ -414,6 +445,8 @@ function replaceLayer(
 	nextLayer: __esri.Layer,
 	context: LayerCreationContext
 ): void {
+	removeParquetVisibilityHandle(previousLayer);
+
 	const collection = getLayerCollection(previousLayer, context);
 
 	if (!collection) {
@@ -444,6 +477,33 @@ function getLayerCollection(
 ): __esri.Collection<__esri.Layer> | undefined {
 	const parent = layer.parent as __esri.GroupLayer | undefined;
 	return parent?.layers ?? context.rootLayers;
+}
+
+function removeParquetVisibilityHandle(layer: __esri.Layer): void {
+	const uprnLayer = layer as UprnParquetLayer;
+	uprnLayer.__uprnParquetVisibilityHandle?.remove();
+	delete uprnLayer.__uprnParquetVisibilityHandle;
+}
+
+function forEachCollectionItem<T>(
+	collection: LayerCollectionLike<T>,
+	callback: (item: T) => void
+): void {
+	if (!collection) {
+		return;
+	}
+
+	if (Array.isArray(collection)) {
+		collection.forEach(callback);
+		return;
+	}
+
+	if (typeof collection.toArray === 'function') {
+		collection.toArray().forEach(callback);
+		return;
+	}
+
+	collection.forEach?.(callback);
 }
 
 function getRendererJson(json: JsonRecord, context: LayerCreationContext): unknown {

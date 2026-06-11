@@ -472,6 +472,38 @@ describe('NodeVisibilityController', () => {
 		expect(renderer.reset).toHaveBeenCalledOnce();
 	});
 
+	it('clears renderer without clearing visibility state', () => {
+		const renderer = createVisibilityRenderer();
+		const { controller, nodes } = createControllerFixture({ renderer });
+
+		controller.setVisibilityState(nodes.dataset, true);
+		renderer.applyVisibility.mockClear();
+
+		controller.clearVisibilityRenderer();
+		controller.setVisibilityState(nodes.dataset, false);
+
+		expect(renderer.reset).toHaveBeenCalledOnce();
+		expect(renderer.applyVisibility).not.toHaveBeenCalled();
+		expect(controller.getVisibilityState(nodes.dataset)).toBe(false);
+	});
+
+	it('replays current state when a new renderer is attached after clearing the previous one', () => {
+		const renderer = createVisibilityRenderer();
+		const nextRenderer = createVisibilityRenderer();
+		const { controller, nodes } = createControllerFixture({ renderer });
+
+		controller.setVisibilityState(nodes.dataset, true);
+		controller.clearVisibilityRenderer();
+		controller.setVisibilityRenderer(nextRenderer);
+
+		expect(renderer.reset).toHaveBeenCalledOnce();
+		expect(nextRenderer.applyVisibility).toHaveBeenCalledOnce();
+		expect(nextRenderer.applyVisibility.mock.calls[0][0]).toMatchObject({
+			sourceNode: nodes.dataset,
+			isVisible: true
+		});
+	});
+
 	it('applies renderer-side dependency visibility without changing dependency node state', () => {
 		const renderer = createVisibilityRenderer();
 		const { configs, controller, nodes } = createControllerFixture({ renderer });

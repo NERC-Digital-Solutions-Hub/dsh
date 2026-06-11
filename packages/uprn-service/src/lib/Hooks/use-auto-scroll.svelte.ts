@@ -27,9 +27,15 @@ export class UseAutoScroll {
 	#scrollY: number = $state(0);
 	#userHasScrolled = $state(false);
 	private lastScrollHeight = 0;
+	private mutationObserver: MutationObserver | null = null;
+	private resizeHandler: (() => void) | null = null;
+	private scrollHandler: (() => void) | null = null;
 
 	// This sets everything up once #ref is bound
 	public set ref(ref: HTMLElement | undefined) {
+		if (this.#ref === ref) return;
+
+		this.destroy();
 		this.#ref = ref;
 
 		if (!this.#ref) return;
@@ -39,20 +45,22 @@ export class UseAutoScroll {
 		// start from bottom or start position
 		this.#ref.scrollTo(0, this.#scrollY ? this.#scrollY : this.#ref.scrollHeight);
 
-		this.#ref.addEventListener('scroll', () => {
+		this.scrollHandler = () => {
 			if (!this.#ref) return;
 
 			this.#scrollY = this.#ref.scrollTop;
 
 			this.disableAutoScroll();
-		});
+		};
+		this.#ref.addEventListener('scroll', this.scrollHandler);
 
-		window.addEventListener('resize', () => {
+		this.resizeHandler = () => {
 			this.scrollToBottom(true);
-		});
+		};
+		window.addEventListener('resize', this.resizeHandler);
 
 		// should detect when something changed that effected the scroll height
-		const observer = new MutationObserver(() => {
+		this.mutationObserver = new MutationObserver(() => {
 			if (!this.#ref) return;
 
 			if (this.#ref.scrollHeight !== this.lastScrollHeight) {
@@ -62,7 +70,7 @@ export class UseAutoScroll {
 			this.lastScrollHeight = this.#ref.scrollHeight;
 		});
 
-		observer.observe(this.#ref, { childList: true, subtree: true });
+		this.mutationObserver.observe(this.#ref, { childList: true, subtree: true });
 	}
 
 	public get ref() {
@@ -97,5 +105,21 @@ export class UseAutoScroll {
 		if (auto && this.#userHasScrolled) return;
 
 		this.#ref.scrollTo(0, this.#ref.scrollHeight);
+	}
+
+	public destroy(): void {
+		if (this.#ref && this.scrollHandler) {
+			this.#ref.removeEventListener('scroll', this.scrollHandler);
+		}
+
+		if (this.resizeHandler && typeof window !== 'undefined') {
+			window.removeEventListener('resize', this.resizeHandler);
+		}
+
+		this.mutationObserver?.disconnect();
+		this.mutationObserver = null;
+		this.resizeHandler = null;
+		this.scrollHandler = null;
+		this.#ref = undefined;
 	}
 }

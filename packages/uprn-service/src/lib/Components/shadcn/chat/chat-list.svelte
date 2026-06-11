@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cn } from '$lib/utils.js';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { Button } from '$lib/Components/shadcn/button';
 	import ArrowDownIcon from '@lucide/svelte/icons/arrow-down';
 	import { scale } from 'svelte/transition';
@@ -16,6 +16,10 @@
 
 	onMount(() => {
 		canScrollSmooth = true;
+	});
+
+	onDestroy(() => {
+		autoScroll.destroy();
 	});
 </script>
 

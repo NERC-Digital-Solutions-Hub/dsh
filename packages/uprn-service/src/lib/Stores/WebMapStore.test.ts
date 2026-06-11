@@ -12,6 +12,7 @@ const arcgis = vi.hoisted(() => {
 		public readonly loadAll = vi.fn(async () => {
 			this.loaded = true;
 		});
+		public readonly destroy = vi.fn();
 
 		constructor(properties: { portalItem?: FakePortalItem } = {}) {
 			this.portalItem = properties.portalItem;
@@ -38,6 +39,7 @@ const arcgis = vi.hoisted(() => {
 });
 
 const customLoader = vi.hoisted(() => ({
+	cleanupUprnWebMapLayerResources: vi.fn(),
 	createWebMapFromJson: vi.fn()
 }));
 
@@ -72,6 +74,7 @@ vi.mock('@dsh/common/arcgis', () => {
 	};
 });
 vi.mock('$lib/Stores/WebMapCustomLoader', () => ({
+	cleanupUprnWebMapLayerResources: customLoader.cleanupUprnWebMapLayerResources,
 	createWebMapFromJson: customLoader.createWebMapFromJson
 }));
 
@@ -81,6 +84,7 @@ describe('WebMapStore', () => {
 		arcgis.FakePortalItem.instances.length = 0;
 		arcgis.addProxyRule.mockClear();
 		arcgis.esriConfig.portalUrl = 'https://default.portal.test';
+		customLoader.cleanupUprnWebMapLayerResources.mockClear();
 		customLoader.createWebMapFromJson.mockClear();
 		customLoader.createWebMapFromJson.mockImplementation(async () => new arcgis.FakeWebMap());
 	});
@@ -136,6 +140,41 @@ describe('WebMapStore', () => {
 		expect(store.isLoaded).toBe(true);
 	});
 
+	it('resets portal URL before loading a JSON webmap after a custom portal source', async () => {
+		const webmapJson = { operationalLayers: [] };
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async () => new Response(JSON.stringify(webmapJson), { status: 200 }))
+		);
+		customLoader.createWebMapFromJson.mockImplementationOnce(async () => {
+			expect(arcgis.esriConfig.portalUrl).toBe('https://default.portal.test');
+			return new arcgis.FakeWebMap();
+		});
+		const portalStore = new WebMapStore({
+			source: {
+				kind: 'portal-item',
+				itemId: 'portal-item-id',
+				portalUrl: 'https://portal.example.test'
+			}
+		});
+		await portalStore.loadAsync();
+		expect(arcgis.esriConfig.portalUrl).toBe('https://portal.example.test');
+
+		const jsonStore = new WebMapStore({
+			source: {
+				kind: 'webmap-json-url',
+				url: '/webmap.json'
+			}
+		});
+		await jsonStore.loadAsync();
+
+		expect(customLoader.createWebMapFromJson).toHaveBeenCalledWith(
+			webmapJson,
+			expect.objectContaining({ onLayerHydrated: expect.any(Function) })
+		);
+		expect(arcgis.esriConfig.portalUrl).toBe('https://default.portal.test');
+	});
+
 	it('records custom loader failures without marking the webmap as loaded', async () => {
 		vi.stubGlobal(
 			'fetch',
@@ -179,5 +218,69 @@ describe('WebMapStore', () => {
 		expect(store.loading).toBe(false);
 		expect(store.isLoaded).toBe(false);
 		expect(store.data).toBeNull();
+	});
+
+	it('destroys loaded webmap runtime resources and clears state', async () => {
+		const store = new WebMapStore({
+			source: {
+				kind: 'portal-item',
+				itemId: 'portal-item-id'
+			}
+		});
+
+		await store.loadAsync();
+		const webmap = store.data as unknown as InstanceType<typeof arcgis.FakeWebMap>;
+
+		await store.destroy();
+
+		expect(customLoader.cleanupUprnWebMapLayerResources).toHaveBeenCalledWith(webmap);
+		expect(webmap.destroy).toHaveBeenCalledOnce();
+		expect(store.data).toBeNull();
+		expect(store.isLoaded).toBe(false);
+		expect(store.loading).toBe(false);
+		expect(store.error).toBeNull();
+	});
+
+	it('restores portal URL when destroyed after configuring a custom portal', async () => {
+		const store = new WebMapStore({
+			source: {
+				kind: 'portal-item',
+				itemId: 'portal-item-id',
+				portalUrl: 'https://portal.example.test'
+			}
+		});
+
+		await store.loadAsync();
+		expect(arcgis.esriConfig.portalUrl).toBe('https://portal.example.test');
+
+		await store.destroy();
+
+		expect(arcgis.esriConfig.portalUrl).toBe('https://default.portal.test');
+	});
+
+	it('does not let stale destroy restore over a newer store portal URL', async () => {
+		const oldStore = new WebMapStore({
+			source: {
+				kind: 'portal-item',
+				itemId: 'old-portal-item-id',
+				portalUrl: 'https://old.portal.example.test'
+			}
+		});
+		await oldStore.loadAsync();
+		expect(arcgis.esriConfig.portalUrl).toBe('https://old.portal.example.test');
+
+		const newStore = new WebMapStore({
+			source: {
+				kind: 'portal-item',
+				itemId: 'new-portal-item-id',
+				portalUrl: 'https://new.portal.example.test'
+			}
+		});
+		await newStore.loadAsync();
+		expect(arcgis.esriConfig.portalUrl).toBe('https://new.portal.example.test');
+
+		await oldStore.destroy();
+
+		expect(arcgis.esriConfig.portalUrl).toBe('https://new.portal.example.test');
 	});
 });

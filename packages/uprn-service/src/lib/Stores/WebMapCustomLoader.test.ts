@@ -1,4 +1,8 @@
-import { createWebMapFromJson, getOriginalLayerId } from '$lib/Stores/WebMapCustomLoader';
+import {
+	cleanupUprnWebMapLayerResources,
+	createWebMapFromJson,
+	getOriginalLayerId
+} from '$lib/Stores/WebMapCustomLoader';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const arcgis = vi.hoisted(() => {
@@ -310,9 +314,7 @@ describe('WebMapCustomLoader', () => {
 	beforeEach(() => {
 		arcgis.FakeWebMap.fromJsonCalls.length = 0;
 		arcgis.getParquetLayerInfo.mockReset();
-		arcgis.getParquetLayerInfo.mockImplementation(async (urls: string[]) =>
-			createParquetLayerInfo(urls[0])
-		);
+		arcgis.getParquetLayerInfo.mockImplementation(async () => createParquetLayerInfo());
 		arcgis.rendererFromJSON.mockClear();
 	});
 
@@ -349,6 +351,10 @@ describe('WebMapCustomLoader', () => {
 		expect(secondParquetLayer.id).toBe('group-b-0');
 		expect(mapImageLayer.sublayers?.[0].id).toBe('2');
 
+		const visibilityHandle = getParquetVisibilityHandle(firstParquetLayer);
+		expect(visibilityHandle).toBeDefined();
+		const removeVisibilityHandle = vi.spyOn(visibilityHandle!, 'remove');
+
 		firstParquetLayer.visible = true;
 		await flushPromises();
 
@@ -382,6 +388,33 @@ describe('WebMapCustomLoader', () => {
 			]
 		});
 		expect(getOriginalLayerId(hydratedLayer as unknown as __esri.Layer)).toBe('0');
+		expect(removeVisibilityHandle).toHaveBeenCalledOnce();
+		expect(getParquetVisibilityHandle(firstParquetLayer)).toBeUndefined();
+	});
+
+	it('cleans up parquet visibility handles recursively', async () => {
+		const webmap = await createWebMapFromJson(createWebmapFixture());
+		const [firstGroup, secondGroup] = Array.from(webmap.layers as Iterable<unknown>) as [
+			InstanceType<typeof arcgis.FakeGroupLayer>,
+			InstanceType<typeof arcgis.FakeGroupLayer>
+		];
+		const firstParquetLayer = firstGroup.layers.items[0] as InstanceType<
+			typeof arcgis.FakeGraphicsLayer
+		>;
+		const secondParquetLayer = secondGroup.layers.items[0] as InstanceType<
+			typeof arcgis.FakeGraphicsLayer
+		>;
+		const firstHandle = getParquetVisibilityHandle(firstParquetLayer);
+		const secondHandle = getParquetVisibilityHandle(secondParquetLayer);
+		const firstRemove = vi.spyOn(firstHandle!, 'remove');
+		const secondRemove = vi.spyOn(secondHandle!, 'remove');
+
+		cleanupUprnWebMapLayerResources(webmap);
+
+		expect(firstRemove).toHaveBeenCalledOnce();
+		expect(secondRemove).toHaveBeenCalledOnce();
+		expect(getParquetVisibilityHandle(firstParquetLayer)).toBeUndefined();
+		expect(getParquetVisibilityHandle(secondParquetLayer)).toBeUndefined();
 	});
 
 	it('preflights parquet schema through the GeoParquet pipeline before constructing the layer', async () => {
@@ -691,9 +724,12 @@ async function flushPromises(): Promise<void> {
 	await Promise.resolve();
 }
 
-function createParquetLayerInfo(
-	_url = 'https://example.test/layer.parquet'
-): Record<string, unknown> {
+function getParquetVisibilityHandle(layer: unknown): { remove: () => void } | undefined {
+	return (layer as { __uprnParquetVisibilityHandle?: { remove: () => void } })
+		.__uprnParquetVisibilityHandle;
+}
+
+function createParquetLayerInfo(): Record<string, unknown> {
 	return {
 		fields: [
 			{

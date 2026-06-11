@@ -38,6 +38,9 @@ export interface INodeVisibilityController {
 	 */
 	setVisibilityRenderer(renderer: INodeVisibilityRenderer): void;
 
+	/** Resets and detaches the renderer bridge without clearing tracked visibility state. */
+	clearVisibilityRenderer(): void;
+
 	/** Resets all tracked draw states and renderer state. */
 	reset(): void;
 }

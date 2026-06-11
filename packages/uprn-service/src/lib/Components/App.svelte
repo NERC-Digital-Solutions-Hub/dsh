@@ -62,7 +62,7 @@
 	import { createTreeviewNodes } from '$lib/Utilities/CreateTreeviewNodes';
 	import { installBrowserPolyfills } from '$lib/Utilities/browser-polyfills';
 	import { InfoIcon, Plus } from '@lucide/svelte';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { useUprnDownloadSelectionAreaLimits } from '$lib/Hooks/UseUprnDownloadSelectionAreaLimits.svelte';
 	import Button from '$lib/Components/shadcn/button/button.svelte';
@@ -194,8 +194,11 @@
 	/** State of the ArcGIS MapView instance. */
 	let mapView: __esri.MapView | null = $state(null);
 
-	/** State to track whether the treeview visibility states have been synced to the map. */
-	let mapSyncedWithNodeVisibility = $state(false);
+	let appRunGeneration = 0;
+	let appDestroyed = false;
+	let webMapStoreResetKey = $state(0);
+	let attachedVisibilityController: NodeVisibilityController | null = null;
+	let attachedVisibilityMapView: __esri.MapView | null = null;
 
 	/** Hook for the AI UPRN chatbot health check. */
 	const aiUprnChatbotHealth = $derived.by(() => {
@@ -225,6 +228,7 @@
 
 	/** Index of the active web map source (resets to the default on each load). */
 	let selectedMapSourceIndex = $state(defaultSourceIndex ?? 0);
+	let lastAppliedDefaultSourceIndex: number | null = null;
 
 	/** Tracks failed sources so the app only falls forward through configured map sources once. */
 	const failedWebMapSourceKeys: Set<string> = new SvelteSet<string>();
@@ -310,6 +314,7 @@
 
 	/** The web map store instance. */
 	let webMapStore: WebMapStore | null = $derived.by(() => {
+		void webMapStoreResetKey;
 		return selectedMapSource
 			? new WebMapStore({
 					source: selectedMapSource,
@@ -473,6 +478,37 @@
 		startApp();
 	});
 
+	onDestroy(() => {
+		cleanupRuntimeState({ destroyWebMap: true, markDestroyed: true });
+	});
+
+	$effect(() => {
+		const store = webMapStore;
+		if (!store) {
+			return;
+		}
+
+		return () => {
+			void store.destroy();
+		};
+	});
+
+	$effect(() => {
+		const nextDefaultSourceIndex = defaultSourceIndex ?? 0;
+		if (lastAppliedDefaultSourceIndex === null) {
+			lastAppliedDefaultSourceIndex = nextDefaultSourceIndex;
+			return;
+		}
+
+		if (nextDefaultSourceIndex === lastAppliedDefaultSourceIndex) {
+			return;
+		}
+
+		lastAppliedDefaultSourceIndex = nextDefaultSourceIndex;
+		selectedMapSourceIndex = nextDefaultSourceIndex;
+		startApp();
+	});
+
 	$effect(() => {
 		if (!settings?.enableIntroductionPopup) {
 			return;
@@ -566,20 +602,29 @@
 
 	/** Effect to sync treeview visibility states to the map when it becomes available. */
 	$effect(() => {
-		if (
-			mapSyncedWithNodeVisibility ||
-			!mapView ||
-			!webMapStore?.isLoaded ||
-			!nodeVisibilityController
-		) {
+		if (!mapView || !webMapStore?.isLoaded || !nodeVisibilityController) {
 			return;
 		}
 
 		console.log('[uprn/app] Syncing treeview visibility states to map');
-		nodeVisibilityController.setVisibilityRenderer(
+		const controller = nodeVisibilityController;
+		const activeMapView = mapView;
+		controller.setVisibilityRenderer(
 			new ArcgisNodeVisibilityRenderer(new LayerViewProvider(mapView))
 		);
-		mapSyncedWithNodeVisibility = true;
+		attachedVisibilityController = controller;
+		attachedVisibilityMapView = activeMapView;
+
+		return () => {
+			if (
+				attachedVisibilityController === controller &&
+				attachedVisibilityMapView === activeMapView
+			) {
+				controller.clearVisibilityRenderer();
+				attachedVisibilityController = null;
+				attachedVisibilityMapView = null;
+			}
+		};
 	});
 
 	/** Effect to update tab progress based on area and data selection states. */
@@ -777,20 +822,73 @@
 	 * Starts the application by fetching the app configuration and initializing the map view.
 	 */
 	function startApp() {
+		if (appRunGeneration > 0 || mapView) {
+			cleanupRuntimeState({ destroyWebMap: true });
+			webMapStoreResetKey += 1;
+		}
+
+		appDestroyed = false;
+		const runGeneration = ++appRunGeneration;
 		initializedNodeVisibility = false;
 		initializedSelectionsFromDb = false;
-		mapSyncedWithNodeVisibility = false;
 		failedWebMapSourceKeys.clear();
 		webMapLoadErrorMessage = null;
 		mapView = null;
 
 		const async = async () => {
-			const MapView = await arcgisImport<typeof import('@arcgis/core/views/MapView').default>(
-				'@arcgis/core/views/MapView.js'
-			);
-			mapView = new MapView();
+			try {
+				const MapView = await arcgisImport<typeof import('@arcgis/core/views/MapView').default>(
+					'@arcgis/core/views/MapView.js'
+				);
+				const nextMapView = new MapView();
+				if (appDestroyed || runGeneration !== appRunGeneration) {
+					nextMapView.destroy();
+					return;
+				}
+
+				mapView = nextMapView;
+			} catch (error) {
+				if (runGeneration === appRunGeneration && !appDestroyed) {
+					console.error('[uprn/app] Failed to create MapView', error);
+				}
+			}
 		};
-		async();
+		void async();
+	}
+
+	function cleanupRuntimeState(
+		options: { destroyWebMap?: boolean; markDestroyed?: boolean } = {}
+	): void {
+		if (options.markDestroyed) {
+			appDestroyed = true;
+		}
+
+		appRunGeneration++;
+		attachedVisibilityController?.clearVisibilityRenderer();
+		attachedVisibilityController = null;
+		attachedVisibilityMapView = null;
+		nodeVisibilityController?.clearVisibilityRenderer();
+		areaSelectionInteractionStore?.cleanup();
+
+		const currentMapView = mapView;
+		mapView = null;
+		if (currentMapView) {
+			currentMapView.destroy();
+		}
+
+		if (options.destroyWebMap) {
+			void webMapStore?.destroy();
+		}
+
+		initializedNodeVisibility = false;
+		initializedSelectionsFromDb = false;
+		failedWebMapSourceKeys.clear();
+		webMapLoadErrorMessage = null;
+		selectedTagIds.clear();
+		itemInfoDialogOpen = false;
+		itemInfoDialogActiveLayerId = null;
+		downloadInfoDialogOpen = false;
+		activeDownloadInfo = null;
 	}
 
 	/**
