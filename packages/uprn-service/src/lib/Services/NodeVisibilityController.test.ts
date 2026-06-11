@@ -254,10 +254,12 @@ describe('NodeVisibilityController', () => {
 		controller.setVisibilityState(second, true);
 
 		expect(renderer.applyVisibility).toHaveBeenCalledTimes(3);
-		expect(renderer.applyVisibility.mock.calls.map(([change]) => ({
-			nodeId: change.sourceNode.id,
-			isVisible: change.isVisible
-		}))).toEqual([
+		expect(
+			renderer.applyVisibility.mock.calls.map(([change]) => ({
+				nodeId: change.sourceNode.id,
+				isVisible: change.isVisible
+			}))
+		).toEqual([
 			{ nodeId: nodes.dataset.id, isVisible: true },
 			{ nodeId: nodes.dataset.id, isVisible: false },
 			{ nodeId: second.id, isVisible: true }
@@ -355,6 +357,51 @@ describe('NodeVisibilityController', () => {
 			},
 			isVisible: true
 		});
+	});
+
+	it('does not link selectable source-member variables as field-rendered dataset variables', () => {
+		const renderer = createVisibilityRenderer();
+		const { configs, controller, nodeMap, nodes } = createControllerFixture({ renderer });
+		const rasterVariable = createVariable(
+			'raster-variable',
+			'Raster variable',
+			{
+				capabilities: selectableSourceMemberCapabilities(
+					nodes.dataset.layerId,
+					'0',
+					'raster-variable'
+				)
+			},
+			nodes.dataset
+		);
+		nodes.dataset.children.push(rasterVariable);
+		nodeMap.set(rasterVariable.id, rasterVariable);
+		configs.set(
+			nodes.dataset.id,
+			nodeConfig(nodes.dataset.id, { visibilityDependencyIds: [nodes.dependency.id] })
+		);
+
+		controller.setVisibilityState(rasterVariable, true);
+
+		expect(renderer.applyVisibility).toHaveBeenCalledOnce();
+		expect(renderer.applyVisibility.mock.calls[0][0]).toMatchObject({
+			sourceNode: rasterVariable,
+			target: {
+				kind: 'source-member',
+				nodeId: rasterVariable.id,
+				sourceId: nodes.dataset.layerId,
+				memberId: '0',
+				drawStateNodeId: rasterVariable.id
+			},
+			isVisible: true
+		});
+		expect(renderer.applyVisibility.mock.calls).not.toContainEqual([
+			expect.objectContaining({
+				sourceNode: nodes.dataset,
+				target: expect.objectContaining({ kind: 'source' })
+			})
+		]);
+		expect(renderer.applyDependencyVisibility).not.toHaveBeenCalled();
 	});
 
 	it('resolves field variables to their owning dataset render target', () => {
@@ -598,6 +645,26 @@ function sourceMemberCapabilities(
 			sourceId,
 			memberId,
 			drawStateNodeId
+		}
+	};
+}
+
+function selectableSourceMemberCapabilities(
+	sourceId: string,
+	memberId: string,
+	drawStateNodeId: string
+): TreeviewNodeCapabilities {
+	return {
+		render: {
+			kind: 'source-member',
+			sourceId,
+			memberId,
+			drawStateNodeId
+		},
+		selection: {
+			kind: 'field',
+			sourceId,
+			fieldId: memberId
 		}
 	};
 }

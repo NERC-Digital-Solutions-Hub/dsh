@@ -29,12 +29,10 @@ export class NodeSelectionController implements INodeSelectionController {
 
 	/** @inheritdoc */
 	public getSelectionState(node: TreeviewNode): SelectionState {
-		if (!node.capabilities.selection) {
-			return this.determineSelectionStateFromChildren(node);
-		}
+		const selectableChildren = this.getSelectableChildren(node);
 
-		if (node.children && node.children.length > 0) {
-			return this.determineSelectionStateFromChildren(node);
+		if (!node.capabilities.selection) {
+			return this.determineSelectionStateFromChildren(selectableChildren);
 		}
 
 		let selection;
@@ -53,14 +51,13 @@ export class NodeSelectionController implements INodeSelectionController {
 			return SelectionState.Inactive;
 		}
 
+		if (selectableChildren.length > 0) {
+			return this.determineSelectionStateFromChildren(selectableChildren);
+		}
+
 		selection = this.#dataSelectionStore.getSelection(node.capabilities.selection.sourceId);
 		if (!selection) {
 			return SelectionState.Inactive;
-		}
-
-		// if the layer has variables shown, check if all variables are selected...
-		if (node.children && node.children.length > 0) {
-			return this.determineSelectionStateFromChildren(node);
 		}
 
 		return SelectionState.Active;
@@ -75,7 +72,7 @@ export class NodeSelectionController implements INodeSelectionController {
 
 		if (!node.capabilities.selection) {
 			// in this case, either all its children are selected or none are.
-			this.updateChildrenSelection(node, state);
+			this.updateChildrenSelection(this.getSelectableChildren(node), state);
 			return;
 		}
 
@@ -106,30 +103,37 @@ export class NodeSelectionController implements INodeSelectionController {
 	private updateLayerSelection(node: TreeviewNode, state: SelectionState) {
 		const selectionTarget = node.capabilities.selection;
 		if (selectionTarget?.kind !== 'dataset') {
-			this.updateChildrenSelection(node, state);
+			this.updateChildrenSelection(this.getSelectableChildren(node), state);
 			return;
 		}
 
 		let selection = this.#dataSelectionStore.getSelection(selectionTarget.sourceId);
+		const selectableChildren = this.getSelectableChildren(node);
 
 		switch (state) {
 			case SelectionState.Active:
-				if (!selection && (!node.children || node.children.length === 0)) {
+				if (selectableChildren.length === 0) {
+					if (selection) {
+						break;
+					}
+
 					selection = this.createAndAddDataSelection(selectionTarget.sourceId);
 					break;
 				}
 
-				for (const child of node.children || []) {
+				for (const child of selectableChildren) {
 					this.setSelectionState(child, state);
 				}
 				break;
 			case SelectionState.Inactive:
-				if (selection && (!node.children || node.children.length === 0)) {
-					this.#dataSelectionStore.removeSelection(selectionTarget.sourceId);
+				if (selectableChildren.length === 0) {
+					if (selection) {
+						this.#dataSelectionStore.removeSelection(selectionTarget.sourceId);
+					}
 					break;
 				}
 
-				this.updateChildrenSelection(node, state); // if group layer, unselect all children
+				this.updateChildrenSelection(selectableChildren, state); // if group layer, unselect all children
 				break;
 		}
 	}
@@ -193,8 +197,8 @@ export class NodeSelectionController implements INodeSelectionController {
 	 * @param node - The TreeviewNode whose children should be updated.
 	 * @param state - The DownloadState to apply to each child.
 	 */
-	private updateChildrenSelection(node: TreeviewNode, state: SelectionState) {
-		for (const child of node.children || []) {
+	private updateChildrenSelection(children: TreeviewNode[], state: SelectionState) {
+		for (const child of children) {
 			this.setSelectionState(child, state);
 		}
 	}
@@ -210,16 +214,11 @@ export class NodeSelectionController implements INodeSelectionController {
 	 * @param node - The parent node to evaluate.
 	 * @returns The aggregated DownloadState derived from the children.
 	 */
-	private determineSelectionStateFromChildren(node: TreeviewNode): SelectionState {
+	private determineSelectionStateFromChildren(children: TreeviewNode[]): SelectionState {
 		let selectedCount = 0;
 		let totalCount = 0;
 
-		for (const child of node.children || []) {
-			const nodeConfig = this.#nodeConfigProvider.getConfig(child.id);
-			if (nodeConfig?.isHidden) {
-				continue; // skip hidden nodes
-			}
-
+		for (const child of children) {
 			totalCount++;
 			const childState = this.getSelectionState(child);
 			if (
@@ -243,12 +242,30 @@ export class NodeSelectionController implements INodeSelectionController {
 		return SelectionState.Indeterminate;
 	}
 
+	private getSelectableChildren(node: TreeviewNode): TreeviewNode[] {
+		return (node.children || []).filter((child) => {
+			if (this.isNodeHidden(child)) {
+				return false;
+			}
+
+			return Boolean(child.capabilities.selection) || this.getSelectableChildren(child).length > 0;
+		});
+	}
+
 	private hasFieldSelectionDescendant(node: TreeviewNode): boolean {
+		if (this.isNodeHidden(node)) {
+			return false;
+		}
+
 		if (node.capabilities.selection?.kind === 'field') {
 			return true;
 		}
 
 		return node.children.some((child) => this.hasFieldSelectionDescendant(child));
+	}
+
+	private isNodeHidden(node: TreeviewNode): boolean {
+		return this.#nodeConfigProvider.getConfig(node.id)?.isHidden === true;
 	}
 
 	/**

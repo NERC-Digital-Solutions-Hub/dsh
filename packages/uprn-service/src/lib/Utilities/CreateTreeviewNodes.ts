@@ -105,6 +105,11 @@ function createVariableCapabilities(
 				sourceId,
 				memberId: memberOrFieldId,
 				drawStateNodeId: config.id
+			},
+			selection: {
+				kind: 'field',
+				sourceId,
+				fieldId: memberOrFieldId
 			}
 		};
 	}

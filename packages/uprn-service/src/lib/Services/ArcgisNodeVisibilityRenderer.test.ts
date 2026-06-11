@@ -40,9 +40,14 @@ type FakeLayerView = {
 };
 
 describe('ArcgisNodeVisibilityRenderer', () => {
-	it('toggles parquet source layers without forcing a layer view', async () => {
+	it('toggles parquet source layers and restores parent layer views', async () => {
 		const { groupLayer, layer } = createLayerFixture('parquet');
-		const provider = createLayerViewProvider(layer);
+		const groupLayerView: FakeLayerView = {
+			layer: groupLayer as unknown as __esri.Layer,
+			suspended: false,
+			visible: false
+		};
+		const provider = createLayerViewProvider([groupLayer, layer], groupLayerView);
 		const renderer = new ArcgisNodeVisibilityRenderer(provider as unknown as LayerViewProvider);
 		let drawState: NodeDrawState | undefined;
 
@@ -62,9 +67,11 @@ describe('ArcgisNodeVisibilityRenderer', () => {
 
 		expect(layer.visible).toBe(true);
 		expect(groupLayer.visible).toBe(true);
-		expect(provider.getLayerView).not.toHaveBeenCalled();
+		expect(provider.getLayerView).toHaveBeenCalledWith(groupLayer);
+		expect(groupLayerView.visible).toBe(true);
 		expect(drawState).toBe(NodeDrawState.Visible);
 
+		provider.getLayerView.mockClear();
 		await renderer.applyVisibility({
 			sourceNode: new TreeviewNode('node', 'Node'),
 			target: {
@@ -81,6 +88,8 @@ describe('ArcgisNodeVisibilityRenderer', () => {
 
 		expect(layer.visible).toBe(false);
 		expect(groupLayer.visible).toBe(false);
+		expect(provider.getLayerView).toHaveBeenCalledWith(groupLayer);
+		expect(groupLayerView.visible).toBe(false);
 		expect(drawState).toBeUndefined();
 	});
 
@@ -152,7 +161,12 @@ describe('ArcgisNodeVisibilityRenderer', () => {
 
 	it('applies parquet dependency visibility directly', async () => {
 		const { groupLayer, layer } = createLayerFixture('parquet');
-		const provider = createLayerViewProvider(layer);
+		const groupLayerView: FakeLayerView = {
+			layer: groupLayer as unknown as __esri.Layer,
+			suspended: false,
+			visible: false
+		};
+		const provider = createLayerViewProvider([groupLayer, layer], groupLayerView);
 		const renderer = new ArcgisNodeVisibilityRenderer(provider as unknown as LayerViewProvider);
 
 		await renderer.applyDependencyVisibility({
@@ -169,12 +183,18 @@ describe('ArcgisNodeVisibilityRenderer', () => {
 
 		expect(layer.visible).toBe(true);
 		expect(groupLayer.visible).toBe(true);
-		expect(provider.getLayerView).not.toHaveBeenCalled();
+		expect(provider.getLayerView).toHaveBeenCalledWith(groupLayer);
+		expect(groupLayerView.visible).toBe(true);
 	});
 
 	it('treats parquet source-member targets as the owning layer', async () => {
-		const { layer } = createLayerFixture('parquet');
-		const provider = createLayerViewProvider(layer);
+		const { groupLayer, layer } = createLayerFixture('parquet');
+		const groupLayerView: FakeLayerView = {
+			layer: groupLayer as unknown as __esri.Layer,
+			suspended: false,
+			visible: false
+		};
+		const provider = createLayerViewProvider([groupLayer, layer], groupLayerView);
 		const renderer = new ArcgisNodeVisibilityRenderer(provider as unknown as LayerViewProvider);
 		let drawState: NodeDrawState | undefined;
 
@@ -194,7 +214,9 @@ describe('ArcgisNodeVisibilityRenderer', () => {
 		});
 
 		expect(layer.visible).toBe(true);
-		expect(provider.getLayerView).not.toHaveBeenCalled();
+		expect(groupLayer.visible).toBe(true);
+		expect(provider.getLayerView).toHaveBeenCalledWith(groupLayer);
+		expect(groupLayerView.visible).toBe(true);
 		expect(drawState).toBe(NodeDrawState.Visible);
 	});
 
@@ -204,7 +226,12 @@ describe('ArcgisNodeVisibilityRenderer', () => {
 			childType: 'graphics',
 			childIsParquet: true
 		});
-		const provider = createLayerViewProvider([groupLayer, childLayer]);
+		const groupLayerView: FakeLayerView = {
+			layer: groupLayer as unknown as __esri.Layer,
+			suspended: false,
+			visible: false
+		};
+		const provider = createLayerViewProvider([groupLayer, childLayer], groupLayerView);
 		const renderer = new ArcgisNodeVisibilityRenderer(provider as unknown as LayerViewProvider);
 		let drawState: NodeDrawState | undefined;
 
@@ -225,7 +252,8 @@ describe('ArcgisNodeVisibilityRenderer', () => {
 
 		expect(childLayer.visible).toBe(true);
 		expect(groupLayer.visible).toBe(true);
-		expect(provider.getLayerView).not.toHaveBeenCalled();
+		expect(provider.getLayerView).toHaveBeenCalledWith(groupLayer);
+		expect(groupLayerView.visible).toBe(true);
 		expect(drawState).toBe(NodeDrawState.Visible);
 	});
 
@@ -237,7 +265,12 @@ describe('ArcgisNodeVisibilityRenderer', () => {
 			childVisible: true,
 			groupVisible: true
 		});
-		const provider = createLayerViewProvider([groupLayer, childLayer]);
+		const groupLayerView: FakeLayerView = {
+			layer: groupLayer as unknown as __esri.Layer,
+			suspended: false,
+			visible: true
+		};
+		const provider = createLayerViewProvider([groupLayer, childLayer], groupLayerView);
 		const renderer = new ArcgisNodeVisibilityRenderer(provider as unknown as LayerViewProvider);
 		let drawState: NodeDrawState | undefined = NodeDrawState.Visible;
 
@@ -258,7 +291,8 @@ describe('ArcgisNodeVisibilityRenderer', () => {
 
 		expect(childLayer.visible).toBe(false);
 		expect(groupLayer.visible).toBe(false);
-		expect(provider.getLayerView).not.toHaveBeenCalled();
+		expect(provider.getLayerView).toHaveBeenCalledWith(groupLayer);
+		expect(groupLayerView.visible).toBe(false);
 		expect(drawState).toBeUndefined();
 	});
 
@@ -268,7 +302,12 @@ describe('ArcgisNodeVisibilityRenderer', () => {
 			childType: 'graphics',
 			childIsParquet: true
 		});
-		const provider = createLayerViewProvider([groupLayer, childLayer]);
+		const groupLayerView: FakeLayerView = {
+			layer: groupLayer as unknown as __esri.Layer,
+			suspended: false,
+			visible: false
+		};
+		const provider = createLayerViewProvider([groupLayer, childLayer], groupLayerView);
 		const renderer = new ArcgisNodeVisibilityRenderer(provider as unknown as LayerViewProvider);
 
 		await renderer.applyDependencyVisibility({
@@ -286,7 +325,8 @@ describe('ArcgisNodeVisibilityRenderer', () => {
 
 		expect(childLayer.visible).toBe(true);
 		expect(groupLayer.visible).toBe(true);
-		expect(provider.getLayerView).not.toHaveBeenCalled();
+		expect(provider.getLayerView).toHaveBeenCalledWith(groupLayer);
+		expect(groupLayerView.visible).toBe(true);
 	});
 });
 

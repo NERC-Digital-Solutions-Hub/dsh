@@ -43,7 +43,11 @@ export function getNodeVisibilityRenderTarget(
  * Resolves state links that should follow a variable node visibility toggle.
  */
 export function getLinkedVisibilityNodes(node: TreeviewNode): TreeviewNode[] {
-	if (!isVariableNode(node) || node.capabilities.selection?.kind !== 'field') {
+	if (
+		!isVariableNode(node) ||
+		node.capabilities.selection?.kind !== 'field' ||
+		node.capabilities.render?.kind !== 'source'
+	) {
 		return [];
 	}
 

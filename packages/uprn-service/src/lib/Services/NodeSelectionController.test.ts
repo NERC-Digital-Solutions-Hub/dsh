@@ -57,6 +57,109 @@ describe('NodeSelectionController', () => {
 		expect(controller.getSelectionState(nodes.dataset)).toBe(SelectionState.Indeterminate);
 		expect(controller.getSelectionState(nodes.root)).toBe(SelectionState.Active);
 	});
+
+	it('selects raster source-member variables through field selection capabilities', () => {
+		const root = new TreeviewNode('root', 'Root');
+		const rasterDataset = createDataset(
+			'raster-dataset',
+			'Raster Dataset',
+			datasetCapabilities('raster-source'),
+			root
+		);
+		const rasterVariable = createVariable(
+			'raster-dataset-0',
+			'Raster member 0',
+			selectableSourceMemberCapabilities('raster-source', '0'),
+			rasterDataset
+		);
+		rasterDataset.children.push(rasterVariable);
+		root.children.push(rasterDataset);
+		const { controller, dataSelectionStore } = createControllerForRoot(root);
+
+		controller.setSelectionState(rasterVariable, SelectionState.Active);
+
+		const selection = dataSelectionStore.getSelection('raster-source');
+		expect(selection?.selectedFieldIds.has('0')).toBe(true);
+		expect(controller.getSelectionState(rasterVariable)).toBe(SelectionState.Active);
+		expect(controller.getSelectionState(rasterDataset)).toBe(SelectionState.Active);
+	});
+
+	it('selects visible raster source members from a raster parent and ignores hidden children', () => {
+		const root = new TreeviewNode('root', 'Root');
+		const rasterDataset = createDataset(
+			'raster-dataset',
+			'Raster Dataset',
+			datasetCapabilities('raster-source'),
+			root
+		);
+		const firstRasterVariable = createVariable(
+			'raster-dataset-0',
+			'Raster member 0',
+			selectableSourceMemberCapabilities('raster-source', '0'),
+			rasterDataset
+		);
+		const secondRasterVariable = createVariable(
+			'raster-dataset-1',
+			'Raster member 1',
+			selectableSourceMemberCapabilities('raster-source', '1'),
+			rasterDataset
+		);
+		const hiddenRasterVariable = createVariable(
+			'raster-dataset-hidden',
+			'Hidden raster member',
+			selectableSourceMemberCapabilities('raster-source', 'hidden'),
+			rasterDataset
+		);
+		rasterDataset.children.push(firstRasterVariable, secondRasterVariable, hiddenRasterVariable);
+		root.children.push(rasterDataset);
+		const { controller, dataSelectionStore } = createControllerForRoot(root, {
+			'raster-dataset-hidden': { isHidden: true }
+		});
+
+		controller.setSelectionState(rasterDataset, SelectionState.Active);
+
+		const selection = dataSelectionStore.getSelection('raster-source');
+		expect(selection?.selectedFieldIds).toEqual(new Set(['0', '1']));
+		expect(controller.getSelectionState(rasterDataset)).toBe(SelectionState.Active);
+
+		controller.setSelectionState(rasterDataset, SelectionState.Inactive);
+
+		expect(dataSelectionStore.getSelection('raster-source')).toBeUndefined();
+		expect(controller.getSelectionState(rasterDataset)).toBe(SelectionState.Inactive);
+	});
+
+	it('selects vector datasets with only hidden children as whole-layer selections', () => {
+		const root = new TreeviewNode('root', 'Root');
+		const vectorDataset = createDataset(
+			'vector-dataset',
+			'Vector Dataset',
+			datasetCapabilities('vector-source'),
+			root
+		);
+		const hiddenFieldVariable = createVariable(
+			'vector-dataset-objectid',
+			'OBJECTID',
+			fieldCapabilities('vector-source', 'objectid', vectorDataset.id),
+			vectorDataset
+		);
+		vectorDataset.children.push(hiddenFieldVariable);
+		root.children.push(vectorDataset);
+		const { controller, dataSelectionStore } = createControllerForRoot(root, {
+			'vector-dataset-objectid': { isHidden: true }
+		});
+
+		controller.setSelectionState(vectorDataset, SelectionState.Active);
+
+		const selection = dataSelectionStore.getSelection('vector-source');
+		expect(selection).toBeDefined();
+		expect(selection?.selectedFieldIds.size).toBe(0);
+		expect(controller.getSelectionState(vectorDataset)).toBe(SelectionState.Active);
+
+		controller.setSelectionState(vectorDataset, SelectionState.Inactive);
+
+		expect(dataSelectionStore.getSelection('vector-source')).toBeUndefined();
+		expect(controller.getSelectionState(vectorDataset)).toBe(SelectionState.Inactive);
+	});
 });
 
 function createSelectionFixture(options: { includeOnlyFieldDataset?: boolean } = {}) {
@@ -179,15 +282,63 @@ function sourceMemberCapabilities(sourceId: string, memberId: string): TreeviewN
 	};
 }
 
+function selectableSourceMemberCapabilities(
+	sourceId: string,
+	memberId: string
+): TreeviewNodeCapabilities {
+	return {
+		render: {
+			kind: 'source-member',
+			sourceId,
+			memberId
+		},
+		selection: {
+			kind: 'field',
+			sourceId,
+			fieldId: memberId
+		}
+	};
+}
+
+function createControllerForRoot(
+	root: TreeviewNode,
+	configOverrides: Record<string, Partial<TreeviewNodeConfig>> = {}
+) {
+	const dataSelectionStore = new DataSelectionStore();
+	const controller = new NodeSelectionController(
+		dataSelectionStore,
+		createConfigProvider(createConfigMap(root, configOverrides))
+	);
+
+	return { controller, dataSelectionStore };
+}
+
+function createConfigMap(
+	root: TreeviewNode,
+	configOverrides: Record<string, Partial<TreeviewNodeConfig>>
+): Map<string, TreeviewNodeConfig> {
+	const configs = new Map<string, TreeviewNodeConfig>();
+	const walk = (node: TreeviewNode) => {
+		configs.set(node.id, nodeConfig(node.id, configOverrides[node.id]));
+		for (const child of node.children) {
+			walk(child);
+		}
+	};
+
+	walk(root);
+	return configs;
+}
+
 function createConfigProvider(configs: Map<string, TreeviewNodeConfig>): INodeConfigProvider {
 	return {
 		getConfig: (nodeId: string) => configs.get(nodeId)
 	};
 }
 
-function nodeConfig(id: string): TreeviewNodeConfig {
+function nodeConfig(id: string, overrides: Partial<TreeviewNodeConfig> = {}): TreeviewNodeConfig {
 	return {
 		id,
-		type: TreeviewNodeLayerType.None
+		type: TreeviewNodeLayerType.None,
+		...overrides
 	};
 }

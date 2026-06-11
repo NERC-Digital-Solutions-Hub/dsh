@@ -43,6 +43,7 @@ export class ArcgisNodeVisibilityRenderer implements INodeVisibilityRenderer {
 			if (!memberLayer) {
 				if (this.isParquetLayer(layer)) {
 					this.setLayerVisibility(layer, change.isVisible);
+					await this.syncParentLayerViewVisibility(layer);
 					return;
 				}
 
@@ -51,11 +52,15 @@ export class ArcgisNodeVisibilityRenderer implements INodeVisibilityRenderer {
 			}
 
 			this.setLayerVisibility(memberLayer, change.isVisible);
+			if (this.isParquetLayer(memberLayer as __esri.Layer)) {
+				await this.syncParentLayerViewVisibility(memberLayer as __esri.Layer);
+			}
 			return;
 		}
 
 		this.setLayerVisibility(layer, change.isVisible);
 		if (this.isParquetLayer(layer)) {
+			await this.syncParentLayerViewVisibility(layer);
 			return;
 		}
 
@@ -85,7 +90,9 @@ export class ArcgisNodeVisibilityRenderer implements INodeVisibilityRenderer {
 
 		if (!change.isVisible) {
 			this.setLayerVisibility(layer, false);
-			if (!this.isParquetLayer(layer)) {
+			if (this.isParquetLayer(layer)) {
+				await this.syncParentLayerViewVisibility(layer);
+			} else {
 				const layerView: __esri.LayerView | undefined = await this.getLayerView(layer);
 				if (layerView) {
 					layerView.visible = false;
@@ -98,6 +105,7 @@ export class ArcgisNodeVisibilityRenderer implements INodeVisibilityRenderer {
 
 		this.setLayerVisibility(layer, true);
 		if (this.isParquetLayer(layer)) {
+			await this.syncParentLayerViewVisibility(layer);
 			change.setDrawState(NodeDrawState.Visible);
 			return;
 		}
@@ -146,6 +154,7 @@ export class ArcgisNodeVisibilityRenderer implements INodeVisibilityRenderer {
 
 		if (this.isParquetLayer(parentLayer)) {
 			this.setLayerVisibility(parentLayer, change.isVisible);
+			await this.syncParentLayerViewVisibility(parentLayer);
 			change.setDrawState(change.isVisible ? NodeDrawState.Visible : undefined);
 			return;
 		}
@@ -153,6 +162,8 @@ export class ArcgisNodeVisibilityRenderer implements INodeVisibilityRenderer {
 		const memberLayer = this.getLayerMember(parentLayer, change.target);
 		if (memberLayer && this.isParquetLayer(memberLayer as __esri.Layer)) {
 			this.setLayerVisibility(memberLayer, change.isVisible);
+			await this.syncLayerViewVisibility(parentLayer, parentLayer.visible);
+			await this.syncParentLayerViewVisibility(parentLayer);
 			change.setDrawState(change.isVisible ? NodeDrawState.Visible : undefined);
 			return;
 		}
@@ -202,6 +213,28 @@ export class ArcgisNodeVisibilityRenderer implements INodeVisibilityRenderer {
 	private setLayerVisibility(layer: __esri.Layer | __esri.Sublayer, isVisible: boolean): void {
 		layer.visible = isVisible;
 		this.updateParentLayerVisibility(layer, isVisible);
+	}
+
+	private async syncLayerViewVisibility(
+		layer: __esri.Layer,
+		isVisible: boolean | undefined
+	): Promise<void> {
+		const layerView: __esri.LayerView | undefined = await this.getLayerView(layer);
+		if (layerView) {
+			layerView.visible = Boolean(isVisible);
+		}
+	}
+
+	private async syncParentLayerViewVisibility(
+		layer: __esri.Layer | __esri.Sublayer
+	): Promise<void> {
+		const parent = layer.parent;
+		if (!parent || !('visible' in parent) || !('type' in parent)) {
+			return;
+		}
+
+		await this.syncLayerViewVisibility(parent as __esri.Layer, parent.visible);
+		await this.syncParentLayerViewVisibility(parent as __esri.Layer);
 	}
 
 	private setInitialDrawState(
