@@ -24,8 +24,9 @@ export function useUprnDownloadSelectionAreaLimits(url: string, layerIds: string
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify({
+					portalItemId: '8f476de7ee4244e7894be2ed2d6dbaca',
 					layers: layerIds
-				})
+				}) // TODO: Hardcode!
 			});
 
 			if (!response.ok) {

@@ -157,18 +157,17 @@
 
 	function createJobRequest(download: DownloadEntry): UprnDownloadJobRequest {
 		return {
-			exports: {
-				areaSelectionLayer: {
-					remoteId: download.areaSelection.layerId,
-					areas: download.areaSelection.areaFieldInfos.map((area) => area.code)
-				},
-				dataSelectionLayers: download.dataSelections.map((selection) => {
-					return {
-						remoteId: selection.layerId,
-						fields: selection.fields
-					};
-				})
-			}
+			portalItemId: '8f476de7ee4244e7894be2ed2d6dbaca', // TODO: Hardcode!
+			area: {
+				id: download.areaSelection.layerId,
+				selections: download.areaSelection.areaFieldInfos.map((area) => area.code)
+			},
+			data: download.dataSelections.map((selection) => {
+				return {
+					id: selection.layerId,
+					fields: selection.fields
+				};
+			})
 		};
 	}
 

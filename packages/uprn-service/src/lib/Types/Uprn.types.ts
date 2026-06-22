@@ -131,6 +131,11 @@ export const EndpointHealthStatus = Object.freeze({
 
 export type EndpointHealthStatus = (typeof EndpointHealthStatus)[keyof typeof EndpointHealthStatus];
 
+export type UprnDownloadAreaSelectionLimitRequest = {
+	portalItemId: string;
+	layers: string[];
+};
+
 export type UrpnDownloadAreaSelectionLimitResponse = {
 	layers: UprnDownloadAreaSelectionLimit[];
 };
@@ -141,21 +146,18 @@ export type UprnDownloadAreaSelectionLimit = {
 };
 
 export type UprnDownloadJobRequest = {
-	exports: UprnDownloadJobRequestExport;
-};
-
-export type UprnDownloadJobRequestExport = {
-	areaSelectionLayer: UprnDownloadJobRequestAreaSelectionLayer;
-	dataSelectionLayers: UprnDownloadJobRequestDataSelectionLayer[];
+	portalItemId: string;
+	area: UprnDownloadJobRequestAreaSelectionLayer;
+	data: UprnDownloadJobRequestDataSelectionLayer[];
 };
 
 export type UprnDownloadJobRequestAreaSelectionLayer = {
-	remoteId: string;
-	areas: string[];
+	id: string;
+	selections: string[];
 };
 
 export type UprnDownloadJobRequestDataSelectionLayer = {
-	remoteId: string;
+	id: string;
 	fields: string[];
 };
 
@@ -271,4 +273,3 @@ export type UserState = {
 	areaSelection: UserStateSelection | null;
 	dataSelections: UserStateSelection[];
 };
-

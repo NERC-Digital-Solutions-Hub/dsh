@@ -1,11 +1,11 @@
 {
     "uprnDownload": {
-        "baseUrl": "https://dshapitest.xyz/uprn-download/api/v1",
+        "baseUrl": "https://dshapitest.xyz/uprn-download/v2/api/v1",
         "healthRoute": "/healthz",
-        "requestJobRoute": "/request-job",
+        "requestJobRoute": "/submit-job",
         "requestJobStatusesRoute": "/request-job-statuses",
-        "getAreaSelectionLimitsRoute": "/get-area-selection-limits",
-        "fetchDownloadRoute": "/fetch-download"
+        "getAreaSelectionLimitsRoute": "/area-selection-limits",
+        "fetchDownloadRoute": "/download-job"
     },
     "aiUprnChatbot": {
         "baseUrl": "https://dshapitest.xyz/uprn-chatbot",

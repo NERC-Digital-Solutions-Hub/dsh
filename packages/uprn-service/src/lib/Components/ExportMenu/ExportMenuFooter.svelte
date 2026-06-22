@@ -137,22 +137,19 @@
 					}
 
 					if (config.type === TreeviewNodeLayerType.MapImageLayer) {
-						// Expand each field into its own synthetic layer selection
 						return Array.from(selection.selectedFieldIds).map((fieldId) => ({
 							nodeId: `${selection.nodeId}-${fieldId}`,
-							selectedFieldIds: new Set([fieldId])
+							selectedFieldIds: new Set<string>([])
 						}));
 					}
 
 					if (config.type === TreeviewNodeLayerType.TileLayer) {
-						// Expand each field into its own synthetic layer selection
 						return Array.from(selection.selectedFieldIds).map((fieldId) => ({
 							nodeId: `${selection.nodeId}-${fieldId}`,
-							selectedFieldIds: new Set([fieldId])
+							selectedFieldIds: new Set<string>([])
 						}));
 					}
 
-					// Keep all other selections unchanged
 					return [selection];
 				})
 				.map((selection) => ({

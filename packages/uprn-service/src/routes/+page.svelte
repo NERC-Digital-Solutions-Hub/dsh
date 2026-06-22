@@ -41,5 +41,5 @@
 		</Card.Root>
 	</div>
 {:else}
-	<UprnServiceApp config={data.uprnAppConfig} />
+	<UprnServiceApp config={data.uprnAppConfig} defaultSourceIndex={0} />
 {/if}
