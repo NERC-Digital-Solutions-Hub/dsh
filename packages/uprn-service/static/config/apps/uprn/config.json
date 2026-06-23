@@ -1,6 +1,6 @@
 {
     "uprnDownload": {
-        "baseUrl": "https://dshapitest.xyz/uprn-download/v2/api/v1",
+        "baseUrl": "https://dshapitest.xyz/uprn-download-v2/api/v1",
         "healthRoute": "/healthz",
         "requestJobRoute": "/submit-job",
         "requestJobStatusesRoute": "/request-job-statuses",
