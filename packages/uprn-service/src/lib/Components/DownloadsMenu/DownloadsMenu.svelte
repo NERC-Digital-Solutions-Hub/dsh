@@ -47,7 +47,7 @@
 
 	const jobStatusBurstInterval = 3000;
 	const jobStatusBurstDuration = 20000;
-	const jobStatusCheckInterval = 15000;
+	const jobStatusCheckInterval = 5000;
 
 	/** Hook for submitting download job requests. */
 	const requestJobHook = $derived.by(() => useUprnDownloadRequestJob(requestJobUrl));
