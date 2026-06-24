@@ -9,7 +9,7 @@
 	} from '$lib/components/shadcn/card';
 	import { FileText } from '@lucide/svelte';
 	import * as Dialog from '$lib/components/shadcn/dialog/index.js';
-	import MapSection from '$lib/components/map-view/map-section.svelte';
+	import MapThumbnail from '$lib/components/map-thumbnail/MapThumbnail.svelte';
 	import ScrollArea from '$lib/components/shadcn/scroll-area/scroll-area.svelte';
 	import SummaryDialog from '$lib/components/summary-dialog/summary-dialog.svelte';
 	import * as Tabs from '$lib/components/shadcn/tabs/index.js';
@@ -17,6 +17,7 @@
 	import { formatDisplayDate, formatSummaryGroupLabel } from '$lib/utils/catalogue-ui';
 	import type { ArchetypeDefinition } from '$lib/types/api.types';
 	import Button from '$lib/components/shadcn/button/button.svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 
 	const tabs = [
 		{
@@ -56,7 +57,7 @@
 			return [];
 		}
 
-		const grouped = new Map<string, typeof item.archetypeLinks>();
+		const grouped = new SvelteMap<string, typeof item.archetypeLinks>();
 
 		for (const link of item.archetypeLinks) {
 			if (link.archetypeId !== selectedArchetypeId) {
@@ -83,18 +84,6 @@
 				} => Boolean(entry.summary)
 			);
 	});
-
-	const mapBoundingBox = $derived(
-		item.boundingBox
-			? {
-					xmin: item.boundingBox.westBoundLongitude,
-					ymin: item.boundingBox.southBoundLatitude,
-					xmax: item.boundingBox.eastBoundLongitude,
-					ymax: item.boundingBox.northBoundLatitude,
-					spatialReference: { wkid: 4326 }
-				}
-			: null
-	);
 
 	const spatialExtent = $derived.by(() => {
 		if (!item.boundingBox) {
@@ -130,15 +119,11 @@
 					<div class="text-sm font-semibold text-foreground">Spatial Extent</div>
 
 					{#if spatialExtent.length > 0}
-						{#if mapBoundingBox}
+						{#if item.boundingBox}
 							<div class="h-[180px] overflow-hidden rounded-md border">
-								<MapSection
-									boundingBox={mapBoundingBox}
-									showBoundingBox={true}
-									boundingBoxColor={[255, 0, 0, 0.3]}
-									interactive={false}
-									mapMinHeight={180}
-									expandFactor={1.5}
+								<MapThumbnail
+									boundingBox={item.boundingBox}
+									alt={`Map preview for ${item.title}`}
 								/>
 							</div>
 						{/if}
@@ -221,7 +206,7 @@
 							<Tabs.Root value="information" class="flex-1 min-h-0 gap-6">
 								<div class="flex justify-center">
 									<Tabs.List variant="line" class="h-auto border-b bg-transparent px-0">
-										{#each tabs as tab}
+										{#each tabs as tab (tab.value)}
 											<Tabs.Trigger value={tab.value} class="px-4 py-2 text-sm font-medium">
 												{tab.label}
 											</Tabs.Trigger>

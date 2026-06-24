@@ -10,7 +10,7 @@
 	} from '$lib/components/shadcn/card';
 	import { Button } from '$lib/components/shadcn/button';
 	import type { ArchetypeDefinition } from '$lib/types/api.types';
-	import MapSection from '$lib/components/map-view/map-section.svelte';
+	import MapThumbnail from '$lib/components/map-thumbnail/MapThumbnail.svelte';
 	import type { CatalogueResultCardRecord } from '$lib/utils/catalogue-ui';
 
 	interface Props {
@@ -33,18 +33,6 @@
 	);
 	const displayDescription = $derived(isExpanded ? description : truncatedDescription);
 	const shouldShowExpandButton = $derived(description.length > PREVIEW_LENGTH);
-	const mapBoundingBox = $derived(
-		record.boundingBox
-			? {
-					xmin: record.boundingBox.westBoundLongitude,
-					ymin: record.boundingBox.southBoundLatitude,
-					xmax: record.boundingBox.eastBoundLongitude,
-					ymax: record.boundingBox.northBoundLatitude,
-					spatialReference: { wkid: 4326 }
-				}
-			: null
-	);
-
 	function formatDate(dateString: string): string {
 		const parsedDate = new Date(dateString);
 
@@ -69,17 +57,12 @@
 <Card
 	class="result-card flex cursor-pointer transition-all duration-200 hover:shadow-lg {isExpanded
 		? 'h-auto'
-		: 'min-h-[300px]'}"
+		: 'min-h-[360px]'}"
 >
 	<div class="result-card__layout">
-		{#if mapBoundingBox}
+		{#if record.boundingBox}
 			<div class="map-preview">
-				<MapSection
-					boundingBox={mapBoundingBox}
-					showBoundingBox={true}
-					boundingBoxColor={[255, 0, 0, 0.3]}
-					interactive={false}
-				/>
+				<MapThumbnail boundingBox={record.boundingBox} alt={`Map preview for ${record.title}`} />
 			</div>
 		{/if}
 
@@ -131,7 +114,9 @@
 
 	.result-card__layout {
 		display: flex;
+		align-items: stretch;
 		width: 100%;
+		min-height: 360px;
 	}
 
 	.result-card__content {
@@ -147,15 +132,16 @@
 	}
 
 	.map-preview {
-		width: 300px;
-		min-width: 300px;
-		height: 100%;
-		min-height: 300px;
+		flex: 0 0 360px;
+		width: 360px;
+		min-width: 360px;
+		min-height: 360px;
+		align-self: stretch;
+		aspect-ratio: 1 / 1;
 		border-right: 1px solid hsl(var(--border));
 		overflow: hidden;
 		pointer-events: none;
 		user-select: none;
-		padding-left: 1rem;
 	}
 
 	@media (max-width: 768px) {
@@ -164,9 +150,10 @@
 		}
 
 		.map-preview {
-			width: 200px;
-			min-width: 200px;
-			padding-left: 0.75rem;
+			flex-basis: clamp(220px, 36vw, 260px);
+			width: clamp(220px, 36vw, 260px);
+			min-width: clamp(220px, 36vw, 260px);
+			min-height: clamp(220px, 36vw, 260px);
 		}
 	}
 </style>
