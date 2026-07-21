@@ -2,7 +2,6 @@
 	import { Button } from '$lib/Components/shadcn/button';
 	import { Input } from '$lib/Components/shadcn/input';
 	import { ArrowUp } from '@lucide/svelte';
-	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
 
 	type Props = {

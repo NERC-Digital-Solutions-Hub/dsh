@@ -1,4 +1,4 @@
-import type { StyleBinding, TreeviewNode } from '$lib/Models/Treeview/Index';
+import type { StyleBinding, TreeviewNode } from '$lib/Models/Treeview/index';
 
 export type NodeStyleChange = {
 	sourceNode: TreeviewNode;

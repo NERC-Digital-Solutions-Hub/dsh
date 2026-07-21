@@ -1,57 +1,41 @@
 import { browser } from '$app/environment';
-import {
-	addUserDownload,
-	clearUserDownloads,
-	deleteUserDownload,
-	getUserDownloads,
-	updateUserDownload
-} from '$lib/db';
-import { type DownloadEntry } from '$lib/Types/Uprn.types';
+import { downloadRepository, type DownloadRepository } from '$lib/Persistence/DownloadRepository';
+import type { DownloadEntry } from '$lib/Types/Download.types';
 import { SvelteMap } from 'svelte/reactivity';
 
 /**
  * Store for managing the current downloads.
  */
-export default class DownloadsStore {
+export class DownloadsStore {
 	#downloads: SvelteMap<string, DownloadEntry> = $state(new SvelteMap<string, DownloadEntry>());
+	readonly #repository: DownloadRepository;
 
-	constructor() {
+	constructor(repository: DownloadRepository = downloadRepository) {
+		this.#repository = repository;
 		if (!browser) {
 			return;
 		}
-		this.#loadDownloads();
+		void this.#loadDownloads();
 	}
 
 	public addDownload(entry: DownloadEntry) {
-		console.log('[downloads-store] Adding download:', entry);
 		this.#downloads.set(entry.localId, entry);
-		addUserDownload(entry.localId, entry.areaSelection, entry.dataSelections, entry.isDownloaded);
+		void this.#repository.add(entry);
 	}
 
 	public updateDownloadStatus(entry: DownloadEntry) {
-		console.log('[downloads-store] Updating download status:', entry);
 		this.#downloads.set(entry.localId, { ...entry });
-		updateUserDownload(
-			entry.localId,
-			entry.externalId,
-			entry.status,
-			entry.errorMessage,
-			entry.fileSize,
-			entry.areaSelection,
-			entry.dataSelections,
-			entry.isDownloaded
-		);
+		void this.#repository.update(entry);
 	}
 
 	public removeDownload(localId: string) {
 		this.#downloads.delete(localId);
-		deleteUserDownload(localId);
+		void this.#repository.remove(localId);
 	}
 
 	public async clearDownloads() {
 		this.#downloads.clear();
-		await clearUserDownloads();
-		console.log('[downloads-store] All downloads cleared');
+		await this.#repository.clear();
 	}
 
 	public getDownloads(): DownloadEntry[] {
@@ -59,12 +43,11 @@ export default class DownloadsStore {
 	}
 
 	async #loadDownloads() {
-		const storedDownloads = await getUserDownloads();
+		const storedDownloads = await this.#repository.getAll();
 		if (!storedDownloads || storedDownloads.length === 0) {
 			return;
 		}
 
-		console.log('[downloads-store] Loaded downloads from DB:', storedDownloads);
 		storedDownloads.forEach((download) => {
 			this.#downloads.set(download.localId, {
 				localId: download.localId,
@@ -79,3 +62,5 @@ export default class DownloadsStore {
 		});
 	}
 }
+
+export default DownloadsStore;

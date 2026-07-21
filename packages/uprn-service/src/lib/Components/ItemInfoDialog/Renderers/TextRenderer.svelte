@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
+	import type { MetadataResolvedContent } from '$lib/Types/Metadata.types';
 
 	type Props = {
 		content: Extract<MetadataResolvedContent, { type: 'text' }>;

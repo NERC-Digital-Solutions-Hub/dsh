@@ -1,4 +1,15 @@
-import type { EndpointHealthStatus, TabType } from '$lib/Types/Uprn.types';
+import type { TabType } from './App.types';
+
+export type AiUprnChatbotEndpoints = {
+	__name?: string;
+	baseUrl: string;
+	healthRoute: string;
+	chatRoute: string;
+	chatStreamRoute: string;
+	feedbackRoute: string;
+};
+
+export type EndpointHealthStatus = 'ok';
 
 export type AiChatbotHealthResponse = {
 	status: EndpointHealthStatus;

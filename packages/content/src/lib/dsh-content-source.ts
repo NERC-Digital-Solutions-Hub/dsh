@@ -1,4 +1,4 @@
-export const DEFAULT_CONTENT_ENVIRONMENT = 'production';
+export const DEFAULT_CONTENT_ENVIRONMENT = 'development';
 export const DEFAULT_DSH_CONTENT_BASE_URL =
 	'https://nerc-digital-solutions-hub.github.io/dsh-content/';
 

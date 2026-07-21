@@ -1,8 +1,6 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import lottie, { type AnimationItem } from 'lottie-web';
+	import Hourglass from '@lucide/svelte/icons/hourglass';
 	import { cn } from '$lib/utils';
-	import { asset } from '$app/paths';
 
 	type Props = {
 		class?: string;
@@ -16,47 +14,17 @@
 
 	const { class: className = '', size = 22, speed = 0.6, color, colorClass }: Props = $props();
 
-	let container: HTMLDivElement;
-	let anim: AnimationItem | null = null;
-
-	onMount(() => {
-		anim = lottie.loadAnimation({
-			container,
-			renderer: 'svg',
-			loop: true,
-			autoplay: true,
-			path: asset('/animations/hourglass.json')
-		});
-
-		anim.setSpeed(speed);
-
-		return () => anim?.destroy();
-	});
-
-	$effect(() => {
-		anim?.setSpeed(speed);
-	});
+	const animationDuration = $derived(`${Math.max(0.2, 1 / Math.max(speed, 0.1))}s`);
 </script>
 
-<div
-	bind:this={container}
+<Hourglass
+	aria-hidden="true"
 	class={cn(
-		'inline-block hourglass-icon',
-		(color || colorClass) && 'hourglass-icon--tinted',
+		'inline-block animate-[spin_var(--hourglass-duration)_ease-in-out_infinite]',
 		colorClass,
 		className
 	)}
-	style:width={`${size}px`}
-	style:height={`${size}px`}
-	style:color
-></div>
-
-<style>
-	.hourglass-icon--tinted :global(svg [fill]) {
-		fill: currentColor;
-	}
-
-	.hourglass-icon--tinted :global(svg [stroke]) {
-		stroke: currentColor;
-	}
-</style>
+	style={`--hourglass-duration: ${animationDuration}`}
+	{size}
+	{color}
+/>

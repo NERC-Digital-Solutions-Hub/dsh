@@ -1,11 +1,10 @@
 <script lang="ts">
 	import * as Dialog from '$lib/Components/shadcn/dialog/index.js';
-	import { rehypeGithubAlerts, rehypeInlineTextAdjacentSvgIcons } from '@dsh/common';
-	import rehypeStringify from 'rehype-stringify';
-	import remarkGfm from 'remark-gfm';
-	import remarkParse from 'remark-parse';
-	import remarkRehype from 'remark-rehype';
-	import { unified } from 'unified';
+	import SanitizedHtml from '$lib/Components/SanitizedHtml/SanitizedHtml.svelte';
+	import {
+		renderMarkdownToSanitizedHtml,
+		type SanitizedHtml as SanitizedHtmlValue
+	} from '$lib/Utilities/richText';
 
 	type Props = {
 		isOpen: boolean;
@@ -15,21 +14,12 @@
 	let { isOpen = $bindable(false), content }: Props = $props();
 
 	/** Derived state for processing the fetched introduction markdown content into HTML. */
-	let introductionHtml: Promise<string | null> = $derived.by(async () => {
+	let introductionHtml: Promise<SanitizedHtmlValue | null> = $derived.by(async () => {
 		if (!content) {
 			return null;
 		}
 
-		const htmlRaw = await unified()
-			.use(remarkParse)
-			.use(remarkGfm)
-			.use(remarkRehype)
-			.use(rehypeGithubAlerts)
-			.use(rehypeInlineTextAdjacentSvgIcons)
-			.use(rehypeStringify)
-			.process(content);
-
-		return htmlRaw.toString();
+		return renderMarkdownToSanitizedHtml(content);
 	});
 </script>
 
@@ -39,7 +29,7 @@
 			<p>Loading introduction...</p>
 		{:then html}
 			<article class="prose-info-markdown">
-				{@html html}
+				<SanitizedHtml {html} />
 			</article>
 		{:catch error}
 			<p>Error loading introduction: {error.message}</p>

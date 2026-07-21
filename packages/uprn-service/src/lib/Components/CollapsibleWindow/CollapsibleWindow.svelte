@@ -59,7 +59,7 @@
 	$effect(() => {
 		if (!cardElement || !headerElement) return;
 
-		isOpened;
+		void isOpened;
 
 		requestAnimationFrame(measureCollapsedHeight);
 

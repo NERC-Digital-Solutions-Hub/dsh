@@ -2,7 +2,7 @@ import {
 	DatasetTreeviewNode,
 	TreeviewNode,
 	VariableTreeviewNode
-} from '$lib/Models/Treeview/Index';
+} from '$lib/Models/Treeview/index';
 import type { TreeviewNodeCapabilities } from '$lib/Models/Treeview/TreeviewNodeCapabilities';
 import { TreeviewNodeTypology, type TreeviewNodeConfig } from '$lib/Types/Treeview.types';
 

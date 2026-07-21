@@ -13,6 +13,7 @@
 	import { ArcgisMapWidgets } from './ArcgisMapWidgets';
 	import { applyTabInteractionMode } from './mapInteractionMode';
 	import { configureMapView, loadFallbackMap } from './mapViewSetup';
+	import { attachNativeContextMenuBridge } from './nativeContextMenuBridge';
 	import UprnMapContextMenu, { type UprnMapContextMenuEntries } from './UprnMapContextMenu.svelte';
 
 	import type MapView from '@arcgis/core/views/MapView';
@@ -88,7 +89,6 @@
 	let mapWidgetsView: MapView | null = null;
 	let contextMenuOpen = $state(false);
 	let legendIsOpen = $state(false);
-	let dispatchingSyntheticContextMenu = false;
 	let mapContextMenuEntries: UprnMapContextMenuEntries = $derived.by(() => ({
 		zoomIn: {
 			action: zoomIn,
@@ -224,82 +224,6 @@
 	}
 
 	/**
-	 * Returns true when the context menu event originated from ArcGIS UI chrome rather than the map surface.
-	 */
-	function isMapWidgetContextMenuTarget(target: EventTarget | null): boolean {
-		if (!(target instanceof Element)) {
-			return false;
-		}
-
-		return !!target.closest(
-			[
-				'.esri-ui',
-				'.esri-popup',
-				'.esri-widget',
-				'.esri-component',
-				'.uprn-map-search-row',
-				'arcgis-expand',
-				'arcgis-legend',
-				'arcgis-search'
-			].join(', ')
-		);
-	}
-
-	function isRightButtonEvent(event: MouseEvent): boolean {
-		return event.button === 2 || (event.buttons & 2) === 2;
-	}
-
-	function stopMapRightClickInteraction(event: Event): void {
-		if (!(event instanceof MouseEvent) || !isRightButtonEvent(event)) {
-			return;
-		}
-
-		if (isMapWidgetContextMenuTarget(event.target)) {
-			return;
-		}
-
-		event.stopImmediatePropagation();
-		event.stopPropagation();
-	}
-
-	/**
-	 * Captures map right-clicks before ArcGIS consumes them, while leaving widget right-clicks alone.
-	 */
-	function handleCapturedContextMenu(event: MouseEvent): void {
-		if (dispatchingSyntheticContextMenu) {
-			return;
-		}
-
-		if (isMapWidgetContextMenuTarget(event.target)) {
-			event.stopPropagation();
-			return;
-		}
-
-		if (!contextMenuTrigger) {
-			return;
-		}
-
-		event.preventDefault();
-		event.stopPropagation();
-
-		dispatchingSyntheticContextMenu = true;
-		contextMenuTrigger.dispatchEvent(
-			new MouseEvent('contextmenu', {
-				bubbles: true,
-				button: 2,
-				buttons: event.buttons || 2,
-				cancelable: true,
-				clientX: event.clientX,
-				clientY: event.clientY,
-				ctrlKey: event.ctrlKey,
-				metaKey: event.metaKey,
-				shiftKey: event.shiftKey
-			})
-		);
-		dispatchingSyntheticContextMenu = false;
-	}
-
-	/**
 	 * Removes widgets and local subscriptions created by this component.
 	 *
 	 * Note:
@@ -379,40 +303,9 @@
 	 * and forward allowed map-surface right-clicks to the shadcn trigger.
 	 */
 	$effect(() => {
-		if (!contextMenuShell) {
-			return;
-		}
-
-		const blockedRightClickEvents = [
-			'pointerdown',
-			'pointerup',
-			'mousedown',
-			'mouseup',
-			'click',
-			'auxclick'
-		];
-
-		for (const eventName of blockedRightClickEvents) {
-			contextMenuShell.addEventListener(eventName, stopMapRightClickInteraction, {
-				capture: true
-			});
-		}
-
-		contextMenuShell.addEventListener('contextmenu', handleCapturedContextMenu, {
-			capture: true
-		});
-
-		return () => {
-			for (const eventName of blockedRightClickEvents) {
-				contextMenuShell?.removeEventListener(eventName, stopMapRightClickInteraction, {
-					capture: true
-				});
-			}
-
-			contextMenuShell?.removeEventListener('contextmenu', handleCapturedContextMenu, {
-				capture: true
-			});
-		};
+		const shell = contextMenuShell;
+		if (!shell) return;
+		return attachNativeContextMenuBridge(shell, () => contextMenuTrigger);
 	});
 
 	onDestroy(() => {

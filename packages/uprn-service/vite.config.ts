@@ -1,5 +1,6 @@
 import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { svelteTesting } from '@testing-library/svelte/vite';
 import { defineConfig } from 'vitest/config';
 
 const svelteSsrPackages = [
@@ -22,7 +23,25 @@ export default defineConfig({
 		exclude: ['@arcgis/core', '@arcgis/map-components']
 	},
 	test: {
-		environment: 'node',
-		include: ['src/**/*.test.ts']
+		projects: [
+			{
+				extends: true,
+				test: {
+					name: 'unit',
+					environment: 'node',
+					include: ['src/**/*.test.ts'],
+					exclude: ['src/**/*.component.test.ts']
+				}
+			},
+			{
+				extends: true,
+				plugins: [svelteTesting()],
+				test: {
+					name: 'component',
+					environment: 'jsdom',
+					include: ['src/**/*.component.test.ts']
+				}
+			}
+		]
 	}
 });

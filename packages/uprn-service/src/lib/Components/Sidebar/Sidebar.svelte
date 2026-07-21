@@ -17,8 +17,8 @@
 	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 	import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Menu } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
-	import { onMount } from 'svelte';
 	import { SidebarPosition } from './SidebarPosition';
+	import { useSidebarResize } from './useSidebarResize.svelte';
 
 	type SidebarPositionType = (typeof SidebarPosition)[keyof typeof SidebarPosition];
 
@@ -50,16 +50,7 @@
 	const DEFAULT_MIN_WIDTH = 500;
 	const DEFAULT_MIN_HEIGHT = 100;
 	const RESIZE_HANDLE_SIZE = 6;
-	const MAX_VIEWPORT_PERCENTAGE = 0.6; // 60% of viewport
-
-	// State
 	let sidebarElement: HTMLElement;
-	let sidebarSize = $state(0);
-	let currentSize = $state('0px');
-	let isResizing = $state(false);
-	let hasManuallyResized = $state(false);
-	let viewportWidth = $state(typeof window !== 'undefined' ? window.innerWidth : 1280);
-	let viewportHeight = $state(typeof window !== 'undefined' ? window.innerHeight : 720);
 
 	// Derived values
 	const isHorizontal = $derived(
@@ -86,118 +77,14 @@
 	const sizeProperty = $derived(isHorizontal ? 'width' : 'height');
 	const resizeCursor = $derived(isHorizontal ? 'ew-resize' : 'ns-resize');
 
-	// Keep current size in sync with default size sources until the user manually resizes.
-	$effect(() => {
-		if (!hasManuallyResized) {
-			currentSize = finalOriginalSize;
-		}
+	const resize = useSidebarResize({
+		getElement: () => sidebarElement,
+		getIsOpen: () => isOpen,
+		getIsHorizontal: () => isHorizontal,
+		getIsStartPosition: () => isStartPosition,
+		getOriginalSize: () => finalOriginalSize,
+		getResizeCursor: () => resizeCursor
 	});
-
-	// Track sidebar size with ResizeObserver
-	onMount(() => {
-		if (!sidebarElement) return;
-
-		// If the user resizes the sidebar, we keep that size.
-		// But when the viewport crosses our breakpoints, we reset back to the responsive CSS defaults
-		// so the sidebar adapts to the new screen size.
-		let lastBucket: number | null = null;
-		function getBucket(width: number): number {
-			if (width >= 1280) return 1280;
-			if (width >= 1024) return 1024;
-			if (width >= 768) return 768;
-			return 0;
-		}
-
-		function syncToResponsiveDefaults() {
-			const nextBucket = getBucket(window.innerWidth);
-			if (lastBucket === null) {
-				lastBucket = nextBucket;
-				return;
-			}
-			if (nextBucket !== lastBucket) {
-				lastBucket = nextBucket;
-				hasManuallyResized = false;
-				currentSize = finalOriginalSize;
-			}
-		}
-
-		const mql1280 = window.matchMedia('(min-width: 1280px)');
-		const mql1024 = window.matchMedia('(min-width: 1024px)');
-		const mql768 = window.matchMedia('(min-width: 768px)');
-		const onMediaChange = () => syncToResponsiveDefaults();
-
-		mql1280.addEventListener('change', onMediaChange);
-		mql1024.addEventListener('change', onMediaChange);
-		mql768.addEventListener('change', onMediaChange);
-		// Initialize bucket tracking
-		syncToResponsiveDefaults();
-
-		// Track viewport size for max width constraint
-		const handleViewportResize = () => {
-			viewportWidth = window.innerWidth;
-			viewportHeight = window.innerHeight;
-		};
-		window.addEventListener('resize', handleViewportResize);
-
-		const resizeObserver = new ResizeObserver((entries) => {
-			for (const entry of entries) {
-				sidebarSize = isHorizontal ? entry.contentRect.width : entry.contentRect.height;
-			}
-		});
-
-		resizeObserver.observe(sidebarElement);
-		return () => {
-			resizeObserver.disconnect();
-			window.removeEventListener('resize', handleViewportResize);
-			mql1280.removeEventListener('change', onMediaChange);
-			mql1024.removeEventListener('change', onMediaChange);
-			mql768.removeEventListener('change', onMediaChange);
-		};
-	});
-
-	// Handle resize dragging
-	function startResize(e: MouseEvent) {
-		if (!isOpen) return;
-		if (!sidebarElement) return;
-
-		isResizing = true;
-		e.preventDefault();
-
-		const startPos = isHorizontal ? e.clientX : e.clientY;
-		const rect = sidebarElement.getBoundingClientRect();
-		const startSize = isHorizontal ? rect.width : rect.height;
-
-		const computed = getComputedStyle(sidebarElement);
-		const computedMin = isHorizontal ? computed.minWidth : computed.minHeight;
-		const minSizePx = Number.isFinite(parseFloat(computedMin)) ? parseFloat(computedMin) : 0;
-
-		// Calculate max size as 60% of viewport, but ensure it's at least minSize
-		const viewportSize = isHorizontal ? viewportWidth : viewportHeight;
-		const maxSizePx = Math.max(minSizePx, viewportSize * MAX_VIEWPORT_PERCENTAGE);
-
-		function onMouseMove(e: MouseEvent) {
-			const currentPos = isHorizontal ? e.clientX : e.clientY;
-			const delta = isStartPosition ? currentPos - startPos : startPos - currentPos;
-			const desiredSize = startSize + delta;
-			// Clamp between min and max
-			const newSize = Math.min(Math.max(minSizePx, desiredSize), maxSizePx);
-			currentSize = `${newSize}px`;
-			hasManuallyResized = true;
-		}
-
-		function onMouseUp() {
-			isResizing = false;
-			document.removeEventListener('mousemove', onMouseMove);
-			document.removeEventListener('mouseup', onMouseUp);
-			document.body.style.cursor = '';
-			document.body.style.userSelect = '';
-		}
-
-		document.addEventListener('mousemove', onMouseMove);
-		document.addEventListener('mouseup', onMouseUp);
-		document.body.style.cursor = resizeCursor;
-		document.body.style.userSelect = 'none';
-	}
 
 	const closeIcon = $derived(() => {
 		const iconMap = {
@@ -240,12 +127,12 @@
 	// The resize handle overlaps the sidebar edge via negative margin.
 	const wrapperSize = $derived(() => {
 		if (isOpen) {
-			return `max(${currentSize}, ${defaultMinSize})`;
+			return `max(${resize.currentSize}, ${defaultMinSize})`;
 		}
 		return '0px';
 	});
 
-	const clipperSize = $derived(isOpen ? `max(${currentSize}, ${defaultMinSize})` : '0px');
+	const clipperSize = $derived(isOpen ? `max(${resize.currentSize}, ${defaultMinSize})` : '0px');
 
 	// Clipper justify-content: anchors content to the correct edge for slide direction
 	const clipperJustify = $derived(isStartPosition ? 'flex-start' : 'flex-end');
@@ -257,8 +144,8 @@
 	class:is-horizontal={isHorizontal}
 	class:h-full={isHorizontal}
 	class:w-full={!isHorizontal}
-	class:transition-all={!isResizing}
-	class:duration-300={!isResizing}
+	class:transition-all={!resize.isResizing}
+	class:duration-300={!resize.isResizing}
 	style="{sizeProperty}: {wrapperSize()}; order: {sidebarOrder};"
 >
 	<div
@@ -272,8 +159,8 @@
 			class="flex overflow-hidden"
 			class:h-full={isHorizontal}
 			class:w-full={!isHorizontal}
-			class:transition-all={!isResizing}
-			class:duration-300={!isResizing}
+			class:transition-all={!resize.isResizing}
+			class:duration-300={!resize.isResizing}
 			style="{sizeProperty}: {clipperSize}; justify-content: {clipperJustify}; flex-direction: {isHorizontal
 				? 'row'
 				: 'column'};"
@@ -283,7 +170,7 @@
 				class="flex shrink-0"
 				class:h-full={isHorizontal}
 				class:w-full={!isHorizontal}
-				style="{sizeProperty}: max({currentSize}, {defaultMinSize}); flex-direction: {flexDirection()};"
+				style="{sizeProperty}: max({resize.currentSize}, {defaultMinSize}); flex-direction: {flexDirection()};"
 			>
 				<!-- Sidebar panel -->
 				<aside
@@ -298,7 +185,7 @@
 					class:border-b={position === SidebarPosition.TOP}
 					class:border-t={position === SidebarPosition.BOTTOM}
 					class:border-sidebar-border={true}
-					style="{sizeProperty}: {currentSize}; {isHorizontal
+					style="{sizeProperty}: {resize.currentSize}; {isHorizontal
 						? 'min-width'
 						: 'min-height'}: {defaultMinSize};"
 				>
@@ -335,7 +222,7 @@
 								: position === SidebarPosition.TOP
 									? '-mt-[6px]'
 									: '-mb-[6px]'}"
-						onmousedown={startResize}
+						onpointerdown={resize.startResize}
 						aria-label="Resize sidebar by dragging"
 						style="{toInlineStyles(
 							handleStyles()

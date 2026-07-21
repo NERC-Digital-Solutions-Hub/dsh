@@ -1,10 +1,5 @@
 import { DownloadStatus, type DownloadEntry } from '$lib/Types/Uprn.types';
 
-export type QueueItem = {
-	queueId: number;
-	queuePosition: number;
-};
-
 const MAX_ERROR_MESSAGE_LENGTH = 240;
 
 /**
@@ -53,14 +48,6 @@ export function getDisplayErrorMessage(errorMessage: string): string {
 	}
 
 	return errorMessage;
-}
-
-/**
- * Builds a stable download URL from the configured base URL and external job ID.
- */
-export function getDownloadUrl(downloadBaseUrl: string, externalId: string): string {
-	const base = downloadBaseUrl.replace(/\/+$/, '');
-	return `${base}/${encodeURIComponent(externalId)}`;
 }
 
 /**

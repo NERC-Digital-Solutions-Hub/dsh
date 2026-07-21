@@ -5,7 +5,7 @@
 	import TreeviewNodeCard from '$lib/Components/Treeview/TreeviewNodeCard.svelte';
 	import TreeviewVisibilityAction from '$lib/Components/Treeview/TreeviewVisibilityAction.svelte';
 	import { flattenAreaNodes, isDatasetNode } from '$lib/Components/Treeview/treeviewFlattening';
-	import type { TreeviewNode } from '$lib/Models/Treeview/Index.js';
+	import type { TreeviewNode } from '$lib/Models/Treeview/index.js';
 	import type { IAreaSelectionController } from '$lib/Services/IAreaSelectionController';
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 	import { TreeviewStore } from '$lib/Stores/TreeviewStore.svelte';

@@ -1,55 +1,38 @@
 <script lang="ts">
-	import AreaSelectionHoverCard from '$lib/Components/AreaSelectionHoverCard/AreaSelectionHoverCard.svelte';
-	import AreaSelectionToast from '$lib/Components/AreaSelectionToast/AreaSelectionToast.svelte';
-	import UprnChat from '$lib/Components/Chat/Chat.svelte';
+	import AppMapPane from '$lib/Components/App/AppMapPane.svelte';
+	import AppOverlays from '$lib/Components/App/AppOverlays.svelte';
+	import AreaSelectionPanel from '$lib/Components/App/AreaSelectionPanel.svelte';
+	import ChatAvailabilityPanel from '$lib/Components/App/ChatAvailabilityPanel.svelte';
+	import DataSelectionPanel from '$lib/Components/App/DataSelectionPanel.svelte';
+	import DownloadsPanel from '$lib/Components/App/DownloadsPanel.svelte';
+	import ExportReviewPanel from '$lib/Components/App/ExportReviewPanel.svelte';
+	import TabHeaderActions from '$lib/Components/App/TabHeaderActions.svelte';
 	import CollapsibleWindow from '$lib/Components/CollapsibleWindow/CollapsibleWindow.svelte';
-	import DownloadsMenu from '$lib/Components/DownloadsMenu/DownloadsMenu.svelte';
-	import DownloadInfoDialog from '$lib/Components/DownloadsMenu/DownloadInfoDialog.svelte';
 	import ExportMenuFooter from '$lib/Components/ExportMenu/ExportMenuFooter.svelte';
-	import ExportMenu from '$lib/Components/ExportMenu/ExportMenu.svelte';
-	import IntroductionDialog from '$lib/Components/IntroductionDialog/IntroductionDialog.svelte';
-	import ItemInfoDialog from '$lib/Components/ItemInfoDialog/ItemInfoDialog.svelte';
 	import type { ResetAction } from '$lib/Components/ResetDialog/ResetDialog.svelte';
-	import ResetDialog from '$lib/Components/ResetDialog/ResetDialog.svelte';
-	import DebugDialog from '$lib/Components/DebugDialog/DebugDialog.svelte';
 	import * as Card from '$lib/Components/shadcn/card/index.js';
 	import * as Tabs from '$lib/Components/shadcn/tabs/index.js';
-	import { Toaster } from '$lib/Components/shadcn/sonner';
-	import Spinner from '$lib/Components/shadcn/spinner/spinner.svelte';
 	import * as SidebarLayout from '$lib/Components/SidebarLayout/index.js';
 	import * as Sidebar from '$lib/Components/Sidebar/index.js';
-	import AreaSelectionTreeview from '$lib/Components/Treeview/Area/Treeview.svelte';
-	import DataSelectionTreeview from '$lib/Components/Treeview/Data/Treeview.svelte';
-	import UprnMapView from '$lib/Components/UprnMapView/UprnMapView.svelte';
-	import UprnTabBarContent from '$lib/Components/UprnTabBar/UrpnTabBarContent.svelte';
+	import UprnTabBarContent from '$lib/Components/UprnTabBar/UprnTabBarContent.svelte';
 	import UprnTabBar from '$lib/Components/UprnTabBar/UprnTabBar.svelte';
-	import { clearDatabase, updateSelection } from '$lib/db';
-	import { setItemInfoDialogEvents } from '$lib/Events/ItemInfoDialogEvents';
-	import { useAiChatbotHealth } from '$lib/Hooks/UseAiChatbotHealth.svelte';
-	import { useLoadSelectionsFromIndexDb } from '$lib/Hooks/UseLoadSelectionsFromIndexDb.svelte';
-	import { useUprnDownloadHealth } from '$lib/Hooks/UseUprnDownloadHealth.svelte';
-	import { SelectionState } from '$lib/Models/Treeview/SelectionState';
+	import { clearUprnDatabase } from '$lib/Persistence/UprnDatabase';
+	import { setItemInfoContext } from '$lib/Components/ItemInfoDialog/ItemInfoContext';
 	import { TreeviewNode } from '$lib/Models/Treeview/TreeviewNode';
 	import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 	import { ArcgisNodeStyleRenderer } from '$lib/Services/ArcgisNodeStyleRenderer';
 	import { ArcgisNodeVisibilityRenderer } from '$lib/Services/ArcgisNodeVisibilityRenderer';
 	import { CustomRendererService } from '$lib/Services/CustomRendererService';
-	import type { INodeProvider } from '$lib/Services/INodeProvider';
+	import { AreaSelectionLimitsController } from '$lib/Services/AreaSelectionLimitsController.svelte';
 	import { LayerViewProvider } from '$lib/Services/LayerViewProvider';
-	import { NodeProvider } from '$lib/Services/NodeProvider';
-	import { NodeSelectionController } from '$lib/Services/NodeSelectionController';
 	import { NodeVisibilityController } from '$lib/Services/NodeVisibilityController.svelte';
-	import { TabStateService } from '$lib/Services/TabStateService';
-	import { TagDefinitionProvider } from '$lib/Services/TagDefinitionProvider';
+	import { createTreeviewRuntime } from '$lib/Services/createTreeviewRuntime';
+	import { ServiceHealthController } from '$lib/Services/ServiceHealthController.svelte';
 	import { AreaSelectionInteractionStore } from '$lib/Stores/AreaSelectionInteractionStore.svelte';
 	import { AreaSelectionStore } from '$lib/Stores/AreaSelectionStore.svelte';
-	import {
-		DataSelectionStore,
-		type DataSelectionSnapshot
-	} from '$lib/Stores/DataSelectionStore.svelte';
+	import { DataSelectionStore } from '$lib/Stores/DataSelectionStore.svelte';
 	import DownloadsStore from '$lib/Stores/DownloadsStore.svelte';
-	import { TreeviewConfigStore } from '$lib/Stores/TreeviewConfigStore';
-	import { TreeviewStore } from '$lib/Stores/TreeviewStore.svelte';
+	import { createSelectionPersistence } from '$lib/Stores/SelectionPersistence.svelte';
 	import {
 		describeWebMapSource,
 		getWebMapSourcePersistenceKey,
@@ -57,18 +40,13 @@
 	} from '$lib/Stores/WebMapStore.svelte';
 	import { arcgisImport } from '@dsh/common/arcgis';
 	import type { AppTabState } from '$lib/Types/Chatbot.types';
-	import { TreeviewType } from '$lib/Types/Treeview.types';
 	import { TabProgress, TabType, type DownloadEntry } from '$lib/Types/Uprn.types';
-	import { createTreeviewNodes } from '$lib/Utilities/CreateTreeviewNodes';
 	import { installBrowserPolyfills } from '$lib/Utilities/browser-polyfills';
-	import { InfoIcon, Plus } from '@lucide/svelte';
-	import { onDestroy, onMount } from 'svelte';
+	import { Plus } from '@lucide/svelte';
+	import { onDestroy, onMount, untrack } from 'svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-	import { useUprnDownloadSelectionAreaLimits } from '$lib/Hooks/UseUprnDownloadSelectionAreaLimits.svelte';
-	import Button from '$lib/Components/shadcn/button/button.svelte';
 	import type { AppsUprnConfig, ChatbotConfig } from '$lib/Types/Configuration.types';
 	import { ScrollArea } from '$lib/Components/shadcn/scroll-area';
-	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 
 	installBrowserPolyfills();
 
@@ -131,7 +109,6 @@
 		}
 	];
 
-	const tabStateService = new TabStateService('areas-of-interest');
 	const dataSelectionStore: DataSelectionStore = new DataSelectionStore();
 	const areaSelectionStore: AreaSelectionStore = new AreaSelectionStore();
 	const downloadsStore: DownloadsStore = new DownloadsStore();
@@ -148,9 +125,6 @@
 			return false;
 		}
 	};
-
-	/** State to track whether initial selections have been loaded from the database. */
-	let initializedSelectionsFromDb = $state(false);
 
 	/** State to track whether initial node visibility has been set. */
 	let initializedNodeVisibility = $state(false);
@@ -188,9 +162,6 @@
 	/** State for tracking the tab bar width. */
 	let tabBarWidth: number | null = $state(null);
 
-	/** State of the IDs of currently selected tags to filter by. */
-	const selectedTagIds: Set<string> = new SvelteSet<string>();
-
 	/** State of the ArcGIS MapView instance. */
 	let mapView: __esri.MapView | null = $state(null);
 
@@ -200,34 +171,11 @@
 	let attachedVisibilityController: NodeVisibilityController | null = null;
 	let attachedVisibilityMapView: __esri.MapView | null = null;
 
-	/** Hook for the AI UPRN chatbot health check. */
-	const aiUprnChatbotHealth = $derived.by(() => {
-		if (!appConfig.content?.aiUprnChatbot) {
-			return null;
-		}
-
-		const { baseUrl, healthRoute } = appConfig.content.aiUprnChatbot;
-		const url = `${baseUrl}${healthRoute}`;
-		const health = useAiChatbotHealth(url);
-		health.fetch();
-		return health;
-	});
-
-	/** Hook for the UPRN download health check. */
-	const uprnDownloadHealth = $derived.by(() => {
-		if (!appConfig.content?.uprnDownload) {
-			return null;
-		}
-
-		const { baseUrl, healthRoute } = appConfig.content.uprnDownload;
-		const url = `${baseUrl}${healthRoute}`;
-		const health = useUprnDownloadHealth(url);
-		health.fetch();
-		return health;
-	});
+	let aiUprnChatbotHealth = $state<ServiceHealthController | null>(null);
+	let uprnDownloadHealth = $state<ServiceHealthController | null>(null);
 
 	/** Index of the active web map source (resets to the default on each load). */
-	let selectedMapSourceIndex = $state(defaultSourceIndex ?? 0);
+	let selectedMapSourceIndex = $state(untrack(() => defaultSourceIndex ?? 0));
 	let lastAppliedDefaultSourceIndex: number | null = null;
 
 	/** Tracks failed sources so the app only falls forward through configured map sources once. */
@@ -246,6 +194,13 @@
 		return sources[selectedMapSourceIndex] ?? sources[defaultSourceIndex ?? 0];
 	});
 
+	/** Portal item used by the download API, independent of the active display source. */
+	const downloadPortalItemId = $derived.by(() => {
+		return (
+			appConfig.content?.map.sources.find((source) => source.kind === 'portal-item')?.itemId ?? null
+		);
+	});
+
 	/** Stable key used to persist selections for portal, static, and API-backed webmaps. */
 	const webMapPersistenceKey: string | null = $derived.by(() => {
 		if (!selectedMapSource) {
@@ -255,33 +210,7 @@
 		return getWebMapSourcePersistenceKey(selectedMapSource);
 	});
 
-	/** Hook to load previous selections from indexedDb for the configured webmap. */
-	const selectionsFromDb = $derived.by(() => {
-		if (!webMapPersistenceKey) {
-			return null;
-		}
-
-		const selections = useLoadSelectionsFromIndexDb(webMapPersistenceKey);
-		selections.fetch();
-		return selections;
-	});
-
-	/** Hook to fetch area selection limits for the UPRN download service. */
-	const areaSelectionLimits = $derived.by(() => {
-		if (!appConfig.content?.uprnDownload || !appConfig.content.map.selectableLayers) {
-			return null;
-		}
-
-		const url: string = `${appConfig.content.uprnDownload.baseUrl}${appConfig.content.uprnDownload.getAreaSelectionLimitsRoute}`;
-
-		const layerIds = appConfig.content.map.selectableLayers
-			? appConfig.content.map.selectableLayers.map((layer) => layer.id)
-			: [];
-
-		const limits = useUprnDownloadSelectionAreaLimits(url, layerIds);
-		limits.fetch();
-		return limits;
-	});
+	let areaSelectionLimits = $state<AreaSelectionLimitsController | null>(null);
 
 	/** Derived state to create a map of area selection limits by layer ID for easy lookup. */
 	const areaSelectionLimitsMap: Map<string, number> = $derived.by(() => {
@@ -312,147 +241,43 @@
 		return settings.chatbot;
 	});
 
-	/** The web map store instance. */
-	let webMapStore: WebMapStore | null = $derived.by(() => {
-		void webMapStoreResetKey;
-		return selectedMapSource
-			? new WebMapStore({
-					source: selectedMapSource,
-					proxy: undefined
-				})
-			: null;
-	});
+	let webMapStore: WebMapStore | null = $state(null);
+	let areaSelectionInteractionStore: AreaSelectionInteractionStore | null = $state(null);
 
-	/** The custom renderer service instance. */
-	let customRendererService: CustomRendererService | null = $derived.by(() => {
-		return appConfig.content?.content.customRenderers
-			? new CustomRendererService(appConfig.content.content.customRenderers)
-			: null;
+	const customRendererService = untrack(
+		() => new CustomRendererService(config.content.customRenderers)
+	);
+	const interactableLayers = untrack(
+		() => new SvelteSet(config.map.selectableLayers?.map((layer) => layer.id) ?? [])
+	);
+	const treeviewRuntime = untrack(() =>
+		createTreeviewRuntime(config.treeviewConfig, dataSelectionStore)
+	);
+	const {
+		configStore: treeviewConfigStore,
+		nodes: treeviewNodes,
+		nodeProvider: treeviewNodeProvider,
+		areaNodes: areaTreeviewNodes,
+		dataNodes: dataTreeviewNodes,
+		selectionController: dataNodeSelectionController,
+		visibilityController: nodeVisibilityController,
+		areaTreeviewStore,
+		dataTreeviewStore
+	} = treeviewRuntime;
+	const selectionPersistence = createSelectionPersistence({
+		getPersistenceKey: () => webMapPersistenceKey,
+		getVisibilityInitialized: () => initializedNodeVisibility,
+		areaSelectionStore,
+		dataSelectionStore,
+		nodeProvider: treeviewNodeProvider,
+		visibilityController: nodeVisibilityController,
+		selectionController: dataNodeSelectionController
 	});
 
 	/** The minimum size of the sidebar.  */
 	let sidebarMinSize: string | undefined = $derived.by(() => {
 		return typeof tabBarWidth === 'number' ? `calc(${tabBarWidth}px + 1rem)` : undefined;
 	});
-
-	/** The treeview configuration store. */
-	let treeviewConfigStore: TreeviewConfigStore | null = $derived.by(() => {
-		return appConfig.content && appConfig.content.treeviewConfig
-			? new TreeviewConfigStore(appConfig.content.treeviewConfig)
-			: null;
-	});
-
-	/** Controller for managing data node selections. */
-	let dataNodeSelectionController: NodeSelectionController | null = $derived.by(() => {
-		return treeviewConfigStore
-			? new NodeSelectionController(dataSelectionStore, treeviewConfigStore)
-			: null;
-	});
-
-	/** Provider for tag definitions. */
-	let tagDefinitionProvider: TagDefinitionProvider | null = $derived.by(() => {
-		return appConfig.content && appConfig.content.map.tagDefinitions
-			? new TagDefinitionProvider(appConfig.content.map.tagDefinitions)
-			: null;
-	});
-
-	/** Store for managing area selection interactions on the map. */
-	let areaSelectionInteractionStore: AreaSelectionInteractionStore | null = $derived.by(() => {
-		return mapView && appConfig.content?.map.selectableLayers
-			? new AreaSelectionInteractionStore(
-					areaSelectionStore,
-					new LayerViewProvider(mapView),
-					appConfig.content.map.selectableLayers,
-					webMapStore
-				)
-			: null;
-	});
-
-	/** A set of layer IDs that are interactable based on the app configuration. */
-	let interactableLayers: SvelteSet<string> | null = $derived.by(() => {
-		return appConfig.content && appConfig.content.map.selectableLayers
-			? new SvelteSet(appConfig.content.map.selectableLayers.map((layer) => layer.id))
-			: null;
-	});
-
-	let treeviewNodes: TreeviewNode[] | null = $derived.by(() => {
-		return treeviewConfigStore ? createTreeviewNodes(treeviewConfigStore.configs) : null;
-	});
-
-	/** The node provider for the area treeview. */
-	let treeviewNodeProvider: INodeProvider | null = $derived.by(() => {
-		return treeviewNodes ? new NodeProvider(treeviewNodes) : null;
-	});
-
-	/** The area treeview nodes. */
-	let areaTreeviewNodes: TreeviewNode[] | null = $derived.by(() => {
-		return treeviewNodes && treeviewNodes.length > 0
-			? filterTreeviewNodesByType(treeviewNodes, TreeviewType.Area)
-			: null;
-	});
-
-	/** The node provider for the area treeview. */
-	let areaTreeviewNodeProvider: INodeProvider | null = $derived.by(() => {
-		return areaTreeviewNodes ? new NodeProvider(areaTreeviewNodes) : null;
-	});
-
-	/** The data treeview nodes. */
-	let dataTreeviewNodes: TreeviewNode[] | null = $derived.by(() => {
-		return treeviewNodes && treeviewNodes.length > 0
-			? filterTreeviewNodesByType(treeviewNodes, TreeviewType.Data)
-			: null;
-	});
-
-	/** The node provider for the data treeview. */
-	let dataTreeviewNodeProvider: INodeProvider | null = $derived.by(() => {
-		return dataTreeviewNodes ? new NodeProvider(dataTreeviewNodes) : null;
-	});
-
-	/** Controller for managing node visibility. */
-	let nodeVisibilityController: NodeVisibilityController | null = $derived.by(() => {
-		return treeviewNodeProvider && treeviewConfigStore
-			? new NodeVisibilityController(treeviewNodeProvider, treeviewConfigStore, treeviewConfigStore)
-			: null;
-	});
-
-	/** The area treeview store instance. */
-	let areaTreeviewStore: TreeviewStore | null = $derived.by(() => {
-		return areaTreeviewNodeProvider &&
-			treeviewConfigStore &&
-			dataNodeSelectionController &&
-			nodeVisibilityController
-			? new TreeviewStore(
-					TreeviewType.Area,
-					areaTreeviewNodeProvider,
-					treeviewConfigStore,
-					treeviewConfigStore,
-					dataNodeSelectionController,
-					nodeVisibilityController
-				)
-			: null;
-	});
-
-	/** The data treeview store instance. */
-	let dataTreeviewStore: TreeviewStore | null = $derived.by(() => {
-		return dataTreeviewNodeProvider &&
-			treeviewConfigStore &&
-			dataNodeSelectionController &&
-			nodeVisibilityController
-			? new TreeviewStore(
-					TreeviewType.Data,
-					dataTreeviewNodeProvider,
-					treeviewConfigStore,
-					treeviewConfigStore,
-					dataNodeSelectionController,
-					nodeVisibilityController
-				)
-			: null;
-	});
-
-	/** Determines whether the map view can be rendered based on the availability of required dependencies. */
-	let loadMapView: boolean = $derived(
-		!!(webMapStore && webMapStore.data && areaSelectionInteractionStore && interactableLayers)
-	);
 
 	/** Determines whether the area treeview can be rendered based on the availability of required dependencies. */
 	let loadAreaTreeview: boolean = $derived(
@@ -461,7 +286,7 @@
 
 	/** Determines whether the data treeview can be rendered based on the availability of required dependencies. */
 	let loadDataTreeview: boolean = $derived(
-		!!(dataTreeviewNodes && dataTreeviewStore && treeviewConfigStore && tagDefinitionProvider)
+		!!(dataTreeviewNodes && dataTreeviewStore && treeviewConfigStore)
 	);
 
 	/** Determines whether the export menu can be rendered based on the availability of required dependencies. */
@@ -483,13 +308,96 @@
 	});
 
 	$effect(() => {
-		const store = webMapStore;
-		if (!store) {
+		const endpoints = appConfig.content?.aiUprnChatbot;
+		if (!endpoints) {
+			aiUprnChatbotHealth = null;
+			return;
+		}
+		const controller = new ServiceHealthController(`${endpoints.baseUrl}${endpoints.healthRoute}`);
+		aiUprnChatbotHealth = controller;
+		void controller.fetch();
+		return () => {
+			controller.destroy();
+			if (aiUprnChatbotHealth === controller) aiUprnChatbotHealth = null;
+		};
+	});
+
+	$effect(() => {
+		const endpoints = appConfig.content?.uprnDownload;
+		if (!endpoints) {
+			uprnDownloadHealth = null;
+			return;
+		}
+		const controller = new ServiceHealthController(
+			`${endpoints.baseUrl}${endpoints.healthRoute}`,
+			'include'
+		);
+		uprnDownloadHealth = controller;
+		void controller.fetch();
+		return () => {
+			controller.destroy();
+			if (uprnDownloadHealth === controller) uprnDownloadHealth = null;
+		};
+	});
+
+	$effect(() => {
+		const endpoints = appConfig.content?.uprnDownload;
+		const portalItemId = downloadPortalItemId;
+		const selectableLayers = appConfig.content?.map.selectableLayers;
+		if (!endpoints || !portalItemId || !selectableLayers) {
+			areaSelectionLimits = null;
+			return;
+		}
+		const controller = new AreaSelectionLimitsController(
+			`${endpoints.baseUrl}${endpoints.getAreaSelectionLimitsRoute}`,
+			portalItemId,
+			selectableLayers.map((layer) => layer.id)
+		);
+		areaSelectionLimits = controller;
+		void controller.fetch();
+		return () => {
+			controller.destroy();
+			if (areaSelectionLimits === controller) areaSelectionLimits = null;
+		};
+	});
+
+	$effect(() => {
+		void webMapStoreResetKey;
+		const source = selectedMapSource;
+		if (!source) {
+			webMapStore = null;
 			return;
 		}
 
+		const store = new WebMapStore({ source, proxy: undefined });
+		webMapStore = store;
+
 		return () => {
+			if (webMapStore === store) webMapStore = null;
 			void store.destroy();
+		};
+	});
+
+	$effect(() => {
+		const activeMapView = mapView;
+		if (!activeMapView) {
+			areaSelectionInteractionStore = null;
+			return;
+		}
+
+		const interactionStore = new AreaSelectionInteractionStore(
+			areaSelectionStore,
+			new LayerViewProvider(activeMapView),
+			config.map.selectableLayers ?? [],
+			webMapStore
+		);
+		areaSelectionInteractionStore = interactionStore;
+
+		return () => {
+			interactionStore.cleanup();
+			if (areaSelectionInteractionStore === interactionStore) {
+				areaSelectionInteractionStore = null;
+			}
 		};
 	});
 
@@ -655,95 +563,6 @@
 	});
 
 	/**
-	 * Effect to load previous selections from indexedDb and populate the area and data
-	 * selection stores accordingly.
-	 */
-	$effect(() => {
-		if (
-			initializedSelectionsFromDb ||
-			!initializedNodeVisibility ||
-			!selectionsFromDb ||
-			selectionsFromDb.isLoading ||
-			!selectionsFromDb.content ||
-			!treeviewNodeProvider ||
-			!nodeVisibilityController ||
-			!dataNodeSelectionController
-		) {
-			return;
-		}
-
-		const selections = selectionsFromDb.content;
-		console.log('[uprn/app] Loaded selections from IndexedDb', selections);
-
-		if (selections.areas) {
-			areaSelectionStore.setAreaSelectionLayer(selections.areas.nodeId);
-			areaSelectionStore.addSelectedAreas(Array.from(selections.areas.areaIds));
-
-			if (selections.areas.nodeId) {
-				const node = treeviewNodeProvider.getTreeviewNode(selections.areas.nodeId);
-				if (node) {
-					nodeVisibilityController.setVisibilityState(node, true);
-				}
-			}
-		}
-
-		selections.data.forEach((dataSelection) => {
-			dataSelectionStore.addSelection(dataSelection);
-			if (dataSelection.selectedFieldIds.size === 0) {
-				const node = treeviewNodeProvider.getTreeviewNode(dataSelection.nodeId);
-				if (node) {
-					dataNodeSelectionController.setSelectionState(node, SelectionState.Active);
-				}
-			}
-
-			dataSelection.selectedFieldIds.forEach((fieldId) => {
-				const nodeId = `${dataSelection.nodeId}-${fieldId}`;
-				const node = treeviewNodeProvider.getTreeviewNode(nodeId);
-				if (node) {
-					dataNodeSelectionController.setSelectionState(node, SelectionState.Active);
-				}
-			});
-		});
-
-		initializedSelectionsFromDb = true;
-	});
-
-	/**
-	 * Effect to track changes in area selection and update the selection tracking in indexedDb.
-	 * It listens for changes in the area selection snapshot and updates the stored selection for the current portal item.
-	 */
-	$effect(() => {
-		if (!webMapPersistenceKey || !initializedSelectionsFromDb) {
-			return;
-		}
-
-		const snapshot = areaSelectionStore.exportSnapshot();
-		if (!snapshot.nodeId) {
-			updateSelection(webMapPersistenceKey, { areas: null });
-			return;
-		}
-
-		updateSelection(webMapPersistenceKey, { areas: snapshot });
-	});
-
-	/**
-	 * Effect to track changes in data selection and update the selection tracking in indexedDb.
-	 * It listens for changes in the data selection snapshot and updates the stored selection for the current portal item.
-	 */
-
-	$effect(() => {
-		if (!webMapPersistenceKey || !initializedSelectionsFromDb) {
-			return;
-		}
-
-		const selections = [...dataSelectionStore.dataSelections.values()];
-		const snapshots = $state.snapshot(selections) as DataSelectionSnapshot[];
-		updateSelection(webMapPersistenceKey, {
-			data: snapshots
-		});
-	});
-
-	/**
 	 * Effect to refresh the area selection layer view when the map view or area selection interaction store is initialized.
 	 * */
 	$effect(() => {
@@ -830,7 +649,7 @@
 		appDestroyed = false;
 		const runGeneration = ++appRunGeneration;
 		initializedNodeVisibility = false;
-		initializedSelectionsFromDb = false;
+		selectionPersistence.reset();
 		failedWebMapSourceKeys.clear();
 		webMapLoadErrorMessage = null;
 		mapView = null;
@@ -881,10 +700,9 @@
 		}
 
 		initializedNodeVisibility = false;
-		initializedSelectionsFromDb = false;
+		selectionPersistence.reset();
 		failedWebMapSourceKeys.clear();
 		webMapLoadErrorMessage = null;
-		selectedTagIds.clear();
 		itemInfoDialogOpen = false;
 		itemInfoDialogActiveLayerId = null;
 		downloadInfoDialogOpen = false;
@@ -899,48 +717,12 @@
 	}
 
 	/**
-	 * Recursively filters treeview nodes based on the specified treeview type and visibility settings.
-	 * @param nodes - The array of TreeviewNode instances to filter.
-	 * @param type - The TreeviewType to filter nodes by.
-	 * @return An array of TreeviewNode instances that match the specified type and are not hidden, with their
-	 * children also filtered accordingly.
-	 */
-	function filterTreeviewNodesByType(nodes: TreeviewNode[], type: TreeviewType): TreeviewNode[] {
-		return nodes
-			.filter((node) => {
-				const config = treeviewConfigStore?.getConfig(node.id);
-				return config?.treeviewType === type && !config.isHidden;
-			})
-			.map((node) => {
-				if (node.children) {
-					return cloneNodeWithChildren(node, filterTreeviewNodesByType(node.children, type));
-				}
-				return node;
-			});
-	}
-
-	function cloneNodeWithChildren<T extends TreeviewNode>(node: T, children: TreeviewNode[]): T {
-		const clone = Object.create(Object.getPrototypeOf(node)) as T;
-
-		Object.defineProperties(clone, Object.getOwnPropertyDescriptors(node));
-		Object.defineProperty(clone, 'children', {
-			value: children,
-			enumerable: true,
-			configurable: true,
-			writable: true
-		});
-
-		return clone;
-	}
-
-	/**
 	 * Handles tab value changes and updates the current tab state.
 	 * @param value - The new tab value to switch to
 	 */
 	function onTabValueChange(value: string): void {
 		currentTab = value as TabType;
 		mountedTabs.add(currentTab);
-		tabStateService.setCurrentTab(value);
 		console.log(`[uprn/app] Switched to tab: ${value}`);
 	}
 
@@ -1044,7 +826,6 @@
 	function clearDataSelections() {
 		console.log('[uprn/app] Clearing data selections');
 		dataSelectionStore.clearSelections();
-		selectedTagIds.clear();
 	}
 
 	/**
@@ -1109,7 +890,7 @@
 	async function clearCache() {
 		console.log('[uprn/app] Clearing cache and restarting app');
 		try {
-			await clearDatabase();
+			await clearUprnDatabase();
 			startApp();
 		} catch (error) {
 			console.error('[uprn/app] Failed to clear cache', error);
@@ -1142,32 +923,23 @@
 		downloadInfoDialogOpen = true;
 	}
 
-	setItemInfoDialogEvents({
+	setItemInfoContext({
 		onOpenInfoDialog
 	});
 </script>
 
-<IntroductionDialog bind:isOpen={introductionDialogOpen} content={introductionMarkdown} />
-
-<Toaster visibleToasts={1} position="bottom-right" />
-{#if webMapStore?.isLoaded && treeviewConfigStore}
-	<ItemInfoDialog
-		bind:isOpen={itemInfoDialogOpen}
-		bind:activeLayerId={itemInfoDialogActiveLayerId}
-		webmapService={webMapStore}
-		nodeConfigProvider={treeviewConfigStore}
-	/>
-	<DownloadInfoDialog
-		bind:isOpen={downloadInfoDialogOpen}
-		download={activeDownloadInfo}
-		nodeProvider={treeviewNodeProvider!}
-		nodeConfigProvider={treeviewConfigStore}
-	/>
-{/if}
-{#if areaSelectionInteractionStore}
-	<AreaSelectionHoverCard {areaSelectionInteractionStore} />
-	<AreaSelectionToast {areaSelectionInteractionStore} />
-{/if}
+<AppOverlays
+	bind:introductionOpen={introductionDialogOpen}
+	{introductionMarkdown}
+	bind:itemInfoOpen={itemInfoDialogOpen}
+	bind:itemInfoLayerId={itemInfoDialogActiveLayerId}
+	bind:downloadInfoOpen={downloadInfoDialogOpen}
+	activeDownload={activeDownloadInfo}
+	webMapService={webMapStore}
+	nodeProvider={treeviewNodeProvider}
+	nodeConfigProvider={treeviewConfigStore}
+	{areaSelectionInteractionStore}
+/>
 
 <Sidebar.Root
 	isOpen={sidebarOpen}
@@ -1188,43 +960,17 @@
 					class="flex min-h-0 flex-1 flex-col gap-0"
 				>
 					<SidebarLayout.Header>
-						<div class="tabs-center">
-							<div class="tabbar-anchor" use:observeTabbarSize>
+						<div class="flex w-full justify-center">
+							<div class="relative inline-block" use:observeTabbarSize>
 								<UprnTabBar triggers={tabBarTriggers} progressByValue={tabProgressByValue}>
 									{#snippet actions()}
-										<ResetDialog
-											bind:open={resetDialogOpen}
-											actions={resetActions}
-											buttonClass="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
-										>
-											{#if appConfig.content}
-												<DebugDialog
-													class="w-5 h-5"
-													sources={appConfig.content.map.sources}
-													bind:selectedIndex={selectedMapSourceIndex}
-												/>
-											{/if}
-										</ResetDialog>
-										<Tooltip.Provider disableHoverableContent>
-											<Tooltip.Root>
-												<Tooltip.Trigger>
-													{#snippet child({ props })}
-														<Button
-															{...props}
-															class="shadow-none p-0 w-8 h-8 hover:bg-transparent focus:outline-none focus:ring-0"
-															variant="outline"
-															aria-label="Information"
-															onclick={() => (introductionDialogOpen = true)}
-														>
-															<InfoIcon class="w-5 h-5" aria-hidden="true" />
-														</Button>
-													{/snippet}
-												</Tooltip.Trigger>
-												<Tooltip.Content side="bottom">
-													<p>Information</p>
-												</Tooltip.Content>
-											</Tooltip.Root>
-										</Tooltip.Provider>
+										<TabHeaderActions
+											bind:resetOpen={resetDialogOpen}
+											{resetActions}
+											sources={appConfig.content.map.sources}
+											bind:selectedSourceIndex={selectedMapSourceIndex}
+											onOpenIntroduction={() => (introductionDialogOpen = true)}
+										/>
 									{/snippet}
 								</UprnTabBar>
 							</div>
@@ -1233,70 +979,45 @@
 
 					<SidebarLayout.Content>
 						<UprnTabBarContent value={TabType.AreaOfInterest}>
-							{#if mountedTabs.has(TabType.AreaOfInterest) && loadAreaTreeview}
-								<AreaSelectionTreeview
-									treeviewStore={areaTreeviewStore!}
-									nodeConfigProvider={treeviewConfigStore!}
-									areaSelectionController={areaSelectionStore}
-									selectionCount={areaSelectionStore.areaIds.size}
-								/>
-							{/if}
+							<AreaSelectionPanel
+								mounted={mountedTabs.has(TabType.AreaOfInterest) && loadAreaTreeview}
+								treeviewStore={areaTreeviewStore}
+								nodeConfigProvider={treeviewConfigStore}
+								{areaSelectionStore}
+							/>
 						</UprnTabBarContent>
 
 						<UprnTabBarContent value={TabType.Data}>
-							{#if mountedTabs.has(TabType.Data) && loadDataTreeview}
-								<DataSelectionTreeview
-									treeviewStore={dataTreeviewStore!}
-									nodeConfigProvider={treeviewConfigStore!}
-									nodeTagProvider={treeviewConfigStore!}
-									tagDefinitionProvider={tagDefinitionProvider!}
-									{selectedTagIds}
-									selectionCount={dataSelectionStore.dataSelections.size}
-								/>
-							{/if}
+							<DataSelectionPanel
+								mounted={mountedTabs.has(TabType.Data) && loadDataTreeview}
+								treeviewStore={dataTreeviewStore}
+								nodeConfigProvider={treeviewConfigStore}
+								{dataSelectionStore}
+							/>
 						</UprnTabBarContent>
 
 						<UprnTabBarContent value={TabType.Export}>
-							<ScrollArea class="h-full w-full" type="always" scrollbarYClasses="z-50">
-								{#if loadExportMenu}
-									<div class="min-w-0 px-3">
-										<ExportMenu
-											nodeProvider={treeviewNodeProvider!}
-											nodeConfigProvider={treeviewConfigStore!}
-											{areaSelectionStore}
-											areaSelectionInteractionStore={areaSelectionInteractionStore!}
-											{dataSelectionStore}
-											webMapLoaded={webMapStore?.isLoaded ?? false}
-										/>
-									</div>
-								{/if}
-							</ScrollArea>
+							<ExportReviewPanel
+								enabled={loadExportMenu}
+								nodeProvider={treeviewNodeProvider}
+								nodeConfigProvider={treeviewConfigStore}
+								{areaSelectionStore}
+								{areaSelectionInteractionStore}
+								{dataSelectionStore}
+								webMapLoaded={webMapStore?.isLoaded ?? false}
+							/>
 						</UprnTabBarContent>
 
 						<UprnTabBarContent value={TabType.Downloads}>
 							<ScrollArea class="h-full w-full" type="always" scrollbarYClasses="z-50">
-								<div class="min-h-0 px-3">
-									{#if !uprnDownloadHealth || uprnDownloadHealth.isLoading}
-										<div class="flex h-full w-full items-center justify-center">
-											<Spinner class="w-10 h-10" />
-										</div>
-									{:else if !!uprnDownloadHealth && (!uprnDownloadHealth.isAccessible || !!uprnDownloadHealth.error)}
-										<p class="p-4 text-center text-sm text-gray-500">
-											Download service is not available.
-										</p>
-									{:else if !!uprnDownloadHealth && uprnDownloadHealth.isAccessible && appConfig.content?.uprnDownload}
-										{@const requestJobUrl = `${appConfig.content.uprnDownload.baseUrl}${appConfig.content.uprnDownload.requestJobRoute}`}
-										{@const requestJobStatusUrl = `${appConfig.content.uprnDownload.baseUrl}${appConfig.content.uprnDownload.requestJobStatusesRoute}`}
-										{@const downloadBaseUrl = `${appConfig.content.uprnDownload.baseUrl}${appConfig.content.uprnDownload.fetchDownloadRoute}`}
-										<DownloadsMenu
-											{downloadsStore}
-											{requestJobUrl}
-											jobStatusesUrl={requestJobStatusUrl}
-											{downloadBaseUrl}
-											onOpenInfoDialog={onOpenDownloadInfoDialog}
-										/>
-									{/if}
-								</div>
+								<DownloadsPanel
+									class="px-3"
+									health={uprnDownloadHealth}
+									portalItemId={downloadPortalItemId}
+									endpoints={appConfig.content?.uprnDownload}
+									{downloadsStore}
+									onOpenInfoDialog={onOpenDownloadInfoDialog}
+								/>
 							</ScrollArea>
 						</UprnTabBarContent>
 					</SidebarLayout.Content>
@@ -1320,72 +1041,28 @@
 			</Card.Root>
 
 			<CollapsibleWindow isOpenedOnInit={true} class="shadow-none">
-				{#if !aiUprnChatbotHealth || aiUprnChatbotHealth.isLoading}
-					<div class="flex h-full w-full items-center justify-center">
-						<Spinner class="w-10 h-10" />
-					</div>
-				{:else if !!aiUprnChatbotHealth && (!aiUprnChatbotHealth.isAccessible || !!aiUprnChatbotHealth.error)}
-					<p class="p-4 text-center text-sm text-gray-500">
-						AI UPRN Chatbot service is not available.
-					</p>
-				{:else if !!aiUprnChatbotHealth && aiUprnChatbotHealth.isAccessible && chatbotSettings && appConfig.content?.aiUprnChatbot}
-					{@const chatEndpoint = `${appConfig.content.aiUprnChatbot.baseUrl}${appConfig.content.aiUprnChatbot.chatRoute}`}
-					{@const feedbackEndpoint = `${appConfig.content.aiUprnChatbot.baseUrl}${appConfig.content.aiUprnChatbot.feedbackRoute}`}
-					<UprnChat
-						chatbotConfig={chatbotSettings}
-						{chatEndpoint}
-						{feedbackEndpoint}
-						{getTabState}
-					/>
-				{/if}
+				<ChatAvailabilityPanel
+					health={aiUprnChatbotHealth}
+					chatbotConfig={chatbotSettings}
+					endpoints={appConfig.content?.aiUprnChatbot}
+					{getTabState}
+				/>
 			</CollapsibleWindow>
 		</div>
 	{/snippet}
 
 	{#snippet mainContent()}
-		{#if loadMapView}
-			<UprnMapView
-				webMap={webMapStore!.data!}
-				mapView={mapView!}
-				areaSelectionInteractionStore={areaSelectionInteractionStore!}
-				interactableLayers={interactableLayers!}
-				{currentTab}
-				onClearSelections={clearSelectedMapAreas}
-				onHideVisibleDataLayer={hideVisibleDataLayers}
-				{hasVisibleDataLayer}
-				class="h-full min-h-0 w-full flex-1"
-			/>
-		{:else if webMapLoadErrorMessage}
-			<div class="flex h-full w-full items-center justify-center p-6">
-				<div class="max-w-md rounded-md border bg-background p-4 text-center shadow-sm">
-					<p class="text-sm font-medium text-foreground">Map failed to load.</p>
-					<p class="mt-2 text-sm text-muted-foreground">{webMapLoadErrorMessage}</p>
-				</div>
-			</div>
-		{:else}
-			<div class="flex h-full w-full items-center justify-center">
-				<Spinner class="w-10 h-10" />
-			</div>
-		{/if}
+		<AppMapPane
+			webMap={webMapStore?.data ?? null}
+			{mapView}
+			{areaSelectionInteractionStore}
+			{interactableLayers}
+			{currentTab}
+			errorMessage={webMapLoadErrorMessage}
+			onClearSelections={clearSelectedMapAreas}
+			onHideVisibleDataLayer={hideVisibleDataLayers}
+			{hasVisibleDataLayer}
+			class="h-full w-full"
+		/>
 	{/snippet}
 </Sidebar.Root>
-
-<style>
-	:global(.card-content) {
-		font-size: 0.875rem;
-		line-height: 1.25rem;
-		transition-property: all;
-		transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-		transition-duration: 150ms;
-	}
-	.tabs-center {
-		width: 100%;
-		display: flex;
-		justify-content: center;
-	}
-
-	.tabbar-anchor {
-		position: relative;
-		display: inline-block;
-	}
-</style>

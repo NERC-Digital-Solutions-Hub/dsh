@@ -61,7 +61,7 @@
 
 		<span class="punct">&lt;</span><span class="tag">{elementNode?.name}</span>
 		{#if hasAttrs}
-			{#each attrEntries(elementNode?.attrs ?? {}) as [k, v]}
+			{#each attrEntries(elementNode?.attrs ?? {}) as [k, v] (k)}
 				<span> </span><span class="attr">{k}</span><span class="punct">=</span><span class="string"
 					>"{v}"</span
 				>
@@ -82,7 +82,7 @@
 	</div>
 
 	{#if hasChildren && open}
-		{#each elementNode?.children ?? [] as child}
+		{#each elementNode?.children ?? [] as child, childIndex (childIndex)}
 			<Self node={child} depth={depth + 1} {expandAll} />
 		{/each}
 

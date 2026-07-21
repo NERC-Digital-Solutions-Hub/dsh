@@ -1,31 +1,12 @@
-<script lang="ts" module>
-	import { TreeviewNodeTypology } from '$lib/Types/Treeview.types.js';
-	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
-
-	/**
-	 * Represents a node in the selection tree.
-	 */
-	export type SelectionTreeviewNode = {
-		/** Unique identifier for the node */
-		id: string;
-		/** Display name of the node */
-		name: string;
-		/** Whether this node is a variable */
-		isVariable: boolean;
-		/** Whether this is a selectable leaf node */
-		isLeaf: boolean;
-		/** Child nodes */
-		children: SelectionTreeviewNode[];
-		/** Optional typology for icon display */
-		typology?: TreeviewNodeTypology;
-	};
-</script>
-
 <script lang="ts">
 	import OpenIndicator from '$lib/Components/OpenIndicator/OpenIndicator.svelte';
 	import { Button } from '$lib/Components/shadcn/button/index.js';
+	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 	import { getNodeIcon } from '$lib/Components/Treeview/GetNodeIcon.js';
 	import { getNodeStyles } from '$lib/Components/Treeview/NodeContentStyles.js';
+	import TreeviewNodeIcon from '$lib/Components/Treeview/TreeviewNodeIcon.svelte';
+	import type { SelectionSummaryNode } from '$lib/Types/SelectionSummary.types';
+	import { TreeviewNodeTypology } from '$lib/Types/Treeview.types';
 	import type { Component, Snippet } from 'svelte';
 	import { cubicOut } from 'svelte/easing';
 	import { slide, type SlideParams, type TransitionConfig } from 'svelte/transition';
@@ -33,11 +14,11 @@
 
 	type Props = {
 		/** The selection tree node to render */
-		node: SelectionTreeviewNode;
+		node: SelectionSummaryNode;
 		/** Callback when a node's remove button is clicked. If omitted, the remove button is hidden. */
-		onRemove?: (node: SelectionTreeviewNode) => void;
+		onRemove?: (node: SelectionSummaryNode) => void;
 		/** Optional snippet for additional actions on leaf nodes */
-		actions?: Snippet<[SelectionTreeviewNode]>;
+		actions?: Snippet<[SelectionSummaryNode]>;
 		/** Current depth for indentation */
 		depth?: number;
 	};
@@ -100,17 +81,14 @@
 				{#if isFolder}
 					<OpenIndicator {isOpen} />
 				{/if}
-				<span class="inline-block size-4 shrink-0" aria-hidden="true">
-					{#if typeof icon === 'string'}
-						{@html icon}
-					{:else}
-						{@const Icon = icon}
-						<Icon />
-					{/if}
-				</span>
+				<TreeviewNodeIcon {icon} class="inline-block size-4 shrink-0" />
 			</div>
 
-			<span class="min-w-0 whitespace-normal break-words text-left leading-snug">
+			<span
+				class="min-w-0 whitespace-normal break-words text-left leading-snug"
+				class:italic={node.nameStatus === 'loading'}
+				class:text-muted-foreground={node.nameStatus === 'loading'}
+			>
 				{node.name}
 			</span>
 

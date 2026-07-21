@@ -82,3 +82,19 @@ export type PdfContent = {
 	description?: string;
 	source: string;
 };
+
+export type MetadataResolvedContentByType = {
+	arcgisInfo: { type: 'arcgisInfo' };
+	portalPage: { type: 'portalPage'; text: string };
+	text: { type: 'text'; text: string };
+	disclaimer: { type: 'disclaimer'; text: string };
+	image: { type: 'image'; url: string };
+	xml: { type: 'xml'; text: string };
+	isoMetadata: { type: 'isoMetadata'; text: string };
+	md: { type: 'md'; text: string };
+	docx: { type: 'docx'; name: string; description: string; url: string };
+	pdf: { type: 'pdf'; name: string; description: string; url: string };
+	slideshow: { type: 'slideshow'; urls: string[] };
+};
+
+export type MetadataResolvedContent = MetadataResolvedContentByType[MetadataTabContentItem['type']];

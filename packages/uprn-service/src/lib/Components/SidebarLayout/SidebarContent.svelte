@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
-	import { ScrollArea } from '$lib/Components/shadcn/scroll-area';
 	import type { Snippet } from 'svelte';
 
 	type Props = {

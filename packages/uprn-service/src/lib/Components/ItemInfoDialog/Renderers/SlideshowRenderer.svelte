@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as Carousel from '$lib/Components/shadcn/carousel/index.js';
-	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
+	import type { MetadataResolvedContent } from '$lib/Types/Metadata.types';
 	import { GalleryImage, GalleryThumbnail, LightboxGallery } from 'svelte-lightbox';
 
 	type Props = {
@@ -14,7 +14,7 @@
 	<div slot="thumbnail" class="mx-auto w-full max-w-[520px]">
 		<Carousel.Root>
 			<Carousel.Content>
-				{#each content.urls as imageUrl, imageIndex}
+				{#each content.urls as imageUrl, imageIndex (`${imageUrl}-${imageIndex}`)}
 					<Carousel.Item class="flex justify-center">
 						<GalleryThumbnail id={imageIndex}>
 							<img
@@ -32,7 +32,7 @@
 		</Carousel.Root>
 	</div>
 
-	{#each content.urls as imageUrl, imageIndex}
+	{#each content.urls as imageUrl, imageIndex (`${imageUrl}-${imageIndex}`)}
 		<GalleryImage>
 			<img src={imageUrl} alt={`Slideshow image ${imageIndex + 1}`} />
 		</GalleryImage>

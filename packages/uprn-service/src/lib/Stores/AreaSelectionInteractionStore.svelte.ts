@@ -1,91 +1,24 @@
-import type { LayerViewProvider } from '$lib/Services/LayerViewProvider';
+import { AreaHighlightController } from '$lib/Services/AreaSelection/AreaHighlightController.svelte';
+import { AreaQueryService } from '$lib/Services/AreaSelection/AreaQueryService';
 import type { IWebMapService } from '$lib/Services/IWebMapService';
+import type { LayerViewProvider } from '$lib/Services/LayerViewProvider';
 import type { AreaSelectionStore } from '$lib/Stores/AreaSelectionStore.svelte';
-import { SvelteMap } from 'svelte/reactivity';
+import type {
+	AreaFieldHandleInfo,
+	AreaSelectionFieldInfo,
+	SelectionViewState
+} from '$lib/Types/Selection.types';
 
-export type AreaSelectionFieldInfo = {
-	id: string;
-	nameField: string;
-	codeField: string;
-};
-
-export type SelectionViewState = {
-	layerView: __esri.FeatureLayerView | null;
-	areaHandles: Map<number, __esri.Handle>;
-};
-
-export type AreaFieldHandleInfo = {
-	id: number;
-	handle: __esri.Handle;
-};
-
-type QueryableAreaLayer = (__esri.FeatureLayer | __esri.Sublayer) & {
-	id: string;
-	objectIdField: string;
-	uid?: string;
-	fields?: AreaLayerField[];
-	fieldsIndex?: {
-		get: (fieldName: string) => AreaLayerField | null | undefined;
-	};
-	getField?: (fieldName: string) => AreaLayerField | null | undefined;
-	queryFeatures: (query: __esri.QueryProperties) => Promise<__esri.FeatureSet>;
-};
-
-type AreaLayerField = {
-	name: string;
-};
+export type { AreaFieldHandleInfo, AreaSelectionFieldInfo, SelectionViewState };
 
 /**
- * Store for managing interactions with area selection on the map.
+ * Compatibility façade used by map and UI features. Reactive highlight state and ArcGIS handles
+ * live in AreaHighlightController; layer queries and field resolution live in AreaQueryService.
  */
 export class AreaSelectionInteractionStore {
-	/**
-	 * The area selection store.
-	 */
-	private areaSelectionStore: AreaSelectionStore;
-
-	/**
-	 * Provider for getting LayerViews.
-	 */
-	private layerViewProvider: LayerViewProvider;
-
-	/**
-	 * Optional web map service used for layer queries before the MapView has attached the WebMap.
-	 */
-	private webMapService: IWebMapService | null;
-
-	/**
-	 * The current layer view for the area selection layer.
-	 */
-	public selectionViewState = $state<SelectionViewState>({
-		layerView: null,
-		areaHandles: new SvelteMap<number, __esri.Handle>()
-	});
-
-	/**
-	 * The last added area handle info.
-	 */
-	public lastAddedArea = $state<AreaFieldHandleInfo | null>(null);
-
-	/**
-	 * The last removed area handle info.
-	 */
-	public lastRemovedArea = $state<AreaFieldHandleInfo | null>(null);
-
-	/**
-	 * The currently hovered area handle info.
-	 */
-	public currentHoveredArea = $state<AreaFieldHandleInfo | null>(null);
-
-	/**
-	 * Field infos for area selection layers. This is used to find where the name and code is found in the layer fields.
-	 */
-	private fieldInfoByLayerId = new SvelteMap<string, AreaSelectionFieldInfo>();
-
-	/**
-	 * Cache where the layer ID is the first key, then the area IDs map to names.
-	 */
-	private cachedNames = new SvelteMap<string, Map<number, string>>();
+	private readonly areaSelectionStore: AreaSelectionStore;
+	private readonly highlights: AreaHighlightController;
+	private readonly queries: AreaQueryService;
 
 	constructor(
 		areaSelectionStore: AreaSelectionStore,
@@ -94,430 +27,120 @@ export class AreaSelectionInteractionStore {
 		webMapService: IWebMapService | null = null
 	) {
 		this.areaSelectionStore = areaSelectionStore;
-		this.layerViewProvider = layerViewProvider;
-		this.webMapService = webMapService;
-		this.setFieldInfoMap(fieldInfos);
+		this.highlights = new AreaHighlightController(areaSelectionStore, layerViewProvider);
+		this.queries = new AreaQueryService(layerViewProvider, fieldInfos, webMapService);
 	}
 
-	public async refreshLayerView(): Promise<void> {
-		console.log(
-			'[area-selection-interaction-store] refreshing layer view for area selection store.'
-		);
-		if (!this.areaSelectionStore.layerId && this.selectionViewState.layerView !== null) {
-			this.resetSelectedLayerView();
-			return;
-		}
-
-		if (this.selectionViewState.layerView?.layer?.id === this.areaSelectionStore.layerId) {
-			return;
-		}
-
-		if (!this.areaSelectionStore.layerId) {
-			this.resetSelectedAreas();
-			return;
-		}
-
-		const layerView = await this.layerViewProvider.getLayerViewById(
-			this.areaSelectionStore.layerId
-		);
-		if (!layerView) {
-			console.warn(
-				`[area-selection-interaction-store] no layer view found for layer ID ${this.areaSelectionStore.layerId}.`
-			);
-			return;
-		}
-
-		this.setSelectedLayerView(layerView as __esri.FeatureLayerView);
+	public get selectionViewState(): SelectionViewState {
+		return this.highlights.selectionViewState;
 	}
 
-	public async refreshAreas(): Promise<void> {
-		const layerView = this.selectionViewState.layerView;
-		if (!layerView) {
-			this.resetSelectedAreas();
-			return;
-		}
-
-		const selected = this.areaSelectionStore.areaIds;
-		const handles = this.selectionViewState.areaHandles;
-
-		for (const id of handles.keys()) {
-			if (!selected.has(id)) {
-				this.removeSelectedArea(id);
-			}
-		}
-
-		for (const id of selected) {
-			if (handles.has(id)) {
-				continue;
-			}
-
-			const handle = layerView.highlight(id, { name: 'selected' });
-			if (handle) {
-				this.addSelectedArea(id, handle);
-			}
-		}
+	public get lastAddedArea(): AreaFieldHandleInfo | null {
+		return this.highlights.lastAddedArea;
 	}
 
-	public setFieldInfos(fieldInfos: AreaSelectionFieldInfo[]): void {
-		this.setFieldInfoMap(fieldInfos);
+	public get lastRemovedArea(): AreaFieldHandleInfo | null {
+		return this.highlights.lastRemovedArea;
 	}
 
-	public setSelectedLayerView(layerView: __esri.FeatureLayerView): void {
-		if (this.selectionViewState?.layerView === layerView) {
-			return;
-		}
-
-		this.resetSelectedAreas();
-
-		this.selectionViewState = {
-			layerView: layerView,
-			areaHandles: new SvelteMap<number, __esri.Handle>()
-		};
-	}
-
-	public clearSelectedLayerView(): void {
-		if (this.selectionViewState.layerView === null) {
-			return;
-		}
-
-		this.resetSelectedAreas();
-		this.selectionViewState.layerView = null;
-	}
-
-	public resetSelectedLayerView(): void {
-		this.resetSelectedAreas();
-
-		this.selectionViewState = {
-			layerView: null,
-			areaHandles: new SvelteMap<number, __esri.Handle>()
-		};
-	}
-
-	public resetSelectedAreas(): void {
-		if (this.selectionViewState.areaHandles.size === 0) {
-			return;
-		}
-
-		this.selectionViewState.areaHandles.values().forEach((handle) => {
-			handle.remove();
-		});
-
-		this.selectionViewState.areaHandles.clear();
-		this.lastAddedArea = null;
-		this.lastRemovedArea = null;
-		this.currentHoveredArea = null;
-	}
-
-	public addSelectedArea(id: number, handle: __esri.Handle): void {
-		if (!this.selectionViewState) {
-			console.warn('SelectedAreasStore: No feature layer view is set.');
-			return;
-		}
-
-		const areaInfo: AreaFieldHandleInfo = { id, handle };
-		this.lastAddedArea = areaInfo;
-
-		this.selectionViewState.areaHandles.set(id, handle);
-		this.areaSelectionStore.addAreaSelection(id);
-	}
-
-	public removeSelectedArea(id: number): void {
-		if (!this.selectionViewState) {
-			console.warn(`[area-selection-interaction-store] no feature layer view is set.`);
-			return;
-		}
-
-		const removedHandle = this.selectionViewState.areaHandles.get(id);
-		if (!removedHandle) {
-			this.areaSelectionStore.removeSelectedArea(id);
-			return;
-		}
-
-		console.log(`[area-selection-interaction-store] removing selected area ID ${id}.`);
-		this.lastRemovedArea = { id, handle: removedHandle };
-
-		removedHandle.remove();
-		this.selectionViewState.areaHandles.delete(id);
-		this.areaSelectionStore.removeSelectedArea(id);
-	}
-
-	public async getAreaNamesById(ids: number[]): Promise<string[]> {
-		const layerId = this.selectionViewState?.layerView?.layer?.id;
-		if (!layerId) return ids.map(() => '');
-
-		return await this.getAreaNamesByLayerId(layerId, ids);
-	}
-
-	public async getAreaNamesByLayerId(layerId: string, ids: number[]): Promise<string[]> {
-		if (ids.length === 0) return [];
-
-		const nameField = this.getNameFieldForLayer(layerId);
-		if (!nameField) return ids.map(() => '');
-
-		const layer = this.getQueryableAreaLayerById(layerId, false);
-		if (!layer) return ids.map(() => '');
-
-		const cacheKey = layer.uid ?? layer.id;
-		let cache = this.cachedNames.get(cacheKey);
-		if (!cache) {
-			cache = new SvelteMap<number, string>();
-			this.cachedNames.set(cacheKey, cache);
-		}
-
-		const names: (string | undefined)[] = new Array(ids.length);
-		const idToIndex = new SvelteMap<number, number>();
-		const missingIds: number[] = [];
-
-		ids.forEach((id, idx) => {
-			idToIndex.set(id, idx);
-			const cached = cache.get(id);
-			if (cached !== undefined) {
-				names[idx] = cached;
-			} else {
-				missingIds.push(id);
-			}
-		});
-
-		if (missingIds.length === 0) {
-			return names.map((n) => n ?? '');
-		}
-
-		const objectIdField: string = layer.objectIdField;
-		const resolvedNameField = this.resolveLayerFieldName(layer, nameField);
-		try {
-			const result = await layer.queryFeatures({
-				objectIds: missingIds,
-				outFields: [resolvedNameField, objectIdField],
-				returnGeometry: false
-			});
-
-			for (const feature of result.features) {
-				const id = getAttributeValue(feature.attributes, objectIdField) as number;
-				const name = getAttributeValue(feature.attributes, resolvedNameField) as string;
-				const idx = idToIndex.get(id);
-				if (idx !== undefined) {
-					names[idx] = name ?? '';
-					cache!.set(id, name ?? '');
-				}
-			}
-		} catch (error) {
-			console.warn('[area-selection-interaction-store] failed to query area names.', error);
-		}
-
-		return names.map((n) => n ?? '');
-	}
-
-	public async getAreaCodesById(ids: number[]): Promise<string[]> {
-		const layerId = this.selectionViewState?.layerView?.layer?.id;
-		if (!layerId) return ids.map(() => '');
-
-		return await this.getAreaCodesByLayerId(layerId, ids);
-	}
-
-	public async getAreaCodesByLayerId(layerId: string, ids: number[]): Promise<string[]> {
-		if (ids.length === 0) return [];
-
-		const codeField = this.getCodeFieldForLayer(layerId);
-		if (!codeField) return ids.map(() => '');
-
-		const layer = this.getFeatureLayerById(layerId);
-		if (!layer) return ids.map(() => '');
-
-		const objectIdField = layer.objectIdField;
-		const resolvedCodeField = this.resolveLayerFieldName(layer, codeField);
-
-		const idToIndex = new SvelteMap<number, number>();
-		const codes: string[] = new Array(ids.length).fill('');
-
-		ids.forEach((id, index) => {
-			idToIndex.set(id, index);
-		});
-
-		try {
-			const result = await layer.queryFeatures({
-				objectIds: ids,
-				outFields: [resolvedCodeField, objectIdField],
-				returnGeometry: false
-			});
-
-			for (const feature of result.features) {
-				const id = getAttributeValue(feature.attributes, objectIdField) as number;
-				const code = getAttributeValue(feature.attributes, resolvedCodeField) as string;
-				const index = idToIndex.get(id);
-
-				if (index !== undefined) {
-					codes[index] = code ?? '';
-				}
-			}
-		} catch (error) {
-			console.warn('[area-selection-interaction-store] failed to query area codes.', error);
-		}
-
-		return codes;
-	}
-
-	public setHoveredArea(id: number, handle: __esri.Handle): void {
-		if (id === this.currentHoveredArea?.id) {
-			return;
-		}
-
-		if (this.currentHoveredArea) {
-			this.clearHoveredArea();
-		}
-
-		this.currentHoveredArea = { id, handle };
-	}
-
-	public clearHoveredArea(): void {
-		if (!this.currentHoveredArea) {
-			return;
-		}
-
-		this.currentHoveredArea?.handle.remove();
-		this.currentHoveredArea = null;
-	}
-
-	public getNameFieldForCurrentLayer(): string | null {
-		if (
-			!this.selectionViewState ||
-			!this.selectionViewState.layerView ||
-			!this.selectionViewState.layerView.layer
-		) {
-			return null;
-		}
-
-		const layerId = this.selectionViewState.layerView?.layer?.id;
-		if (!layerId) return null;
-
-		return this.getNameFieldForLayer(layerId);
-	}
-
-	public getNameFieldForLayer(layerId: string): string | null {
-		const info = this.fieldInfoByLayerId.get(layerId);
-		if (!info) {
-			console.warn(
-				`[area-selection-interaction-store] no name field configured for layer ${layerId}`
-			);
-			return null;
-		}
-
-		return info.nameField;
-	}
-
-	public getCodeFieldForCurrentLayer(): string | null {
-		if (
-			!this.selectionViewState ||
-			!this.selectionViewState.layerView ||
-			!this.selectionViewState.layerView.layer
-		) {
-			return null;
-		}
-
-		const layerId = this.selectionViewState.layerView?.layer?.id;
-		if (!layerId) return null;
-
-		return this.getCodeFieldForLayer(layerId);
-	}
-
-	public getCodeFieldForLayer(layerId: string): string | null {
-		const info = this.fieldInfoByLayerId.get(layerId);
-		if (!info) {
-			console.warn(
-				`[area-selection-interaction-store] no code field configured for layer ${layerId}`
-			);
-			return null;
-		}
-		return info.codeField;
+	public get currentHoveredArea(): AreaFieldHandleInfo | null {
+		return this.highlights.currentHoveredArea;
 	}
 
 	public get selectedAreaCount(): number {
 		return this.areaSelectionStore.areaIds.size;
 	}
 
+	public refreshLayerView(): Promise<void> {
+		return this.highlights.refreshLayerView();
+	}
+
+	public refreshAreas(): Promise<void> {
+		return this.highlights.refreshAreas();
+	}
+
+	public setFieldInfos(fieldInfos: AreaSelectionFieldInfo[]): void {
+		this.queries.setFieldInfos(fieldInfos);
+	}
+
+	public setSelectedLayerView(layerView: __esri.FeatureLayerView): void {
+		this.highlights.setSelectedLayerView(layerView);
+	}
+
+	public clearSelectedLayerView(): void {
+		this.highlights.clearSelectedLayerView();
+	}
+
+	public resetSelectedLayerView(): void {
+		this.highlights.resetSelectedLayerView();
+	}
+
+	public resetSelectedAreas(): void {
+		this.highlights.resetSelectedAreas();
+	}
+
+	public addSelectedArea(id: number, handle: __esri.Handle): void {
+		this.highlights.addSelectedArea(id, handle);
+	}
+
+	public removeSelectedArea(id: number): void {
+		this.highlights.removeSelectedArea(id);
+	}
+
+	public getAreaNamesById(ids: number[]): Promise<string[]> {
+		const layerId = this.selectionViewState.layerView?.layer?.id;
+		return layerId ? this.queries.getNames(layerId, ids) : Promise.resolve(ids.map(() => ''));
+	}
+
+	public getAreaNamesByLayerId(layerId: string, ids: number[]): Promise<string[]> {
+		return this.queries.getNames(layerId, ids);
+	}
+
+	public getAreaCodesById(ids: number[]): Promise<string[]> {
+		const layerId = this.selectionViewState.layerView?.layer?.id;
+		return layerId ? this.queries.getCodes(layerId, ids) : Promise.resolve(ids.map(() => ''));
+	}
+
+	public getAreaCodesByLayerId(layerId: string, ids: number[]): Promise<string[]> {
+		return this.queries.getCodes(layerId, ids);
+	}
+
+	public setHoveredArea(id: number, handle: __esri.Handle): void {
+		this.highlights.setHoveredArea(id, handle);
+	}
+
+	public clearHoveredArea(): void {
+		this.highlights.clearHoveredArea();
+	}
+
+	public getNameFieldForCurrentLayer(): string | null {
+		const layerId = this.selectionViewState.layerView?.layer?.id;
+		return layerId ? this.queries.getNameField(layerId) : null;
+	}
+
+	public getNameFieldForLayer(layerId: string): string | null {
+		return this.queries.getNameField(layerId);
+	}
+
+	public getCodeFieldForCurrentLayer(): string | null {
+		const layerId = this.selectionViewState.layerView?.layer?.id;
+		return layerId ? this.queries.getCodeField(layerId) : null;
+	}
+
+	public getCodeFieldForLayer(layerId: string): string | null {
+		return this.queries.getCodeField(layerId);
+	}
+
 	public clearSelections(): void {
-		this.resetSelectedAreas();
-		this.areaSelectionStore.clearSelectedAreas();
-		this.clearHoveredArea();
-		this.lastAddedArea = null;
-		this.lastRemovedArea = null;
-		this.currentHoveredArea = null;
-		console.log('[area-selection-interaction-store] selections cleared.');
+		this.highlights.clearSelections();
 	}
 
 	public cleanup(): void {
-		this.resetSelectedAreas();
-		this.clearHoveredArea();
-		this.lastAddedArea = null;
-		this.lastRemovedArea = null;
-		this.currentHoveredArea = null;
-		this.cachedNames.clear();
-		this.fieldInfoByLayerId.clear();
-
-		console.log('[area-selection-interaction-store] cleaned up.');
+		this.highlights.cleanup();
+		this.queries.clear();
 	}
 
 	public canQueryAreaLayer(layerId: string): boolean {
-		return this.getQueryableAreaLayerById(layerId, false) !== null;
+		return this.queries.canQuery(layerId);
 	}
-
-	private setFieldInfoMap(fieldInfos: AreaSelectionFieldInfo[]): void {
-		this.fieldInfoByLayerId.clear();
-		for (const info of fieldInfos) {
-			this.fieldInfoByLayerId.set(info.id, info);
-		}
-	}
-
-	private getFeatureLayerById(layerId: string): QueryableAreaLayer | null {
-		return this.getQueryableAreaLayerById(layerId);
-	}
-
-	private resolveLayerFieldName(layer: QueryableAreaLayer, fieldName: string): string {
-		const directField = layer.getField?.(fieldName);
-		if (directField?.name) {
-			return directField.name;
-		}
-
-		const indexedField = layer.fieldsIndex?.get(fieldName);
-		if (indexedField?.name) {
-			return indexedField.name;
-		}
-
-		const lowerFieldName = fieldName.toLowerCase();
-		const matchingField = layer.fields?.find(
-			(field) => field.name.toLowerCase() === lowerFieldName
-		);
-		return matchingField?.name ?? fieldName;
-	}
-
-	private getQueryableAreaLayerById(layerId: string, shouldWarn = true): QueryableAreaLayer | null {
-		const layer =
-			this.layerViewProvider.getLayerById(layerId) ?? this.webMapService?.getLayerById(layerId);
-		if (!layer || !('queryFeatures' in layer) || !('objectIdField' in layer)) {
-			if (shouldWarn) {
-				console.warn(
-					`[area-selection-interaction-store] no queryable feature layer found for ${layerId}.`
-				);
-			}
-			return null;
-		}
-
-		return layer as QueryableAreaLayer;
-	}
-}
-
-function getAttributeValue(
-	attributes: Record<string, unknown> | null | undefined,
-	fieldName: string
-): unknown {
-	if (!attributes) {
-		return undefined;
-	}
-
-	if (fieldName in attributes) {
-		return attributes[fieldName];
-	}
-
-	const lowerFieldName = fieldName.toLowerCase();
-	const matchingKey = Object.keys(attributes).find((key) => key.toLowerCase() === lowerFieldName);
-	return matchingKey ? attributes[matchingKey] : undefined;
 }

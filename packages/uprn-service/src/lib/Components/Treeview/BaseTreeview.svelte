@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { TreeviewNode } from '$lib/Models/Treeview/Index.js';
+	import type { TreeviewNode } from '$lib/Models/Treeview/index.js';
 
 	/** Guide line type for each indent level of a node. */
 	export type GuideType = 'full' | 'last' | 'none';

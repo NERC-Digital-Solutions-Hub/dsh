@@ -1,21 +1,14 @@
 <script lang="ts">
-	import ClearSelectionsButton from '$lib/Components/ClearSelectionsButton/ClearSelectionsButton.svelte';
 	import Button from '$lib/Components/shadcn/button/button.svelte';
 	import Card from '$lib/Components/shadcn/card/card.svelte';
 	import Spinner from '$lib/Components/shadcn/spinner/spinner.svelte';
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
+	import { buildExportDownload } from '$lib/Services/ExportRequestBuilder';
 	import type { AreaSelectionInteractionStore } from '$lib/Stores/AreaSelectionInteractionStore.svelte';
 	import type { AreaSelectionStore } from '$lib/Stores/AreaSelectionStore.svelte';
 	import type { DataSelectionStore } from '$lib/Stores/DataSelectionStore.svelte';
 	import type DownloadsStore from '$lib/Stores/DownloadsStore.svelte';
-	import { TreeviewNodeLayerType } from '$lib/Types/Treeview.types';
 	import { Check, TriangleAlert } from '@lucide/svelte';
-	import {
-		DownloadStatus,
-		type AreaFieldInfoWithCode,
-		type AreaSelectionInfoWithCode,
-		type DataSelectionInfo
-	} from '$lib/Types/Uprn.types';
 	import { onDestroy } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
@@ -76,8 +69,6 @@
 		return areaSelectionStore.areaIds.size > limit;
 	}
 
-	// TODO: Add onExport function prop to handle export completion externally
-
 	/**
 	 * Handles the export button click event.
 	 * Validates that areas and data are selected, then initiates the export process.
@@ -111,60 +102,22 @@
 				return;
 			}
 
-			const areaFieldCodes: string[] = await areaSelectionInteractionStore.getAreaCodesByLayerId(
+			const areaCodes = await areaSelectionInteractionStore.getAreaCodesByLayerId(
 				layerId,
 				selectedAreaIds
 			);
 
-			const areaFieldInfos: AreaFieldInfoWithCode[] = selectedAreaIds.map((area, index) => {
-				return {
-					id: area,
-					code: areaFieldCodes[index]
-				};
-			});
-
-			const areaSelection: AreaSelectionInfoWithCode = {
-				layerId,
-				areaFieldInfos: areaFieldInfos
-			};
-
-			const dataSelections: DataSelectionInfo[] = dataSelectionStore
-				.getAllSelections()
-				.flatMap((selection) => {
-					const config = nodeConfigProvider.getConfig(selection.nodeId);
-					if (!config) {
-						return [];
-					}
-
-					if (config.type === TreeviewNodeLayerType.MapImageLayer) {
-						return Array.from(selection.selectedFieldIds).map((fieldId) => ({
-							nodeId: `${selection.nodeId}-${fieldId}`,
-							selectedFieldIds: new Set<string>([])
-						}));
-					}
-
-					if (config.type === TreeviewNodeLayerType.TileLayer) {
-						return Array.from(selection.selectedFieldIds).map((fieldId) => ({
-							nodeId: `${selection.nodeId}-${fieldId}`,
-							selectedFieldIds: new Set<string>([])
-						}));
-					}
-
-					return [selection];
-				})
-				.map((selection) => ({
-					layerId: selection.nodeId,
-					fields: Array.from(selection.selectedFieldIds)
-				}));
-
-			const localId = crypto.randomUUID();
-			downloadsStore.addDownload({
-				localId: localId,
-				status: DownloadStatus.Pending,
-				isDownloaded: false,
-				areaSelection,
-				dataSelections
-			});
+			downloadsStore.addDownload(
+				buildExportDownload(
+					{
+						areaLayerId: layerId,
+						areaIds: selectedAreaIds,
+						areaCodes,
+						dataSelections: dataSelectionStore.getAllSelections()
+					},
+					nodeConfigProvider
+				)
+			);
 
 			onExportSuccess?.();
 		};

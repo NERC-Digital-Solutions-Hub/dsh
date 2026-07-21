@@ -1,10 +1,16 @@
 <script lang="ts">
-	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
+	import type { MetadataResolvedContent } from '$lib/Types/Metadata.types';
 	import { Card, CardContent, CardHeader } from '$lib/Components/shadcn/card';
 	import { ScrollArea } from '$lib/Components/shadcn/scroll-area';
 	import { Button } from '$lib/Components/shadcn/button';
 	import * as Tooltip from '$lib/Components/shadcn/tooltip';
 	import { ExternalLink } from '@lucide/svelte';
+	import SanitizedHtml from '$lib/Components/SanitizedHtml/SanitizedHtml.svelte';
+	import {
+		sanitizeHtmlFragment,
+		type SanitizedHtml as SanitizedHtmlValue
+	} from '$lib/Utilities/richText';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	type Props = {
 		content: Extract<MetadataResolvedContent, { type: 'portalPage' }>;
@@ -63,7 +69,7 @@
 
 	function findFirstByKeys(root: unknown, keys: string[]): string | null {
 		const queue: unknown[] = [root];
-		const visited = new Set<object>();
+		const visited = new SvelteSet<object>();
 
 		while (queue.length > 0) {
 			const node = queue.shift();
@@ -97,7 +103,7 @@
 
 	function findFirstDateByKeys(root: unknown, keys: string[]): string | null {
 		const queue: unknown[] = [root];
-		const visited = new Set<object>();
+		const visited = new SvelteSet<object>();
 
 		while (queue.length > 0) {
 			const node = queue.shift();
@@ -131,7 +137,7 @@
 
 	function collectStringsByKeys(root: unknown, keys: string[]): string[] {
 		const queue: unknown[] = [root];
-		const visited = new Set<object>();
+		const visited = new SvelteSet<object>();
 		const values: string[] = [];
 
 		while (queue.length > 0) {
@@ -169,7 +175,7 @@
 			}
 		}
 
-		return [...new Set(values)];
+		return [...new SvelteSet(values)];
 	}
 
 	function parsePortalJson(text: string): unknown | null {
@@ -254,17 +260,21 @@
 		} satisfies PortalMetadata;
 	});
 
-	function formatDate(value: string | null): string {
-		if (!value) return 'Not provided';
-
-		const date = new Date(value);
-		return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
-	}
-
 	function containsHtml(value: string | null): boolean {
 		if (!value) return false;
 		return /<\s*\/?[a-z][^>]*>/i.test(value);
 	}
+
+	const descriptionHtml: Promise<SanitizedHtmlValue | null> = $derived.by(() =>
+		metadata.description && containsHtml(metadata.description)
+			? sanitizeHtmlFragment(metadata.description)
+			: Promise.resolve(null)
+	);
+	const licenseHtml: Promise<SanitizedHtmlValue | null> = $derived.by(() =>
+		metadata.licenseInfo && containsHtml(metadata.licenseInfo)
+			? sanitizeHtmlFragment(metadata.licenseInfo)
+			: Promise.resolve(null)
+	);
 
 	function openSourceLink(url: string) {
 		const baseUrl = url.split('/server')[0];
@@ -302,7 +312,7 @@
 			{#if metadata.purpose}
 				<section class="rounded-lg border p-4 text-sm text-muted-foreground">
 					<span class="font-semibold text-foreground">Purpose:</span>
-					{' '}{metadata.purpose}
+					{metadata.purpose}
 				</section>
 			{/if}
 
@@ -335,7 +345,11 @@
 				<h2 class="text-base font-semibold">Description</h2>
 				{#if metadata.description && containsHtml(metadata.description)}
 					<article class="prose-info-markdown text-sm text-muted-foreground max-w-none">
-						{@html metadata.description}
+						{#await descriptionHtml}
+							<span class="italic">Loading description...</span>
+						{:then html}
+							<SanitizedHtml {html} />
+						{/await}
 					</article>
 				{:else}
 					<p class="text-sm leading-6 text-muted-foreground">
@@ -386,7 +400,11 @@
 					<div class="rounded-lg border p-4">
 						{#if containsHtml(metadata.licenseInfo)}
 							<article class="prose prose-info-markdown text-sm text-muted-foreground max-w-none">
-								{@html metadata.licenseInfo}
+								{#await licenseHtml}
+									<span class="italic">Loading license...</span>
+								{:then html}
+									<SanitizedHtml {html} />
+								{/await}
 							</article>
 						{:else}
 							<p class="text-sm leading-6 text-muted-foreground">
@@ -428,7 +446,7 @@
 						<h2 class="text-base font-semibold">Categories</h2>
 
 						<div class="flex flex-wrap gap-2">
-							{#each metadata.categories as category}
+							{#each metadata.categories as category (category)}
 								<span
 									class="inline-flex items-center rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground"
 								>
@@ -444,7 +462,7 @@
 						<h2 class="text-base font-semibold">Tags</h2>
 
 						<div class="flex flex-wrap gap-2">
-							{#each metadata.tags as tag}
+							{#each metadata.tags as tag (tag)}
 								<span
 									class="inline-flex items-center rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground"
 								>

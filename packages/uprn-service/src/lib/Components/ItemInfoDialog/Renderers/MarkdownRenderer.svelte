@@ -1,12 +1,16 @@
 <script lang="ts">
 	import CopyToClipboardButton from '$lib/Components/CopyToClipboardButton/CopyToClipboardButton.svelte';
-	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
+	import SanitizedHtml from '$lib/Components/SanitizedHtml/SanitizedHtml.svelte';
+	import type { MetadataResolvedContent } from '$lib/Types/Metadata.types';
 	import { Button } from '$lib/Components/shadcn/button/index.js';
 	import * as Card from '$lib/Components/shadcn/card/index.js';
 	import { ArrowDownToLine } from '@lucide/svelte';
 	import ScrollArea from '$lib/Components/shadcn/scroll-area/scroll-area.svelte';
 	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
-	import { renderMarkdownToHtml } from '@dsh/common';
+	import {
+		renderMarkdownToSanitizedHtml,
+		type SanitizedHtml as SanitizedHtmlValue
+	} from '$lib/Utilities/richText';
 
 	type Props = {
 		content: Extract<MetadataResolvedContent, { type: 'md' }>;
@@ -28,12 +32,12 @@
 	}
 
 	/** Derived state for processing the fetched markdown content into HTML. */
-	let textHtml: Promise<string | null> = $derived.by(async () => {
+	let textHtml: Promise<SanitizedHtmlValue | null> = $derived.by(async () => {
 		if (!content.text) {
 			return null;
 		}
 
-		return await renderMarkdownToHtml(content.text);
+		return renderMarkdownToSanitizedHtml(content.text);
 	});
 </script>
 
@@ -45,7 +49,7 @@
 			<Tooltip.Provider disableHoverableContent>
 				<Tooltip.Root>
 					<Tooltip.Trigger class="cursor-pointer">
-						<CopyToClipboardButton value={content.text} title={''} variant="outline" />
+						<CopyToClipboardButton value={content.text} title="" variant="outline" />
 					</Tooltip.Trigger>
 					<Tooltip.Content side="top">Copy</Tooltip.Content>
 				</Tooltip.Root>
@@ -73,7 +77,7 @@
 				<p>Loading...</p>
 			{:then html}
 				<article class="prose-info-markdown">
-					{@html html}
+					<SanitizedHtml {html} />
 				</article>
 			{:catch error}
 				<p>Error loading content: {error.message}</p>

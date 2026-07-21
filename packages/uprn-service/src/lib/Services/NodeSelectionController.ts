@@ -1,4 +1,4 @@
-import { SelectionState, TreeviewNode } from '$lib/Models/Treeview/Index';
+import { SelectionState, TreeviewNode } from '$lib/Models/Treeview/index';
 import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 import type { INodeSelectionController } from '$lib/Services/INodeSelectionController';
 import type {

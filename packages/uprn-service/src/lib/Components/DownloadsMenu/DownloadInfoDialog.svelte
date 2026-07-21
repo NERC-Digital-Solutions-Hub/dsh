@@ -3,8 +3,6 @@
 	import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 	import ScrollArea from '$lib/Components/shadcn/scroll-area/scroll-area.svelte';
 	import type { TreeviewNode } from '$lib/Models/Treeview/TreeviewNode';
-	import MapPinIcon from '@lucide/svelte/icons/map-pin';
-	import DatabaseIcon from '@lucide/svelte/icons/database';
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 	import type { INodeProvider } from '$lib/Services/INodeProvider';
 	import {
@@ -13,9 +11,9 @@
 		type TreeviewNodeTypology as TreeviewNodeTypologyType
 	} from '$lib/Types/Treeview.types.js';
 	import type { DownloadDisplayInfoNode, DownloadEntry } from '$lib/Types/Uprn.types';
-	import SelectionTreeviewNode, {
-		type SelectionTreeviewNode as SelectionTreeviewNodeType
-	} from '../ExportMenu/SelectionTreeviewNode.svelte';
+	import type { SelectionSummaryNode } from '$lib/Types/SelectionSummary.types';
+	import SelectionSummarySection from '$lib/Components/SelectionSummary/SelectionSummarySection.svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 
 	type Props = {
 		nodeProvider: INodeProvider;
@@ -24,7 +22,7 @@
 		download: DownloadEntry | null;
 	};
 
-	type SelectionTreeviewNodeTypeWithParent = SelectionTreeviewNodeType & {
+	type SelectionTreeviewNodeTypeWithParent = SelectionSummaryNode & {
 		parentId?: string;
 	};
 
@@ -47,9 +45,7 @@
 		}
 	}
 
-	function createSelectionNodeFromDisplayInfo(
-		node: DownloadDisplayInfoNode
-	): SelectionTreeviewNodeType {
+	function createSelectionNodeFromDisplayInfo(node: DownloadDisplayInfoNode): SelectionSummaryNode {
 		return {
 			id: node.id,
 			name: node.name,
@@ -62,7 +58,7 @@
 
 	function collectAreaNamesFromDisplayTree(
 		nodes: DownloadDisplayInfoNode[] | undefined,
-		result: Map<string, string> = new Map<string, string>()
+		result: Map<string, string> = new SvelteMap<string, string>()
 	): Map<string, string> {
 		if (!nodes) return result;
 
@@ -78,7 +74,7 @@
 		return result;
 	}
 
-	let areaSelectionTree: SelectionTreeviewNodeType[] = $derived.by(() => {
+	let areaSelectionTree: SelectionSummaryNode[] = $derived.by(() => {
 		if (!download) return [];
 
 		if (displayInfo?.areaTree?.length) {
@@ -94,7 +90,7 @@
 		const layerTitle = layerConfig?.displayName || layerConfig?.name || layerId || 'Selected Areas';
 		const areaNameById = collectAreaNamesFromDisplayTree(displayInfo?.areaTree);
 
-		const childNodes: SelectionTreeviewNodeType[] = download.areaSelection.areaFieldInfos.map(
+		const childNodes: SelectionSummaryNode[] = download.areaSelection.areaFieldInfos.map(
 			(area) => ({
 				id: String(area.id),
 				name: areaNameById.get(String(area.id)) || area.code || `Area ${area.id}`,
@@ -117,7 +113,7 @@
 		];
 	});
 
-	let dataSelectionTree: SelectionTreeviewNodeType[] = $derived.by(() => {
+	let dataSelectionTree: SelectionSummaryNode[] = $derived.by(() => {
 		if (!download) return [];
 
 		if (displayInfo?.dataTree?.length) {
@@ -128,7 +124,7 @@
 			return [];
 		}
 
-		const nodeMap = new Map<string, SelectionTreeviewNodeTypeWithParent>();
+		const nodeMap = new SvelteMap<string, SelectionTreeviewNodeTypeWithParent>();
 
 		const ensureNode = (node: TreeviewNode): SelectionTreeviewNodeTypeWithParent | null => {
 			const existing = nodeMap.get(node.id);
@@ -205,7 +201,7 @@
 			}
 		}
 
-		const rootNodes: SelectionTreeviewNodeType[] = [];
+		const rootNodes: SelectionSummaryNode[] = [];
 
 		for (const node of nodeMap.values()) {
 			if (!node.parentId) {
@@ -253,53 +249,19 @@
 		{:else}
 			<ScrollArea class="max-h-[50vh] w-full pr-4">
 				<div class="flex flex-col gap-6">
-					<section>
-						<div class="mb-2 flex items-baseline justify-between gap-2">
-							<div class="flex items-center gap-2">
-								<MapPinIcon size={16} class="text-muted-foreground" />
-								<h4 class="text-sm font-semibold">Areas</h4>
-							</div>
-							<p class="text-xs text-muted-foreground" hidden={true}>
-								{download.areaSelection.areaFieldInfos.length} area(s)
-							</p>
-						</div>
-						<div>
-							{#if areaSelectionTree.length > 0}
-								<div class="space-y-1">
-									{#each areaSelectionTree as node (node.id)}
-										<SelectionTreeviewNode {node} />
-									{/each}
-								</div>
-							{:else}
-								<p class="text-sm italic text-muted-foreground">No areas in this download.</p>
-							{/if}
-						</div>
-					</section>
+					<SelectionSummarySection
+						kind="area"
+						title="Areas"
+						nodes={areaSelectionTree}
+						emptyText="No areas in this download."
+					/>
 
-					<section>
-						<div class="mb-2 flex items-baseline justify-between gap-2">
-							<div class="flex items-center gap-2">
-								<DatabaseIcon size={16} class="text-muted-foreground" />
-								<h4 class="text-sm font-semibold">Data Selections</h4>
-							</div>
-							<p class="text-xs text-muted-foreground" hidden={true}>
-								{download.dataSelections.length} dataset(s)
-							</p>
-						</div>
-						<div>
-							{#if dataSelectionTree.length > 0}
-								<div class="space-y-1">
-									{#each dataSelectionTree as node (node.id)}
-										<SelectionTreeviewNode {node} />
-									{/each}
-								</div>
-							{:else}
-								<p class="text-sm italic text-muted-foreground">
-									No data selections in this download.
-								</p>
-							{/if}
-						</div>
-					</section>
+					<SelectionSummarySection
+						kind="data"
+						title="Data Selections"
+						nodes={dataSelectionTree}
+						emptyText="No data selections in this download."
+					/>
 				</div>
 			</ScrollArea>
 		{/if}

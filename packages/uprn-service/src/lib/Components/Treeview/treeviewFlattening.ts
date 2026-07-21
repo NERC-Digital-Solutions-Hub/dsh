@@ -1,8 +1,7 @@
 import type { FlatTreeNode, GuideType } from '$lib/Components/Treeview/BaseTreeview.svelte';
-import { DatasetTreeviewNode, type TreeviewNode } from '$lib/Models/Treeview/Index.js';
+import { DatasetTreeviewNode, type TreeviewNode } from '$lib/Models/Treeview/index.js';
 import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
-import type { INodeTagProvider } from '$lib/Services/INodeTagProvider';
 
 /**
  * Flattens area nodes for the virtualized Treeview.
@@ -64,23 +63,18 @@ export function flattenAreaNodes(
 }
 
 /**
- * Flattens data nodes for the virtualized Treeview, applying hidden-node and tag filters.
+ * Flattens data nodes for the virtualized Treeview, applying hidden-node filtering.
  */
 export function flattenDataNodes(
 	nodes: TreeviewNode[],
-	activeTags: Set<string>,
-	nodeConfigProvider: INodeConfigProvider,
-	nodeTagProvider: INodeTagProvider
+	nodeConfigProvider: INodeConfigProvider
 ): FlatTreeNode[] {
 	const result: FlatTreeNode[] = [];
 
 	function walk(nodes: TreeviewNode[], parentPath: string): void {
 		const visible = nodes
 			.map((node) => ({ node, config: nodeConfigProvider.getConfig(node.id) }))
-			.filter(
-				({ node, config }) =>
-					!config?.isHidden && (activeTags.size === 0 || nodeMatchesTagFilter(node, activeTags))
-			);
+			.filter(({ config }) => !config?.isHidden);
 
 		let index = 1;
 		for (const { node, config } of visible) {
@@ -103,19 +97,6 @@ export function flattenDataNodes(
 
 			index++;
 		}
-	}
-
-	function nodeMatchesTagFilter(node: TreeviewNode, selectedTagIds: Set<string>): boolean {
-		const nodeTags = nodeTagProvider.getTags(node.id);
-		if (nodeTags.some((tagId) => selectedTagIds.has(tagId))) {
-			return true;
-		}
-
-		if (node.children?.length) {
-			return node.children.some((child) => nodeMatchesTagFilter(child, selectedTagIds));
-		}
-
-		return false;
 	}
 
 	walk(nodes, '');

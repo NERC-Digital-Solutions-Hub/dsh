@@ -1,7 +1,6 @@
-<!-- FilterButton.svelte -->
 <script lang="ts">
 	import { InfoIcon } from '@lucide/svelte';
-	import { getItemInfoDialogEvents } from '$lib/Events/ItemInfoDialogEvents';
+	import { getItemInfoContext } from '$lib/Components/ItemInfoDialog/ItemInfoContext';
 	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
 
 	/**
@@ -14,7 +13,7 @@
 
 	const { layerId }: Props = $props();
 
-	const { onOpenInfoDialog } = getItemInfoDialogEvents();
+	const { onOpenInfoDialog } = getItemInfoContext();
 
 	/**
 	 * Handles click events on the info button.

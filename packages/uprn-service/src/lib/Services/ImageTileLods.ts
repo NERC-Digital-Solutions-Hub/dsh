@@ -399,5 +399,5 @@ export const ImageTileLevelOfDetails = Object.freeze({
 	 *  map units, enabling the most detailed and precise imagery achievable for a house and
 	 *  its immediate surroundings.
 	 */
-	lod23HouseProperty: { lod: 23, scale: 70.5310735 },
+	lod23HouseProperty: { lod: 23, scale: 70.5310735 }
 });

@@ -6,7 +6,8 @@
 	import DownloadErrorAlert from './DownloadErrorAlert.svelte';
 	import DownloadStatusIndicator from './DownloadStatusIndicator.svelte';
 	import QueueStatus from './QueueStatus.svelte';
-	import { getDownloadTitle, showDownloadErrorMessage, type QueueItem } from './downloadMenuUtils';
+	import type { QueueItem } from './DownloadsController.svelte';
+	import { getDownloadTitle, showDownloadErrorMessage } from './downloadMenuUtils';
 
 	/**
 	 * Renders one download entry card.

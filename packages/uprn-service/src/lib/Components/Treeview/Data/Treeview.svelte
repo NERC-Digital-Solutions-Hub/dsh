@@ -7,11 +7,8 @@
 	import TreeviewNodeCard from '$lib/Components/Treeview/TreeviewNodeCard.svelte';
 	import TreeviewVisibilityAction from '$lib/Components/Treeview/TreeviewVisibilityAction.svelte';
 	import { flattenDataNodes } from '$lib/Components/Treeview/treeviewFlattening';
-	import { setTreeEvents } from '$lib/Events/DataTreeviewEvents.js';
-	import { SelectionState, type TreeviewNode } from '$lib/Models/Treeview/Index.js';
+	import { SelectionState, type TreeviewNode } from '$lib/Models/Treeview/index.js';
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
-	import type { INodeTagProvider } from '$lib/Services/INodeTagProvider';
-	import type { ITagDefinitionProvider } from '$lib/Services/ITagDefinitionProvider';
 	import { TreeviewStore } from '$lib/Stores/TreeviewStore.svelte';
 	import { TreeviewNodeTypology } from '$lib/Types/Treeview.types.js';
 
@@ -22,15 +19,6 @@
 
 		/** Configuration store for tree view settings. */
 		nodeConfigProvider: INodeConfigProvider;
-
-		/** Provider for node tags. */
-		nodeTagProvider: INodeTagProvider;
-
-		/** Provider for tag definitions. */
-		tagDefinitionProvider: ITagDefinitionProvider;
-
-		/** The IDs of currently selected tags to filter by. */
-		selectedTagIds: Set<string>;
 
 		/** Search text for filtering the tree (bindable). */
 		searchText?: string;
@@ -44,26 +32,17 @@
 	let {
 		treeviewStore,
 		nodeConfigProvider,
-		nodeTagProvider,
-		tagDefinitionProvider,
-		selectedTagIds,
 		searchText = $bindable(''),
 		selectionCount = 0
 	}: Props = $props();
 
-	$effect(() => {
-		// Kept as part of the public component API for callers that provide full treeview services.
-		void tagDefinitionProvider;
-	});
-
 	/** Use $state.raw to avoid deep proxy overhead on large arrays. */
 	let flatData = $state.raw<FlatTreeNode[]>([]);
 
-	/** Rebuild flat data whenever tree nodes or tag filters change. */
+	/** Rebuild flat data whenever tree nodes change. */
 	$effect(() => {
 		const nodes = treeviewStore.getNodes();
-		const tags = selectedTagIds;
-		flatData = flattenDataNodes(nodes, tags, nodeConfigProvider, nodeTagProvider);
+		flatData = flattenDataNodes(nodes, nodeConfigProvider);
 	});
 
 	function onDownloadStateChanged(node: TreeviewNode, downloadState: SelectionState): void {
@@ -83,14 +62,6 @@
 		if (hasChildren && !isVisible) return false;
 		return true;
 	}
-
-	setTreeEvents({
-		onNodeVisibilityChange: (node, visible) => treeviewStore.setVisibilityState(node.id, visible),
-		onDownloadStateChanged,
-		getDownloadState,
-		getNodeVisibility: (nodeId: string) => treeviewStore.getVisibilityState(nodeId),
-		getNodeDrawState: (nodeId: string) => treeviewStore.getNodeDrawState(nodeId)
-	});
 </script>
 
 <BaseTreeview

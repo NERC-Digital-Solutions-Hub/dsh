@@ -14,7 +14,7 @@ const environment = resolveContentEnvironment(process.env.PUBLIC_DSH_ENVIRONMENT
 const contentBaseUrl = resolveDshContentBaseUrl(
 	process.env.PUBLIC_DSH_CONTENT_BASE_URL || DEFAULT_DSH_CONTENT_BASE_URL
 );
-const outDir = resolve(projectRoot, 'src/lib/generated/content');
+const outDir = resolve(projectRoot, 'src/generated/content');
 
 const localConfig = await readJsonFile<LocalAppsUprnConfig>(
 	resolve(projectRoot, 'static/config/apps/uprn/config.json')
@@ -24,7 +24,7 @@ const uprnAppConfig = await generateUprnAppConfig({ localConfig, environment, co
 await writeModule(
 	'uprn.ts',
 	createTypeScriptModule({
-		imports: ["import type { AppsUprnConfig } from '../../Types/Configuration.types';"],
+		imports: ["import type { AppsUprnConfig } from '../../lib/Types/Configuration.types';"],
 		exports: [{ name: 'uprnAppConfig', type: 'AppsUprnConfig', value: uprnAppConfig }]
 	})
 );

@@ -38,6 +38,7 @@
 		onToggle = () => {},
 		position = SidebarPosition.LEFT,
 		openIcon,
+		originalSize,
 		/** Optional override; otherwise uses responsive CSS variables */
 		minSize,
 		sidebarContent,
@@ -53,7 +54,7 @@
 
 <div class="sidebar-layout" class:vertical={isVertical}>
 	<div class="z-10">
-		<Sidebar {isOpen} {onToggle} {position} {openIcon} {minSize} {hideToggleButton}>
+		<Sidebar {isOpen} {onToggle} {position} {openIcon} {originalSize} {minSize} {hideToggleButton}>
 			{#if sidebarContent}
 				{@render sidebarContent()}
 			{/if}

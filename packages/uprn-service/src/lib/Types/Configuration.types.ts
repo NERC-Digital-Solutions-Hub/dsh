@@ -1,6 +1,7 @@
 import type { TreeviewConfig } from '$lib/Types/Treeview.types';
 import type { CustomRenderers } from '$lib/Types/CustomRenderers.types';
-import type { AiUprnChatbotEndpoints, UprnDownloadEndpoints } from '$lib/Types/Uprn.types';
+import type { AiUprnChatbotEndpoints } from '$lib/Types/Chatbot.types';
+import type { UprnDownloadEndpoints } from '$lib/Types/Download.types';
 
 export type AppUprnContent = {
 	settings: GeneralSettings;

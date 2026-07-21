@@ -1,7 +1,6 @@
 <script lang="ts">
-	import type { LTreeNode } from '@keenmate/svelte-treeview';
 	import type { DatasetTreeviewNode } from '$lib/Models/Treeview/DatasetTreeviewNode';
-	import type { VariableTreeviewNode } from '$lib/Models/Treeview/Index';
+	import type { VariableTreeviewNode } from '$lib/Models/Treeview/index';
 	import type { TreeviewNode } from '$lib/Models/Treeview/TreeviewNode';
 	import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
@@ -9,18 +8,10 @@
 	import type { AreaSelectionInteractionStore } from '$lib/Stores/AreaSelectionInteractionStore.svelte';
 	import type { AreaSelectionStore } from '$lib/Stores/AreaSelectionStore.svelte';
 	import type { DataSelectionStore } from '$lib/Stores/DataSelectionStore.svelte';
-	import DatabaseIcon from '@lucide/svelte/icons/database';
-	import MapPinIcon from '@lucide/svelte/icons/map-pin';
 	import { TreeviewNodeTypology, type TreeviewNodeConfig } from '$lib/Types/Treeview.types.js';
-	import { type SelectionTreeviewNode as SelectionTreeviewNodeType } from './SelectionTreeviewNode.svelte';
-	import BaseTreeview, {
-		type FlatTreeNode,
-		type GuideType
-	} from '$lib/Components/Treeview/BaseTreeview.svelte';
-	import OpenIndicator from '$lib/Components/OpenIndicator/OpenIndicator.svelte';
-	import { getNodeIcon } from '$lib/Components/Treeview/GetNodeIcon.js';
-	import { Button } from '$lib/Components/shadcn/button/index.js';
-	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
+	import type { SelectionSummaryNode } from '$lib/Types/SelectionSummary.types';
+	import SelectionSummarySection from '$lib/Components/SelectionSummary/SelectionSummarySection.svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 
 	type AreaInfo = {
 		id: number;
@@ -28,10 +19,7 @@
 		nameStatus: 'loading' | 'loaded' | 'unavailable';
 	};
 
-	type ExportSelectionTreeviewNode = SelectionTreeviewNodeType & {
-		nameStatus?: AreaInfo['nameStatus'];
-		parentId?: string;
-	};
+	type ExportSelectionTreeviewNode = SelectionSummaryNode & { parentId?: string };
 
 	type Props = {
 		nodeProvider: INodeProvider;
@@ -52,57 +40,6 @@
 	}: Props = $props();
 
 	let areaInfos: AreaInfo[] = $state<AreaInfo[]>([]);
-
-	/** Extended flat node that carries the original SelectionTreeviewNode reference. */
-	interface ExportFlatNode extends FlatTreeNode {
-		selectionNode: ExportSelectionTreeviewNode;
-		hasChildren: boolean;
-	}
-
-	type ExportTreeNode = LTreeNode<ExportFlatNode>;
-
-	/**
-	 * Flatten a hierarchical SelectionTreeviewNode tree into a flat array
-	 * for the BaseTreeview component.
-	 */
-	function flattenSelectionTree(roots: ExportSelectionTreeviewNode[]): ExportFlatNode[] {
-		const result: ExportFlatNode[] = [];
-
-		function walk(
-			nodes: ExportSelectionTreeviewNode[],
-			parentPath: string,
-			ancestorGuides: GuideType[]
-		) {
-			let index = 1;
-			for (let i = 0; i < nodes.length; i++) {
-				const node = nodes[i];
-				const isLast = i === nodes.length - 1;
-				const path = parentPath ? `${parentPath}.${index}` : `${index}`;
-				const guideLines: GuideType[] = parentPath === '' ? [] : [...ancestorGuides, 'full'];
-
-				result.push({
-					path,
-					nodeId: node.id,
-					name: node.name,
-					order: index,
-					nodeRef: null as unknown as TreeviewNode,
-					isExpanded: false,
-					guideLines,
-					selectionNode: node,
-					hasChildren: node.children.length > 0
-				});
-
-				if (node.children.length > 0) {
-					const childGuides = guideLines.map((g) => (g === 'last' ? 'none' : g)) as GuideType[];
-					walk(node.children, path, childGuides);
-				}
-				index++;
-			}
-		}
-
-		walk(roots, '', []);
-		return result;
-	}
 
 	/**
 	 * Builds a hierarchical tree structure from selected area infos.
@@ -146,7 +83,7 @@
 		const selections = dataSelectionStore.getAllSelections();
 		if (selections.length === 0) return [];
 
-		const nodeMap = new Map<string, ExportSelectionTreeviewNode>();
+		const nodeMap = new SvelteMap<string, ExportSelectionTreeviewNode>();
 
 		const ensureNode = (node: TreeviewNode): ExportSelectionTreeviewNode | null => {
 			const existing = nodeMap.get(node.id);
@@ -217,9 +154,6 @@
 		return rootNodes;
 	});
 
-	let flatAreaData = $derived(flattenSelectionTree(areaSelectionTree));
-	let flatDataData = $derived(flattenSelectionTree(dataSelectionTree));
-
 	$effect(() => {
 		const layerId = areaSelectionStore.layerId;
 		const areaIds = Array.from(areaSelectionStore.areaIds);
@@ -272,7 +206,7 @@
 	 * Removes an area from the selection by its ID.
 	 * @param areaId - The string ID of the area to remove (will be converted to number).
 	 */
-	function removeArea(node: SelectionTreeviewNodeType) {
+	function removeArea(node: SelectionSummaryNode) {
 		if (node.children.length > 0) {
 			for (const child of node.children) {
 				removeArea(child);
@@ -291,7 +225,7 @@
 	 * Also handles removing individual fields.
 	 * @param nodeId - The ID of the node to remove (layer ID or field ID in format "layerId::fieldName").
 	 */
-	function removeDataSelection(node: SelectionTreeviewNodeType) {
+	function removeDataSelection(node: SelectionSummaryNode) {
 		const treeviewNode = nodeProvider.getTreeviewNode(node.id);
 
 		if (treeviewNode && isDatasetNode(treeviewNode)) {
@@ -377,204 +311,21 @@
 	}
 </script>
 
-<div class="section">
-	<div class="section-header pb-0.5">
-		<div class="section-title ml-2">
-			<MapPinIcon size={16} class="text-gray-500" />
-			<h4>Selected Areas</h4>
-		</div>
-		<p class="text-xs text-muted-foreground mr-2">{areaInfos.length} area(s) selected</p>
-	</div>
-	{#if flatAreaData.length > 0}
-		<BaseTreeview
-			data={flatAreaData}
-			searchBar={{ enabled: false }}
-			virtualScroll={{ enabled: false }}
-			rowPadding="0rem"
-		>
-			{#snippet nodeContent(treeNode: ExportTreeNode)}
-				{@const sNode = treeNode.data!.selectionNode}
-				{@const isFolder = treeNode.data!.hasChildren}
-				{@const icon = getNodeIcon(
-					sNode.typology ??
-						(isFolder ? TreeviewNodeTypology.Folder : TreeviewNodeTypology.Variable),
-					treeNode.isExpanded
-				)}
-				<div class="node-card relative overflow-hidden rounded-md">
-					<div class="node-grid">
-						<div class="node-icons">
-							{#if isFolder}
-								<span class="icon-slot">
-									<OpenIndicator isOpen={treeNode.isExpanded} />
-								</span>
-							{/if}
-							<span class="icon-slot">
-								{#if typeof icon === 'string'}
-									{@html icon}
-								{:else}
-									{@const Icon = icon}
-									<Icon />
-								{/if}
-							</span>
-						</div>
+<SelectionSummarySection
+	class="mb-6"
+	kind="area"
+	title="Selected Areas"
+	countLabel={`${areaInfos.length} area(s) selected`}
+	nodes={areaSelectionTree}
+	emptyText="No areas selected"
+	onRemove={removeArea}
+/>
 
-						<span
-							class={sNode.nameStatus === 'loading'
-								? 'node-name text-muted-foreground italic'
-								: 'node-name'}
-						>
-							{sNode.name}
-						</span>
-
-						<!-- svelte-ignore a11y_click_events_have_key_events -->
-						<!-- svelte-ignore a11y_no_static_element_interactions -->
-						<div class="node-end" onclick={(e) => e.stopPropagation()}>
-							<Tooltip.Provider disableHoverableContent>
-								<Tooltip.Root>
-									<Tooltip.Trigger>
-										<Button
-											variant="ghost"
-											size="sm"
-											class="remove-btn"
-											onclick={() => removeArea(sNode)}
-										>
-											×
-										</Button>
-									</Tooltip.Trigger>
-									<Tooltip.Content side="right">Remove</Tooltip.Content>
-								</Tooltip.Root>
-							</Tooltip.Provider>
-						</div>
-					</div>
-				</div>
-			{/snippet}
-		</BaseTreeview>
-	{:else}
-		<p class="no-selection">No areas selected</p>
-	{/if}
-</div>
-
-<div class="section">
-	<div class="section-header pb-0.5">
-		<div class="section-title ml-2">
-			<DatabaseIcon size={16} class="text-gray-500" />
-			<h4>Selected Data</h4>
-		</div>
-		<p class="text-xs text-muted-foreground mr-2">
-			{dataSelectionStore.getAllSelections().length} dataset(s) selected
-		</p>
-	</div>
-	{#if flatDataData.length > 0}
-		<BaseTreeview
-			data={flatDataData}
-			searchBar={{ enabled: false }}
-			virtualScroll={{ enabled: false }}
-			rowPadding="0rem"
-		>
-			{#snippet nodeContent(treeNode: ExportTreeNode)}
-				{@const sNode = treeNode.data!.selectionNode}
-				{@const isFolder = treeNode.data!.hasChildren}
-				{@const icon = getNodeIcon(
-					sNode.typology ??
-						(isFolder ? TreeviewNodeTypology.Folder : TreeviewNodeTypology.Variable),
-					treeNode.isExpanded
-				)}
-				<div class="node-card relative overflow-hidden rounded-md">
-					<div class="node-grid">
-						<div class="node-icons">
-							{#if isFolder}
-								<span class="icon-slot">
-									<OpenIndicator isOpen={treeNode.isExpanded} />
-								</span>
-							{/if}
-							<span class="icon-slot">
-								{#if typeof icon === 'string'}
-									{@html icon}
-								{:else}
-									{@const Icon = icon}
-									<Icon />
-								{/if}
-							</span>
-						</div>
-
-						<span class="node-name">{sNode.name}</span>
-
-						<!-- svelte-ignore a11y_click_events_have_key_events -->
-						<!-- svelte-ignore a11y_no_static_element_interactions -->
-						<div class="node-end" onclick={(e) => e.stopPropagation()}>
-							<Tooltip.Provider disableHoverableContent>
-								<Tooltip.Root>
-									<Tooltip.Trigger>
-										<Button
-											variant="ghost"
-											size="sm"
-											class="remove-btn"
-											onclick={() => removeDataSelection(sNode)}
-										>
-											×
-										</Button>
-									</Tooltip.Trigger>
-									<Tooltip.Content side="right">Remove</Tooltip.Content>
-								</Tooltip.Root>
-							</Tooltip.Provider>
-						</div>
-					</div>
-				</div>
-			{/snippet}
-		</BaseTreeview>
-	{:else}
-		<p class="no-selection">No data selected</p>
-	{/if}
-</div>
-
-<style>
-	.section {
-		margin-bottom: 1.5rem;
-	}
-
-	.section:last-child {
-		margin-bottom: 0;
-	}
-
-	.section-header {
-		display: flex;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: 0.75rem;
-	}
-
-	h4 {
-		margin: 0;
-		font-size: 1rem;
-		font-weight: 500;
-		color: #374151;
-	}
-
-	.section-title {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.no-selection {
-		margin: 0;
-		font-size: 0.875rem;
-		color: #9ca3af;
-		font-style: italic;
-	}
-
-	:global(.remove-btn) {
-		height: 1rem;
-		width: 1rem;
-		min-width: 0;
-		padding: 0;
-		font-size: 0.875rem;
-		line-height: 1;
-		color: #6b7280;
-		transition: color 0.15s ease-in-out;
-	}
-
-	:global(.remove-btn:hover) {
-		color: #ef4444;
-	}
-</style>
+<SelectionSummarySection
+	kind="data"
+	title="Selected Data"
+	countLabel={`${dataSelectionStore.getAllSelections().length} dataset(s) selected`}
+	nodes={dataSelectionTree}
+	emptyText="No data selected"
+	onRemove={removeDataSelection}
+/>

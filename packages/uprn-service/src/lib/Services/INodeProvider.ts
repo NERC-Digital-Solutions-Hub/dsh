@@ -1,4 +1,4 @@
-import type { TreeviewNode } from '$lib/Models/Treeview/Index';
+import type { TreeviewNode } from '$lib/Models/Treeview/index';
 
 /**
  * Interface for providing treeview nodes.

@@ -1,28 +1,32 @@
 <script lang="ts">
 	import * as Dialog from '$lib/Components/shadcn/dialog/index.js';
 	import { Button } from '$lib/Components/shadcn/button';
-	import { useSubmitAiChatbotFeedback } from '$lib/Hooks/UseSubmitAiChatbotFeedback.svelte';
+	import type { AiChatbotFeedbackResponse } from '$lib/Types/Chatbot.types';
 	import { cn } from '$lib/utils';
 	import { toast } from 'svelte-sonner';
 
 	type Props = {
 		isOpen: boolean;
-		feedbackUrl: string;
 		feedbackOptions: string[];
 		sessionId: string | null;
 		sequenceNumber: number | null;
 		selectedOption?: string | null;
 		inputPlaceholder?: string;
+		onSubmit: (
+			sessionId: string,
+			sequenceNumber: number,
+			feedback: string
+		) => Promise<AiChatbotFeedbackResponse>;
 	};
 
 	let {
 		isOpen = $bindable(false),
-		feedbackUrl,
 		feedbackOptions,
 		sessionId,
 		sequenceNumber,
 		selectedOption = null,
-		inputPlaceholder = 'Share details (optional)'
+		inputPlaceholder = 'Share details (optional)',
+		onSubmit
 	}: Props = $props();
 
 	/** State for managing selected predefined feedback option. */
@@ -31,8 +35,8 @@
 	/** State for managing the user's feedback details input. */
 	let details: string = $state('');
 
-	/** Derived state for the chatbot feedback submission hook based on the provided feedback URL. */
-	const chatbotFeedback = $derived.by(() => useSubmitAiChatbotFeedback(feedbackUrl));
+	let isSubmitting = $state(false);
+	let submissionError = $state(false);
 
 	/** Whether form has enough data to submit feedback. */
 	const canSubmit = $derived.by(() => {
@@ -44,6 +48,7 @@
 		if (isOpen) {
 			selectedFeedbackOption = selectedOption;
 			details = '';
+			submissionError = false;
 		}
 	});
 
@@ -59,13 +64,17 @@
 		}
 
 		const feedbackText = [selectedFeedbackOption, details.trim()].filter(Boolean).join('\n\n');
-		await chatbotFeedback.submit(sessionId, sequenceNumber, feedbackText);
-
-		if (!chatbotFeedback.error) {
-			toast.success(chatbotFeedback.content?.message ?? 'Feedback submitted successfully.');
+		isSubmitting = true;
+		submissionError = false;
+		try {
+			const response = await onSubmit(sessionId, sequenceNumber, feedbackText);
+			toast.success(response.message ?? 'Feedback submitted successfully.');
 			isOpen = false;
-		} else {
+		} catch {
+			submissionError = true;
 			toast.error('Unable to submit feedback. Please try again.');
+		} finally {
+			isSubmitting = false;
 		}
 	}
 </script>
@@ -81,7 +90,7 @@
 
 		<form class="grid gap-4" onsubmit={submitFeedback}>
 			<div class="flex flex-wrap gap-2">
-				{#each feedbackOptions as option}
+				{#each feedbackOptions as option (option)}
 					<Button
 						type="button"
 						variant={selectedFeedbackOption === option ? 'default' : 'outline'}
@@ -101,14 +110,14 @@
 				placeholder={inputPlaceholder}
 			></textarea>
 
-			{#if chatbotFeedback.error}
+			{#if submissionError}
 				<p class="text-sm text-destructive">Unable to submit feedback. Please try again.</p>
 			{/if}
 
 			<Dialog.Footer>
 				<Button type="button" variant="outline" onclick={() => (isOpen = false)}>Cancel</Button>
-				<Button type="submit" disabled={!canSubmit || chatbotFeedback.isLoading}>
-					{chatbotFeedback.isLoading ? 'Submitting...' : 'Submit feedback'}
+				<Button type="submit" disabled={!canSubmit || isSubmitting}>
+					{isSubmitting ? 'Submitting...' : 'Submit feedback'}
 				</Button>
 			</Dialog.Footer>
 		</form>

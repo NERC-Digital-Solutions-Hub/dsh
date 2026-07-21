@@ -65,7 +65,7 @@
 	<div class="tabbar-shell">
 		<Tooltip.Provider disableHoverableContent>
 			<Tabs.List class="tab-list">
-				{#each triggersWithProgress as { value, label, separatorIcon, tooltip, progress, hasProgress }}
+				{#each triggersWithProgress as { value, label, separatorIcon, tooltip, progress, hasProgress } (value)}
 					{@const isLastTrigger = value === triggers[triggers.length - 1]?.value}
 					{@const SeparatorIcon = separatorIcon ?? ChevronRightIcon}
 					<Tooltip.Root>

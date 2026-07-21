@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as Dialog from '$lib/Components/shadcn/dialog/index.js';
-	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
+	import type { MetadataResolvedContent } from '$lib/Types/Metadata.types';
 	import { X, ZoomIn, ZoomOut } from '@lucide/svelte';
 
 	type Props = {

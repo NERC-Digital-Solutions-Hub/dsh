@@ -1,6 +1,6 @@
 <script lang="ts">
 	import VisibilityCheckbox from '$lib/Components/VisibilityCheckbox/VisibilityCheckbox.svelte';
-	import { NodeDrawState } from '$lib/Models/Treeview/Index.js';
+	import { NodeDrawState } from '$lib/Models/Treeview/index.js';
 
 	/**
 	 * Visibility checkbox and suspended-state label used by area and data tree rows.

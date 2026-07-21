@@ -4,7 +4,7 @@ import type { IWebMapService } from '$lib/Services/IWebMapService.js';
 import {
 	cleanupUprnWebMapLayerResources,
 	createWebMapFromJson
-} from '$lib/Stores/WebMapCustomLoader';
+} from '$lib/Services/WebMap/WebMapJsonLoader';
 import { arcgisImport } from '@dsh/common/arcgis';
 import { getSublayerId } from '$lib/Utilities/TreeviewUtilities';
 import { SvelteMap } from 'svelte/reactivity';

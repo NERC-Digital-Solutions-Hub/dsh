@@ -1,4 +1,4 @@
-import { uprnAppConfig } from '$lib/generated/content/uprn';
+import { uprnAppConfig } from '../generated/content/uprn';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async () => {

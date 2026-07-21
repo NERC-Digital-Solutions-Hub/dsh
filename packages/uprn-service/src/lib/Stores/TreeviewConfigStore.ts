@@ -1,5 +1,4 @@
 import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
-import type { INodeTagProvider } from '$lib/Services/INodeTagProvider';
 import {
 	type TreeviewConfig,
 	type TreeviewNodeConfig,
@@ -9,13 +8,6 @@ import {
 /**
  * Type representing a tag and its associated count.
  */
-type TagCount = {
-	/** The tag identifier. */
-	id: string;
-	/** The count associated with the tag. */
-	count: number;
-};
-
 /**
  * Store class that manages treeview configuration data and provides efficient access to items and visibility groups.
  * Uses Map-based lookups for O(1) access time to configuration objects by their IDs.
@@ -23,7 +15,7 @@ type TagCount = {
  * This class encapsulates the configuration data and provides a clean API for accessing
  * treeview items and visibility groups without exposing the internal data structures.
  */
-export class TreeviewConfigStore implements INodeConfigProvider, INodeTagProvider {
+export class TreeviewConfigStore implements INodeConfigProvider {
 	/** Array storing all treeview node configurations */
 	public configs: TreeviewNodeConfig[] = [];
 
@@ -35,9 +27,6 @@ export class TreeviewConfigStore implements INodeConfigProvider, INodeTagProvide
 
 	/** Map for fast O(1) lookup of visibility groups by their ID */
 	#visibilityGroupsLookup: Map<string, VisibilityGroupConfig> = new Map();
-
-	/** Map for fast O(1) lookup of tags for a node. */
-	#tagsLookup: Map<string, TagCount[]> = new Map();
 
 	/**
 	 * Creates a new TreeviewConfigStore instance with the provided configuration.
@@ -92,20 +81,6 @@ export class TreeviewConfigStore implements INodeConfigProvider, INodeTagProvide
 	 */
 	public getVisibilityGroupConfig(id: string): VisibilityGroupConfig | undefined {
 		return this.#visibilityGroupsLookup.get(id);
-	}
-
-	/**
-	 * Gets the tags for a specific node by its ID.
-	 * @param nodeId The node ID to get the tags of.
-	 */
-	public getTags(nodeId: string): string[] {
-		const tagCounts = this.#tagsLookup.get(nodeId);
-		if (tagCounts) {
-			return tagCounts.map((t) => t.id);
-		}
-
-		// Fallback (should be rare): return any directly configured tags.
-		return this.getConfig(nodeId)?.tags ?? [];
 	}
 
 	/**

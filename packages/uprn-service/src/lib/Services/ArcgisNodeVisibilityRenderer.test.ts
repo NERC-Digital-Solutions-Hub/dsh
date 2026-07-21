@@ -1,4 +1,4 @@
-import { NodeDrawState, TreeviewNode } from '$lib/Models/Treeview/Index';
+import { NodeDrawState, TreeviewNode } from '$lib/Models/Treeview/index';
 import { ArcgisNodeVisibilityRenderer } from '$lib/Services/ArcgisNodeVisibilityRenderer';
 import type { LayerViewProvider } from '$lib/Services/LayerViewProvider';
 import { describe, expect, it, vi } from 'vitest';

@@ -2,7 +2,7 @@ import {
 	DatasetTreeviewNode,
 	TreeviewNode,
 	VariableTreeviewNode
-} from '$lib/Models/Treeview/Index';
+} from '$lib/Models/Treeview/index';
 import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 import type { NodeVisibilityRenderTarget } from '$lib/Services/INodeVisibilityRenderer';
 

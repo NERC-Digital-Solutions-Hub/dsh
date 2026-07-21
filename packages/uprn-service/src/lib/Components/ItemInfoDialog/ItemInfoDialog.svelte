@@ -1,16 +1,15 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
+
 	import * as Dialog from '$lib/Components/shadcn/dialog/index.js';
 	import ScrollArea from '$lib/Components/shadcn/scroll-area/scroll-area.svelte';
 	import * as Tabs from '$lib/Components/shadcn/tabs/index.js';
-	import { useFetchMetadataContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
-	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
-	import { useFetchMetadataTabInfo } from '$lib/Hooks/UseFetchMetadataTabInfo.svelte';
 	import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 	import type { IWebMapService } from '$lib/Services/IWebMapService';
-	import type { MetadataTab, MetadataTabContentItem, TabGroup } from '$lib/Types/Metadata.types';
-	import { metadataRenderers } from './metadataRenderers';
+	import { MetadataContentController } from '$lib/Stores/MetadataContentController.svelte';
+	import type { MetadataTab, MetadataTabContentItem } from '$lib/Types/Metadata.types';
 
-	type ContentHook = ReturnType<typeof useFetchMetadataContent>;
+	import LazyMetadataRenderer from './LazyMetadataRenderer.svelte';
 
 	type Props = {
 		webmapService: IWebMapService;
@@ -26,286 +25,118 @@
 		activeLayerId = $bindable()
 	}: Props = $props();
 
-	const layer: __esri.Layer | __esri.Sublayer | null = $derived.by(() => {
-		return activeLayerId ? webmapService.getLayerById(activeLayerId) || null : null;
-	});
-
-	const nodeConfig = $derived.by(() => {
-		if (!activeLayerId) {
-			return null;
-		}
-		return nodeConfigProvider.getConfig(activeLayerId);
-	});
-
-	const useTabInfo = $derived.by(() => {
-		if (!nodeConfig?.metadataTabInfoUrl) {
-			return null;
-		}
-
-		return useFetchMetadataTabInfo(nodeConfig.metadataTabInfoUrl);
-	});
-
-	/** The tab groups preserving their grouping structure. */
-	const tabGroups: TabGroup[] | null = $derived.by(() => {
-		if (!useTabInfo?.content) {
-			return null;
-		}
-
-		if (useTabInfo.content.tabGroups && useTabInfo.content.tabGroups.length > 0) {
-			return useTabInfo.content.tabGroups;
-		}
-
-		return null;
-	});
-
-	/** The flattened tabs (used for content rendering and lookup). */
-	const flattenedTabs: MetadataTab[] | null = $derived.by(() => {
-		if (!tabGroups) {
-			return null;
-		}
-
-		return tabGroups.flatMap((group) => group.tabs);
-	});
-
-	let activeTabId: string | null = $state(null);
-	let contentHooksByKey = $state<Record<string, ContentHook>>({});
-	let previousLayerId: string | null = $state(null);
-
-	function createContentKey(
-		tabTitle: string,
-		index: number,
-		contentItem: MetadataTabContentItem
-	): string {
-		switch (contentItem.type) {
-			case 'arcgisInfo':
-				return `${activeLayerId ?? 'none'}::${tabTitle}::${index}::${contentItem.type}`;
-			case 'text':
-			case 'disclaimer':
-				return `${activeLayerId ?? 'none'}::${tabTitle}::${index}::${contentItem.type}::${contentItem.value}`;
-			case 'isoMetadata':
-			case 'portalPage':
-			case 'image':
-			case 'xml':
-			case 'md':
-			case 'docx':
-			case 'pdf':
-				return `${activeLayerId ?? 'none'}::${tabTitle}::${index}::${contentItem.type}::${contentItem.source}`;
-			case 'slideshow':
-				return `${activeLayerId ?? 'none'}::${tabTitle}::${index}::${contentItem.type}::${contentItem.source.join('|')}`;
-		}
-
-		throw new Error('Unknown metadata tab content type');
-	}
-
-	function getHook(tabTitle: string, index: number, contentItem: MetadataTabContentItem) {
-		const key = createContentKey(tabTitle, index, contentItem);
-		return contentHooksByKey[key] || null;
-	}
-
-	function getSelectedTab() {
-		if (!flattenedTabs?.length) {
-			return null;
-		}
-
-		if (!activeTabId) {
-			return flattenedTabs[0] ?? null;
-		}
-
-		return flattenedTabs.find((tab) => tab.title === activeTabId) || null;
-	}
+	const controller = new MetadataContentController();
+	const layer = $derived(activeLayerId ? webmapService.getLayerById(activeLayerId) : null);
+	const nodeConfig = $derived(activeLayerId ? nodeConfigProvider.getConfig(activeLayerId) : null);
+	const selectedTab = $derived(
+		controller.flattenedTabs.find((tab) => tab.title === controller.activeTabId) ??
+			controller.flattenedTabs[0] ??
+			null
+	);
 
 	$effect(() => {
-		if (previousLayerId !== activeLayerId) {
-			for (const hook of Object.values(contentHooksByKey)) {
-				hook.clear();
-			}
-
-			contentHooksByKey = {};
-			activeTabId = null;
-			previousLayerId = activeLayerId;
-		}
+		void controller.loadTabs(activeLayerId, nodeConfig?.metadataTabInfoUrl ?? null);
 	});
 
 	$effect(() => {
-		if (useTabInfo && !useTabInfo.content) {
-			console.log(
-				'[ItemInfoDialog] Fetching metadata tab info from URL:',
-				nodeConfig?.metadataTabInfoUrl
-			);
-
-			console.log(
-				'[ItemInfoDialog] Checking if we need to fetch tab info. useTabInfo:',
-				useTabInfo
-			);
-			useTabInfo.fetch();
-		}
+		void controller.ensureTab(selectedTab);
 	});
 
-	$effect(() => {
-		const selectedTab = getSelectedTab();
-		if (!selectedTab) {
-			return;
-		}
-
-		for (const [index, contentItem] of selectedTab.content.entries()) {
-			const key = createContentKey(selectedTab.title, index, contentItem);
-			let hook = contentHooksByKey[key];
-
-			if (!hook) {
-				hook = useFetchMetadataContent(contentItem);
-				contentHooksByKey[key] = hook;
-			}
-
-			if (!hook.content && !hook.error && !hook.isLoading) {
-				hook.fetch();
-			}
-		}
-	});
-
-	function formatHookError(value: unknown) {
-		if (value instanceof Error) {
-			return value.message;
-		}
-
-		return String(value);
-	}
-
-	function getRenderer(type: MetadataTabContentItem['type']) {
-		return metadataRenderers[type] ?? null;
-	}
-
-	function isMatchingResolvedType(
-		content: MetadataResolvedContent,
-		contentItem: MetadataTabContentItem
-	) {
-		return content.type === contentItem.type;
-	}
+	onDestroy(() => controller.destroy());
 
 	type ContentPlacement = 'fixedTop' | 'scroll';
-
-	const contentPlacementByType: Partial<Record<MetadataTabContentItem['type'], ContentPlacement>> =
-		{
-			disclaimer: 'fixedTop'
-		};
-
-	function getContentPlacement(type: MetadataTabContentItem['type']): ContentPlacement {
-		return contentPlacementByType[type] ?? 'scroll';
-	}
 
 	function getTabContentEntries(tab: MetadataTab, placement: ContentPlacement) {
 		return tab.content
 			.map((contentItem, index) => ({ contentItem, index }))
-			.filter(({ contentItem }) => getContentPlacement(contentItem.type) === placement);
+			.filter(({ contentItem }) =>
+				placement === 'fixedTop'
+					? contentItem.type === 'disclaimer'
+					: contentItem.type !== 'disclaimer'
+			);
+	}
+
+	function formatError(error: unknown): string {
+		return error instanceof Error ? error.message : String(error);
 	}
 </script>
 
-{#snippet renderTabContentItem(
-	tabTitle: string,
-	contentItem: MetadataTabContentItem,
-	index: number
-)}
-	{@const contentHook = getHook(tabTitle, index, contentItem)}
-	{@const Renderer = getRenderer(contentItem.type)}
-	{#if contentHook?.isLoading}
+{#snippet renderContent(tabTitle: string, contentItem: MetadataTabContentItem, index: number)}
+	{@const state = controller.getContentState(tabTitle, index, contentItem)}
+	{#if state?.isLoading}
 		<p class="w-full text-center text-sm italic text-muted-foreground">Loading content...</p>
-	{:else if contentHook?.error}
+	{:else if state?.error}
 		<p class="w-full text-center text-sm italic text-destructive">
-			Error loading content: {formatHookError(contentHook.error)}
+			Error loading content: {formatError(state.error)}
 		</p>
-	{:else if contentHook?.content && Renderer}
-		{#if isMatchingResolvedType(contentHook.content, contentItem)}
-			<Renderer content={contentHook.content} {index} {layer} />
-		{:else}
-			<p class="w-full text-center text-sm italic text-muted-foreground">
-				Resolved content type mismatch: {contentHook.content.type}
-			</p>
-		{/if}
-	{:else}
-		<p class="w-full text-center text-sm italic text-muted-foreground">
-			Unsupported content type: {contentItem.type}
-		</p>
+	{:else if state?.content}
+		<LazyMetadataRenderer type={contentItem.type} content={state.content} {index} {layer} />
 	{/if}
 {/snippet}
 
 <Dialog.Root bind:open={isOpen} onOpenChange={(open) => (isOpen = open)}>
 	<Dialog.Content
 		class="grid h-[90%] min-h-0 min-w-[70%] grid-rows-[auto_1fr] overflow-hidden"
-		onInteractOutside={(e) => {
+		onInteractOutside={(event) => {
 			const overlay = document.querySelector('.svelte-lightbox-overlay');
-			if (overlay && overlay.contains(e.target as Node)) e.preventDefault();
+			if (overlay?.contains(event.target as Node)) event.preventDefault();
 		}}
 	>
 		<Dialog.Header>
 			<Dialog.Title>{nodeConfig?.displayName ?? 'Name not found'}</Dialog.Title>
 		</Dialog.Header>
-		{#if useTabInfo && useTabInfo.isLoading}
-			<div class="flex-1 min-h-0 overflow-y-auto pr-4">
-				<div class="flex flex-col gap-4">
-					<p class="mx-auto max-w-prose text-center text-sm italic text-muted-foreground">
-						Loading...
-					</p>
-				</div>
-			</div>
-		{:else if useTabInfo && useTabInfo.error}
-			<div class="flex-1 min-h-0 overflow-y-auto pr-4">
-				<div class="flex flex-col gap-4">
-					<p class="mx-auto max-w-prose text-center text-sm italic text-destructive">
-						Error loading metadata information: {useTabInfo.error}
-					</p>
-				</div>
-			</div>
-		{:else if tabGroups && tabGroups.length > 0 && flattenedTabs && flattenedTabs.length > 0}
+
+		{#if controller.isLoadingTabs}
+			<p class="mx-auto max-w-prose text-center text-sm italic text-muted-foreground">Loading...</p>
+		{:else if controller.tabsError}
+			<p class="mx-auto max-w-prose text-center text-sm italic text-destructive">
+				Error loading metadata information: {formatError(controller.tabsError)}
+			</p>
+		{:else if controller.tabGroups.length > 0 && controller.flattenedTabs.length > 0}
 			<Tabs.Root
 				class="flex h-full min-h-0 flex-1 flex-col overflow-hidden"
-				value={activeTabId ?? flattenedTabs[0]?.title}
-				onValueChange={(value) => (activeTabId = value)}
+				value={controller.activeTabId ?? controller.flattenedTabs[0]?.title}
+				onValueChange={(value) => (controller.activeTabId = value)}
 			>
 				<div class="flex shrink-0 flex-wrap items-end justify-center gap-x-6 gap-y-2 pb-2">
-					{#each tabGroups as group}
+					{#each controller.tabGroups as group (group.title)}
 						<div class="flex flex-col items-center gap-1">
-							{#if tabGroups.length > 1}
+							{#if controller.tabGroups.length > 1}
 								<span class="text-xs font-medium text-muted-foreground">{group.title}</span>
 							{/if}
 							<Tabs.List>
-								{#each group.tabs as tab}
+								{#each group.tabs as tab (tab.title)}
 									<Tabs.Trigger value={tab.title}>{tab.title}</Tabs.Trigger>
 								{/each}
 							</Tabs.List>
 						</div>
 					{/each}
 				</div>
-				{#each flattenedTabs as tab}
-					<Tabs.Content value={tab.title} class="flex flex-1 min-h-0 flex-col px-6">
+
+				{#each controller.flattenedTabs as tab (tab.title)}
+					<Tabs.Content value={tab.title} class="flex min-h-0 flex-1 flex-col px-6">
 						{@const fixedTopEntries = getTabContentEntries(tab, 'fixedTop')}
 						{@const scrollEntries = getTabContentEntries(tab, 'scroll')}
 
 						{#if fixedTopEntries.length > 0}
 							<div class="shrink-0 border-b pb-3">
 								<div class="flex flex-col items-center gap-2 pt-1">
-									{#each fixedTopEntries as entry}
-										{@render renderTabContentItem(tab.title, entry.contentItem, entry.index)}
+									{#each fixedTopEntries as entry (entry.index)}
+										{@render renderContent(tab.title, entry.contentItem, entry.index)}
 									{/each}
 								</div>
 							</div>
 						{/if}
 
-						{#if fixedTopEntries.length === 0 && scrollEntries.length === 1}
-							{@render renderTabContentItem(
-								tab.title,
-								scrollEntries[0].contentItem,
-								scrollEntries[0].index
-							)}
-						{:else}
-							<div class="flex-1 min-h-0 overflow-y-auto">
-								<ScrollArea class="w-full h-full">
-									<div class="flex flex-col items-center gap-4 py-2">
-										{#each scrollEntries as entry}
-											{@render renderTabContentItem(tab.title, entry.contentItem, entry.index)}
-										{/each}
-									</div>
-								</ScrollArea>
-							</div>
-						{/if}
+						<div class="min-h-0 flex-1 overflow-y-auto">
+							<ScrollArea class="h-full w-full">
+								<div class="flex flex-col items-center gap-4 py-2">
+									{#each scrollEntries as entry (entry.index)}
+										{@render renderContent(tab.title, entry.contentItem, entry.index)}
+									{/each}
+								</div>
+							</ScrollArea>
+						</div>
 					</Tabs.Content>
 				{/each}
 			</Tabs.Root>

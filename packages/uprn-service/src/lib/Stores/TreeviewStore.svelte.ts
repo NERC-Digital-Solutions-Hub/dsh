@@ -3,27 +3,22 @@ import {
 	NodeDrawState,
 	SelectionState,
 	TreeviewNode
-} from '$lib/Models/Treeview/Index.js';
+} from '$lib/Models/Treeview/index.js';
 import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 import type { INodePathResolver } from '$lib/Services/INodePathResolver';
 import type { INodeProvider } from '$lib/Services/INodeProvider';
 import type { INodeSelectionController } from '$lib/Services/INodeSelectionController';
-import type { INodeTagProvider } from '$lib/Services/INodeTagProvider';
 import type { INodeVisibilityController } from '$lib/Services/INodeVisibilityController';
 import { TreeviewType } from '$lib/Types/Treeview.types.js';
 import { SvelteMap } from 'svelte/reactivity';
 
-export class TreeviewStore
-	implements INodeTagProvider, INodeSelectionController, INodePathResolver
-{
+export class TreeviewStore implements INodeSelectionController, INodePathResolver {
 	readonly #treeviewType: TreeviewType;
 
 	readonly #nodeProvider: INodeProvider;
 
 	readonly #nodeConfigProvider: INodeConfigProvider;
-
-	readonly #nodeTagProvider: INodeTagProvider;
 
 	readonly #nodeSelectionController: INodeSelectionController;
 
@@ -65,7 +60,6 @@ export class TreeviewStore
 		treeviewType: TreeviewType,
 		nodeProvider: INodeProvider,
 		nodeConfigProvider: INodeConfigProvider,
-		nodeTagProvider: INodeTagProvider,
 		nodeSelectionController: INodeSelectionController,
 		nodeVisibilityController: INodeVisibilityController
 	) {
@@ -86,12 +80,6 @@ export class TreeviewStore
 		}
 
 		this.#nodeConfigProvider = nodeConfigProvider;
-
-		if (!nodeTagProvider) {
-			throw new Error('TreeviewStore requires a valid INodeTagProvider to initialize.');
-		}
-
-		this.#nodeTagProvider = nodeTagProvider;
 
 		if (!nodeSelectionController) {
 			throw new Error('TreeviewStore requires a valid INodeSelectionController to initialize.');
@@ -196,11 +184,6 @@ export class TreeviewStore
 		this.#drawStates.clear();
 		this.#nodeSelectionController.reset();
 		this.#nodeVisibilityController.reset();
-	}
-
-	/** @inheritdoc */
-	public getTags(nodeId: string): string[] {
-		return this.#nodeTagProvider?.getTags(nodeId) ?? [];
 	}
 
 	/** @inheritdoc */

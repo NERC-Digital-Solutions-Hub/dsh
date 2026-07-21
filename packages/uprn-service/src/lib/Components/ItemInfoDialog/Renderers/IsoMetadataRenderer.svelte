@@ -1,13 +1,12 @@
 <script lang="ts">
-	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
-	import { Card, CardContent, CardHeader, CardTitle } from '$lib/Components/shadcn/card';
+	import type { MetadataResolvedContent } from '$lib/Types/Metadata.types';
+	import SanitizedHtml from '$lib/Components/SanitizedHtml/SanitizedHtml.svelte';
+	import { Card, CardContent, CardHeader } from '$lib/Components/shadcn/card';
 	import { ScrollArea } from '$lib/Components/shadcn/scroll-area';
-	import rehypeStringify from 'rehype-stringify';
-	import remarkGfm from 'remark-gfm';
-	import remarkParse from 'remark-parse';
-	import remarkRehype from 'remark-rehype';
-	import { unified } from 'unified';
-	import { rehypeReferences } from '@dsh/common';
+	import {
+		renderMarkdownToSanitizedHtml,
+		type SanitizedHtml as SanitizedHtmlValue
+	} from '$lib/Utilities/richText';
 
 	const paths = {
 		fileIdentifier: '//*[local-name()="fileIdentifier"]/*[local-name()="CharacterString"]',
@@ -93,24 +92,14 @@
 	});
 
 	/** Derived state for processing the fetched abstract content into HTML. */
-	let abstractHtml: Promise<string | null> = $derived.by(async () => {
+	let abstractHtml: Promise<SanitizedHtmlValue | null> = $derived.by(async () => {
 		if (!metadata.abstract) {
 			return null;
 		}
 
 		const cleanedAbstract = normalizeMarkdown(metadata.abstract);
 
-		const htmlRaw = await unified()
-			.use(remarkParse)
-			.use(remarkGfm)
-			.use(remarkRehype)
-			.use(rehypeReferences)
-			.use(rehypeStringify)
-			.process(cleanedAbstract);
-
-		console.log('Processed HTML:', htmlRaw.toString());
-
-		return htmlRaw.toString();
+		return renderMarkdownToSanitizedHtml(cleanedAbstract);
 	});
 
 	function parseXml(xmlString: string): XMLDocument {
@@ -172,13 +161,6 @@
 		return [...new Set(values)];
 	}
 
-	function formatDate(value: string | null): string {
-		if (!value) return 'Not provided';
-
-		const date = new Date(value);
-		return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
-	}
-
 	function normalizeMarkdown(value: string): string {
 		const untabbed = value.replace(/\t/g, ' ');
 		const lines = untabbed.split(/\r?\n/);
@@ -222,7 +204,7 @@
 			{#if metadata.purpose}
 				<section class="rounded-lg border p-4 text-sm text-muted-foreground">
 					<span class="font-semibold text-foreground">Purpose:</span>
-					{' '}{metadata.purpose}
+					{metadata.purpose}
 				</section>
 			{/if}
 
@@ -258,7 +240,7 @@
 						<p>Loading...</p>
 					{:then html}
 						<article class="prose-info-markdown">
-							{@html html}
+							<SanitizedHtml {html} />
 						</article>
 					{:catch error}
 						<p>Error loading content: {error.message}</p>
@@ -323,7 +305,7 @@
 						<h2 class="text-base font-semibold">Tags</h2>
 
 						<div class="flex flex-wrap gap-2">
-							{#each metadata.keywords as keyword}
+							{#each metadata.keywords as keyword (keyword)}
 								<span
 									class="inline-flex items-center rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground"
 								>

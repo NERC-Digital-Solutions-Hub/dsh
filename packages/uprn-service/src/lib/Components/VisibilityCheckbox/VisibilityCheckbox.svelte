@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Eye, EyeOff } from '@lucide/svelte';
 	import * as Tooltip from '$lib/Components/shadcn/tooltip/index.js';
+	import { cn } from '$lib/utils';
 
 	let {
 		checked = $bindable(false),
@@ -54,7 +55,7 @@
 				<button
 					{...tooltipProps}
 					type="button"
-					class="visibility-btn"
+					class={cn('visibility-btn', className)}
 					class:visible={checked}
 					class:indeterminate
 					onclick={(e) => {

@@ -3,7 +3,7 @@ import {
 	SelectionState,
 	TreeviewNode,
 	VariableTreeviewNode
-} from '$lib/Models/Treeview/Index';
+} from '$lib/Models/Treeview/index';
 import type { TreeviewNodeCapabilities } from '$lib/Models/Treeview/TreeviewNodeCapabilities';
 import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 import { NodeSelectionController } from '$lib/Services/NodeSelectionController';

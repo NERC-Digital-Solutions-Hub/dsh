@@ -39,8 +39,8 @@ export async function generateUprnAppConfig(
 	const page = await source.getPage<UprnPageAssets>('/apps/uprn-service');
 
 	const [settings, introductionMarkdown, customRenderers] = await Promise.all([
-		source.readJson<GeneralSettings>(page, 'settings'),
-		source.readText(page, 'introduction'),
+		source.readJson<GeneralSettings>(page, 'settings.settings'),
+		source.readText(page, 'introduction.introduction'),
 		source.readJson<CustomRenderers>(page, 'climatejust-renderers')
 	]);
 

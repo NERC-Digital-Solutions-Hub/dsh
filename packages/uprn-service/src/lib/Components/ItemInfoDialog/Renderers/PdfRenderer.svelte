@@ -1,6 +1,9 @@
 <script lang="ts">
+	/* eslint-disable svelte/no-navigation-without-resolve -- Metadata files may use blob or external URLs. */
 	import PdfIcon from '$lib/Assets/pdf-icon.svg?raw';
-	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
+	import SanitizedHtml from '$lib/Components/SanitizedHtml/SanitizedHtml.svelte';
+	import type { MetadataResolvedContent } from '$lib/Types/Metadata.types';
+	import { trustLocalIconHtml } from '$lib/Utilities/richText';
 
 	import * as Card from '$lib/Components/shadcn/card';
 	import { Badge } from '$lib/Components/shadcn/badge';
@@ -26,7 +29,7 @@
 				aria-hidden="true"
 			>
 				<span class="pdf-icon">
-					{@html PdfIcon}
+					<SanitizedHtml html={trustLocalIconHtml(PdfIcon)} />
 				</span>
 			</div>
 

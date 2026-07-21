@@ -1,6 +1,6 @@
 <script lang="ts">
 	import CopyToClipboardButton from '$lib/Components/CopyToClipboardButton/CopyToClipboardButton.svelte';
-	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
+	import type { MetadataResolvedContent } from '$lib/Types/Metadata.types';
 	import { Button } from '$lib/Components/shadcn/button/index.js';
 	import * as Card from '$lib/Components/shadcn/card/index.js';
 	import XmlTree from '$lib/Components/XmlTreeview/XmlTreeview.svelte';
@@ -36,7 +36,7 @@
 			<Tooltip.Provider disableHoverableContent>
 				<Tooltip.Root>
 					<Tooltip.Trigger class="cursor-pointer">
-						<CopyToClipboardButton value={content.text} title={''} variant="outline" />
+						<CopyToClipboardButton value={content.text} title="" variant="outline" />
 					</Tooltip.Trigger>
 					<Tooltip.Content side="top">Copy</Tooltip.Content>
 				</Tooltip.Root>

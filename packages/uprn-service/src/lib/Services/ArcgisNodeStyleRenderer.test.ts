@@ -1,4 +1,4 @@
-import { TreeviewNode } from '$lib/Models/Treeview/Index';
+import { TreeviewNode } from '$lib/Models/Treeview/index';
 import { ArcgisNodeStyleRenderer } from '$lib/Services/ArcgisNodeStyleRenderer';
 import type { CustomRendererService } from '$lib/Services/CustomRendererService';
 import type { LayerViewProvider } from '$lib/Services/LayerViewProvider';

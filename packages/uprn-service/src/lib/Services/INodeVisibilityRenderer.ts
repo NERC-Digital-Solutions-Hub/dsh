@@ -1,4 +1,4 @@
-import type { NodeDrawState, TreeviewNode } from '$lib/Models/Treeview/Index';
+import type { NodeDrawState, TreeviewNode } from '$lib/Models/Treeview/index';
 
 export type NodeVisibilityRenderTarget =
 	| {

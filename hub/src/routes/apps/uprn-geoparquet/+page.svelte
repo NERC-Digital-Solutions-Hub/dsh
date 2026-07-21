@@ -14,7 +14,10 @@
 
 	const mobile = browser ? new MediaQuery('(max-width: 500px)') : null;
 	let { data }: { data: PageData } = $props();
-	let UprnServiceApp: Component<{ config: AppsUprnConfig }> | null = $state(null);
+	let UprnServiceApp: Component<{
+		config: AppsUprnConfig;
+		defaultSourceIndex?: number;
+	}> | null = $state(null);
 	let arcgisLoadError: string | null = $state(null);
 
 	onMount(async () => {

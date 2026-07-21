@@ -1,6 +1,9 @@
 <script lang="ts">
+	/* eslint-disable svelte/no-navigation-without-resolve -- Metadata files may use blob or external URLs. */
 	import DocxIcon from '$lib/Assets/docx-icon.svg?raw';
-	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
+	import SanitizedHtml from '$lib/Components/SanitizedHtml/SanitizedHtml.svelte';
+	import type { MetadataResolvedContent } from '$lib/Types/Metadata.types';
+	import { trustLocalIconHtml } from '$lib/Utilities/richText';
 
 	import * as Card from '$lib/Components/shadcn/card';
 	import { Badge } from '$lib/Components/shadcn/badge';
@@ -26,7 +29,7 @@
 				aria-hidden="true"
 			>
 				<span class="docx-icon">
-					{@html DocxIcon}
+					<SanitizedHtml html={trustLocalIconHtml(DocxIcon)} />
 				</span>
 			</div>
 

@@ -20,13 +20,14 @@
 		collapsible = true
 	}: Props = $props();
 
-	let expanded = $state(!collapsible);
+	let interactionExpanded = $state(false);
+	const expanded = $derived(!collapsible || interactionExpanded);
 	let collapsing = $state(false);
 	let inputRef: HTMLInputElement | null = $state(null);
 
 	function handleFocus() {
 		collapsing = false;
-		expanded = true;
+		interactionExpanded = true;
 	}
 
 	function handleBlur() {
@@ -37,7 +38,7 @@
 
 	function handleAnimationEnd() {
 		if (collapsing) {
-			expanded = false;
+			interactionExpanded = false;
 			collapsing = false;
 		}
 	}

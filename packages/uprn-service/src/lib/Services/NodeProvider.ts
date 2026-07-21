@@ -1,4 +1,4 @@
-import { TreeviewNode } from '$lib/Models/Treeview/Index';
+import { TreeviewNode } from '$lib/Models/Treeview/index';
 import type { INodeProvider } from '$lib/Services/INodeProvider';
 
 /**

@@ -8,7 +8,6 @@
 		CardTitle
 	} from '$lib/Components/shadcn/card';
 	import { ScrollArea } from '$lib/Components/shadcn/scroll-area';
-	import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
 
 	type LayerDef = {
 		name?: string;
@@ -17,7 +16,6 @@
 	};
 
 	type Props = {
-		content: Extract<MetadataResolvedContent, { type: 'arcgisInfo' }>;
 		layer?: __esri.Layer | __esri.Sublayer | null;
 	};
 

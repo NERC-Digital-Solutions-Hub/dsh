@@ -73,7 +73,7 @@ vi.mock('@dsh/common/arcgis', () => {
 		preloadArcgis: vi.fn(async () => {})
 	};
 });
-vi.mock('$lib/Stores/WebMapCustomLoader', () => ({
+vi.mock('$lib/Services/WebMap/WebMapJsonLoader', () => ({
 	cleanupUprnWebMapLayerResources: customLoader.cleanupUprnWebMapLayerResources,
 	createWebMapFromJson: customLoader.createWebMapFromJson
 }));

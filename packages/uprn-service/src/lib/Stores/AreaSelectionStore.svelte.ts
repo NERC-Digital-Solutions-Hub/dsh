@@ -1,21 +1,8 @@
 import type { IAreaSelectionController } from '$lib/Services/IAreaSelectionController';
-import type { AreaSelectionInfo } from '$lib/Types/Uprn.types';
+import type { AreaSelectionSnapshot } from '$lib/Types/Selection.types';
 import { SvelteSet } from 'svelte/reactivity';
 
-/**
- * Snapshot type for AreaSelectionStore.
- */
-export type AreaSelectionStoreSnapshot = {
-	/**
-	 * The ID of the layer from which areas are selected.
-	 */
-	nodeId: string | null;
-
-	/**
-	 * Set of selected area IDs. This is the field ID of the area in the feature layer.
-	 */
-	areaIds: SvelteSet<number>;
-};
+export type AreaSelectionStoreSnapshot = AreaSelectionSnapshot;
 
 /**
  * Store for managing the selected areas.
@@ -79,21 +66,10 @@ export class AreaSelectionStore implements IAreaSelectionController {
 	 * Export a snapshot of the state of the AreaSelectionStore.
 	 * @returns The exported snapshot
 	 */
-	public exportSnapshot(): AreaSelectionStoreSnapshot {
+	public exportSnapshot(): AreaSelectionSnapshot {
 		return {
 			nodeId: this.layerId,
 			areaIds: new SvelteSet(this.areaIds)
 		};
-	}
-
-	/** @inheritdoc */
-	public getAreaSelection(): AreaSelectionInfo | null {
-		const snapshot = this.exportSnapshot();
-		return snapshot.nodeId
-			? {
-					layerId: snapshot.nodeId,
-					areaFieldInfos: Array.from(snapshot.areaIds).map((id) => ({ id }))
-				}
-			: null;
 	}
 }

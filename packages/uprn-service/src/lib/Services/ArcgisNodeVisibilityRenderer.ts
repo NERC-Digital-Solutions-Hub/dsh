@@ -1,4 +1,4 @@
-import { NodeDrawState } from '$lib/Models/Treeview/Index';
+import { NodeDrawState } from '$lib/Models/Treeview/index';
 import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 import type { LayerViewProvider } from '$lib/Services/LayerViewProvider';
 import { arcgisImport } from '@dsh/common/arcgis';

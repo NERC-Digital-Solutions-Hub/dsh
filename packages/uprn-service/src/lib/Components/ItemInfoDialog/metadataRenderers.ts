@@ -1,37 +1,43 @@
+import type { MetadataResolvedContent, MetadataTabContentItem } from '$lib/Types/Metadata.types';
 import type { Component } from 'svelte';
-import type { MetadataResolvedContent } from '$lib/Hooks/UseFetchMetadataContent.svelte';
-import type { MetadataTabContentItem } from '$lib/Types/Metadata.types';
 
-import ArcgisInfoRenderer from './Renderers/ArcgisInfoRenderer.svelte';
-import DisclaimerRenderer from './Renderers/DisclaimerRenderer.svelte';
-import DocxRenderer from './Renderers/DocxRenderer.svelte';
-import ImageRenderer from './Renderers/ImageRenderer.svelte';
-import PdfRenderer from './Renderers/PdfRenderer.svelte';
-import SlideshowRenderer from './Renderers/SlideshowRenderer.svelte';
-import TextRenderer from './Renderers/TextRenderer.svelte';
-import XmlRenderer from './Renderers/XmlRenderer.svelte';
-import IsoMetadataRenderer from '$lib/Components/ItemInfoDialog/Renderers/IsoMetadataRenderer.svelte';
-import MarkdownRenderer from '$lib/Components/ItemInfoDialog/Renderers/MarkdownRenderer.svelte';
-import PortalPageRenderer from '$lib/Components/ItemInfoDialog/Renderers/PortalPageRenderer.svelte';
-
-type MetadataContentType = MetadataTabContentItem['type'];
-
-type MetadataRendererComponent = Component<{
+export type MetadataRendererComponent = Component<{
 	content: MetadataResolvedContent;
 	index?: number;
 	layer?: __esri.Layer | __esri.Sublayer | null;
 }>;
 
-export const metadataRenderers: Record<MetadataContentType, MetadataRendererComponent> = {
-	arcgisInfo: ArcgisInfoRenderer as MetadataRendererComponent,
-	portalPage: PortalPageRenderer as MetadataRendererComponent,
-	isoMetadata: IsoMetadataRenderer as MetadataRendererComponent,
-	text: TextRenderer as MetadataRendererComponent,
-	disclaimer: DisclaimerRenderer as MetadataRendererComponent,
-	image: ImageRenderer as MetadataRendererComponent,
-	slideshow: SlideshowRenderer as MetadataRendererComponent,
-	xml: XmlRenderer as MetadataRendererComponent,
-	md: MarkdownRenderer as MetadataRendererComponent,
-	docx: DocxRenderer as MetadataRendererComponent,
-	pdf: PdfRenderer as MetadataRendererComponent
+type RendererLoader = () => Promise<{ default: MetadataRendererComponent }>;
+
+async function loadRenderer<TProps extends Record<string, unknown>>(
+	loader: () => Promise<{ default: Component<TProps> }>
+): Promise<{ default: MetadataRendererComponent }> {
+	const module = await loader();
+	return { default: module.default as unknown as MetadataRendererComponent };
+}
+
+const rendererLoaders: Record<MetadataTabContentItem['type'], RendererLoader> = {
+	arcgisInfo: () => loadRenderer(() => import('./Renderers/ArcgisInfoRenderer.svelte')),
+	portalPage: () => loadRenderer(() => import('./Renderers/PortalPageRenderer.svelte')),
+	isoMetadata: () => loadRenderer(() => import('./Renderers/IsoMetadataRenderer.svelte')),
+	text: () => loadRenderer(() => import('./Renderers/TextRenderer.svelte')),
+	disclaimer: () => loadRenderer(() => import('./Renderers/DisclaimerRenderer.svelte')),
+	image: () => loadRenderer(() => import('./Renderers/ImageRenderer.svelte')),
+	slideshow: () => loadRenderer(() => import('./Renderers/SlideshowRenderer.svelte')),
+	xml: () => loadRenderer(() => import('./Renderers/XmlRenderer.svelte')),
+	md: () => loadRenderer(() => import('./Renderers/MarkdownRenderer.svelte')),
+	docx: () => loadRenderer(() => import('./Renderers/DocxRenderer.svelte')),
+	pdf: () => loadRenderer(() => import('./Renderers/PdfRenderer.svelte'))
 };
+
+const rendererCache = new Map<MetadataTabContentItem['type'], MetadataRendererComponent>();
+
+export async function loadMetadataRenderer(
+	type: MetadataTabContentItem['type']
+): Promise<MetadataRendererComponent> {
+	const cached = rendererCache.get(type);
+	if (cached) return cached;
+	const renderer = (await rendererLoaders[type]()).default;
+	rendererCache.set(type, renderer);
+	return renderer;
+}

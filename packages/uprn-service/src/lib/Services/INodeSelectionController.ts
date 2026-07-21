@@ -1,4 +1,4 @@
-import type { SelectionState, TreeviewNode } from '$lib/Models/Treeview/Index';
+import type { SelectionState, TreeviewNode } from '$lib/Models/Treeview/index';
 
 /**
  * Interface for controlling the selection associated with treeview nodes.

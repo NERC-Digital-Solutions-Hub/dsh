@@ -3,7 +3,7 @@ import {
 	NodeDrawState,
 	TreeviewNode,
 	VariableTreeviewNode
-} from '$lib/Models/Treeview/Index';
+} from '$lib/Models/Treeview/index';
 import { TreeviewNodeType } from '$lib/Models/Treeview/TreeviewNodeType';
 import type { INodeConfigProvider } from '$lib/Services/INodeConfigProvider';
 import type { INodeProvider } from '$lib/Services/INodeProvider';
