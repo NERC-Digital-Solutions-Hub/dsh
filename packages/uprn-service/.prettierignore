@@ -9,4 +9,4 @@ bun.lockb
 /static/
 
 # Generated shadcn-svelte primitives are updated only for narrow correctness fixes.
-/src/lib/Components/shadcn/
+/src/lib/components/shadcn/
