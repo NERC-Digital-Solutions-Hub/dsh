@@ -1,5 +1,4 @@
-import Graphic from '@arcgis/core/Graphic.js';
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer.js';
+import type Graphic from '@arcgis/core/Graphic.js';
 import type GraphicsLayer from '@arcgis/core/layers/GraphicsLayer.js';
 import type MapView from '@arcgis/core/views/MapView.js';
 import type Polygon from '@arcgis/core/geometry/Polygon.js';
@@ -22,10 +21,16 @@ interface ClipPolygonOptions {
 	clipLayerValueField?: string;
 	targetLayer: GraphicsLayer;
 	symbol?: __esri.SimpleFillSymbolProperties;
+	zoomToResult?: boolean;
 
 	/** Optional IDs of the source features that were unioned to create `input` */
 	sourceIds?: Array<number | string>;
 }
+
+type TitledLayer = {
+	title?: string;
+	id?: string;
+};
 
 /**
  * Intersects a polygon geometry/graphic with all intersecting clip geometries
@@ -45,10 +50,19 @@ interface ClipPolygonOptions {
  * @param options.sourceIds - Optional IDs of original polygons that were unioned into `input`
  */
 export async function clipPolygon(options: ClipPolygonOptions): Promise<Graphic[] | null> {
-	const { view, input, clipLayer, targetLayer, symbol, clipLayerValueField, sourceIds } = options;
+	const {
+		view,
+		input,
+		clipLayer,
+		targetLayer,
+		symbol,
+		clipLayerValueField,
+		sourceIds,
+		zoomToResult = true
+	} = options;
 
 	// Normalise to a Polygon geometry
-	const rawGeom = input instanceof Graphic ? input.geometry : input;
+	const rawGeom = 'geometry' in input ? input.geometry : input;
 
 	if (!rawGeom) {
 		console.warn('clipPolygon: no input geometry provided.');
@@ -62,7 +76,7 @@ export async function clipPolygon(options: ClipPolygonOptions): Promise<Graphic[
 
 	const inputPolygon = rawGeom as Polygon;
 
-	if (clipLayer instanceof FeatureLayer && clipLayer.geometryType !== 'polygon') {
+	if (clipLayer.type === 'feature' && clipLayer.geometryType !== 'polygon') {
 		console.error('clipPolygon: clipLayer is not of polygon geometry type.');
 		return null;
 	}
@@ -85,7 +99,8 @@ export async function clipPolygon(options: ClipPolygonOptions): Promise<Graphic[
 			return null;
 		}
 
-		const clipLayerTitle = (clipLayer as any).title || (clipLayer as any).id || 'clip-layer';
+		const { title, id } = clipLayer as TitledLayer;
+		const clipLayerTitle = title || id || 'clip-layer';
 
 		for (const { geometry, value } of groupedClipGeometries) {
 			if (!validateSpatialReferences(inputPolygon, geometry)) {
@@ -100,7 +115,7 @@ export async function clipPolygon(options: ClipPolygonOptions): Promise<Graphic[
 				value
 			};
 
-			const g = createClippedGraphic(geometry, attrs, symbol);
+			const g = await createClippedGraphic(geometry, attrs, symbol);
 			addGraphicToLayer(targetLayer, g, view);
 			results.push(g);
 		}
@@ -109,8 +124,9 @@ export async function clipPolygon(options: ClipPolygonOptions): Promise<Graphic[
 			return null;
 		}
 
-		if (view) {
-			view.goTo(results.map((g) => g.geometry)).catch((err) => console.warn('goTo failed:', err));
+		if (view && zoomToResult) {
+			const geometries = results.map((g) => g.geometry).filter(Boolean) as __esri.GoToTarget2D;
+			view.goTo(geometries).catch((err) => console.warn('goTo failed:', err));
 		}
 
 		return results;
@@ -129,10 +145,10 @@ export async function clipPolygon(options: ClipPolygonOptions): Promise<Graphic[
 		return null;
 	}
 
-	const g = createClippedGraphic(unionClipGeometry, { sourceIds }, symbol);
+	const g = await createClippedGraphic(unionClipGeometry, { sourceIds }, symbol);
 	addGraphicToLayer(targetLayer, g, view);
 
-	if (view) {
+	if (view && zoomToResult) {
 		view.goTo(unionClipGeometry).catch((err) => console.warn('goTo failed:', err));
 	}
 

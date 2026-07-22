@@ -38,7 +38,8 @@
 		"svelte": "^5.0.0"
 	},
 	"devDependencies": {
-		"@arcgis/core": "^4.33.13",
+		"@arcgis/core": "~5.0.0",
+		"@arcgis/map-components": "~5.0.0",
 		"@eslint/compat": "^1.4.0",
 		"@eslint/js": "^9.39.1",
 		"@esri/arcgis-rest-feature-service": "^4.4.1",
@@ -74,7 +75,7 @@
 		"vite": "^7.2.2"
 	},
 	"dependencies": {
-		"@arcgis/map-components": "^4.34.9",
+		"@dsh/common": "workspace:*",
 		"@esri/calcite-ui-icons": "^4.3.0"
 	},
 	"keywords": [

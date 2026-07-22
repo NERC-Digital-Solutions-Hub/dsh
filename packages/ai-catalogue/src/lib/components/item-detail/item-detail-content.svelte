@@ -1,5 +1,5 @@
 <script lang="ts">
-	import MapSection from '$lib/components/map-view/map-section.svelte';
+	import MapThumbnail from '$lib/components/map-thumbnail/MapThumbnail.svelte';
 	import * as Accordion from '$lib/components/shadcn/accordion/index.js';
 	import { Button } from '$lib/components/shadcn/button';
 	import {
@@ -12,6 +12,7 @@
 	import { Separator } from '$lib/components/shadcn/separator';
 	import type { CatalogueItemDetail } from '$lib/utils/catalogue-ui';
 	import { formatDisplayDate } from '$lib/utils/catalogue-ui';
+	import { SvelteMap } from 'svelte/reactivity';
 
 	type Props = {
 		item: CatalogueItemDetail;
@@ -21,27 +22,14 @@
 
 	let { item, showSummaryText = true, summaryLayout = 'stacked' }: Props = $props();
 
-	const mapBoundingBox = $derived(
-		item.boundingBox
-			? {
-					xmin: item.boundingBox.westBoundLongitude,
-					ymin: item.boundingBox.southBoundLatitude,
-					xmax: item.boundingBox.eastBoundLongitude,
-					ymax: item.boundingBox.northBoundLatitude,
-					spatialReference: { wkid: 4326 }
-				}
-			: null
-	);
-
 	const eyebrowClass = 'text-sm font-semibold text-foreground';
 	const metadataLabelClass = 'text-sm font-semibold text-foreground';
 	const metadataValueClass = 'text-sm leading-6 text-foreground';
-	const detailTitleClass = 'text-sm font-semibold text-foreground';
 	const emptyTextClass = 'm-0 text-sm leading-6 text-muted-foreground';
 	const chipClass =
 		'inline-flex items-center rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-secondary-foreground';
 	const groupedArchetypeLinks = $derived.by(() => {
-		const grouped = new Map<string, typeof item.archetypeLinks>();
+		const grouped = new SvelteMap<string, typeof item.archetypeLinks>();
 
 		for (const link of item.archetypeLinks) {
 			const key = link.group?.trim() || 'Other';
@@ -221,7 +209,6 @@
 						</p>
 					{/if}
 				</div>
-
 			</CardContent>
 		</Card>
 
@@ -240,6 +227,7 @@
 							>
 								<div class="flex flex-col gap-2">
 									{#each entry.links as link, linkIndex (`${link.url}-${linkIndex}`)}
+										<!-- eslint-disable svelte/no-navigation-without-resolve -->
 										<a
 											class="flex items-center justify-between gap-4 rounded-md border bg-background p-3 text-inherit transition hover:-translate-y-px hover:border-primary hover:bg-accent max-sm:flex-col max-sm:items-stretch"
 											href={link.url}
@@ -252,6 +240,7 @@
 											</div>
 											<Button variant="outline" size="sm">Open</Button>
 										</a>
+										<!-- eslint-enable svelte/no-navigation-without-resolve -->
 									{/each}
 								</div>
 							</Accordion.Item>
@@ -264,7 +253,7 @@
 		</Card>
 	</div>
 
-	{#if mapBoundingBox}
+	{#if item.boundingBox}
 		<Card>
 			<CardHeader class="pb-4">
 				<CardTitle>Spatial preview</CardTitle>
@@ -272,12 +261,7 @@
 			</CardHeader>
 			<CardContent class="pt-0">
 				<div class="h-[360px] overflow-hidden rounded-md">
-					<MapSection
-						boundingBox={mapBoundingBox}
-						showBoundingBox={true}
-						boundingBoxColor={[255, 0, 0, 0.3]}
-						interactive={false}
-					/>
+					<MapThumbnail boundingBox={item.boundingBox} alt={`Map preview for ${item.title}`} />
 				</div>
 			</CardContent>
 		</Card>

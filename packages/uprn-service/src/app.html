@@ -4,6 +4,14 @@
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.svg" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!--
+			Load the ArcGIS Maps SDK from the CDN for the local demo. ArcGIS modules are loaded
+			at runtime via window.$arcgis.import() (see @dsh/common/arcgis) so the SDK is
+			never bundled. When this package is consumed as a library, the loader self-injects this
+			script, so hosts need no changes.
+		-->
+		<link rel="stylesheet" href="https://js.arcgis.com/5.0/esri/themes/light/main.css" />
+		<script type="module" src="https://js.arcgis.com/5.0/"></script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

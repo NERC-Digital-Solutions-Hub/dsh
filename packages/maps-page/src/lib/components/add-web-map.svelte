@@ -12,13 +12,14 @@
 	import { SvelteMap } from 'svelte/reactivity';
 	import { CircleX } from '@lucide/svelte';
 	import { MapViewService } from '$lib/services/command-search/map-view-service';
+	import { arcgisImport } from '@dsh/common/arcgis';
 	type Props = {
 		commandSearchContext: CommandSearchContext;
 		inputPlaceholder?: string;
 		runtime?: MapCommandRuntime | null;
 	};
 
-	const { commandSearchContext, inputPlaceholder = "Search...", runtime = null }: Props = $props();
+	const { commandSearchContext, inputPlaceholder = 'Search...', runtime = null }: Props = $props();
 	const useEsriRequest = new UseEsriRequest();
 
 	let mapView: __esri.MapView | null = $state(null);
@@ -168,7 +169,10 @@
 
 			const portalUrl: string = organisationService.getActiveOrganisationPortalUrl();
 
-			const { default: WebMap } = await import('@arcgis/core/WebMap');
+			const WebMap =
+				await arcgisImport<typeof import('@arcgis/core/WebMap.js').default>(
+					'@arcgis/core/WebMap.js'
+				);
 			const webMap = new WebMap({
 				portalItem: {
 					id: itemId,
@@ -188,7 +192,9 @@
 			console.log('Web map applied to MapView');
 
 			// Wait for the view to update
-			const reactiveUtils = await import('@arcgis/core/core/reactiveUtils.js');
+			const reactiveUtils = await arcgisImport<typeof import('@arcgis/core/core/reactiveUtils.js')>(
+				'@arcgis/core/core/reactiveUtils.js'
+			);
 			await reactiveUtils.whenOnce(() => mapView?.ready);
 
 			console.log('MapView updated with new web map');

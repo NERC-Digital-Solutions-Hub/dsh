@@ -1,6 +1,7 @@
-@source './Components'; /* this is needed so tailwind applies the app styling when this package is added as a dependency! */
+@source './components'; /* this is needed so tailwind applies the app styling when this package is added as a dependency! */
 
-@import '@arcgis/core/assets/esri/themes/light/main.css';
+/* The ArcGIS theme CSS is loaded from the CDN at runtime by @dsh/common/arcgis
+   (and in src/app.html for the demo), so it is intentionally not imported here. */
 @import '@dsh/common/styles.css';
 
 .prose-intro-dialog :where(p) {

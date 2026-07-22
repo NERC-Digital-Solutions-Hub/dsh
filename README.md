@@ -4,6 +4,8 @@ This repository contains the frontend workspace for the NERC Digital Solutions H
 
 The repo is organised as a pnpm monorepo. The `hub` app is the main site that users visit, and the packages in `packages/` provide the feature areas that are mounted into the hub.
 
+For a developer-focused explanation of the application flow, package entry points, content integration, configuration, and build process, see [ARCHITECTURE.md](./ARCHITECTURE.md).
+
 ## Workspace Structure
 
 - `hub` - the main SvelteKit application. It provides the home page, navigation, shared route shell, and routes that load the individual hub features.

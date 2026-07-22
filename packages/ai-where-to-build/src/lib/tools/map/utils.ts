@@ -1,9 +1,7 @@
+import { loadGeometryOperators, loadGraphic } from './arcgis-runtime';
 
-import * as intersectionOperator from '@arcgis/core/geometry/operators/intersectionOperator.js';
-import * as unionOperator from '@arcgis/core/geometry/operators/unionOperator.js';
-import Graphic from '@arcgis/core/Graphic.js';
-
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer.js';
+import type Graphic from '@arcgis/core/Graphic.js';
+import type FeatureLayer from '@arcgis/core/layers/FeatureLayer.js';
 import type GraphicsLayer from '@arcgis/core/layers/GraphicsLayer.js';
 import type MapView from '@arcgis/core/views/MapView.js';
 import type Extent from '@arcgis/core/geometry/Extent.js';
@@ -15,13 +13,13 @@ export type ClipLayer = FeatureLayer | GraphicsLayer;
 export type ClipValue = string | number | null | undefined;
 
 export interface ClipFeature {
-    geometry: GeometryUnion;
-    value: ClipValue;
+	geometry: GeometryUnion;
+	value: ClipValue;
 }
 
 export interface GroupedClipGeometry {
-    geometry: Polygon;
-    value: ClipValue;
+	geometry: Polygon;
+	value: ClipValue;
 }
 
 /**
@@ -98,6 +96,7 @@ export async function getUnionPolygonFromFeatureLayer(
 		return polygons[0];
 	}
 
+	const { unionOperator } = await loadGeometryOperators();
 	const unionResult = unionOperator.executeMany(polygons) as GeometryUnion | null | undefined;
 	if (!unionResult || unionResult.type !== 'polygon') {
 		return null;
@@ -106,11 +105,11 @@ export async function getUnionPolygonFromFeatureLayer(
 	return unionResult as Polygon;
 }
 
-export function getUnionPolygonFromGraphicsLayer(
+export async function getUnionPolygonFromGraphicsLayer(
 	layer: GraphicsLayer,
 	polygonIds: Array<number | string>,
 	explicitIdField: string | undefined
-): Polygon | null {
+): Promise<Polygon | null> {
 	const fieldName = explicitIdField || 'id';
 	const idSet = new Set(polygonIds.map((id) => String(id)));
 
@@ -141,6 +140,7 @@ export function getUnionPolygonFromGraphicsLayer(
 		return polygons[0];
 	}
 
+	const { unionOperator } = await loadGeometryOperators();
 	const unionResult = unionOperator.executeMany(polygons) as GeometryUnion | null | undefined;
 	if (!unionResult || unionResult.type !== 'polygon') {
 		return null;
@@ -175,15 +175,15 @@ export async function getGroupedClipGeometriesFromLayer(
 
 	const results: GroupedClipGeometry[] = [];
 
-	groups.forEach((group) => {
-		const unionGeom = computeUnionOfIntersections(polygon, group.geometries);
+	for (const group of groups.values()) {
+		const unionGeom = await computeUnionOfIntersections(polygon, group.geometries);
 		if (unionGeom) {
 			results.push({
 				geometry: unionGeom,
 				value: group.value
 			});
 		}
-	});
+	}
 
 	return results;
 }
@@ -291,11 +291,12 @@ export function validateSpatialReferences(polygon: Polygon, unionClipGeometry: P
  * @param symbol - Optional custom symbol
  * @returns New Graphic representing the clipped polygon
  */
-export function createClippedGraphic(
+export async function createClippedGraphic(
 	geometry: Polygon,
 	attributes: Record<string, unknown>,
 	symbol?: __esri.SimpleFillSymbolProperties
-): Graphic {
+): Promise<Graphic> {
+	const Graphic = await loadGraphic();
 	return new Graphic({
 		geometry,
 		attributes: {
@@ -321,7 +322,11 @@ export function createClippedGraphic(
  * @param graphic - The graphic to add
  * @param view - Optional MapView to add the layer to if not present
  */
-export function addGraphicToLayer(targetLayer: GraphicsLayer, graphic: Graphic, view?: MapView): void {
+export function addGraphicToLayer(
+	targetLayer: GraphicsLayer,
+	graphic: __esri.Graphic,
+	view?: MapView
+): void {
 	if (view?.map && !view.map.layers.includes(targetLayer)) {
 		view.map.add(targetLayer);
 	}
@@ -513,10 +518,11 @@ export function getClipGeometriesFromGraphicsLayer(
  * @param clipGeometries - Array of geometries to intersect
  * @returns Union of all polygon intersections or null if none found
  */
-export function computeUnionOfIntersections(
+export async function computeUnionOfIntersections(
 	polygon: Polygon,
 	clipGeometries: GeometryUnion[]
-): Polygon | null {
+): Promise<Polygon | null> {
+	const { intersectionOperator, unionOperator } = await loadGeometryOperators();
 	intersectionOperator.accelerateGeometry(polygon);
 
 	const intersections = intersectionOperator.executeMany(

@@ -1,12 +1,10 @@
-import * as bufferOperator from '@arcgis/core/geometry/operators/bufferOperator.js';
-import * as differenceOperator from '@arcgis/core/geometry/operators/differenceOperator.js';
-
-import Graphic from '@arcgis/core/Graphic.js';
+import type Graphic from '@arcgis/core/Graphic.js';
 import type GraphicsLayer from '@arcgis/core/layers/GraphicsLayer.js';
 import type MapView from '@arcgis/core/views/MapView.js';
 import type Polygon from '@arcgis/core/geometry/Polygon.js';
 
 import { addGraphicToLayer } from '$lib/tools/map/utils';
+import { loadGeometryOperators, loadGraphic } from './arcgis-runtime';
 
 interface CreatePolygonBufferOptions {
 	view?: MapView;
@@ -25,6 +23,7 @@ interface CreatePolygonBufferOptions {
 
 	/** Optional custom symbol for the buffer polygon */
 	symbol?: __esri.SimpleFillSymbolProperties;
+	zoomToResult?: boolean;
 
 	/** Optional IDs of the source features that were unioned to create `input` */
 	sourceIds?: Array<number | string>;
@@ -42,7 +41,16 @@ interface CreatePolygonBufferOptions {
 export async function createPolygonBuffer(
 	options: CreatePolygonBufferOptions
 ): Promise<Graphic | null> {
-	const { view, input, targetLayer, bufferDistance, bufferUnit, symbol, sourceIds } = options;
+	const {
+		view,
+		input,
+		targetLayer,
+		bufferDistance,
+		bufferUnit,
+		symbol,
+		sourceIds,
+		zoomToResult = true
+	} = options;
 
 	if (bufferDistance <= 0) {
 		console.warn('createPolygonBuffer: bufferDistance must be greater than zero.');
@@ -50,7 +58,7 @@ export async function createPolygonBuffer(
 	}
 
 	// Normalise to a Polygon geometry
-	const rawGeom = input instanceof Graphic ? input.geometry : input;
+	const rawGeom = 'geometry' in input ? input.geometry : input;
 
 	if (!rawGeom) {
 		console.warn('createPolygonBuffer: no input geometry provided.');
@@ -63,6 +71,10 @@ export async function createPolygonBuffer(
 	}
 
 	const basePolygon = rawGeom as Polygon;
+	const [{ bufferOperator, differenceOperator }, Graphic] = await Promise.all([
+		loadGeometryOperators(),
+		loadGraphic()
+	]);
 
 	// Outer buffer around the base polygon
 	const outerBuffer = bufferOperator.execute(
@@ -115,7 +127,7 @@ export async function createPolygonBuffer(
 
 	addGraphicToLayer(targetLayer, bufferGraphic, view);
 
-	if (view) {
+	if (view && zoomToResult) {
 		view.goTo(ringPolygon).catch((err) => console.warn('goTo failed:', err));
 	}
 

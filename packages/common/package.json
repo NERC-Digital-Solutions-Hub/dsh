@@ -32,6 +32,10 @@
 			"types": "./dist/index.d.ts",
 			"svelte": "./dist/index.js"
 		},
+		"./arcgis": {
+			"types": "./dist/arcgis/index.d.ts",
+			"default": "./dist/arcgis/index.js"
+		},
 		"./styles.css": "./dist/styles.css"
 	},
 	"peerDependencies": {

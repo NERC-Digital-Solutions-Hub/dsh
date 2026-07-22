@@ -13,9 +13,9 @@ The package is intended to be mounted by the wider DSH hub, with app/config asse
 - SvelteKit 2 and Svelte 5 runes.
 - TypeScript with `strict: true`.
 - Tailwind CSS v4 via `@tailwindcss/vite`.
-- shadcn-svelte/Bits UI components under `src/lib/Components/shadcn`.
+- shadcn-svelte/Bits UI components under `src/lib/components/shadcn`.
 - ArcGIS Maps SDK via `@arcgis/core` and `@arcgis/map-components`.
-- IndexedDB persistence via Dexie in `src/lib/db.ts`.
+- IndexedDB persistence via Dexie and repositories under `src/lib/persistence`; `src/lib/db.ts` is a compatibility barrel.
 - Package manager/scripts are pnpm-oriented.
 - Formatting uses tabs, single quotes, Prettier, and `prettier-plugin-tailwindcss`.
 - ESLint warns on unused variables and explicit `any`; class members must use explicit accessibility modifiers.
@@ -26,6 +26,7 @@ Important commands:
 pnpm run check
 pnpm run lint
 pnpm run build
+pnpm run test
 ```
 
 When running from the monorepo root, prefer the package filter form when available:
@@ -34,52 +35,63 @@ When running from the monorepo root, prefer the package filter form when availab
 pnpm --filter @dsh/uprn-service check
 pnpm --filter @dsh/uprn-service lint
 pnpm --filter @dsh/uprn-service build
+pnpm --filter @dsh/uprn-service test
 ```
 
-There are no test files in the provided repo snapshot. Do not invent a test command unless one is added to `package.json`.
+Vitest unit tests live beside first-party modules as `*.test.ts`. Persistence tests use
+`fake-indexeddb`; polling tests use fake timers.
 
 ## Repository map
 
 ```txt
 src/lib/index.ts                         Package entry; exports UprnServiceApp.
-src/lib/Components/App.svelte            Main app orchestrator; currently very large.
-src/lib/Components                       Feature and UI components.
-src/lib/Components/shadcn                shadcn-svelte primitives; treat mostly as generated UI primitives.
-src/lib/Components/Treeview              Area/data treeview components and tree search worker.
-src/lib/Components/ItemInfoDialog        Metadata dialog and content renderers.
-src/lib/Components/UprnMapView           ArcGIS map view component.
-src/lib/Hooks                            Svelte 5 hook-style async/data helpers.
-src/lib/Stores                           Runes-based state containers/classes.
-src/lib/Services                         Domain services and provider interfaces.
-src/lib/Models                           Domain/treeview model classes and enums.
-src/lib/Types                            Shared TypeScript domain/config types.
-src/lib/Utilities                        Pure helpers and browser polyfills.
-src/lib/db.ts                            Dexie database schema and persistence helpers.
+src/lib/components/app.svelte            Main app orchestrator; currently very large.
+src/lib/components                       Feature and UI components.
+src/lib/components/shadcn                shadcn-svelte primitives; treat mostly as generated UI primitives.
+src/lib/components/treeview              Area/data treeview components and tree search worker.
+src/lib/components/item-info-dialog        Metadata dialog and content renderers.
+src/lib/components/uprn-map-view           ArcGIS map view component.
+src/lib/components/app                   App-level panels, map state, and overlays.
+src/lib/hooks                            Small Svelte 5 data helpers that remain feature-local.
+src/lib/stores                           Runes-based state containers/classes.
+src/lib/services                         Domain services and provider interfaces.
+src/lib/services/web-map                  Web-map JSON, layer, GeoParquet, and cleanup boundaries.
+src/lib/services/area-selection           Area query and ArcGIS highlight boundaries.
+src/lib/persistence                      Dexie definition plus selection/download repositories.
+src/lib/models                           Domain/treeview model classes and enums.
+src/lib/types                            Shared TypeScript domain/config types.
+src/lib/utilities                        Pure helpers and browser polyfills.
+src/lib/db.ts                            Compatibility exports for persistence modules.
+src/generated/content                    Local demo content generated at build/check time; not packaged.
 src/lib/styles.css                       Package-level styles imported by route CSS and exported package CSS.
 src/routes/+page.svelte                  Local demo/app page, including small-screen guard.
 src/routes/+layout.svelte                Local layout wrapper.
 src/routes/layout.css                    Tailwind/theme/global CSS entry.
 src/routes/prose.css                     Markdown/prose rendering styles.
 static/config/apps/uprn                  Local app, API, map, and CSV config assets.
-static/animations                        Static lottie animation assets.
 ```
 
 ## Architecture notes
 
 ### Main app composition
 
-`src/lib/Components/App.svelte` wires together configuration, stores, treeviews, map state, export/download flow, item info dialogs, reset dialogs, and chatbot state. It is the main integration point, but it should not keep growing.
+`src/lib/components/app.svelte` is the package composition root. It owns props, layout, bindings,
+and explicit creation/cleanup of app-runtime controllers. Named app panels and overlays live under
+`src/lib/components/app`; it should not absorb feature rendering or API logic.
 
-When adding features, avoid adding large UI sections or heavy domain logic directly to `App.svelte`. Prefer extracting:
+When adding features, avoid adding large UI sections or heavy domain logic directly to `app.svelte`. Prefer extracting:
 
-- feature panel components under `src/lib/Components/<FeatureName>`;
-- stateful domain logic into `src/lib/Stores` or `src/lib/Services`;
-- async fetch/submit logic into `src/lib/Hooks` or `src/lib/Services`;
-- pure transformations into `src/lib/Utilities`.
+- feature panel components under `src/lib/components/<feature-name>`;
+- stateful domain logic into `src/lib/stores` or `src/lib/services`;
+- async fetch/submit logic into `src/lib/hooks` or `src/lib/services`;
+- pure transformations into `src/lib/utilities`.
 
 ### Configuration flow
 
-The local config is loaded from `/config/apps/uprn/config.json`. `useFetchAppConfig` enriches it with DSH content API data such as settings, introduction markdown, custom renderers, and treeview configuration. Treeview config is cached in IndexedDB with a content version.
+The local operational config is read from `static/config/apps/uprn/config.json` by
+`scripts/generate-content-modules.ts`. At build/check time it is enriched with DSH content API data
+such as settings, introduction markdown, custom renderers, and treeview configuration. The generated
+demo module is written to `src/generated/content`, outside the package source boundary.
 
 Static config files include:
 
@@ -94,18 +106,20 @@ When changing config-related code, keep the operational local config and remote 
 
 The treeview system is split across:
 
-- `Models/Treeview` for tree node model types.
-- `Types/Treeview.types.ts` for config/domain types.
-- `Services/*Provider` and `Services/*Controller` for node lookup, visibility, selection, tags, config, and navigation.
-- `Stores/TreeviewStore.svelte.ts` and related stores for state.
-- `Components/Treeview/Area` and `Components/Treeview/Data` for UI.
-- `Components/Treeview/BaseTreeview.svelte` for shared rendering.
+- `models/treeview` for tree node model types.
+- `types/treeview.types.ts` for config/domain types.
+- `services/*-provider.ts` and `services/*-controller.ts` for node lookup, visibility, selection, config, and navigation.
+- `stores/treeview-store.svelte.ts` and related stores for state.
+- `components/treeview/area` and `components/treeview/data` for UI.
+- `components/treeview/base-treeview.svelte` for shared rendering.
 
 Keep area-selection and data-selection behavior separate unless the abstraction is genuinely shared.
 
 ### Map flow
 
-`UprnMapView.svelte` owns ArcGIS MapView UI wiring, map widget setup, fallback map loading, search/legend component setup, and interaction mode changes. `App.svelte` provides the `MapView` instance and store dependencies.
+`uprn-map-view.svelte` owns ArcGIS MapView UI wiring, map widget setup, fallback map loading,
+search/legend setup, and interaction mode changes. Native context-menu bridging is isolated in the
+map feature. `services/web-map` owns JSON parsing, layer creation, GeoParquet replacement, and cleanup.
 
 Be careful with ArcGIS resources:
 
@@ -118,17 +132,21 @@ Be careful with ArcGIS resources:
 
 Export combines selected areas and selected data. The main pieces are:
 
-- `ExportMenu.svelte` and `ExportMenuFooter.svelte` for export review/actions;
-- `DownloadsStore.svelte.ts` for local download state;
-- `UprnDownloadService.ts` and download hooks for API access;
-- `DownloadsMenu.svelte`, `DownloadInfoDialog.svelte`, and `QueueStatus.svelte` for UI;
-- Dexie persistence through `db.ts`.
+- `export-menu.svelte` and `export-menu-footer.svelte` for export review/actions;
+- `downloads-store.svelte.ts` for reactive local download state;
+- `uprn-download-client.ts` for API access;
+- `downloads-controller.svelte.ts` for submission, polling, retries, and status transitions;
+- `export-request-builder.ts` for pure validation/payload construction;
+- `downloads-menu.svelte`, `download-info-dialog.svelte`, and `queue-status.svelte` for UI;
+- Dexie persistence through `persistence/download-repository.ts`.
 
 When altering downloads, preserve local IDs, external job IDs, status transitions, persisted state, and display information.
 
 ### Chatbot flow
 
-The chatbot UI lives under `Components/Chat`. API interactions are handled by `Services/AiUprnChatbotService.ts` and hook files such as `UseSubmitAiChatbotChat.svelte.ts`, `UseAiChatbotChatStream.svelte.ts`, and `UseSubmitAiChatbotFeedback.svelte.ts`.
+The chatbot UI lives under `components/chat`. `ai-chatbot-client.ts` owns endpoint construction and wire
+calls; `chat-controller.svelte.ts` owns conversation IDs, sequence numbers, progressive rendering,
+feedback, and failures. Rich text is rendered through `utilities/rich-text.ts` and `sanitized-html.svelte`.
 
 Keep chatbot endpoint construction and health checking outside presentational components where possible.
 
@@ -152,9 +170,9 @@ Do not extract tiny one-off fragments if extraction makes the code harder to fol
 Prefer colocated feature components:
 
 ```txt
-src/lib/Components/DownloadsMenu/DownloadStatusRow.svelte
-src/lib/Components/ExportMenu/SelectedAreaSummary.svelte
-src/lib/Components/Chat/ChatMessageList.svelte
+src/lib/components/downloads-menu/download-status-row.svelte
+src/lib/components/export-menu/selected-area-summary.svelte
+src/lib/components/chat/chat-message-list.svelte
 ```
 
 Use shared/global component folders only when a component is genuinely reusable across features.
@@ -283,31 +301,31 @@ Avoid defining the same property in both Tailwind classes and scoped CSS. Do not
 ### Existing CSS entry points
 
 - `src/routes/layout.css` imports Tailwind, theme tokens, `@dsh/common/styles.css`, `src/lib/styles.css`, and prose CSS.
-- `src/lib/styles.css` includes package-level styles and `@source './Components'` so Tailwind picks up component classes when the package is consumed elsewhere.
+- `src/lib/styles.css` includes package-level styles and `@source './components'` so Tailwind picks up component classes when the package is consumed elsewhere.
 - `src/routes/prose.css` and prose-like classes style rendered markdown/content.
-- `src/lib/Components/Treeview/treeview-common.css` is treeview-specific shared CSS.
+- `src/lib/components/treeview/treeview-common.css` is treeview-specific shared CSS.
 
-Do not remove `@source './Components'` unless the package build/import strategy has changed and been verified.
+Do not remove `@source './components'` unless the package build/import strategy has changed and been verified.
 
 ### shadcn-svelte components
 
-Treat `src/lib/Components/shadcn` as the UI primitive layer. Avoid broad modifications there unless the change is deliberately intended for every consumer of that primitive.
+Treat `src/lib/components/shadcn` as the UI primitive layer. Avoid broad modifications there unless the change is deliberately intended for every consumer of that primitive.
 
 The repo imports shadcn primitives through paths like:
 
 ```ts
-import { Button } from '$lib/Components/shadcn/button';
+import { Button } from '$lib/components/shadcn/button';
 ```
 
-The `components.json` aliases use lowercase paths, but the actual directory in this repo is `Components`. Follow the existing import style unless the repo is intentionally normalized.
+The `components.json` aliases and source directories use lowercase kebab-case paths. Follow this style for new files and imports.
 
 ## State, services, and data rules
 
-- Put reusable stateful domain logic in `src/lib/Stores` or `src/lib/Services`, not inside large components.
-- Use interfaces in `src/lib/Services/I*.ts` when multiple components/services depend on behavior rather than implementation.
-- Keep API DTOs and shared domain types in `src/lib/Types`.
-- Keep model behavior for tree nodes in `src/lib/Models/Treeview`.
-- Keep pure transformations in `src/lib/Utilities`.
+- Put reusable stateful domain logic in `src/lib/stores` or `src/lib/services`, not inside large components.
+- Use interfaces in `src/lib/services/i*.ts` when multiple components/services depend on behavior rather than implementation.
+- Keep API DTOs and shared domain types in `src/lib/types`.
+- Keep model behavior for tree nodes in `src/lib/models/treeview`.
+- Keep pure transformations in `src/lib/utilities`.
 - Avoid `any`. If unavoidable around third-party APIs, keep the scope tiny and add a short explanation or ESLint disable on the smallest line possible.
 - Preserve explicit class member accessibility in TypeScript classes.
 
@@ -336,12 +354,12 @@ Recommended sequence:
 
 Good first cleanup targets from the current snapshot:
 
-- `src/lib/Components/App.svelte` — split sidebar tab content, app dialogs/toasts, loading/unavailable states, and app layout sections.
-- `src/lib/Components/DownloadsMenu/DownloadsMenu.svelte` — extract job rows/cards, empty/error states, status controls, and action groups.
-- `src/lib/Components/UprnMapView/UprnMapView.svelte` — separate ArcGIS widget setup, loading UI, and interaction-mode helpers where safe.
-- `src/lib/Components/ExportMenu/ExportMenu.svelte` and `ExportMenuFooter.svelte` — extract selected area/data summaries and validation/status sections.
-- `src/lib/Components/Chat/Chat.svelte` — extract message list, empty/loading states, feedback wiring, and endpoint-independent UI.
-- `src/lib/Components/Sidebar/Sidebar.svelte` — separate resize logic from rendering if adding features.
+- `src/lib/components/app.svelte` — split sidebar tab content, app dialogs/toasts, loading/unavailable states, and app layout sections.
+- `src/lib/components/downloads-menu/downloads-menu.svelte` — extract job rows/cards, empty/error states, status controls, and action groups.
+- `src/lib/components/uprn-map-view/uprn-map-view.svelte` — separate ArcGIS widget setup, loading UI, and interaction-mode helpers where safe.
+- `src/lib/components/export-menu/export-menu.svelte` and `export-menu-footer.svelte` — extract selected area/data summaries and validation/status sections.
+- `src/lib/components/chat/chat.svelte` — extract message list, empty/loading states, feedback wiring, and endpoint-independent UI.
+- `src/lib/components/sidebar/sidebar.svelte` — separate resize logic from rendering if adding features.
 
 ## Feature implementation checklist
 
@@ -363,7 +381,7 @@ Before opening a PR or handing off a change, verify:
 
 ## Things not to do
 
-- Do not add more large conditional UI blocks to `App.svelte`.
+- Do not add more large conditional UI blocks to `app.svelte`.
 - Do not let reusable children hardcode parent layout decisions.
 - Do not mix Tailwind and scoped CSS for the same styling responsibility.
 - Do not edit generated shadcn primitives for one-off feature styling.

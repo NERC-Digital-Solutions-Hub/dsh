@@ -34,7 +34,7 @@
 						<Spinner class="w-10 h-10" />
 					</div>
 				{:then html}
-					<ScrollArea class="h-full min-h-0 w-full">
+					<ScrollArea class="h-full min-h-0 w-full pl-7 pr-7">
 						<article class="prose prose-home-intro-dialog mx-auto w-full max-w-none pt-6 pb-6">
 							{@html html}
 						</article>

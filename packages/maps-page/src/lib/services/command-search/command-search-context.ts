@@ -1,4 +1,4 @@
-import { GlobalVariableService } from '$lib/services/command-search/global-variable-service.ts';
+import { GlobalVariableService } from '$lib/services/command-search/global-variable-service';
 
 type ClassType<T> = abstract new (...args: any[]) => T;
 

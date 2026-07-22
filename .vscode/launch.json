@@ -1,0 +1,24 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "SvelteKit: dev server",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "pnpm dev"
+		},
+		{
+			"name": "Chrome: SvelteKit app",
+			"type": "chrome",
+			"request": "launch",
+			"url": "http://localhost:5173",
+			"webRoot": "${workspaceFolder}"
+		}
+	],
+	"compounds": [
+		{
+			"name": "SvelteKit: full stack",
+			"configurations": ["SvelteKit: dev server", "Chrome: SvelteKit app"]
+		}
+	]
+}

@@ -2,6 +2,7 @@
 	import * as Button from '$lib/components/shadcn/button/index.js';
 	import { MapIcon } from '@lucide/svelte';
 	import { onDestroy, onMount } from 'svelte';
+	import { arcgisImport } from '@dsh/common/arcgis';
 
 	type Props = {
 		mapView: __esri.MapView;
@@ -35,9 +36,9 @@
 			const cached = widgetCache.get('basemap');
 			if (cached) return cached;
 
-			const [{ default: BasemapGallery }] = await Promise.all([
-				import('@arcgis/core/widgets/BasemapGallery')
-			]);
+			const BasemapGallery = await arcgisImport<
+				typeof import('@arcgis/core/widgets/BasemapGallery.js').default
+			>('@arcgis/core/widgets/BasemapGallery.js');
 			const widget = new BasemapGallery({ view: mapView });
 			widgetCache.set('basemap', widget);
 			return widget;

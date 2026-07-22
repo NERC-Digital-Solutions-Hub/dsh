@@ -51,9 +51,9 @@ async function generateHomeContent(): Promise<void> {
 	const source = createContentSource({ environment, baseUrl: contentBaseUrl });
 	const page = await source.getPage('/');
 	const homeContent: HomeContent = {
-		introduction: await source.readText(page, 'introduction'),
-		body: await source.readJson(page, 'content'),
-		settings: await source.readJson(page, 'settings')
+		introduction: await source.readText(page, 'introduction.introduction'),
+		body: await source.readJson(page, 'content.content'),
+		settings: await source.readJson(page, 'settings.settings')
 	};
 
 	await writeModule(
@@ -69,7 +69,7 @@ async function generateAppsContent(): Promise<void> {
 	const source = createContentSource({ environment, baseUrl: contentBaseUrl });
 	const page = await source.getPage('/apps');
 	const appsContent = resolveContentAssetUrls(
-		await source.readJson<AppsContent>(page, 'apps'),
+		await source.readJson<AppsContent>(page, 'apps.apps'),
 		contentBaseUrl
 	);
 
@@ -85,7 +85,10 @@ async function generateAppsContent(): Promise<void> {
 async function generateNavigationContent(): Promise<void> {
 	const source = createContentSource({ environment, baseUrl: contentBaseUrl });
 	const page = await source.getPage('/');
-	const navigationContent = await source.readJson<{ items: NavItem[] }>(page, 'navigation');
+	const navigationContent = await source.readJson<{ items: NavItem[] }>(
+		page,
+		'navigation.navigation'
+	);
 
 	await writeModule(
 		'navigation.ts',

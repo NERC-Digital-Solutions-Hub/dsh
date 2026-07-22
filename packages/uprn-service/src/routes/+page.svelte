@@ -4,8 +4,8 @@
 	import { UprnServiceApp } from '$lib/index';
 	import type { PageData } from './$types';
 
-	import * as Card from '$lib/Components/shadcn/card/index.js';
-	import * as Alert from '$lib/Components/shadcn/alert/index.js';
+	import * as Card from '$lib/components/shadcn/card/index.js';
+	import * as Alert from '$lib/components/shadcn/alert/index.js';
 
 	import MonitorSmartphone from '@lucide/svelte/icons/monitor-smartphone';
 	import Laptop from '@lucide/svelte/icons/laptop';
@@ -41,5 +41,5 @@
 		</Card.Root>
 	</div>
 {:else}
-	<UprnServiceApp config={data.uprnAppConfig} />
+	<UprnServiceApp config={data.uprnAppConfig} defaultSourceIndex={0} />
 {/if}

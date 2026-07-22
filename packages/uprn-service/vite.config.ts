@@ -1,6 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import { svelteTesting } from '@testing-library/svelte/vite';
+import { defineConfig } from 'vitest/config';
 
 const svelteSsrPackages = [
 	'@keenmate/svelte-treeview',
@@ -15,5 +16,32 @@ export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 	ssr: {
 		noExternal: svelteSsrPackages
+	},
+	// ArcGIS is loaded at runtime from the CDN via window.$arcgis.import() and must never be
+	// bundled or dep-optimised (it is huge and causes out-of-memory during the build).
+	optimizeDeps: {
+		exclude: ['@arcgis/core', '@arcgis/map-components']
+	},
+	test: {
+		projects: [
+			{
+				extends: true,
+				test: {
+					name: 'unit',
+					environment: 'node',
+					include: ['src/**/*.test.ts'],
+					exclude: ['src/**/*.component.test.ts']
+				}
+			},
+			{
+				extends: true,
+				plugins: [svelteTesting()],
+				test: {
+					name: 'component',
+					environment: 'jsdom',
+					include: ['src/**/*.component.test.ts']
+				}
+			}
+		]
 	}
 });

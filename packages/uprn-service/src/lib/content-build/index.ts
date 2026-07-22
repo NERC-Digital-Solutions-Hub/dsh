@@ -1,9 +1,9 @@
-export { ConfigTransformer } from './configTransformer';
-export type { UprnTreeviewTransformInput } from './configTransformer';
-export { CsvConfigFetcher } from './csvConfigFetcher';
-export type { UprnCsvConfig } from './csvConfigFetcher';
-export { generateUprnAppConfig } from './generateUprnAppConfig';
-export type { GenerateUprnAppConfigOptions } from './generateUprnAppConfig';
+export { ConfigTransformer } from './config-transformer';
+export type { UprnTreeviewTransformInput } from './config-transformer';
+export { CsvConfigFetcher } from './csv-config-fetcher';
+export type { UprnCsvConfig } from './csv-config-fetcher';
+export { generateUprnAppConfig } from './generate-uprn-app-config';
+export type { GenerateUprnAppConfigOptions } from './generate-uprn-app-config';
 export type {
 	DatasetRow,
 	DatasetRowRaw,

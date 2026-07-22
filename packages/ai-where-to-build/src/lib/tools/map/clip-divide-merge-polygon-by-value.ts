@@ -1,5 +1,5 @@
-import * as intersectionOperator from '@arcgis/core/geometry/operators/intersectionOperator.js';
-import Graphic from '@arcgis/core/Graphic.js';
+import { loadGeometryOperators, loadGraphic, type ArcgisGeometryOperators } from './arcgis-runtime';
+import type Graphic from '@arcgis/core/Graphic.js';
 import type FeatureLayer from '@arcgis/core/layers/FeatureLayer.js';
 import type GraphicsLayer from '@arcgis/core/layers/GraphicsLayer.js';
 import type MapView from '@arcgis/core/views/MapView.js';
@@ -7,6 +7,9 @@ import type Polygon from '@arcgis/core/geometry/Polygon.js';
 import type { GeometryUnion } from '@arcgis/core/unionTypes.js';
 
 import { mergeClippedPolygonsByLayerAndValue } from './merge-clipped-polygons-by-layer-value.js';
+
+let intersectionOperator: ArcgisGeometryOperators['intersectionOperator'];
+let GraphicCtor: typeof import('@arcgis/core/Graphic.js').default;
 
 interface ClipLayerConfig {
 	/** Layer to clip against (usually FeatureLayer) */
@@ -32,6 +35,7 @@ interface ClipDivideMergeOptions {
  * Returns the final merged graphics added to targetLayer.
  */
 export async function clipDivideMergeByValue(options: ClipDivideMergeOptions): Promise<Graphic[]> {
+	await ensureArcgisRuntime();
 	const { view, inputLayer, polygonId, idField, clipLayers, targetLayer } = options;
 
 	// Start from a clean target layer
@@ -73,7 +77,7 @@ export async function clipDivideMergeByValue(options: ClipDivideMergeOptions): P
 
 				const val = feat.attributes[valueField];
 
-				const g = new Graphic({
+				const g = new GraphicCtor({
 					geometry: inter as Polygon,
 					attributes: {
 						sourceId: polygonId,
@@ -100,7 +104,7 @@ export async function clipDivideMergeByValue(options: ClipDivideMergeOptions): P
 				const attrs = g.attributes ?? {};
 				const val = attrs[valueField];
 
-				const clipped = new Graphic({
+				const clipped = new GraphicCtor({
 					geometry: inter as Polygon,
 					attributes: {
 						sourceId: polygonId,
@@ -127,11 +131,17 @@ export async function clipDivideMergeByValue(options: ClipDivideMergeOptions): P
 	targetLayer.addMany(candidates);
 
 	// 3. Overlay/split & merge by layer+value combos
-	const merged = mergeClippedPolygonsByLayerAndValue(targetLayer, {
+	const merged = await mergeClippedPolygonsByLayerAndValue(targetLayer, {
 		sourceId: polygonId
 	});
 
 	return merged;
+}
+
+async function ensureArcgisRuntime(): Promise<void> {
+	const [operators, Graphic] = await Promise.all([loadGeometryOperators(), loadGraphic()]);
+	intersectionOperator = operators.intersectionOperator;
+	GraphicCtor = Graphic;
 }
 
 /* -------------------------------------------------------------------------- */

@@ -1,6 +1,6 @@
 import type { LayerViewProvider } from '$lib/services/layer-view-provider';
 import type { AreaSelectionStore } from '$lib/stores/area-selection-store.svelte';
-import FeatureLayerView from '@arcgis/core/views/layers/FeatureLayerView';
+import type FeatureLayerView from '@arcgis/core/views/layers/FeatureLayerView';
 import { SvelteMap } from 'svelte/reactivity';
 
 export type AreaSelectionFieldInfo = {

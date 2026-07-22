@@ -1,9 +1,6 @@
 import { browser } from '$app/environment';
 import { SvelteMap } from 'svelte/reactivity';
-import WebMap from '@arcgis/core/WebMap';
-import PortalItem from '@arcgis/core/portal/PortalItem';
-import esriConfig from '@arcgis/core/config.js';
-import * as urlUtils from '@arcgis/core/core/urlUtils.js';
+import { arcgisImport } from '@dsh/common/arcgis';
 export type WebMapStoreParams = {
 	portalUrl?: string | null;
 	itemId: string;
@@ -78,6 +75,13 @@ export class WebMapStore {
 	 * @param proxy - The proxy settings
 	 */
 	async configurePortalAsync(portalUrl?: string | null, proxy?: Proxy | null): Promise<void> {
+		const [esriConfig, urlUtils] = await arcgisImport<
+			[
+				typeof import('@arcgis/core/config.js').default,
+				typeof import('@arcgis/core/core/urlUtils.js')
+			]
+		>(['@arcgis/core/config.js', '@arcgis/core/core/urlUtils.js']);
+
 		if (!portalUrl) {
 			if (this.initialPortalUrl) {
 				esriConfig.portalUrl = this.initialPortalUrl;
@@ -109,6 +113,14 @@ export class WebMapStore {
 			return;
 		}
 
+		const [WebMap, esriConfig, PortalItem] = await arcgisImport<
+			[
+				typeof import('@arcgis/core/WebMap.js').default,
+				typeof import('@arcgis/core/config.js').default,
+				typeof import('@arcgis/core/portal/PortalItem.js').default
+			]
+		>(['@arcgis/core/WebMap.js', '@arcgis/core/config.js', '@arcgis/core/portal/PortalItem.js']);
+
 		const portalItem = new PortalItem({
 			portal: {
 				url: esriConfig.portalUrl
@@ -122,8 +134,8 @@ export class WebMapStore {
 
 		this.data = webmap;
 
-		await this.data.when();
-		if (this.data.loaded) {
+		await webmap.when();
+		if (webmap.loaded) {
 			this.isLoaded = true;
 		}
 	}

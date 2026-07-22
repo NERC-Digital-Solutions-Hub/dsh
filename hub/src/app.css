@@ -18,6 +18,33 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@font-face {
+	font-family: 'Avenir Next';
+	src: url('./lib/assets/fonts/avenir-next/09ab0626-bb45-4650-acc8-0182d693df02.woff2')
+		format('woff2');
+	font-weight: 400;
+	font-style: normal;
+	font-display: auto;
+}
+
+@font-face {
+	font-family: 'Avenir Next';
+	src: url('./lib/assets/fonts/avenir-next/12f4c786-0bef-4a48-b7c0-eebaa7591688.woff2')
+		format('woff2');
+	font-weight: 500;
+	font-style: normal;
+	font-display: auto;
+}
+
+@font-face {
+	font-family: 'Avenir Next';
+	src: url('./lib/assets/fonts/avenir-next/0c8a5d21-8a14-4451-8145-695071809cb7.woff2')
+		format('woff2');
+	font-weight: 700;
+	font-style: normal;
+	font-display: auto;
+}
+
 :root {
 	--radius: 0.625rem;
 	--background: oklch(1 0 0);
@@ -89,6 +116,7 @@
 }
 
 @theme inline {
+	--font-sans: 'Avenir Next', Avenir, 'Helvetica Neue', sans-serif;
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-lg: var(--radius);

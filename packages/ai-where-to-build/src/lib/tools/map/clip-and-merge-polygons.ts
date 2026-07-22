@@ -1,16 +1,19 @@
 // clip-and-merge.ts
 
-import * as intersectionOperator from '@arcgis/core/geometry/operators/intersectionOperator.js';
-import * as differenceOperator from '@arcgis/core/geometry/operators/differenceOperator.js';
-import * as unionOperator from '@arcgis/core/geometry/operators/unionOperator.js';
-import Graphic from '@arcgis/core/Graphic.js';
+import { loadGeometryOperators, loadGraphic, type ArcgisGeometryOperators } from './arcgis-runtime';
 
+import type Graphic from '@arcgis/core/Graphic.js';
 import type FeatureLayer from '@arcgis/core/layers/FeatureLayer.js';
 import type GraphicsLayer from '@arcgis/core/layers/GraphicsLayer.js';
 import type MapView from '@arcgis/core/views/MapView.js';
 import type Polygon from '@arcgis/core/geometry/Polygon.js';
 import type Extent from '@arcgis/core/geometry/Extent.js';
 import type { GeometryUnion } from '@arcgis/core/unionTypes.js';
+
+let intersectionOperator: ArcgisGeometryOperators['intersectionOperator'];
+let differenceOperator: ArcgisGeometryOperators['differenceOperator'];
+let unionOperator: ArcgisGeometryOperators['unionOperator'];
+let GraphicCtor: typeof import('@arcgis/core/Graphic.js').default;
 
 type InputLayer = FeatureLayer | GraphicsLayer;
 type ClipLayer = FeatureLayer | GraphicsLayer;
@@ -54,6 +57,7 @@ interface Piece {
  * @returns The final graphics that were added to the target layer
  */
 export async function clipAndMergePolygons(options: ClipAndMergeOptions): Promise<Graphic[]> {
+	await ensureArcgisRuntime();
 	const { view, inputLayer, polygonId, idField, clipLayers, targetLayer, symbolForCombo } = options;
 
 	const polygon = await getPolygonGeometryById(inputLayer, polygonId, idField, view);
@@ -368,7 +372,7 @@ function createGraphicsFromIntersections(
 	intersections.forEach((g) => {
 		if (!g || g.type !== 'polygon') return;
 		pieces.push(
-			new Graphic({
+			new GraphicCtor({
 				geometry: g as Polygon,
 				attributes: {
 					sourceId,
@@ -583,7 +587,7 @@ function buildMergedGraphicsFromGroups(
 		const attrs = buildMergedAttributes(group.members);
 		const symbol = getSymbolForGroup(key, group, symbolForCombo);
 
-		const merged = new Graphic({
+		const merged = new GraphicCtor({
 			geometry: unionGeom as Polygon,
 			attributes: attrs,
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -594,6 +598,14 @@ function buildMergedGraphicsFromGroups(
 	}
 
 	return mergedGraphics;
+}
+
+async function ensureArcgisRuntime(): Promise<void> {
+	const [operators, Graphic] = await Promise.all([loadGeometryOperators(), loadGraphic()]);
+	intersectionOperator = operators.intersectionOperator;
+	differenceOperator = operators.differenceOperator;
+	unionOperator = operators.unionOperator;
+	GraphicCtor = Graphic;
 }
 
 /**

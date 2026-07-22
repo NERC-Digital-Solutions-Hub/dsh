@@ -1,11 +1,14 @@
-import * as intersectionOperator from '@arcgis/core/geometry/operators/intersectionOperator.js';
-import * as differenceOperator from '@arcgis/core/geometry/operators/differenceOperator.js';
-import * as unionOperator from '@arcgis/core/geometry/operators/unionOperator.js';
-import Graphic from '@arcgis/core/Graphic.js';
+import { loadGeometryOperators, loadGraphic, type ArcgisGeometryOperators } from './arcgis-runtime';
 
+import type Graphic from '@arcgis/core/Graphic.js';
 import type GraphicsLayer from '@arcgis/core/layers/GraphicsLayer.js';
 import type Polygon from '@arcgis/core/geometry/Polygon.js';
 import type Extent from '@arcgis/core/geometry/Extent.js';
+
+let intersectionOperator: ArcgisGeometryOperators['intersectionOperator'];
+let differenceOperator: ArcgisGeometryOperators['differenceOperator'];
+let unionOperator: ArcgisGeometryOperators['unionOperator'];
+let GraphicCtor: typeof import('@arcgis/core/Graphic.js').default;
 
 interface Piece {
 	geometry: Polygon;
@@ -33,10 +36,11 @@ interface MembershipSummary {
  *
  * Returns the final graphics added to the layer.
  */
-export function mergeClippedPolygonsByLayerAndValue(
+export async function mergeClippedPolygonsByLayerAndValue(
 	layer: GraphicsLayer,
 	options?: { sourceId?: number | string }
-): Graphic[] {
+): Promise<Graphic[]> {
+	await ensureArcgisRuntime();
 	console.log('[merge-clipped-polygons] merging in layer:', layer.id, 'opts:', options);
 
 	const allGraphics = layer.graphics.toArray();
@@ -178,7 +182,7 @@ export function mergeClippedPolygonsByLayerAndValue(
 		const attrs = buildMergedAttributesFromSummary(group.summary, group.sample);
 		const color = colorFromId(group.summary.key, 0.3);
 
-		const merged = new Graphic({
+		const merged = new GraphicCtor({
 			geometry: unionGeom as Polygon,
 			attributes: attrs,
 			symbol: {
@@ -207,6 +211,14 @@ export function mergeClippedPolygonsByLayerAndValue(
 	layer.graphics.addMany(mergedGraphics);
 
 	return mergedGraphics;
+}
+
+async function ensureArcgisRuntime(): Promise<void> {
+	const [operators, Graphic] = await Promise.all([loadGeometryOperators(), loadGraphic()]);
+	intersectionOperator = operators.intersectionOperator;
+	differenceOperator = operators.differenceOperator;
+	unionOperator = operators.unionOperator;
+	GraphicCtor = Graphic;
 }
 
 /* -------------------------------------------------------------------------- */
